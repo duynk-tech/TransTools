@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TransTools — Phụ Đề Cuộc Họp Trực Tiếp & Trợ Lý AI Song Ngữ trên macOS</title>
+  <title>TransTools — Phụ Đề Cuộc Họp Trực Tiếp & Trợ Lý Song Ngữ Trên macOS</title>
   <meta name="description" content="Ứng dụng macOS thu âm thanh hệ thống Teams, Zoom, Meet, tạo phụ đề song ngữ trực tiếp và trợ lý thông minh Chip Chip." />
   <meta property="og:title" content="TransTools — Live Meeting Subtitles & AI Translation on macOS" />
   <meta property="og:description" content="Bộ công cụ dịch trực tiếp cuộc họp, phụ đề nổi song ngữ và trợ lý Chip Chip trên macOS." />
@@ -12,10 +12,10 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="assets/app-icon.png" />
 
-  <!-- Fonts: Inter / SF Pro -->
+  <!-- Fonts: Inter for perfect Vietnamese diacritics + JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -25,7 +25,7 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            sans: ['"Inter"', '-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', 'sans-serif'],
             mono: ['"JetBrains Mono"', 'monospace'],
           },
           colors: {
@@ -38,30 +38,25 @@
               700: '#1d4ed8',
               800: '#1e40af',
               900: '#1e3a8a',
-            },
-            mac: {
-              bg: '#0d1117',
-              card: '#161b22',
-              border: '#30363d',
             }
           },
           animation: {
-            'float-gentle': 'floatGentle 4.2s ease-in-out infinite',
-            'float-slow': 'floatSlow 6s ease-in-out infinite',
+            'float-gentle': 'floatGentle 5s ease-in-out infinite',
             'pulse-subtle': 'pulseSubtle 3s ease-in-out infinite',
+            'wave-bar': 'waveBar 1.2s ease-in-out infinite alternate',
           },
           keyframes: {
             floatGentle: {
-              '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
-              '50%': { transform: 'translateY(-6px) rotate(1.2deg)' },
-            },
-            floatSlow: {
               '0%, 100%': { transform: 'translateY(0px)' },
-              '50%': { transform: 'translateY(-10px)' },
+              '50%': { transform: 'translateY(-8px)' },
             },
             pulseSubtle: {
               '0%, 100%': { opacity: '0.4' },
-              '50%': { opacity: '0.8' },
+              '50%': { opacity: '0.9' },
+            },
+            waveBar: {
+              '0%': { height: '4px' },
+              '100%': { height: '16px' },
             }
           }
         }
@@ -70,46 +65,44 @@
   </script>
 
   <style>
-    /* Custom styling & glassmorphism */
+    /* Premium Glassmorphism & Lighting */
     .glass-nav {
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      background: rgba(13, 17, 23, 0.78);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      background: rgba(11, 15, 23, 0.82);
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
     .glass-card {
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      background: rgba(22, 27, 34, 0.72);
+      background: rgba(18, 24, 38, 0.72);
       border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .glass-card:hover {
       border-color: rgba(96, 165, 250, 0.35);
+      background: rgba(22, 30, 48, 0.82);
     }
-    .gradient-text {
-      background: linear-gradient(135deg, #ffffff 20%, #93c5fd 65%, #60a5fa 100%);
+    .glow-radial {
+      background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.18) 0%, rgba(99, 102, 241, 0.08) 35%, transparent 70%);
+    }
+    .hero-gradient-text {
+      background: linear-gradient(135deg, #ffffff 15%, #bae6fd 60%, #60a5fa 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-    }
-    .gradient-badge {
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(147, 51, 234, 0.18));
-      border: 1px solid rgba(96, 165, 250, 0.28);
-    }
-    .glow-bg {
-      background: radial-gradient(circle at 50% 20%, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.06) 40%, transparent 70%);
     }
   </style>
 </head>
 
-<body class="bg-[#0b0f17] text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-white min-h-screen relative overflow-x-hidden">
+<body class="bg-[#090d16] text-slate-100 font-sans antialiased selection:bg-blue-500 selection:text-white min-h-screen relative overflow-x-hidden">
 
-  <!-- Ambient Glow Background -->
-  <div class="fixed inset-0 glow-bg pointer-events-none z-0"></div>
+  <!-- Ambient Backdrop Glow -->
+  <div class="fixed inset-0 glow-radial pointer-events-none z-0"></div>
 
-  <!-- Top Sticky Navigation -->
-  <nav class="fixed top-0 left-0 right-0 z-50 glass-nav transition-all duration-300">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <!-- Brand -->
+  <!-- Top Navigation Bar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 glass-nav">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <!-- Logo & App Name -->
       <a href="#" class="flex items-center gap-3 group">
         <img src="assets/app-icon.png" alt="TransTools Icon" class="w-9 h-9 rounded-xl shadow-md group-hover:scale-105 transition-transform" />
         <div class="flex items-center gap-2">
@@ -118,8 +111,8 @@
         </div>
       </a>
 
-      <!-- Menu links -->
-      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
+      <!-- Navigation Links -->
+      <div class="hidden md:flex items-center gap-7 text-sm font-medium text-slate-300">
         <a href="#features" class="hover:text-blue-400 transition-colors">Tính năng</a>
         <a href="#chipchip" class="hover:text-blue-400 transition-colors flex items-center gap-1.5">
           <span>Trợ lý Chip Chip</span>
@@ -127,167 +120,192 @@
         </a>
         <a href="#domains" class="hover:text-blue-400 transition-colors">Chuyên ngành</a>
         <a href="#install" class="hover:text-blue-400 transition-colors">Cài đặt</a>
-        <a href="https://github.com/duynk-tech/TransTools" target="_blank" class="hover:text-white transition-colors flex items-center gap-1">
+        <a href="https://github.com/duynk-tech/TransTools" target="_blank" class="hover:text-white transition-colors flex items-center gap-1 text-slate-400">
           <span>GitHub</span>
-          <svg class="w-3.5 h-3.5 opacity-60" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+          <svg class="w-3.5 h-3.5 opacity-70" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
         </a>
       </div>
 
-      <!-- Action Button -->
-      <div class="flex items-center gap-3">
-        <a href="https://github.com/duynk-tech/TransTools/releases/latest" target="_blank"
-           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-          <span>Tải TransTools.zip</span>
-        </a>
-      </div>
+      <!-- Header Action -->
+      <a href="https://github.com/duynk-tech/TransTools/releases/latest" target="_blank"
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/25 transition-all hover:scale-[1.02] active:scale-[0.98]">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        <span>Tải TransTools.zip</span>
+      </a>
     </div>
   </nav>
 
   <!-- Hero Section -->
-  <section class="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden z-10">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+  <section class="relative pt-32 pb-16 md:pt-40 md:pb-24 z-10">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 text-center">
       
-      <!-- Top Announcement Badge -->
-      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full gradient-badge mb-8 animate-fade-in">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-        <span class="text-xs font-semibold text-blue-300">TransTools v1.2.0 • Tích hợp Auto-Update từ GitHub</span>
+      <!-- Overline Pill Badge -->
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/25 text-xs font-medium text-blue-300 mb-6">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>TransTools v1.2.0 • Sẵn sàng cho macOS Sonoma & Sequoia</span>
       </div>
 
-      <!-- Main Headline -->
-      <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
-        Dịch Trực Tiếp Cuộc Họp &<br />
-        <span class="gradient-text">Phụ Đề Song Ngữ Trên macOS</span>
+      <!-- Main Headline: Balanced Typography -->
+      <h1 class="text-3xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight leading-[1.2] mb-6 max-w-4xl mx-auto">
+        Phụ Đề Cuộc Họp Trực Tiếp &<br class="hidden sm:inline" />
+        <span class="hero-gradient-text">Trợ Lý Dịch Thuật Song Ngữ</span> Trên macOS
       </h1>
 
-      <!-- Subtitle -->
-      <p class="max-w-3xl mx-auto text-base sm:text-lg lg:text-xl text-slate-300 font-normal leading-relaxed mb-10">
-        Bộ công cụ thu âm thanh hệ thống trực tiếp từ <span class="text-white font-semibold">Teams, Zoom, Meet</span>, nhận diện giọng nói cục bộ siêu tốc và dịch đa chuyên ngành với sự đồng hành của <span class="text-white font-semibold">trợ lý ảo Chip Chip</span>.
+      <!-- Balanced Subtitle -->
+      <p class="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed mb-10 font-normal">
+        Thu âm trực tiếp từ <strong class="text-white font-semibold">Teams, Zoom, Meet</strong> không cần mic ngoài. Tự động nhận diện giọng nói, hiển thị phụ đề nổi tức thì và hỗ trợ dịch chuyên ngành cùng <strong class="text-blue-300 font-semibold">trợ lý ảo Chip Chip</strong>.
       </p>
 
-      <!-- CTA Buttons -->
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+      <!-- Primary Action Buttons -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
         <a href="https://github.com/duynk-tech/TransTools/releases/latest" target="_blank"
-           class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 shadow-xl shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-          <span>Tải về cho macOS (v1.2.0)</span>
+           class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 shadow-xl shadow-blue-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <div class="text-left">
+            <div>Tải về cho macOS</div>
+            <div class="text-[11px] font-normal text-blue-200">Miễn phí • Bản v1.2.0 • Apple Silicon & Intel</div>
+          </div>
         </a>
+
         <a href="https://github.com/duynk-tech/TransTools" target="_blank"
-           class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl text-sm font-semibold text-slate-200 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 hover:border-slate-600 transition-all hover:scale-[1.02]">
+           class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl text-sm font-semibold text-slate-200 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 hover:border-slate-600 transition-all hover:scale-[1.02]">
           <svg class="w-5 h-5 text-slate-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-          <span>Star trên GitHub</span>
+          <span>Xem mã nguồn trên GitHub</span>
         </a>
       </div>
 
-      <!-- App Highlights Chips -->
-      <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs text-slate-400">
+      <!-- Trust Badges -->
+      <div class="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs text-slate-400">
         <span class="flex items-center gap-1.5">
-          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Apple Silicon & Intel
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+          <span>M1/M2/M3/M4 & Intel</span>
         </span>
         <span class="flex items-center gap-1.5">
-          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          macOS 14.0+ (Sonoma/Sequoia)
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+          <span>macOS 14+ Sonoma / Sequoia</span>
         </span>
         <span class="flex items-center gap-1.5">
-          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Mã hóa AES-256 cục bộ
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+          <span>Mã hóa AES-256 phần cứng</span>
         </span>
         <span class="flex items-center gap-1.5">
-          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Auto-Update từ GitHub
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+          <span>Apple Native 0 Token ~15ms</span>
         </span>
       </div>
 
-      <!-- Interactive Mockup Visual Preview -->
-      <div class="mt-14 relative max-w-5xl mx-auto">
-        <!-- Floating Chip Chip Mascot Decor -->
-        <div class="absolute -top-12 -right-4 sm:-right-8 z-20 animate-float-gentle hidden sm:block">
-          <div class="relative bg-slate-900/90 border border-slate-700/80 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-2xl flex items-center gap-3">
-            <img src="assets/mascot-writing.png" alt="Chip Chip" class="w-14 h-14 object-contain filter drop-shadow" />
+      <!-- High-Fidelity macOS App Showcase Window -->
+      <div class="mt-14 relative max-w-4xl mx-auto">
+        <!-- Floating Mascot Badge Decor -->
+        <div class="absolute -top-10 -right-2 sm:-right-6 z-20 animate-float-gentle hidden sm:block">
+          <div class="bg-slate-900/90 border border-slate-700/80 backdrop-blur-xl px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-3">
+            <img src="assets/mascot-writing.png" alt="Chip Chip" class="w-12 h-12 object-contain" />
             <div class="text-left">
-              <div class="text-[11px] font-bold text-orange-400">Trợ lý Chip Chip 🤖</div>
-              <div class="text-[10px] text-slate-300">Đang chăm chú nghe & ghi chép! 📝</div>
+              <div class="text-xs font-bold text-orange-400">Trợ lý Chip Chip 🤖</div>
+              <div class="text-[11px] text-slate-300">Đang lắng nghe & ghi chú trực tiếp...</div>
             </div>
           </div>
         </div>
 
-        <!-- Mac Window Frame -->
-        <div class="rounded-2xl border border-slate-700/80 bg-[#121721] shadow-2xl overflow-hidden text-left">
-          <!-- Window Title Bar -->
-          <div class="h-10 bg-[#18202f] border-b border-slate-700/70 px-4 flex items-center justify-between">
+        <!-- Realistic Window Container -->
+        <div class="rounded-2xl border border-slate-700/70 bg-[#0f1420] shadow-2xl overflow-hidden text-left">
+          
+          <!-- macOS Window Title Bar -->
+          <div class="h-11 bg-[#151c2d] border-b border-slate-700/60 px-4 flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
-              <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-              <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+              <div class="w-3 h-3 rounded-full bg-[#ff5f56] shadow-inner"></div>
+              <div class="w-3 h-3 rounded-full bg-[#ffbd2e] shadow-inner"></div>
+              <div class="w-3 h-3 rounded-full bg-[#27c93f] shadow-inner"></div>
             </div>
-            <div class="flex items-center gap-2 text-xs font-semibold text-slate-300">
-              <img src="assets/mascot-3d.png" alt="Logo" class="w-4 h-4" />
+            
+            <div class="flex items-center gap-2.5 text-xs font-semibold text-slate-300">
+              <img src="assets/app-icon.png" alt="TransTools" class="w-4 h-4 rounded" />
               <span>TransTools — Live Meeting Subtitles</span>
-              <span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold">LIVE</span>
+              <span class="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold">LIVE</span>
             </div>
-            <div class="text-xs text-slate-500 font-mono">v1.2.0</div>
+
+            <!-- Waveform Indicator -->
+            <div class="flex items-center gap-1.5 text-xs text-slate-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <span class="text-[11px] font-mono text-emerald-400">Teams Audio</span>
+            </div>
           </div>
 
-          <!-- Window Content Body Mockup -->
-          <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 bg-gradient-to-b from-[#121721] to-[#0c1017]">
-            <!-- Live Transcription Feed -->
+          <!-- Window Inner Layout -->
+          <div class="p-5 sm:p-7 grid grid-cols-1 lg:grid-cols-3 gap-6 bg-gradient-to-b from-[#111726] to-[#0a0e17]">
+            
+            <!-- Left 2 Cols: Live Subtitle Dialogue Feed -->
             <div class="lg:col-span-2 space-y-4">
-              <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Phụ đề cuộc họp trực tiếp</span>
-                <span class="text-xs text-blue-400 font-mono bg-blue-900/30 px-2 py-0.5 rounded">Âm thanh hệ thống • Teams</span>
+              <div class="flex items-center justify-between pb-2 border-b border-slate-800 text-xs">
+                <span class="font-bold text-slate-300 uppercase tracking-wider text-[11px]">Dòng phụ đề song ngữ trực tiếp</span>
+                <span class="text-blue-400 font-mono bg-blue-950/60 border border-blue-800/40 px-2 py-0.5 rounded text-[10px]">Động cơ: Apple Native (15ms)</span>
               </div>
 
-              <!-- Caption Card 1 -->
-              <div class="p-3.5 rounded-xl bg-slate-800/40 border border-slate-800 text-sm">
-                <div class="text-slate-400 text-xs font-mono mb-1">Speaker 1 • 00:04:12</div>
-                <div class="text-slate-200 font-medium mb-1.5">"We have deployed the bugfix to staging, please review the latest PR before merging."</div>
-                <div class="text-emerald-400 font-medium text-[13px] bg-emerald-950/30 px-2 py-1 rounded border border-emerald-900/30">
-                  🇻🇳 "Chúng tôi đã triển khai bản sửa lỗi lên môi trường staging, nhờ bạn review PR mới nhất trước khi merge nhé."
+              <!-- Dialogue Item 1 -->
+              <div class="p-4 rounded-xl bg-slate-800/40 border border-slate-800/80">
+                <div class="flex items-center justify-between text-xs text-slate-400 font-mono mb-1.5">
+                  <span class="font-bold text-slate-300">Alex Miller • Tech Lead</span>
+                  <span class="text-[10px]">00:04:12</span>
+                </div>
+                <div class="text-slate-200 text-sm font-medium mb-2 leading-relaxed">
+                  "We have deployed the bugfix to staging. Please review the latest PR before merging."
+                </div>
+                <div class="text-emerald-300 text-xs sm:text-sm font-medium bg-emerald-950/40 border border-emerald-900/40 px-3 py-2 rounded-lg leading-relaxed">
+                  🇻🇳 "Chúng tôi đã triển khai bản sửa lỗi lên môi trường staging. Nhờ bạn review PR mới nhất trước khi merge nhé."
                 </div>
               </div>
 
-              <!-- Caption Card 2 -->
-              <div class="p-3.5 rounded-xl bg-slate-800/70 border border-blue-900/40 text-sm shadow-md">
-                <div class="text-blue-400 text-xs font-mono mb-1 flex items-center justify-between">
-                  <span>Speaker 2 • Đang phát</span>
-                  <span class="animate-pulse text-[10px] text-emerald-400">● LIVE</span>
+              <!-- Dialogue Item 2 (Active Live) -->
+              <div class="p-4 rounded-xl bg-slate-800/70 border border-blue-500/40 shadow-lg shadow-blue-900/10">
+                <div class="flex items-center justify-between text-xs text-blue-400 font-mono mb-1.5">
+                  <span class="font-bold text-blue-300">Sarah Chen • Product Lead</span>
+                  <span class="flex items-center gap-1 text-[10px] text-emerald-400 font-bold">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    ĐANG PHÁT
+                  </span>
                 </div>
-                <div class="text-slate-100 font-semibold mb-1.5">"Could you confirm the timeline and milestones for this sprint?"</div>
-                <div class="text-emerald-300 font-semibold text-[13px] bg-emerald-950/40 px-2.5 py-1.5 rounded border border-emerald-800/40">
-                  🇻🇳 "Anh/chị có thể xác nhận lại thời hạn và các mốc bàn giao của sprint này được không?"
+                <div class="text-white text-sm font-semibold mb-2 leading-relaxed">
+                  "Could you confirm the release timeline and key milestones for this sprint?"
+                </div>
+                <div class="text-emerald-300 text-xs sm:text-sm font-semibold bg-emerald-950/50 border border-emerald-800/50 px-3 py-2 rounded-lg leading-relaxed">
+                  🇻🇳 "Anh/chị có thể xác nhận lại thời hạn phát hành và các mốc bàn giao chính của sprint này được không?"
                 </div>
               </div>
             </div>
 
-            <!-- Side Panel: AI Co-Pilot & Quick Translate -->
+            <!-- Right Col: AI Co-Pilot & HUD Subtitle Mini Preview -->
             <div class="space-y-4">
-              <div class="p-4 rounded-xl bg-slate-800/40 border border-slate-800">
+              <!-- AI Smart Reply Suggestions -->
+              <div class="p-4 rounded-xl bg-slate-800/40 border border-slate-800/80">
                 <div class="flex items-center gap-2 mb-3">
-                  <span class="text-purple-400 text-xs font-bold">✨ AI MEETING CO-PILOT</span>
+                  <span class="text-xs font-bold text-purple-400 uppercase tracking-wider">✨ AI GỢI Ý CÂU TRẢ LỜI</span>
                 </div>
                 <div class="space-y-2">
-                  <button class="w-full text-left p-2.5 rounded-lg bg-slate-800/70 hover:bg-slate-700/60 border border-slate-700/60 text-xs transition">
+                  <div class="p-2.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
                     <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-900/50 text-purple-300">XÁC NHẬN</span>
                     <p class="font-medium text-slate-200 mt-1">"Everything is on track for Friday's release."</p>
-                  </button>
-                  <button class="w-full text-left p-2.5 rounded-lg bg-slate-800/70 hover:bg-slate-700/60 border border-slate-700/60 text-xs transition">
+                  </div>
+                  <div class="p-2.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
                     <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-900/50 text-blue-300">ĐỀ XUẤT</span>
                     <p class="font-medium text-slate-200 mt-1">"Let's schedule a brief sync-up tomorrow."</p>
-                  </button>
+                  </div>
                 </div>
               </div>
 
-              <!-- HUD Subtitle Window Mini Mockup -->
-              <div class="p-3.5 rounded-xl bg-gradient-to-r from-blue-950/40 to-slate-900/60 border border-blue-500/20 text-xs">
-                <div class="text-blue-400 font-bold mb-1 flex items-center justify-between">
+              <!-- HUD Overlay Pill -->
+              <div class="p-4 rounded-xl bg-gradient-to-br from-blue-950/40 to-slate-900/80 border border-blue-500/25">
+                <div class="flex items-center justify-between text-xs font-bold text-blue-400 mb-1.5">
                   <span>Phụ đề nổi Always-on-top</span>
-                  <span class="text-[9px] bg-blue-500/20 px-1 rounded">HUD</span>
+                  <span class="text-[9px] bg-blue-500/20 px-1.5 py-0.5 rounded">HUD</span>
                 </div>
-                <p class="text-slate-300 text-[11px]">Cửa sổ phụ đề luôn nổi trên màn hình cuộc họp, kéo thả tự do mọi vị trí.</p>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                  Cửa sổ nổi xuyên suốt màn hình cuộc họp, kéo thả tự do mọi vị trí mà không che nội dung chia sẻ.
+                </p>
               </div>
             </div>
+
           </div>
+
         </div>
       </div>
 
@@ -295,80 +313,125 @@
   </section>
 
   <!-- Features Bento Grid Section -->
-  <section id="features" class="py-24 relative z-10 border-t border-slate-800/80 bg-slate-900/30">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <section id="features" class="py-20 md:py-28 relative z-10 border-t border-slate-800/80 bg-slate-900/30">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
       
-      <div class="text-center max-w-3xl mx-auto mb-16">
+      <div class="text-center max-w-2xl mx-auto mb-16">
         <h2 class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-3">TÍNH NĂNG VƯỢT TRỘI</h2>
-        <p class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Tất cả những gì bạn cần cho các cuộc họp quốc tế</p>
+        <p class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">Tất cả những gì bạn cần cho các cuộc họp quốc tế</p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Balanced Asymmetric Bento Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        <!-- Feature 1: ScreenCaptureKit Audio -->
-        <div class="glass-card rounded-2xl p-6 transition-all hover:-translate-y-1">
-          <div class="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-4">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z"/></svg>
+        <!-- Bento 1 (Large - Col Span 2): ScreenCaptureKit Audio -->
+        <div class="md:col-span-2 glass-card rounded-2xl p-7 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z"/></svg>
+            </div>
+            <span class="text-xs font-mono text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20">Zero Virtual Mic</span>
           </div>
-          <h3 class="text-lg font-bold text-white mb-2">Thu âm thanh hệ thống trực tiếp</h3>
-          <p class="text-sm text-slate-400 leading-relaxed">
-            Sử dụng ScreenCaptureKit của macOS để thu âm thanh trực tiếp từ Teams, Zoom, Slack, trình duyệt. Không cần bot phụ đề, không yêu cầu đăng nhập tài khoản admin.
+          <h3 class="text-xl font-bold text-white mb-2">Thu âm thanh hệ thống trực tiếp</h3>
+          <p class="text-sm text-slate-300 leading-relaxed mb-6">
+            Sử dụng <strong>ScreenCaptureKit</strong> native của macOS Sonoma/Sequoia để thu âm thanh trực tiếp từ Microsoft Teams, Zoom, Google Meet, Slack hay bất kỳ trình duyệt nào. Không cần cài mic ảo (BlackHole), không cần bot trung gian và không yêu cầu quyền Admin.
           </p>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-semibold px-3 py-1 rounded-lg bg-slate-800/90 text-slate-300 border border-slate-700">Microsoft Teams</span>
+            <span class="text-xs font-semibold px-3 py-1 rounded-lg bg-slate-800/90 text-slate-300 border border-slate-700">Zoom Meetings</span>
+            <span class="text-xs font-semibold px-3 py-1 rounded-lg bg-slate-800/90 text-slate-300 border border-slate-700">Google Meet</span>
+            <span class="text-xs font-semibold px-3 py-1 rounded-lg bg-slate-800/90 text-slate-300 border border-slate-700">Slack Huddle</span>
+          </div>
         </div>
 
-        <!-- Feature 2: Multi-Engine AI -->
-        <div class="glass-card rounded-2xl p-6 transition-all hover:-translate-y-1">
-          <div class="w-11 h-11 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mb-4">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <!-- Bento 2 (Col Span 1): Apple On-Device Native Engine -->
+        <div class="glass-card rounded-2xl p-7 flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.85c.62-.75 1.04-1.8 0.92-2.85-.9.04-1.99.6-2.63 1.35-.57.66-.99 1.72-.85 2.75 1.01.08 2.01-.5 2.56-1.25z"/></svg>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Apple On-Device Native</h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+              Dịch thuật hoàn toàn cục bộ ngay trên Apple Neural Engine. Độ trễ siêu tốc chỉ <strong>~15ms</strong>, không tốn token, không cần kết nối mạng.
+            </p>
           </div>
-          <h3 class="text-lg font-bold text-white mb-2">Đa động cơ AI thông minh</h3>
-          <p class="text-sm text-slate-400 leading-relaxed">
-            Hỗ trợ dịch offline cục bộ bằng <strong>Apple Neural Engine</strong> (miễn phí, 0 token, ~15ms) kết hợp các mô hình đám mây mạnh mẽ: <strong>Google Gemini, OpenAI GPT-4o, Claude, DeepSeek</strong>.
-          </p>
+          <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-xs">
+            <span class="text-emerald-400 font-bold">0 Token • 100% Free</span>
+            <span class="text-slate-400">Offline-ready</span>
+          </div>
         </div>
 
-        <!-- Feature 3: HUD Floating Subtitle Overlay -->
-        <div class="glass-card rounded-2xl p-6 transition-all hover:-translate-y-1">
-          <div class="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+        <!-- Bento 3 (Col Span 1): Hardware-Bound CryptoKit Security -->
+        <div class="glass-card rounded-2xl p-7 flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mb-4">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Bảo mật Apple CryptoKit</h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+              API Key được mã hóa chuẩn <strong>AES-256-GCM</strong> gắn chặt với Hardware UUID của riêng máy Mac của bạn. Không lưu đám mây, không lo rò rỉ.
+            </p>
           </div>
-          <h3 class="text-lg font-bold text-white mb-2">Cửa sổ phụ đề nổi Always-on-top</h3>
-          <p class="text-sm text-slate-400 leading-relaxed">
-            Hiển thị phụ đề song ngữ trực quan ngay trên giao diện cuộc họp, hỗ trợ kéo thả tự do, ẩn/hiện tức thì không che khuất màn hình chia sẻ.
-          </p>
+          <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-xs">
+            <span class="text-rose-400 font-bold">Hardware-Bound</span>
+            <span class="text-slate-400">Chỉ đọc trên máy bạn</span>
+          </div>
         </div>
 
-        <!-- Feature 4: Notebook & SRT Export -->
-        <div class="glass-card rounded-2xl p-6 transition-all hover:-translate-y-1">
-          <div class="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-4">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        <!-- Bento 4 (Large - Col Span 2): Multi-Engine Cloud AI & Domains -->
+        <div class="md:col-span-2 glass-card rounded-2xl p-7">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <span class="text-xs font-mono text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">5 Chuyên ngành</span>
           </div>
-          <h3 class="text-lg font-bold text-white mb-2">Sổ tay cuộc họp & Xuất file SRT</h3>
-          <p class="text-sm text-slate-400 leading-relaxed">
-            Tự động lưu lại toàn bộ biên bản cuộc họp sau mỗi phiên. Hỗ trợ tìm kiếm, thêm ghi chú cá nhân và xuất báo cáo Text hoặc phụ đề chuẩn SRT.
+          <h3 class="text-xl font-bold text-white mb-2">Đa động cơ AI & Chuyên sâu ngành nghề</h3>
+          <p class="text-sm text-slate-300 leading-relaxed mb-6">
+            Mở rộng sức mạnh khi cần với <strong>Google Gemini, OpenAI GPT-4o, Claude 3.5, DeepSeek R1</strong>. Tự động áp dụng prompt chuyên ngành để dịch chính xác thuật ngữ công nghệ, hội họp kinh doanh, tài chính và y khoa.
           </p>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div class="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-center font-medium">Gemini 2.0 Flash</div>
+            <div class="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-center font-medium">GPT-4o Mini</div>
+            <div class="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-center font-medium">Claude 3.5 Haiku</div>
+            <div class="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-center font-medium">DeepSeek R1</div>
+          </div>
         </div>
 
-        <!-- Feature 5: CryptoKit AES-256 Security -->
-        <div class="glass-card rounded-2xl p-6 transition-all hover:-translate-y-1">
-          <div class="w-11 h-11 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mb-4">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        <!-- Bento 5 (Col Span 1): HUD Floating Overlay -->
+        <div class="glass-card rounded-2xl p-7 flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mb-4">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Phụ đề nổi Always-on-top</h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+              Cửa sổ phụ đề ghim xuyên suốt trên mọi màn hình, hỗ trợ kéo thả tự do, ẩn/hiện chỉ với 1 phím tắt và chỉnh độ trong suốt linh hoạt.
+            </p>
           </div>
-          <h3 class="text-lg font-bold text-white mb-2">Bảo mật Apple CryptoKit AES-256</h3>
-          <p class="text-sm text-slate-400 leading-relaxed">
-            Toàn bộ API Key được mã hóa AES-256-GCM gắn chặt với Hardware UUID của riêng máy Mac. Không lưu đám mây, không gửi dữ liệu ra máy chủ trung gian.
-          </p>
+          <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-xs">
+            <span class="text-cyan-400 font-bold">Kéo thả tự do</span>
+            <span class="text-slate-400">Không che màn hình</span>
+          </div>
         </div>
 
-        <!-- Feature 6: Auto Update via GitHub -->
-        <div class="glass-card rounded-2xl p-6 transition-all hover:-translate-y-1">
-          <div class="w-11 h-11 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mb-4">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        <!-- Bento 6 (Col Span 2): Meeting Notebook & SRT Export -->
+        <div class="md:col-span-2 glass-card rounded-2xl p-7">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            </div>
+            <span class="text-xs font-mono text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">Auto-Save & SRT</span>
           </div>
-          <h3 class="text-lg font-bold text-white mb-2">Tự động cập nhật 1-Click</h3>
-          <p class="text-sm text-slate-400 leading-relaxed">
-            Tự động thông báo khi có bản phát hành mới trên GitHub. Tải xuống, giải nén và cập nhật chỉ với 1 click chuột trực tiếp ngay trong app.
+          <h3 class="text-xl font-bold text-white mb-2">Sổ tay cuộc họp & Xuất file phụ đề SRT</h3>
+          <p class="text-sm text-slate-300 leading-relaxed mb-4">
+            Tự động lưu lại toàn bộ biên bản cuộc họp sau mỗi phiên làm việc. Dễ dàng tìm kiếm lại nội dung thảo luận, chỉnh sửa ghi chú và xuất ra tệp văn bản hoặc tệp phụ đề chuẩn <strong>.SRT</strong> đồng bộ mốc thời gian để làm phụ đề video.
           </p>
+          <div class="flex items-center gap-3 text-xs text-slate-400">
+            <span class="flex items-center gap-1"><span class="text-emerald-400 font-bold">✓</span> Tìm kiếm tức thì</span>
+            <span class="flex items-center gap-1"><span class="text-emerald-400 font-bold">✓</span> Thêm ghi chú cá nhân</span>
+            <span class="flex items-center gap-1"><span class="text-emerald-400 font-bold">✓</span> Xuất chuẩn SRT video</span>
+          </div>
         </div>
 
       </div>
@@ -376,109 +439,175 @@
   </section>
 
   <!-- Chip Chip Mascot Section -->
-  <section id="chipchip" class="py-24 relative z-10">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <section id="chipchip" class="py-20 md:py-28 relative z-10">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         
-        <!-- Left: Mascot Presentation -->
+        <!-- Left: Mascot Visual Stage -->
         <div class="relative flex items-center justify-center">
-          <div class="w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-gradient-to-tr from-blue-600/20 via-purple-600/10 to-orange-500/20 filter blur-3xl absolute"></div>
+          <div class="w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-gradient-to-tr from-blue-600/20 via-purple-600/15 to-orange-500/20 filter blur-3xl absolute"></div>
           
           <div class="relative z-10 text-center animate-float-gentle">
             <img src="assets/mascot-3d.png" alt="Chip Chip Mascot" class="w-64 sm:w-80 object-contain mx-auto filter drop-shadow-2xl" />
-            <div class="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-xs font-semibold text-slate-200">
+            <div class="mt-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-slate-700 text-xs font-semibold text-slate-200 shadow-xl">
               <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>Chip Chip • Trợ lý ảo để bàn macOS</span>
+              <span>Chip Chip • Trợ lý để bàn macOS</span>
             </div>
           </div>
         </div>
 
-        <!-- Right: Description -->
-        <div class="space-y-6">
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold uppercase tracking-wider">
-            🤖 MASCOT COMPANION
+        <!-- Right: Thoughtful Typography & Feature List -->
+        <div>
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold uppercase tracking-wider mb-4">
+            🤖 DESKTOP COMPANION
           </div>
-          <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+          <h2 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight mb-4 leading-tight">
             Gặp gỡ Chip Chip — Bạn đồng hành đáng yêu trong mọi cuộc họp
           </h2>
-          <p class="text-slate-300 leading-relaxed">
-            Chip Chip không chỉ là một biểu tượng mà là một trợ lý nổi trực quan tương tác với bạn ngay trên màn hình desktop:
+          <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-8">
+            Chip Chip không chỉ là một biểu tượng mà là người bạn trợ lý trực quan đồng hành cùng bạn ngay trên góc màn hình desktop:
           </p>
 
-          <ul class="space-y-3.5 text-sm text-slate-300">
-            <li class="flex items-start gap-3">
-              <div class="w-6 h-6 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 mt-0.5">✓</div>
-              <span><strong>Chuyển động IDLE êm ái:</strong> Nhịp thở bồng bềnh tự nhiên (~4.2s), nghiêng đầu tò mò chậm rãi, chớp mắt và mỉm cười nhẹ nhàng khi nghỉ.</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <div class="w-6 h-6 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 mt-0.5">✓</div>
-              <span><strong>Tốc ký khi cuộc họp diễn ra:</strong> Tự động chuyển sang hoạt cảnh cầm bút ghi chép và chấm nét mực sinh động.</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <div class="w-6 h-6 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 mt-0.5">✓</div>
-              <span><strong>Khung Dịch nhanh tiện lợi:</strong> Hộp dịch tiếng Việt ⇄ tiếng Anh 2 dòng, bấm Enter tự động dịch và copy ngay vào Clipboard.</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <div class="w-6 h-6 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 mt-0.5">✓</div>
-              <span><strong>Chọn chuyên ngành tức thì:</strong> Đổi nhanh chuyên ngành dịch thuật ngay trên popup của Chip Chip.</span>
-            </li>
-          </ul>
+          <div class="space-y-4">
+            <!-- Item 1 -->
+            <div class="glass-card rounded-xl p-4 flex items-start gap-3.5">
+              <div class="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-sm">
+                🌿
+              </div>
+              <div>
+                <h4 class="font-bold text-white text-sm mb-0.5">Chuyển động IDLE bồng bềnh êm ái</h4>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                  Nhịp thở lơ lửng chậm rãi, thư thái và hoàn toàn mượt mà 60fps, không gây phân tâm khi làm việc.
+                </p>
+              </div>
+            </div>
+
+            <!-- Item 2 -->
+            <div class="glass-card rounded-xl p-4 flex items-start gap-3.5">
+              <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-sm">
+                ✍️
+              </div>
+              <div>
+                <h4 class="font-bold text-white text-sm mb-0.5">Tốc ký khi cuộc họp diễn ra</h4>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                  Tự động chuyển sang hoạt cảnh cầm bút ghi chép và chấm nét mực sinh động mỗi khi nhận diện có người đang nói.
+                </p>
+              </div>
+            </div>
+
+            <!-- Item 3 -->
+            <div class="glass-card rounded-xl p-4 flex items-start gap-3.5">
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-sm">
+                ⚡
+              </div>
+              <div>
+                <h4 class="font-bold text-white text-sm mb-0.5">Khung Dịch nhanh 2 chiều (Anh ⇄ Việt)</h4>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                  Bấm vào Chip Chip để mở ô dịch nhanh 2 dòng, chỉ cần gõ nội dung và bấm <strong>Enter</strong> là kết quả tự động copy vào Clipboard.
+                </p>
+              </div>
+            </div>
+
+            <!-- Item 4 -->
+            <div class="glass-card rounded-xl p-4 flex items-start gap-3.5">
+              <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-sm">
+                🎯
+              </div>
+              <div>
+                <h4 class="font-bold text-white text-sm mb-0.5">Chọn chuyên ngành trực tiếp</h4>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                  Đổi nhanh chuyên ngành dịch thuật ngay trên popup của Chip Chip qua menu Dropdown tiện dụng.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
       </div>
     </div>
   </section>
 
-  <!-- Domain Specialty Section -->
-  <section id="domains" class="py-24 relative z-10 border-t border-slate-800/80 bg-slate-900/30">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <!-- Domain Specialty Section (Interactive Showcase) -->
+  <section id="domains" class="py-20 md:py-28 relative z-10 border-t border-slate-800/80 bg-slate-900/30">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
       
-      <div class="text-center max-w-3xl mx-auto mb-16">
+      <div class="text-center max-w-2xl mx-auto mb-14">
         <h2 class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-3">CHUYÊN SÂU THEO NGÀNH NGHỀ</h2>
-        <p class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Dịch thuật chuẩn xác theo từng chuyên ngành</p>
-        <p class="text-slate-400 mt-4 text-sm sm:text-base">Không còn lo sợ AI dịch ngô nghê các thuật ngữ kỹ thuật hay kinh doanh.</p>
+        <p class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">Dịch thuật chuẩn xác theo từng chuyên ngành</p>
+        <p class="text-slate-400 mt-3 text-sm leading-relaxed">Không còn lo sợ AI dịch ngô nghê các thuật ngữ kỹ thuật hay hội họp công sở.</p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <!-- Segmented Domain Cards Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         
-        <!-- Domain 1 -->
-        <div class="glass-card rounded-2xl p-5 hover:border-blue-500/50 transition">
-          <div class="text-2xl mb-3">💻</div>
-          <h3 class="font-bold text-white text-base mb-1">Developer</h3>
-          <p class="text-xs text-slate-400 leading-relaxed mb-3">Giữ tự nhiên các thuật ngữ: PR, commit, deploy, staging, endpoint, bug, CI/CD, schema.</p>
-          <span class="text-[10px] font-mono bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded">Công nghệ & Phần mềm</span>
+        <!-- Domain 1: Developer -->
+        <div class="glass-card rounded-2xl p-5 flex flex-col justify-between hover:border-blue-500/50">
+          <div>
+            <div class="text-3xl mb-3">💻</div>
+            <h3 class="font-bold text-white text-base mb-1">Developer</h3>
+            <p class="text-xs text-slate-300 leading-relaxed mb-4">
+              Giữ nguyên vẹn thuật ngữ: <code class="text-blue-300">PR</code>, <code class="text-blue-300">deploy</code>, <code class="text-blue-300">staging</code>, <code class="text-blue-300">bugfix</code>, <code class="text-blue-300">CI/CD</code>.
+            </p>
+          </div>
+          <span class="text-[10px] font-semibold text-blue-300 bg-blue-900/40 border border-blue-800/40 px-2 py-1 rounded-md text-center">
+            Công nghệ & Kỹ thuật
+          </span>
         </div>
 
-        <!-- Domain 2 -->
-        <div class="glass-card rounded-2xl p-5 hover:border-blue-500/50 transition">
-          <div class="text-2xl mb-3">💼</div>
-          <h3 class="font-bold text-white text-base mb-1">Business</h3>
-          <p class="text-xs text-slate-400 leading-relaxed mb-3">Văn phong trang trọng: sync-up, timeline, milestone, action items, stakeholder, KPI.</p>
-          <span class="text-[10px] font-mono bg-purple-900/40 text-purple-300 px-2 py-0.5 rounded">Kinh doanh & Hội họp</span>
+        <!-- Domain 2: Business -->
+        <div class="glass-card rounded-2xl p-5 flex flex-col justify-between hover:border-purple-500/50">
+          <div>
+            <div class="text-3xl mb-3">💼</div>
+            <h3 class="font-bold text-white text-base mb-1">Business</h3>
+            <p class="text-xs text-slate-300 leading-relaxed mb-4">
+              Văn phong hội họp chuẩn: <code class="text-purple-300">sync-up</code>, <code class="text-purple-300">timeline</code>, <code class="text-purple-300">milestone</code>, <code class="text-purple-300">KPI</code>.
+            </p>
+          </div>
+          <span class="text-[10px] font-semibold text-purple-300 bg-purple-900/40 border border-purple-800/40 px-2 py-1 rounded-md text-center">
+            Kinh doanh & Quản lý
+          </span>
         </div>
 
-        <!-- Domain 3 -->
-        <div class="glass-card rounded-2xl p-5 hover:border-blue-500/50 transition">
-          <div class="text-2xl mb-3">💬</div>
-          <h3 class="font-bold text-white text-base mb-1">Giao tiếp</h3>
-          <p class="text-xs text-slate-400 leading-relaxed mb-3">Gần gũi, mềm mại, nắm bắt trọn vẹn ngữ điệu đàm thoại thường ngày và biểu cảm.</p>
-          <span class="text-[10px] font-mono bg-emerald-900/40 text-emerald-300 px-2 py-0.5 rounded">Casual / Daily</span>
+        <!-- Domain 3: Casual -->
+        <div class="glass-card rounded-2xl p-5 flex flex-col justify-between hover:border-emerald-500/50">
+          <div>
+            <div class="text-3xl mb-3">💬</div>
+            <h3 class="font-bold text-white text-base mb-1">Giao tiếp</h3>
+            <p class="text-xs text-slate-300 leading-relaxed mb-4">
+              Gần gũi, mềm mại, nắm bắt trọn vẹn ngữ điệu và sắc thái biểu cảm trong đàm thoại đời thường.
+            </p>
+          </div>
+          <span class="text-[10px] font-semibold text-emerald-300 bg-emerald-900/40 border border-emerald-800/40 px-2 py-1 rounded-md text-center">
+            Casual / Daily Chat
+          </span>
         </div>
 
-        <!-- Domain 4 -->
-        <div class="glass-card rounded-2xl p-5 hover:border-blue-500/50 transition">
-          <div class="text-2xl mb-3">📈</div>
-          <h3 class="font-bold text-white text-base mb-1">Tài chính</h3>
-          <p class="text-xs text-slate-400 leading-relaxed mb-3">Độ chuẩn xác cao với: EBITDA, dòng tiền, P&L, ROI, định giá, doanh thu, lợi nhuận.</p>
-          <span class="text-[10px] font-mono bg-amber-900/40 text-amber-300 px-2 py-0.5 rounded">Finance & Đầu tư</span>
+        <!-- Domain 4: Finance -->
+        <div class="glass-card rounded-2xl p-5 flex flex-col justify-between hover:border-amber-500/50">
+          <div>
+            <div class="text-3xl mb-3">📈</div>
+            <h3 class="font-bold text-white text-base mb-1">Tài chính</h3>
+            <p class="text-xs text-slate-300 leading-relaxed mb-4">
+              Chuẩn xác chỉ số: <code class="text-amber-300">EBITDA</code>, <code class="text-amber-300">dòng tiền</code>, <code class="text-amber-300">P&L</code>, <code class="text-amber-300">ROI</code>, doanh thu.
+            </p>
+          </div>
+          <span class="text-[10px] font-semibold text-amber-300 bg-amber-900/40 border border-amber-800/40 px-2 py-1 rounded-md text-center">
+            Tài chính & Đầu tư
+          </span>
         </div>
 
-        <!-- Domain 5 -->
-        <div class="glass-card rounded-2xl p-5 hover:border-blue-500/50 transition">
-          <div class="text-2xl mb-3">🩺</div>
-          <h3 class="font-bold text-white text-base mb-1">Y tế</h3>
-          <p class="text-xs text-slate-400 leading-relaxed mb-3">Thuật ngữ lâm sàng, phác đồ điều trị, triệu chứng và sức khỏe đời sống.</p>
-          <span class="text-[10px] font-mono bg-rose-900/40 text-rose-300 px-2 py-0.5 rounded">Medical & Sức khỏe</span>
+        <!-- Domain 5: Medical -->
+        <div class="glass-card rounded-2xl p-5 flex flex-col justify-between hover:border-rose-500/50">
+          <div>
+            <div class="text-3xl mb-3">🩺</div>
+            <h3 class="font-bold text-white text-base mb-1">Y tế</h3>
+            <p class="text-xs text-slate-300 leading-relaxed mb-4">
+              Thuật ngữ lâm sàng, phác đồ điều trị, chẩn đoán triệu chứng và chăm sóc sức khỏe.
+            </p>
+          </div>
+          <span class="text-[10px] font-semibold text-rose-300 bg-rose-900/40 border border-rose-800/40 px-2 py-1 rounded-md text-center">
+            Y tế & Sức khỏe
+          </span>
         </div>
 
       </div>
@@ -486,70 +615,75 @@
   </section>
 
   <!-- Quick Installation Guide -->
-  <section id="install" class="py-24 relative z-10">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+  <section id="install" class="py-20 md:py-28 relative z-10">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6">
       
       <div class="text-center mb-14">
         <h2 class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-3">BẮT ĐẦU SỬ DỤNG</h2>
-        <p class="text-3xl font-extrabold text-white tracking-tight">Cài đặt TransTools chỉ trong 1 phút</p>
+        <p class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">Cài đặt TransTools chỉ trong 1 phút</p>
       </div>
 
-      <div class="space-y-6">
-        
+      <div class="space-y-4">
         <!-- Step 1 -->
         <div class="glass-card rounded-2xl p-6 flex flex-col sm:flex-row items-start gap-4">
-          <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0">1</div>
-          <div>
+          <div class="w-9 h-9 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-sm">1</div>
+          <div class="flex-1">
             <h4 class="font-bold text-white text-base mb-1">Tải về bản dựng sẵn</h4>
-            <p class="text-sm text-slate-300 mb-3">Tải tệp <code class="text-blue-300 font-mono">TransTools.zip</code> từ mục GitHub Releases, giải nén và kéo ứng dụng vào thư mục <code class="text-blue-300 font-mono">/Applications</code>.</p>
+            <p class="text-sm text-slate-300 mb-3 leading-relaxed">
+              Tải tệp <code class="text-blue-300 font-mono font-semibold bg-blue-950/60 px-1.5 py-0.5 rounded">TransTools.zip</code> từ mục GitHub Releases, giải nén và kéo ứng dụng vào thư mục <code class="text-blue-300 font-mono font-semibold bg-blue-950/60 px-1.5 py-0.5 rounded">/Applications</code>.
+            </p>
             <a href="https://github.com/duynk-tech/TransTools/releases/latest" target="_blank"
-               class="inline-flex items-center gap-2 text-xs font-semibold text-blue-400 hover:text-blue-300">
-              <span>Đến trang tải về bản mới nhất →</span>
+               class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors">
+              <span>Đến trang tải về bản mới nhất (Releases) →</span>
             </a>
           </div>
         </div>
 
         <!-- Step 2 -->
         <div class="glass-card rounded-2xl p-6 flex flex-col sm:flex-row items-start gap-4">
-          <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0">2</div>
-          <div>
+          <div class="w-9 h-9 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-sm">2</div>
+          <div class="flex-1">
             <h4 class="font-bold text-white text-base mb-1">Cấp quyền thu âm trên macOS</h4>
-            <p class="text-sm text-slate-300">Mở TransTools, khi được yêu cầu, bấm cấp quyền <strong>Speech Recognition</strong> và <strong>Screen & System Audio Recording</strong> trong <em>System Settings → Privacy & Security</em> để app thu âm thanh Teams/Zoom.</p>
+            <p class="text-sm text-slate-300 leading-relaxed">
+              Mở TransTools, khi được yêu cầu, bấm cấp quyền <strong>Speech Recognition</strong> và <strong>Screen & System Audio Recording</strong> trong <em>System Settings → Privacy & Security</em> để app có thể thu âm thanh từ Teams/Zoom.
+            </p>
           </div>
         </div>
 
         <!-- Step 3 -->
         <div class="glass-card rounded-2xl p-6 flex flex-col sm:flex-row items-start gap-4">
-          <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0">3</div>
-          <div>
-            <h4 class="font-bold text-white text-base mb-1">Bấm Bắt đầu & Thưởng thức</h4>
-            <p class="text-sm text-slate-300">Chọn nguồn âm thanh <em>"Âm thanh hệ thống — tất cả ứng dụng"</em> hoặc một ứng dụng cụ thể, bấm <strong>Bắt đầu</strong> để trải nghiệm phụ đề dịch trực tiếp tức thì!</p>
+          <div class="w-9 h-9 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-sm">3</div>
+          <div class="flex-1">
+            <h4 class="font-bold text-white text-base mb-1">Bấm Bắt đầu & Trải nghiệm</h4>
+            <p class="text-sm text-slate-300 leading-relaxed">
+              Chọn nguồn âm thanh <em>"Âm thanh hệ thống — tất cả ứng dụng"</em> hoặc một ứng dụng cụ thể, bấm <strong>Bắt đầu</strong> để trải nghiệm phụ đề dịch song ngữ tức thì!
+            </p>
           </div>
         </div>
-
       </div>
 
     </div>
   </section>
 
-  <!-- Footer -->
+  <!-- Clean, Spacious Footer -->
   <footer class="py-12 border-t border-slate-800/80 bg-slate-950 text-slate-400 text-xs relative z-10">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
       
       <div class="flex items-center gap-3">
-        <img src="assets/app-icon.png" alt="TransTools" class="w-7 h-7 rounded-lg" />
+        <img src="assets/app-icon.png" alt="TransTools" class="w-8 h-8 rounded-lg" />
         <div>
-          <span class="font-bold text-white">TransTools</span> • Live Meeting Subtitles for macOS
+          <span class="font-bold text-white text-sm">TransTools</span>
+          <span class="text-slate-400 block text-[11px]">Phụ đề cuộc họp trực tiếp & Trợ lý song ngữ cho macOS</span>
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-6 text-slate-400">
+      <div class="flex flex-wrap items-center gap-6 text-slate-400 text-xs">
         <span>Tác giả: <strong class="text-slate-200">DuyNK-Tech</strong></span>
         <a href="mailto:khacduy90@gmail.com" class="hover:text-blue-400 transition-colors">khacduy90@gmail.com</a>
-        <a href="https://github.com/duynk-tech/TransTools" target="_blank" class="hover:text-blue-400 transition-colors">github.com/duynk-tech/TransTools</a>
+        <a href="https://github.com/duynk-tech/TransTools" target="_blank" class="hover:text-blue-400 transition-colors">GitHub Repository</a>
       </div>
 
-      <div>
+      <div class="text-[11px] text-slate-500">
         © 2026 DuyNK-Tech. Toàn quyền sở hữu.
       </div>
     </div>
