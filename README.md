@@ -11,7 +11,7 @@
 - 🎙️ **Thu âm thanh hệ thống trực tiếp**: Thu âm thanh từ Microsoft Teams, Zoom, Google Meet, Slack hoặc tất cả ứng dụng mà không cần đăng nhập hay cấu hình phức tạp (ScreenCaptureKit).
 - ⚡ **Dịch thuật đa động cơ (Multi-engine AI)**:
   - **Apple Native Translation**: Dịch on-device hoàn toàn miễn phí, 0 token, siêu tốc ~15ms và bảo mật tuyệt đối.
-  - **Cloud AI Engines**: Hỗ trợ Google Gemini, OpenAI GPT-4o, Anthropic Claude, DeepSeek API (khóa API lưu an toàn trong Apple Keychain).
+  - **Cloud AI Engines**: Hỗ trợ Google Gemini, OpenAI GPT-4o, Anthropic Claude, DeepSeek API (mã hóa an toàn cục bộ bằng Apple CryptoKit AES-256 gắn với phần cứng).
 - 💬 **Trợ lý AI Meeting Co-Pilot**:
   - Tự động phân tích ngữ cảnh hội thoại cuộc họp.
   - Gợi ý câu trả lời chuyên nghiệp theo chuyên ngành (Developer/Kỹ thuật, Kinh doanh/Sales, Quản lý/PM, Học thuật, Y tế, v.v.).
@@ -68,7 +68,7 @@ Khi bạn push một git tag mới (ví dụ: `v1.2.0`), GitHub Actions trong fi
 ---
 
 ## 🛡️ Quyền riêng tư & Bảo mật
-- Tất cả API Key được lưu trữ mã hóa chuẩn trong hệ thống **macOS Keychain**.
+- Tất cả API Key được lưu trữ mã hóa cục bộ bằng **Apple CryptoKit AES-256-GCM**, gắn với Hardware UUID của máy (không chia sẻ, không đồng bộ ra ngoài).
 - Dữ liệu nhận diện giọng nói và dịch Apple hoàn toàn được xử lý cục bộ trên thiết bị của bạn.
 - Không thu thập hay chia sẻ âm thanh/hình ảnh ra bất kỳ máy chủ trung gian nào.
 
