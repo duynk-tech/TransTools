@@ -169,7 +169,6 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Codable {
     case korean = "ko"
     case french = "fr"
     case german = "de"
-    case spanish = "es"
     case italian = "it"
 
     public var id: String { rawValue }
@@ -184,7 +183,6 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Codable {
         case .korean: return "Tiếng Hàn"
         case .french: return "Tiếng Pháp"
         case .german: return "Tiếng Đức"
-        case .spanish: return "Tiếng T.B.Nha"
         case .italian: return "Tiếng Ý"
         }
     }
@@ -199,7 +197,6 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Codable {
         case .korean: return "KO"
         case .french: return "FR"
         case .german: return "DE"
-        case .spanish: return "ES"
         case .italian: return "IT"
         }
     }
@@ -214,7 +211,6 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Codable {
         case .korean: return "🇰🇷"
         case .french: return "🇫🇷"
         case .german: return "🇩🇪"
-        case .spanish: return "🇪🇸"
         case .italian: return "🇮🇹"
         }
     }
@@ -229,7 +225,6 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Codable {
         case .korean: return "ko-KR"
         case .french: return "fr-FR"
         case .german: return "de-DE"
-        case .spanish: return "es-ES"
         case .italian: return "it-IT"
         }
     }
@@ -243,7 +238,6 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Codable {
         case .korean: return "ko"
         case .french: return "fr"
         case .german: return "de"
-        case .spanish: return "es"
         case .italian: return "it"
         }
     }
@@ -257,7 +251,6 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Codable {
         case .korean: return "ko"
         case .french: return "fr"
         case .german: return "de"
-        case .spanish: return "es"
         case .italian: return "it"
         }
     }

@@ -8,9 +8,9 @@
 
 ## 🌟 Tính năng nổi bật
 
-- 🌐 **Hỗ trợ 10 ngôn ngữ & giọng điệu chuyên biệt**:
+- 🌐 **Hỗ trợ 9 ngôn ngữ & giọng điệu chuyên biệt**:
   - Tiếng Anh (Mỹ/UK `en-US`), **Tiếng Anh Ấn Độ (Indian English `en-IN`)** với bộ nhận diện giọng điệu chuyên sâu.
-  - **Tiếng Ý (`it-IT`)**, Tiếng Việt (`vi-VN`), Tiếng Trung (`zh-CN`), Tiếng Nhật (`ja-JP`), Tiếng Hàn (`ko-KR`), Tiếng Pháp (`fr-FR`), Tiếng Đức (`de-DE`), Tiếng Tây Ban Nha (`es-ES`).
+  - **Tiếng Ý (`it-IT`)**, Tiếng Việt (`vi-VN`), Tiếng Trung (`zh-CN`), Tiếng Nhật (`ja-JP`), Tiếng Hàn (`ko-KR`), Tiếng Pháp (`fr-FR`), Tiếng Đức (`de-DE`).
 - ⚡ **Dịch thuật đa động cơ (Multi-engine AI)**:
   - **Apple Native Translation**: Dịch on-device hoàn toàn miễn phí, 0 token, siêu tốc ~15ms và bảo mật tuyệt đối.
   - **Cloud AI Engines**: Hỗ trợ Google Gemini, OpenAI GPT-4o, Anthropic Claude, DeepSeek API (mã hóa an toàn cục bộ bằng Apple CryptoKit AES-256 gắn với phần cứng).
