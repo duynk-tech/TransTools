@@ -1,0 +1,726 @@
+import SwiftUI
+import AppKit
+import UniformTypeIdentifiers
+
+// MARK: - Meeting Notebook & Session Manager
+
+struct MeetingNotebookView: View {
+    @ObservedObject var model: MeetingModel
+    @State private var searchText = ""
+    @State private var transcriptSearch = ""
+    @State private var sessionToDelete: MeetingSession? = nil
+    @State private var isEditingNotes = false
+
+    var filteredSessions: [MeetingSession] {
+        if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return model.sessions
+        }
+        let q = searchText.lowercased()
+        return model.sessions.filter { session in
+            session.title.lowercased().contains(q) ||
+            session.audioSource.lowercased().contains(q) ||
+            session.notes.lowercased().contains(q) ||
+            session.captions.contains { $0.original.lowercased().contains(q) || $0.vietnamese.lowercased().contains(q) }
+        }
+    }
+
+    var selectedSession: MeetingSession? {
+        guard let id = model.selectedSessionID else { return filteredSessions.first }
+        return model.sessions.first(where: { $0.id == id }) ?? filteredSessions.first
+    }
+
+    var body: some View {
+        HSplitView {
+            // Left Pane: Session List & Search
+            VStack(spacing: 0) {
+                // Header
+                HStack(spacing: 8) {
+                    Image(systemName: "book.closed.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.purple)
+
+                    Text("Sổ tay cuộc họp")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+
+                    Spacer()
+
+                    Text("\(model.sessions.count)")
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .background(Color.purple.opacity(0.15))
+                        .foregroundStyle(.purple)
+                        .clipShape(Capsule())
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(Color(nsColor: .controlBackgroundColor).opacity(0.6))
+
+                // Search Bar
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+
+                    TextField("Tìm theo tiêu đề, nội dung...", text: $searchText)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 12))
+
+                    if !searchText.isEmpty {
+                        Button {
+                            searchText = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color(nsColor: .textBackgroundColor).opacity(0.8))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                )
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+
+                Divider().opacity(0.5)
+
+                // Sessions List
+                if model.sessions.isEmpty {
+                    VStack(spacing: 12) {
+                        Spacer()
+                        Image(systemName: "note.text")
+                            .font(.system(size: 36))
+                            .foregroundStyle(.secondary.opacity(0.4))
+
+                        Text("Chưa có ghi chép")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.secondary)
+
+                        Text("Khi bạn bắt đầu và kết thúc một phiên họp, toàn bộ nội dung song ngữ và ghi chú sẽ tự động được lưu vào đây.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary.opacity(0.8))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if filteredSessions.isEmpty {
+                    VStack(spacing: 8) {
+                        Spacer()
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 24))
+                            .foregroundStyle(.secondary.opacity(0.4))
+                        Text("Không tìm thấy cuộc họp nào")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 6) {
+                            ForEach(filteredSessions) { session in
+                                SessionRowItem(
+                                    session: session,
+                                    isSelected: selectedSession?.id == session.id,
+                                    onSelect: {
+                                        model.selectedSessionID = session.id
+                                    },
+                                    onDelete: {
+                                        sessionToDelete = session
+                                    }
+                                )
+                            }
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                    }
+                }
+            }
+            .frame(minWidth: 260, idealWidth: 290, maxWidth: 350)
+            .background(Color(nsColor: .windowBackgroundColor))
+
+            // Right Pane: Selected Session Detail & Notes Editor
+            if let session = selectedSession {
+                SessionDetailView(model: model, session: session)
+                    .frame(minWidth: 500, maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                VStack(spacing: 14) {
+                    Image(systemName: "book.pages")
+                        .font(.system(size: 48))
+                        .foregroundStyle(.secondary.opacity(0.3))
+
+                    Text("Chọn một cuộc họp để xem chi tiết")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.secondary)
+
+                    Text("Bạn có thể xem lại lời thoại song ngữ, ghi chép hành động (action items), và xuất ra Word (.docx) hoặc Text (.txt).")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 360)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+            }
+        }
+        .confirmationDialog(
+            "Xóa cuộc họp này khỏi sổ tay?",
+            isPresented: Binding(
+                get: { sessionToDelete != nil },
+                set: { if !$0 { sessionToDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Xóa vĩnh viễn", role: .destructive) {
+                if let s = sessionToDelete {
+                    model.deleteSession(id: s.id)
+                    sessionToDelete = nil
+                }
+            }
+            Button("Hủy", role: .cancel) {
+                sessionToDelete = nil
+            }
+        } message: {
+            if let s = sessionToDelete {
+                Text("Hành động này sẽ xóa toàn bộ bản dịch song ngữ và ghi chú của \"\(s.title)\".")
+            }
+        }
+    }
+}
+
+// MARK: - Session Row Item
+
+private struct SessionRowItem: View {
+    let session: MeetingSession
+    let isSelected: Bool
+    let onSelect: () -> Void
+    let onDelete: () -> Void
+    @State private var isHovered = false
+
+    var formattedTime: String {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "vi_VN")
+        if Calendar.current.isDateInToday(session.createdAt) {
+            df.dateFormat = "HH:mm • Hôm nay"
+        } else if Calendar.current.isDateInYesterday(session.createdAt) {
+            df.dateFormat = "HH:mm • Hôm qua"
+        } else {
+            df.dateFormat = "HH:mm • dd/MM/yy"
+        }
+        return df.string(from: session.createdAt)
+    }
+
+    var durationText: String {
+        let mins = Int(session.durationSeconds) / 60
+        let secs = Int(session.durationSeconds) % 60
+        if mins > 0 {
+            return "\(mins)p\(secs)s"
+        } else {
+            return "\(secs)s"
+        }
+    }
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 10) {
+                // Leading accent strip or icon
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(isSelected ? Color.purple.opacity(0.2) : Color.secondary.opacity(0.1))
+                        .frame(width: 32, height: 32)
+
+                    Image(systemName: "waveform")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(isSelected ? Color.purple : Color.secondary)
+                }
+
+                // Title & Metadata
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(session.title)
+                        .font(.system(size: 12, weight: isSelected ? .bold : .medium))
+                        .foregroundStyle(isSelected ? Color.primary : Color.primary.opacity(0.88))
+                        .lineLimit(1)
+
+                    HStack(spacing: 5) {
+                        Text(formattedTime)
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+
+                        Text("•")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.secondary.opacity(0.5))
+
+                        Text("\(session.captions.count) câu")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(.secondary)
+
+                        if !session.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Text("•")
+                                .font(.system(size: 9))
+                                .foregroundStyle(.secondary.opacity(0.5))
+                            Image(systemName: "pencil.and.scribble")
+                                .font(.system(size: 9))
+                                .foregroundStyle(.purple)
+                        }
+                    }
+                }
+
+                Spacer(minLength: 4)
+
+                // Delete button on hover
+                if isHovered || isSelected {
+                    Button(action: onDelete) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                            .padding(5)
+                            .background(Color.secondary.opacity(0.12))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Xóa cuộc họp này")
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(isSelected ? Color.purple.opacity(0.12) : (isHovered ? Color.secondary.opacity(0.06) : Color.clear))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(isSelected ? Color.purple.opacity(0.3) : Color.clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+    }
+}
+
+// MARK: - Session Detail View
+
+private struct SessionDetailView: View {
+    @ObservedObject var model: MeetingModel
+    let session: MeetingSession
+    @State private var isEditingTitle = false
+    @State private var editableTitle = ""
+    @State private var notesText = ""
+    @State private var transcriptQuery = ""
+    @State private var isNotesExpanded = true
+    @State private var copiedConfirmation = false
+
+    var filteredCaptions: [CaptionRecord] {
+        if transcriptQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return session.captions
+        }
+        let q = transcriptQuery.lowercased()
+        return session.captions.filter {
+            $0.original.lowercased().contains(q) || $0.vietnamese.lowercased().contains(q)
+        }
+    }
+
+    var formattedFullDate: String {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "vi_VN")
+        df.dateFormat = "HH:mm • EEEE, dd/MM/yyyy"
+        return df.string(from: session.createdAt)
+    }
+
+    var formattedDuration: String {
+        let mins = Int(session.durationSeconds) / 60
+        let secs = Int(session.durationSeconds) % 60
+        if mins > 0 {
+            return "\(mins) phút \(secs) giây"
+        } else {
+            return "\(secs) giây"
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Top Action Header
+            HStack(spacing: 12) {
+                // Editable Title
+                if isEditingTitle {
+                    TextField("Tiêu đề cuộc họp", text: $editableTitle, onCommit: {
+                        let trimmed = editableTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !trimmed.isEmpty {
+                            model.updateSessionTitle(id: session.id, title: trimmed)
+                        }
+                        isEditingTitle = false
+                    })
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 16, weight: .bold))
+
+                    Button("Lưu") {
+                        let trimmed = editableTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !trimmed.isEmpty {
+                            model.updateSessionTitle(id: session.id, title: trimmed)
+                        }
+                        isEditingTitle = false
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.purple)
+                    .controlSize(.small)
+                } else {
+                    HStack(spacing: 6) {
+                        Text(session.title)
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .lineLimit(1)
+
+                        Button {
+                            editableTitle = session.title
+                            isEditingTitle = true
+                        } label: {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                                .padding(4)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Đổi tên cuộc họp")
+                    }
+                }
+
+                Spacer()
+
+                // Export Buttons
+                HStack(spacing: 8) {
+                    // Export to Word (.docx)
+                    Button {
+                        model.exportSessionToDocx(session)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "doc.richtext.fill")
+                                .font(.system(size: 12))
+                            Text("Xuất Word (.docx)")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(red: 0.1, green: 0.45, blue: 0.9), Color(red: 0.05, green: 0.35, blue: 0.8)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .shadow(color: Color.blue.opacity(0.25), radius: 4, y: 2)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Xuất toàn bộ biên bản cuộc họp và bảng hội thoại song ngữ sang file Microsoft Word (.docx)")
+
+                    // Export to TXT
+                    Button {
+                        model.exportSessionToTxt(session)
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "doc.text")
+                                .font(.system(size: 12))
+                            Text("Xuất TXT")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.secondary.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Xuất ra file văn bản thuần (.txt)")
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+            .background(Color(nsColor: .controlBackgroundColor).opacity(0.7))
+            .overlay(Divider().opacity(0.5), alignment: .bottom)
+
+            // Content Scroll
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Session Metadata Strip
+                    HStack(spacing: 12) {
+                        MetaBadge(icon: "calendar", label: formattedFullDate, color: .blue)
+                        MetaBadge(icon: "clock", label: formattedDuration, color: .orange)
+                        MetaBadge(icon: "speaker.wave.2", label: session.audioSource, color: .green)
+                        MetaBadge(icon: "text.bubble", label: "\(session.captions.count) đoạn phụ đề", color: .purple)
+                        Spacer()
+                    }
+                    .padding(.top, 4)
+
+                    // Personal Notes & Action Items Box
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Label("Ghi chú & Hành động (Action Items)", systemImage: "note.text")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(.purple)
+
+                            Spacer()
+
+                            Text("Tự động lưu khi nhập")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.secondary)
+
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    isNotesExpanded.toggle()
+                                }
+                            } label: {
+                                Image(systemName: isNotesExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(.secondary)
+                                    .padding(4)
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        if isNotesExpanded {
+                            TextEditor(text: $notesText)
+                                .font(.system(size: 12, design: .default))
+                                .frame(minHeight: 80, maxHeight: 160)
+                                .padding(8)
+                                .background(Color(nsColor: .textBackgroundColor).opacity(0.6))
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .stroke(Color.purple.opacity(0.2), lineWidth: 1)
+                                )
+                                .onChange(of: notesText) { _, newValue in
+                                    model.updateSessionNotes(id: session.id, notes: newValue)
+                                }
+                        }
+                    }
+                    .padding(14)
+                    .background(Color.purple.opacity(0.05))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Color.purple.opacity(0.18), lineWidth: 1)
+                    )
+
+                    // Bilingual Dialogue Section Header & Search
+                    HStack(spacing: 12) {
+                        HStack(spacing: 6) {
+                            Text("Bản ghi thoại song ngữ")
+                                .font(.system(size: 14, weight: .bold))
+                            Text("(\(filteredCaptions.count))")
+                                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        // Filter within dialogue
+                        HStack(spacing: 5) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.secondary)
+
+                            TextField("Lọc câu thoại...", text: $transcriptQuery)
+                                .textFieldStyle(.plain)
+                                .font(.system(size: 11))
+                                .frame(width: 130)
+
+                            if !transcriptQuery.isEmpty {
+                                Button {
+                                    transcriptQuery = ""
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(.secondary)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color(nsColor: .controlBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                        )
+                    }
+
+                    // Dialogue Cards List
+                    if filteredCaptions.isEmpty {
+                        VStack(spacing: 8) {
+                            Text("Không có câu thoại nào phù hợp.")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                                .padding(.vertical, 30)
+                        }
+                    } else {
+                        LazyVStack(spacing: 10) {
+                            ForEach(Array(filteredCaptions.enumerated()), id: \.element.id) { index, item in
+                                NotebookCaptionCard(index: index + 1, item: item)
+                            }
+                        }
+                    }
+                }
+                .padding(18)
+            }
+        }
+        .background(Color(nsColor: .windowBackgroundColor))
+        .onAppear {
+            notesText = session.notes
+            editableTitle = session.title
+        }
+        .onChange(of: session.id) { _, _ in
+            notesText = session.notes
+            editableTitle = session.title
+        }
+    }
+}
+
+// MARK: - Metadata Badge Component
+
+private struct MetaBadge: View {
+    let icon: String
+    let label: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(color)
+
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.primary.opacity(0.85))
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Notebook Caption Card
+
+private struct NotebookCaptionCard: View {
+    let index: Int
+    let item: CaptionRecord
+    @State private var isHovered = false
+    @State private var copiedText: String? = nil
+
+    var timestampString: String {
+        MeetingModel.timestamp(item.start)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Card Header: Index & Timestamp & Quick Copy
+            HStack(spacing: 8) {
+                Text("#\(index)")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundStyle(.secondary.opacity(0.8))
+
+                Text(timestampString)
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.secondary.opacity(0.1))
+                    .foregroundStyle(.secondary)
+                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+
+                Spacer()
+
+                if isHovered {
+                    HStack(spacing: 4) {
+                        Button {
+                            copy(item.original)
+                        } label: {
+                            HStack(spacing: 3) {
+                                Image(systemName: "doc.on.doc")
+                                Text("EN")
+                            }
+                            .font(.system(size: 10, weight: .medium))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.secondary.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Sao chép tiếng Anh")
+
+                        Button {
+                            copy(item.vietnamese)
+                        } label: {
+                            HStack(spacing: 3) {
+                                Image(systemName: "doc.on.doc")
+                                Text("VI")
+                            }
+                            .font(.system(size: 10, weight: .medium))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.secondary.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Sao chép tiếng Việt")
+
+                        Button {
+                            copy("[\(timestampString)]\nEN: \(item.original)\nVI: \(item.vietnamese)")
+                        } label: {
+                            HStack(spacing: 3) {
+                                Image(systemName: "square.and.arrow.up")
+                                Text("Tất cả")
+                            }
+                            .font(.system(size: 10, weight: .medium))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.purple.opacity(0.15))
+                            .foregroundStyle(.purple)
+                            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Sao chép cả câu thoại và bản dịch")
+                    }
+                }
+            }
+
+            // English Original
+            Text(item.original)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.primary)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+
+            // Vietnamese Translation
+            if !item.vietnamese.isEmpty {
+                Text(item.vietnamese)
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(.blue)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(12)
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.8))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(isHovered ? Color.purple.opacity(0.3) : Color.primary.opacity(0.06), lineWidth: 1)
+        )
+        .onHover { isHovered = $0 }
+    }
+
+    private func copy(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+    }
+}

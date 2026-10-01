@@ -1,0 +1,48 @@
+name: Release TransTools
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Package TransTools
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Show Xcode & Swift Version
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Build TransTools Application
+        run: |
+          chmod +x scripts/build-app.sh
+          ./scripts/build-app.sh
+
+      - name: Package Release ZIP
+        run: |
+          TAG_NAME="${GITHUB_REF_NAME:-v1.2.0}"
+          cd build
+          ditto -c -k --keepParent TransTools.app TransTools.zip
+          cd ..
+          shasum -a 256 build/TransTools.zip > build/TransTools.zip.sha256
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            build/TransTools.zip
+            build/TransTools.zip.sha256
+          draft: false
+          prerelease: false
+          generate_release_notes: true
