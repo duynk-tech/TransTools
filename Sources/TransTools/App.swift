@@ -63,7 +63,107 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
     let vietnamese: String
 }
 
+// MARK: - Chip Chip Mascot Idle Activities
+
+public enum MascotIdleActivity: String, CaseIterable, Identifiable {
+    case auto = "auto"                     // Tự động xoay vòng khi rảnh
+    case fishing = "fishing"               // Ngồi câu cá thảnh thơi 🎣
+    case sleeping = "sleeping"             // Nằm ngủ khò khò
+    case strolling = "strolling"           // Đi dạo ngó nghiêng
+    case catchingButterfly = "butterfly"   // Bắt bướm dập dờn
+    case pickingFlowers = "flowers"        // Hái hoa ngát hương
+    case listeningMusic = "music"          // Chill nhạc bồng bềnh
+    case sippingTea = "tea"                // Nhâm nhi tách trà ấm
+
+    public var id: String { rawValue }
+
+    public var title: String {
+        switch self {
+        case .auto: return "Tự động xoay vòng ✨"
+        case .fishing: return "Ngồi câu cá thảnh thơi 🎣"
+        case .sleeping: return "Nằm ngủ khò khò 💤"
+        case .strolling: return "Đi dạo ngắm nhìn 🚶‍♂️"
+        case .catchingButterfly: return "Bắt bướm dập dờn 🦋"
+        case .pickingFlowers: return "Hái hoa ngát hương 🌸"
+        case .listeningMusic: return "Chill nhạc bồng bềnh 🎵"
+        case .sippingTea: return "Nhâm nhi tách trà ấm ☕️"
+        }
+    }
+
+    public var shortTitle: String {
+        switch self {
+        case .auto: return "Tự động"
+        case .fishing: return "Câu cá"
+        case .sleeping: return "Nằm ngủ"
+        case .strolling: return "Đi dạo"
+        case .catchingButterfly: return "Bắt bướm"
+        case .pickingFlowers: return "Hái hoa"
+        case .listeningMusic: return "Nghe nhạc"
+        case .sippingTea: return "Uống trà"
+        }
+    }
+
+    public var icon: String {
+        switch self {
+        case .auto: return "sparkles"
+        case .fishing: return "water.waves"
+        case .sleeping: return "moon.zzz.fill"
+        case .strolling: return "figure.walk"
+        case .catchingButterfly: return "heart.fill"
+        case .pickingFlowers: return "camera.macro"
+        case .listeningMusic: return "headphones"
+        case .sippingTea: return "cup.and.saucer.fill"
+        }
+    }
+}
+
+// MARK: - App Permissions Management
+
+enum AppPermissionType {
+    case screenCapture
+    case microphone
+    case speechRecognition
+    case dictation
+
+    var title: String {
+        switch self {
+        case .screenCapture: return "Ghi màn hình & Âm thanh hệ thống"
+        case .microphone: return "Microphone"
+        case .speechRecognition: return "Nhận diện giọng nói (Speech Recognition)"
+        case .dictation: return "Siri & Đọc chính tả (Dictation)"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .screenCapture:
+            return "TransTools cần quyền 'Ghi màn hình & Âm thanh hệ thống' để thu và dịch âm thanh từ các cuộc họp (Teams, Zoom, Meet, trình duyệt).\n\nBạn có muốn mở Cài đặt hệ thống (System Settings) để cấp quyền ngay không?"
+        case .microphone:
+            return "TransTools cần quyền 'Microphone' để thu âm giọng nói của bạn.\n\nBạn có muốn mở Cài đặt hệ thống để cấp quyền ngay không?"
+        case .speechRecognition:
+            return "TransTools cần quyền 'Nhận diện giọng nói' (Speech Recognition) để chuyển giọng nói cuộc họp thành văn bản phụ đề.\n\nBạn có muốn mở Cài đặt hệ thống để cấp quyền ngay không?"
+        case .dictation:
+            return "Ngôn ngữ này cần bật Siri & Đọc chính tả (Dictation) trong Cài đặt Bàn phím.\n\nBạn có muốn mở Cài đặt Bàn phím ngay không?"
+        }
+    }
+
+    var settingsURLString: String {
+        switch self {
+        case .screenCapture:
+            return "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
+        case .microphone:
+            return "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"
+        case .speechRecognition:
+            return "x-apple.systempreferences:com.apple.preference.security?Privacy_SpeechRecognition"
+        case .dictation:
+            return "x-apple.systempreferences:com.apple.Keyboard-Settings.extension"
+        }
+    }
+}
+
 @MainActor final class MeetingModel: ObservableObject {
+    static weak var shared: MeetingModel?
+
     @Published var applications: [SCRunningApplication] = []
     @Published var source = ""
     @Published var provider: AIProvider = .apple
@@ -89,6 +189,21 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
     @Published var mascotStyle: String = UserDefaults.standard.string(forKey: "MascotStyle") ?? "3d" {
         didSet {
             UserDefaults.standard.set(mascotStyle, forKey: "MascotStyle")
+        }
+    }
+    @Published var mascotIdleActivity: MascotIdleActivity = {
+        let saved = UserDefaults.standard.string(forKey: "MascotIdleActivity") ?? "auto"
+        return MascotIdleActivity(rawValue: saved) ?? .auto
+    }() {
+        didSet {
+            UserDefaults.standard.set(mascotIdleActivity.rawValue, forKey: "MascotIdleActivity")
+            if mascotIdleActivity == .strolling {
+                if !isDockWalkEnabled {
+                    isDockWalkEnabled = true
+                }
+            } else if isDockWalkEnabled && mascotIdleActivity != .auto {
+                isDockWalkEnabled = false
+            }
         }
     }
 
@@ -118,6 +233,11 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
     @Published var isGeneratingSuggestions = false
     @Published var lastAudio: Date?
 
+    private var translatedOriginal: [UUID: String] = [:]
+    private var sessionFinalizedWordsCount: Int = 0
+    private var lastRawRecognizedText: String = ""
+    private var recognitionSessionStarted: Date = Date()
+
     // Multi-Language Support (EN, VI, ZH, JA, KO, FR, DE, ES)
     @Published var sourceLanguage: AppLanguage = {
         let saved = UserDefaults.standard.string(forKey: "SourceLanguage") ?? "en"
@@ -125,6 +245,9 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
     }() {
         didSet {
             UserDefaults.standard.set(sourceLanguage.rawValue, forKey: "SourceLanguage")
+            translatedOriginal.removeAll()
+            sessionFinalizedWordsCount = 0
+            lastRawRecognizedText = ""
         }
     }
 
@@ -134,6 +257,23 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
     }() {
         didSet {
             UserDefaults.standard.set(targetLanguage.rawValue, forKey: "TargetLanguage")
+            translatedOriginal.removeAll()
+            if running && subtitleMode != .originalOnly {
+                scheduleTranslation(id: currentID, text: "", immediate: true)
+            }
+        }
+    }
+
+    // Subtitle Display Mode (Bilingual / Original CC 0ms / Translation Only)
+    @Published var subtitleMode: SubtitleDisplayMode = {
+        let saved = UserDefaults.standard.string(forKey: "SubtitleDisplayMode") ?? "bilingual"
+        return SubtitleDisplayMode(rawValue: saved) ?? .bilingual
+    }() {
+        didSet {
+            UserDefaults.standard.set(subtitleMode.rawValue, forKey: "SubtitleDisplayMode")
+            if subtitleMode != .originalOnly && running {
+                scheduleTranslation(id: currentID, text: "", immediate: true)
+            }
         }
     }
 
@@ -164,15 +304,17 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
     private var suggestionTask: Task<Void, Never>?
     private let capture = AudioCapture()
     private let speech = LiveSpeech()
-    private var currentID = UUID()
+    private(set) var currentID = UUID()
     private var started = Date()
     private var translationTask: Task<Void, Never>?
     private var rotationTask: Task<Void, Never>?
     private var session = UUID()
     private var activeKey = ""
+    private var lastAudioUpdateTime: Date = .distantPast
     private var overlay: NSWindow?
 
     @Published var selectedDashboardTab: Int = 0
+    @Published var selectedNotebookTab: Int = 0
     @Published var showSettingsSheet: Bool = false
     @Published var showAboutSheet: Bool = false
     @Published var isOverlayVisible: Bool = false
@@ -183,7 +325,11 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
         let initialProvider = AIProvider(rawValue: savedProviderRaw) ?? .apple
         self.provider = initialProvider
         self.key = CredentialStore.read(for: initialProvider)
-        let savedModel = UserDefaults.standard.string(forKey: "AIModel_\(initialProvider.rawValue)") ?? initialProvider.defaultModel
+        var savedModel = UserDefaults.standard.string(forKey: "AIModel_\(initialProvider.rawValue)") ?? initialProvider.defaultModel
+        if initialProvider == .gemini && (savedModel.contains("2.5") || savedModel.isEmpty) {
+            savedModel = "gemini-2.0-flash"
+            UserDefaults.standard.set(savedModel, forKey: "AIModel_\(initialProvider.rawValue)")
+        }
         self.modelName = savedModel
         self.availableModels = initialProvider.defaultModels
 
@@ -192,22 +338,40 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
         let initialCoPilot = AIProvider(rawValue: savedCoPilotRaw) ?? .gemini
         self.coPilotProvider = initialCoPilot
         self.coPilotKey = CredentialStore.read(for: initialCoPilot)
-        self.coPilotModel = UserDefaults.standard.string(forKey: "AICoPilotModel_\(initialCoPilot.rawValue)") ?? initialCoPilot.defaultModel
+        var savedCoPilotModel = UserDefaults.standard.string(forKey: "AICoPilotModel_\(initialCoPilot.rawValue)") ?? initialCoPilot.defaultModel
+        if initialCoPilot == .gemini && (savedCoPilotModel.contains("2.5") || savedCoPilotModel.isEmpty) {
+            savedCoPilotModel = "gemini-2.0-flash"
+            UserDefaults.standard.set(savedCoPilotModel, forKey: "AICoPilotModel_\(initialCoPilot.rawValue)")
+        }
+        self.coPilotModel = savedCoPilotModel
         self.availableCoPilotModels = initialCoPilot.defaultModels
 
         capture.onAudio = { [weak self] sample in
-            self?.speech.append(sample)
-            Task { @MainActor [weak self] in self?.lastAudio = Date() }
+            guard let self else { return }
+            self.speech.append(sample)
+            let now = Date()
+            if now.timeIntervalSince(self.lastAudioUpdateTime) > 0.25 {
+                self.lastAudioUpdateTime = now
+                Task { @MainActor [weak self] in self?.lastAudio = now }
+            }
         }
         capture.onMicrophone = { [weak self] buffer in
-            self?.speech.append(buffer)
-            Task { @MainActor [weak self] in self?.lastAudio = Date() }
+            guard let self else { return }
+            self.speech.append(buffer)
+            let now = Date()
+            if now.timeIntervalSince(self.lastAudioUpdateTime) > 0.25 {
+                self.lastAudioUpdateTime = now
+                Task { @MainActor [weak self] in self?.lastAudio = now }
+            }
         }
         capture.onError = { [weak self] error in
             Task { @MainActor in await self?.fail(error) }
         }
         speech.onResult = { [weak self] text, final in
             Task { @MainActor in self?.receive(text, final: final) }
+        }
+        speech.onSessionEndedOrTimeout = { [weak self] in
+            Task { @MainActor [weak self] in self?.handleSpeechSessionEndedOrTimeout() }
         }
         speech.onError = { [weak self] error in
             Task { @MainActor in await self?.fail(error) }
@@ -220,6 +384,9 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
             }
         }
         loadSessions()
+
+        MeetingModel.shared = self
+        GlobalHotkeyManager.shared.registerHotkeys()
 
         // 3. Tự động kiểm tra bản cập nhật mới trên GitHub sau 3 giây khởi động
         Task { @MainActor in
@@ -246,21 +413,76 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
         CGRequestScreenCaptureAccess()
     }
 
-    func openScreenCaptureSettings() {
-        triggerScreenCapturePrompt()
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-            NSWorkspace.shared.open(url)
+    func promptPermissionSettings(for type: AppPermissionType) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.messageText = "Cần cấp quyền: \(type.title)"
+            alert.informativeText = type.message
+            alert.addButton(withTitle: "Mở Cài đặt hệ thống")
+            alert.addButton(withTitle: "Để sau")
+
+            // Đảm bảo popup confirm LUÔN nổi trên ứng dụng, không bị nằm dưới App hiện có
+            alert.window.level = .floating
+            NSApp.activate(ignoringOtherApps: true)
+            alert.window.center()
+
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn {
+                self.openPermissionSettings(for: type)
+            }
         }
-        let appURL = Bundle.main.bundleURL
-        NSWorkspace.shared.activateFileViewerSelecting([appURL])
     }
 
-    func refresh() async {
+    func openPermissionSettings(for type: AppPermissionType) {
+        if type == .screenCapture {
+            triggerScreenCapturePrompt()
+        }
+        guard let url = URL(string: type.settingsURLString) else { return }
+
+        let config = NSWorkspace.OpenConfiguration()
+        config.activates = true
+        NSWorkspace.shared.open(url, configuration: config) { app, error in
+            DispatchQueue.main.async {
+                // Đảm bảo cửa sổ Cài đặt hệ thống (System Settings) nổi lên TRÊN ứng dụng hiện có
+                if let settingsApp = app ?? NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.systempreferences").first {
+                    if #available(macOS 14.0, *) {
+                        NSApp.yieldActivation(to: settingsApp)
+                        settingsApp.activate()
+                    } else {
+                        settingsApp.activate(options: [.activateIgnoringOtherApps, .activateAllWindows])
+                    }
+                }
+            }
+        }
+
+        // Kích hoạt bổ sung sau 0.25s để đảm bảo System Settings không bị ứng dụng hiện có đè lên
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            if let settingsApp = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.systempreferences").first {
+                if #available(macOS 14.0, *) {
+                    NSApp.yieldActivation(to: settingsApp)
+                    settingsApp.activate()
+                } else {
+                    settingsApp.activate(options: [.activateIgnoringOtherApps, .activateAllWindows])
+                }
+            }
+        }
+    }
+
+    func openScreenCaptureSettings() {
+        openPermissionSettings(for: .screenCapture)
+    }
+
+    func refresh(userInitiated: Bool = false) async {
         let hasAccess = CGPreflightScreenCaptureAccess()
         if hasAccess {
             if warning.localizedCaseInsensitiveContains("TCC") || warning.localizedCaseInsensitiveContains("màn hình") {
                 warning = ""
             }
+        } else if userInitiated {
+            warning = "Chưa cấp quyền Ghi màn hình & Âm thanh hệ thống. Hãy cấp quyền trong Cài đặt hệ thống."
+            promptPermissionSettings(for: .screenCapture)
         }
         do {
             let apps = try await capture.applications()
@@ -279,6 +501,9 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
             let msg = error.localizedDescription
             if msg.localizedCaseInsensitiveContains("TCC") || msg.localizedCaseInsensitiveContains("declined") || !hasAccess {
                 warning = "Chưa cấp quyền Ghi màn hình & Âm thanh hệ thống. Hãy cấp quyền trong Cài đặt hệ thống."
+                if userInitiated {
+                    promptPermissionSettings(for: .screenCapture)
+                }
             } else {
                 warning = "Không lấy được danh sách ứng dụng: \(msg)"
             }
@@ -299,7 +524,23 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
         availableModels = newProvider.defaultModels
         modelFetchMessage = ""
         if running {
-            status = (provider == .free || activeKey.isEmpty) ? "Đang nghe \(sourceLanguage.displayName) và dịch sang \(targetLanguage.displayName) (Google Free • 0 token)" : "Đang nghe \(sourceLanguage.displayName) và dịch sang \(targetLanguage.displayName) (\(provider.shortName) • \(modelName))"
+            status = (provider == .free || activeKey.isEmpty) ? "Đang nghe \(sourceLanguage.displayName) và dịch sang \(targetLanguage.displayName) (Google Dịch Miễn phí)" : "Đang nghe \(sourceLanguage.displayName) và dịch sang \(targetLanguage.displayName) (\(provider.shortName) • \(modelName))"
+        }
+    }
+
+    func updateModelName(_ newModel: String, for targetProvider: AIProvider) {
+        if provider == targetProvider {
+            modelName = newModel
+            UserDefaults.standard.set(newModel, forKey: "AIModel_\(targetProvider.rawValue)")
+            if running {
+                status = "Đang nghe \(sourceLanguage.displayName) và dịch sang \(targetLanguage.displayName) (\(provider.shortName) • \(modelName))"
+            }
+        } else {
+            UserDefaults.standard.set(newModel, forKey: "AIModel_\(targetProvider.rawValue)")
+        }
+        if coPilotProvider == targetProvider {
+            coPilotModel = newModel
+            UserDefaults.standard.set(newModel, forKey: "AICoPilotModel_\(targetProvider.rawValue)")
         }
     }
 
@@ -394,26 +635,59 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
     func start() async {
         guard !busy, !running else { return }
         busy = true; warning = ""; defer { busy = false }
-        let authorized = await withCheckedContinuation { continuation in
-            SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0 == .authorized) }
+        if SFSpeechRecognizer.authorizationStatus() != .authorized {
+            let authorized = await withCheckedContinuation { continuation in
+                SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0 == .authorized) }
+            }
+            guard authorized else {
+                warning = "Cần quyền Speech Recognition trong System Settings → Privacy & Security."
+                promptPermissionSettings(for: .speechRecognition)
+                return
+            }
         }
-        guard authorized else { warning = "Cần quyền Speech Recognition trong System Settings → Privacy & Security."; return }
         do {
             if source == "microphone" {
-                let allowed = await AVCaptureDevice.requestAccess(for: .audio)
-                guard allowed else { warning = "Cần cấp quyền Microphone."; return }
-            } else if source.isEmpty { warning = "Hãy chọn nguồn âm thanh."; return }
+                if AVCaptureDevice.authorizationStatus(for: .audio) != .authorized {
+                    let allowed = await AVCaptureDevice.requestAccess(for: .audio)
+                    guard allowed else {
+                        warning = "Cần cấp quyền Microphone."
+                        promptPermissionSettings(for: .microphone)
+                        return
+                    }
+                }
+            } else if source.isEmpty {
+                warning = "Hãy chọn nguồn âm thanh."
+                return
+            } else {
+                let hasAccess = CGPreflightScreenCaptureAccess()
+                if !hasAccess {
+                    warning = "Chưa cấp quyền Ghi màn hình & Âm thanh hệ thống. Hãy cấp quyền trong Cài đặt hệ thống."
+                    promptPermissionSettings(for: .screenCapture)
+                    return
+                }
+            }
             activeKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
             started = Date(); captions = []; translatedOriginal = [:]; currentID = UUID(); lastAudio = nil; session = UUID()
             lastRawRecognizedText = ""
             sessionFinalizedWordsCount = 0
             recognitionSessionStarted = Date()
-            try speech.start(localeIdentifier: sourceLanguage.speechLocale)
             running = true
+            status = "Đang kết nối luồng âm thanh..."
+            try speech.start(localeIdentifier: sourceLanguage.speechLocale)
+            rotationTask?.cancel()
+            rotationTask = Task { [weak self] in
+                while !Task.isCancelled {
+                    try? await Task.sleep(nanoseconds: 42_000_000_000)
+                    guard let self, self.running else { break }
+                    await MainActor.run {
+                        self.rotateSpeechSessionIfNeeded()
+                    }
+                }
+            }
             if source == "microphone" { try capture.startMicrophone() }
             else if source == "system" { try await capture.startSystemAudio() }
             else { try await capture.start(applicationID: source) }
-            status = (provider == .free || activeKey.isEmpty) ? "Đang nghe \(sourceLanguage.displayName) và dịch sang \(targetLanguage.displayName) (Google Free • 0 token)" : "Đang nghe \(sourceLanguage.displayName) và dịch sang \(targetLanguage.displayName) (\(provider.shortName) • \(modelName))"
+            status = (provider == .free || activeKey.isEmpty) ? "Đang nghe \(sourceLanguage.displayName) và dịch sang \(targetLanguage.displayName) (Google Dịch Miễn phí)" : "Đang nghe \(sourceLanguage.displayName) và dịch sang \(targetLanguage.displayName) (\(provider.shortName) • \(modelName))"
         } catch { await fail(error) }
     }
 
@@ -425,6 +699,7 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
         translationTask?.cancel(); translationTask = nil
         speech.stop()
         await capture.stop()
+        TTSService.shared.stop()
         if !captions.isEmpty {
             saveCurrentSession()
             status = "Đã dừng. Toàn bộ cuộc họp đã được lưu vào Sổ tay."
@@ -438,14 +713,39 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
         let msg = error.localizedDescription
         if msg.localizedCaseInsensitiveContains("TCC") || msg.localizedCaseInsensitiveContains("declined") {
             warning = "Chưa cấp quyền Ghi màn hình & Âm thanh hệ thống. Hãy cấp quyền trong Cài đặt hệ thống."
+            promptPermissionSettings(for: .screenCapture)
         } else {
             warning = msg
         }
     }
 
-    private var sessionFinalizedWordsCount: Int = 0
-    private var lastRawRecognizedText: String = ""
-    private var recognitionSessionStarted: Date = Date()
+    private func handleSpeechSessionEndedOrTimeout() {
+        guard running else { return }
+        finalizeCurrentCaption(immediateTranslation: true)
+        sessionFinalizedWordsCount = 0
+        currentID = UUID()
+        recognitionSessionStarted = Date()
+        do {
+            try speech.start(localeIdentifier: sourceLanguage.speechLocale)
+        } catch {
+            Task { await self.fail(error) }
+        }
+    }
+
+    private func rotateSpeechSessionIfNeeded() {
+        guard running else { return }
+        let elapsed = Date().timeIntervalSince(recognitionSessionStarted)
+        guard elapsed >= 40 else { return }
+        finalizeCurrentCaption(immediateTranslation: true)
+        sessionFinalizedWordsCount = 0
+        currentID = UUID()
+        recognitionSessionStarted = Date()
+        do {
+            try speech.start(localeIdentifier: sourceLanguage.speechLocale)
+        } catch {
+            Task { await self.fail(error) }
+        }
+    }
 
     private func receive(_ text: String, final: Bool) {
         guard running else { return }
@@ -488,9 +788,13 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
             finalizeCurrentCaption(immediateTranslation: true)
             sessionFinalizedWordsCount = 0
             currentID = UUID()
-            if Date().timeIntervalSince(recognitionSessionStarted) > 55 {
-                recognitionSessionStarted = Date()
-                do { try speech.start(localeIdentifier: sourceLanguage.speechLocale) } catch { Task { await fail(error) } }
+            recognitionSessionStarted = Date()
+            if running {
+                do {
+                    try speech.start(localeIdentifier: sourceLanguage.speechLocale)
+                } catch {
+                    Task { await fail(error) }
+                }
             }
         } else if hasSentencePunctuation && activeWords.count >= 5 {
             // Natural sentence boundary reached
@@ -533,6 +837,15 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
         guard let row = captions.first(where: { $0.id == currentID }), !row.original.isEmpty else { return }
         scheduleTranslation(id: row.id, text: row.original, immediate: immediateTranslation)
         generateSuggestions(for: row.original)
+        if subtitleMode == .originalOnly {
+            TTSService.shared.enqueueAutoTTS(
+                id: row.id,
+                original: row.original,
+                translation: "",
+                sourceLang: sourceLanguage,
+                targetLang: targetLanguage
+            )
+        }
     }
 
     func generateSuggestions(for customText: String? = nil) {
@@ -572,6 +885,7 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
     }
 
     private func scheduleTranslation(id: UUID, text: String, immediate: Bool = false) {
+        guard subtitleMode != .originalOnly else { return }
         if immediate {
             translationTask?.cancel()
             translationTask = nil
@@ -584,13 +898,13 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
         translationTask = Task { [weak self] in
             guard let self else { return }
             defer { self.translationTask = nil }
-            while !Task.isCancelled, self.running, self.session == token {
+            while !Task.isCancelled, self.running, self.session == token, self.subtitleMode != .originalOnly {
                 // Find next caption needing translation
                 guard let row = self.captions.first(where: { self.translatedOriginal[$0.id] != $0.original && !$0.original.isEmpty }) else { break }
 
                 let isCurrentLiveRow = (row.id == self.currentID)
                 if isCurrentLiveRow && !immediate {
-                    let debounceMs = (currentProvider == .apple) ? 400 : ((currentProvider == .free || currentKey.isEmpty) ? 500 : 700)
+                    let debounceMs = (currentProvider == .apple) ? 180 : ((currentProvider == .free || currentKey.isEmpty) ? 320 : 450)
                     try? await Task.sleep(for: .milliseconds(debounceMs))
                     guard !Task.isCancelled, self.session == token else { return }
                 }
@@ -611,6 +925,13 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
                         self.captions[index].vietnamese = translated
                         self.translatedOriginal[row.id] = textToTranslate
                         self.warning = ""
+                        TTSService.shared.enqueueAutoTTS(
+                            id: row.id,
+                            original: textToTranslate,
+                            translation: translated,
+                            sourceLang: self.sourceLanguage,
+                            targetLang: self.targetLanguage
+                        )
                     }
                 } catch {
                     guard !Task.isCancelled, self.session == token else { return }
@@ -621,7 +942,6 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
             }
         }
     }
-    private var translatedOriginal: [UUID: String] = [:]
 
     func showOverlay() {
         if let overlay {
@@ -710,6 +1030,7 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
     func clearCaptions() {
         captions.removeAll()
         translatedOriginal.removeAll()
+        TTSService.shared.clearHistory()
     }
 
     func export(srt: Bool) {
@@ -1010,9 +1331,38 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
     @Published var isFloatingMascotVisible: Bool = false
     var mascotWindow: NSWindow?
 
+    // Chip Chip Speech Bubble Management
+    var mascotBubbleWindow: NSWindow?
+    var bubbleDismissTask: Task<Void, Never>?
+    @Published var bubbleWord: String = ""
+    @Published var bubbleMeaning: String = ""
+    @Published var bubblePhonetic: String = ""
+    @Published var bubbleContext: String = ""
+    @Published var bubbleSourceApp: String = ""
+    @Published var isBubbleLoading: Bool = false
+    @Published var isBubbleVisible: Bool = false
+    @Published var isBubbleHovered: Bool = false
+    @Published var isMascotHovered: Bool = false
+    @Published var bubbleMode: String = "translate" // "translate" hoặc "grammar"
+
+    // Dock Bar Patrol Walk Mode (Chỉ đi dạo khi rảnh rỗi, dừng tại chỗ khi tắt)
+    @Published var isDockWalkEnabled: Bool = UserDefaults.standard.bool(forKey: "MascotDockWalkEnabled") {
+        didSet {
+            UserDefaults.standard.set(isDockWalkEnabled, forKey: "MascotDockWalkEnabled")
+            if isDockWalkEnabled {
+                startDockWalking()
+            } else {
+                stopDockWalking()
+            }
+        }
+    }
+    var dockWalkTimer: Timer?
+    var dockWalkDirection: CGFloat = 1.0 // 1: đi sang phải, -1: đi sang trái
+    var dockWalkPauseUntil: Date? = nil
+
     func convenientMascotRect() -> NSRect {
-        let mascotWidth: CGFloat = 106
-        let mascotHeight: CGFloat = 126
+        let mascotWidth: CGFloat = 164
+        let mascotHeight: CGFloat = 152
 
         // Pick active screen: window screen, mouse cursor screen, or main screen
         let targetScreen: NSScreen = {
@@ -1056,9 +1406,7 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
                 let intersection = screen.visibleFrame.intersection(mascotWindow.frame)
                 return intersection.width >= 40 && intersection.height >= 40
             }
-            if !isVisibleOnScreen {
-                mascotWindow.setFrame(convenient, display: true)
-            } else if mascotWindow.frame.size.height < 120 {
+            if !isVisibleOnScreen || mascotWindow.frame.size.height < 150 || mascotWindow.frame.size.width < 160 {
                 var f = mascotWindow.frame
                 f.size = convenient.size
                 mascotWindow.setFrame(f, display: true)
@@ -1066,6 +1414,9 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
             mascotWindow.orderFrontRegardless()
             isFloatingMascotVisible = true
             UserDefaults.standard.set(true, forKey: "FloatingMascotEnabled")
+            if isDockWalkEnabled {
+                startDockWalking()
+            }
             return
         }
 
@@ -1105,20 +1456,30 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
             forName: NSWindow.didMoveNotification,
             object: panel,
             queue: .main
-        ) { [weak panel] _ in
-            guard let origin = panel?.frame.origin else { return }
-            UserDefaults.standard.set(Double(origin.x), forKey: "FloatingMascotX")
-            UserDefaults.standard.set(Double(origin.y), forKey: "FloatingMascotY")
+        ) { [weak self, weak panel] _ in
+            MainActor.assumeIsolated {
+                guard let self = self, let origin = panel?.frame.origin else { return }
+                if !self.isDockWalkEnabled {
+                    UserDefaults.standard.set(Double(origin.x), forKey: "FloatingMascotX")
+                    UserDefaults.standard.set(Double(origin.y), forKey: "FloatingMascotY")
+                }
+                self.updateBubblePosition()
+            }
         }
 
         mascotWindow = panel
         panel.orderFrontRegardless()
         isFloatingMascotVisible = true
         UserDefaults.standard.set(true, forKey: "FloatingMascotEnabled")
+        if isDockWalkEnabled {
+            startDockWalking()
+        }
     }
 
     func hideFloatingMascot() {
+        stopDockWalking()
         mascotWindow?.orderOut(nil)
+        hideSpeechBubble()
         isFloatingMascotVisible = false
         UserDefaults.standard.set(false, forKey: "FloatingMascotEnabled")
     }
@@ -1128,6 +1489,209 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
             hideFloatingMascot()
         } else {
             showFloatingMascot()
+        }
+    }
+
+    func showBubbleLoading(word: String, sourceApp: String, mode: String = "translate") {
+        bubbleMode = mode
+        bubbleWord = word
+        bubbleMeaning = (mode == "grammar") ? "Chip Chip đang sửa lỗi & làm mượt câu..." : "Chip Chip đang dịch..."
+        bubblePhonetic = ""
+        bubbleContext = ""
+        bubbleSourceApp = sourceApp
+        isBubbleLoading = true
+        isBubbleVisible = true
+        showFloatingMascot()
+        presentBubbleWindow()
+    }
+
+    func showSpeechBubble(word: String, meaning: String, phonetic: String = "", context: String = "", sourceApp: String = "", mode: String = "translate") {
+        bubbleMode = mode
+        bubbleWord = word
+        bubbleMeaning = meaning
+        bubblePhonetic = phonetic
+        bubbleContext = context
+        bubbleSourceApp = sourceApp
+        isBubbleLoading = false
+        isBubbleVisible = true
+        showFloatingMascot()
+        presentBubbleWindow()
+
+        bubbleDismissTask?.cancel()
+        bubbleDismissTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 10_000_000_000)
+            guard let self = self else { return }
+            if !self.isBubbleHovered && self.isBubbleVisible {
+                self.hideSpeechBubble()
+            }
+        }
+    }
+
+    // MARK: - Dock Bar Patrol Movement Engine
+    func startDockWalking() {
+        stopDockWalking()
+        guard isFloatingMascotVisible, let window = mascotWindow else { return }
+
+        // Đảm bảo đưa Y xuống sát mép thanh Dock / đáy màn hình
+        let screen: NSScreen = {
+            if let s = window.screen { return s }
+            let mouseLoc = NSEvent.mouseLocation
+            for s in NSScreen.screens {
+                if NSMouseInRect(mouseLoc, s.frame, false) { return s }
+            }
+            return NSScreen.main ?? NSScreen.screens.first ?? NSScreen()
+        }()
+        let visible = screen.visibleFrame
+        var currentFrame = window.frame
+        let targetDockY = visible.minY + 2
+        if abs(currentFrame.origin.y - targetDockY) > 8 {
+            currentFrame.origin.y = targetDockY
+            window.setFrameOrigin(currentFrame.origin)
+            updateBubblePosition()
+        }
+
+        let timer = Timer(timeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.stepDockWalk()
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        dockWalkTimer = timer
+    }
+
+    func stopDockWalking() {
+        dockWalkTimer?.invalidate()
+        dockWalkTimer = nil
+        // Khi tắt: Dừng ngay tại vị trí hiện tại và lưu tọa độ
+        if let origin = mascotWindow?.frame.origin {
+            UserDefaults.standard.set(Double(origin.x), forKey: "FloatingMascotX")
+            UserDefaults.standard.set(Double(origin.y), forKey: "FloatingMascotY")
+        }
+    }
+
+    private func stepDockWalk() {
+        // Chỉ đi dạo khi rảnh rỗi (không họp/dịch), chuột không hover vào mascot và người dùng không đang bấm giữ chuột kéo cửa sổ
+        guard !running, !isMascotHovered, !isBubbleHovered, NSEvent.pressedMouseButtons == 0, let window = mascotWindow else { return }
+
+        // Nếu đang tạm dừng nghỉ chân ở 2 mép màn hình
+        if let pauseUntil = dockWalkPauseUntil {
+            if Date() < pauseUntil {
+                return
+            } else {
+                dockWalkPauseUntil = nil
+            }
+        }
+
+        let screen: NSScreen = {
+            if let s = window.screen { return s }
+            let mouseLoc = NSEvent.mouseLocation
+            for s in NSScreen.screens {
+                if NSMouseInRect(mouseLoc, s.frame, false) { return s }
+            }
+            return NSScreen.main ?? NSScreen.screens.first ?? NSScreen()
+        }()
+        let visible = screen.visibleFrame
+        guard visible.width > 200 else { return }
+
+        let minX = visible.minX + 8
+        let maxX = visible.maxX - window.frame.width - 8
+
+        var currentX = window.frame.origin.x
+        let stepSpeed: CGFloat = 1.8 // ~54pt/giây, nhịp bước chân ăn khớp chuẩn xác với chu kỳ 10 frame/s
+
+        currentX += dockWalkDirection * stepSpeed
+
+        // Kiểm tra chạm mép phải
+        if currentX >= maxX {
+            currentX = maxX
+            dockWalkDirection = -1.0
+            dockWalkPauseUntil = Date().addingTimeInterval(1.8) // Dừng 1.8s ngắm nghía trước khi quay đầu
+        }
+        // Kiểm tra chạm mép trái
+        else if currentX <= minX {
+            currentX = minX
+            dockWalkDirection = 1.0
+            dockWalkPauseUntil = Date().addingTimeInterval(1.8) // Dừng 1.8s ngắm nghía trước khi quay đầu
+        }
+
+        var origin = window.frame.origin
+        origin.x = currentX
+        origin.y = visible.minY + 2 // Neo sát viền Dock
+        window.setFrameOrigin(origin)
+
+        if isBubbleVisible {
+            updateBubblePosition()
+        }
+    }
+
+    func hideSpeechBubble() {
+        bubbleDismissTask?.cancel()
+        bubbleDismissTask = nil
+        isBubbleVisible = false
+        isBubbleLoading = false
+        mascotBubbleWindow?.orderOut(nil)
+    }
+
+    func updateBubblePosition() {
+        guard let mascotWin = mascotWindow, let bubbleWin = mascotBubbleWindow, isBubbleVisible else { return }
+        let mascotFrame = mascotWin.frame
+        let targetScreen = mascotWin.screen ?? NSScreen.main ?? NSScreen()
+        let visible = targetScreen.visibleFrame
+
+        let bubbleW: CGFloat = 280
+        let bubbleH: CGFloat = 135
+
+        var bubbleX = mascotFrame.midX - (bubbleW / 2)
+        bubbleX = max(visible.minX + 10, min(visible.maxX - bubbleW - 10, bubbleX))
+
+        var bubbleY = mascotFrame.maxY - 22
+        if bubbleY + bubbleH > visible.maxY - 10 {
+            bubbleY = mascotFrame.minY - bubbleH - 2
+        }
+
+        bubbleWin.setFrame(NSRect(x: bubbleX, y: bubbleY, width: bubbleW, height: bubbleH), display: true)
+    }
+
+    func presentBubbleWindow() {
+        guard let mascotWin = mascotWindow else { return }
+        let mascotFrame = mascotWin.frame
+        let targetScreen = mascotWin.screen ?? NSScreen.main ?? NSScreen()
+        let visible = targetScreen.visibleFrame
+
+        let bubbleW: CGFloat = 280
+        let bubbleH: CGFloat = 135
+
+        var bubbleX = mascotFrame.midX - (bubbleW / 2)
+        bubbleX = max(visible.minX + 10, min(visible.maxX - bubbleW - 10, bubbleX))
+
+        var bubbleY = mascotFrame.maxY - 22
+        if bubbleY + bubbleH > visible.maxY - 10 {
+            bubbleY = mascotFrame.minY - bubbleH - 2
+        }
+
+        let bubbleRect = NSRect(x: bubbleX, y: bubbleY, width: bubbleW, height: bubbleH)
+
+        if let bubbleWin = mascotBubbleWindow {
+            bubbleWin.setFrame(bubbleRect, display: true)
+            bubbleWin.orderFrontRegardless()
+        } else {
+            let panel = NSPanel(
+                contentRect: bubbleRect,
+                styleMask: [.borderless, .nonactivatingPanel],
+                backing: .buffered,
+                defer: false
+            )
+            panel.isFloatingPanel = true
+            panel.level = .floating
+            panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            panel.backgroundColor = .clear
+            panel.isOpaque = false
+            panel.hasShadow = false
+            panel.hidesOnDeactivate = false
+            panel.isReleasedWhenClosed = false
+            panel.contentView = MascotHostingView(rootView: MascotBubbleView(model: self))
+            mascotBubbleWindow = panel
+            panel.orderFrontRegardless()
         }
     }
 
@@ -1316,6 +1880,25 @@ final class MenuBarManager: NSObject, NSMenuDelegate {
         }
         menu.addItem(overlayItem)
 
+        // 4b. Chế độ hiển thị phụ đề (Song ngữ, Gốc CC 0ms, Bản dịch)
+        let modeMenu = NSMenu(title: "Chế độ phụ đề")
+        for mode in SubtitleDisplayMode.allCases {
+            let item = NSMenuItem(title: mode.title, action: #selector(setSubtitleModeAction(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = mode
+            item.state = (model.subtitleMode == mode) ? .on : .off
+            if let img = NSImage(systemSymbolName: mode.icon, accessibilityDescription: nil) {
+                item.image = img
+            }
+            modeMenu.addItem(item)
+        }
+        let modeItem = NSMenuItem(title: "Chế độ: \(model.subtitleMode.shortTitle)", action: nil, keyEquivalent: "")
+        modeItem.submenu = modeMenu
+        if let img = NSImage(systemSymbolName: model.subtitleMode.icon, accessibilityDescription: nil) {
+            modeItem.image = img
+        }
+        menu.addItem(modeItem)
+
         // 5. Chip Chip Companion toggle
         let isMimoOn = model.isFloatingMascotVisible
         let mimoItem = NSMenuItem(title: "Trợ lý Chip Chip", action: #selector(toggleMimoAction), keyEquivalent: "")
@@ -1401,6 +1984,11 @@ final class MenuBarManager: NSObject, NSMenuDelegate {
 
     @objc private func toggleOverlayAction() {
         model?.toggleOverlay()
+    }
+
+    @objc private func setSubtitleModeAction(_ sender: NSMenuItem) {
+        guard let mode = sender.representedObject as? SubtitleDisplayMode else { return }
+        model?.subtitleMode = mode
     }
 
     @objc private func toggleMimoAction() {
@@ -1495,12 +2083,26 @@ private struct AppleTranslationContainer<Content: View>: View {
     let source: AppLanguage
     let target: AppLanguage
     @ViewBuilder let content: () -> Content
-    @State private var config: TranslationSession.Configuration?
+
+    @State private var forwardConfig: TranslationSession.Configuration?
+    @State private var reverseConfig: TranslationSession.Configuration?
+    @State private var viToEnConfig: TranslationSession.Configuration?
+    @State private var enToViConfig: TranslationSession.Configuration?
 
     var body: some View {
         content()
-            .translationTask(config) { session in
+            .translationTask(forwardConfig) { session in
+                AppleNativeTranslator.register(session, from: source, to: target)
                 AppleNativeTranslator.session = session
+            }
+            .translationTask(reverseConfig) { session in
+                AppleNativeTranslator.register(session, from: target, to: source)
+            }
+            .translationTask(viToEnConfig) { session in
+                AppleNativeTranslator.register(session, from: .vietnamese, to: .english)
+            }
+            .translationTask(enToViConfig) { session in
+                AppleNativeTranslator.register(session, from: .english, to: .vietnamese)
             }
             .onAppear {
                 updateConfig()
@@ -1510,9 +2112,21 @@ private struct AppleTranslationContainer<Content: View>: View {
     }
 
     private func updateConfig() {
-        config = TranslationSession.Configuration(
+        forwardConfig = TranslationSession.Configuration(
             source: Locale.Language(identifier: source.appleLanguageCode),
             target: Locale.Language(identifier: target.appleLanguageCode)
+        )
+        reverseConfig = TranslationSession.Configuration(
+            source: Locale.Language(identifier: target.appleLanguageCode),
+            target: Locale.Language(identifier: source.appleLanguageCode)
+        )
+        viToEnConfig = TranslationSession.Configuration(
+            source: Locale.Language(identifier: AppLanguage.vietnamese.appleLanguageCode),
+            target: Locale.Language(identifier: AppLanguage.english.appleLanguageCode)
+        )
+        enToViConfig = TranslationSession.Configuration(
+            source: Locale.Language(identifier: AppLanguage.english.appleLanguageCode),
+            target: Locale.Language(identifier: AppLanguage.vietnamese.appleLanguageCode)
         )
     }
 }
@@ -1537,6 +2151,7 @@ extension View {
 
 struct OverlayView: View {
     @ObservedObject var model: MeetingModel
+    @ObservedObject private var tts = TTSService.shared
     @Environment(\.colorScheme) private var colorScheme
     @State private var copiedEffect = false
     @State private var hoveredRowID: UUID?
@@ -1605,7 +2220,10 @@ struct OverlayView: View {
                                     : Color.orange
                             )
 
-                        Text("• \(model.provider.shortName)")
+                        let engineText = (model.provider == .apple || model.provider == .free)
+                            ? model.provider.shortName
+                            : "\(model.provider.shortName) (\(model.modelName))"
+                        Text("• \(engineText)")
                             .font(.system(size: 9, weight: .medium))
                             .foregroundStyle(isDark ? Color.white.opacity(0.55) : Color.black.opacity(0.55))
 
@@ -1658,6 +2276,62 @@ struct OverlayView: View {
                     .buttonStyle(.plain)
                     .help("AI gợi ý câu trả lời tiếng Anh cho hội thoại này")
 
+                    // Subtitle Mode Cycle Button (Song ngữ ⇄ CC 0ms ⇄ Bản dịch)
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            switch model.subtitleMode {
+                            case .bilingual:
+                                model.subtitleMode = .originalOnly
+                            case .originalOnly:
+                                model.subtitleMode = .translationOnly
+                            case .translationOnly:
+                                model.subtitleMode = .bilingual
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: model.subtitleMode.icon)
+                                .font(.system(size: 9, weight: .bold))
+                            Text(model.subtitleMode.shortTitle)
+                                .font(.system(size: 8.5, weight: .bold))
+                        }
+                        .foregroundStyle(model.subtitleMode == .originalOnly ? Color.green : (isDark ? Color.white.opacity(0.85) : Color.black.opacity(0.75)))
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .fill(model.subtitleMode == .originalOnly ? Color.green.opacity(0.15) : (isDark ? Color.white.opacity(0.08) : Color.black.opacity(0.06)))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .help("Chuyển chế độ: Song ngữ ➔ Chỉ tiếng gốc (CC) ➔ Chỉ bản dịch")
+
+                    // Earphone TTS Toggle Button
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            tts.isAutoTTSEnabled.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: tts.isAutoTTSEnabled ? "headphones" : "headphones")
+                                .font(.system(size: 9, weight: .bold))
+                            if tts.isAutoTTSEnabled {
+                                Circle()
+                                    .fill(Color.green)
+                                    .frame(width: 4, height: 4)
+                            }
+                        }
+                        .foregroundStyle(tts.isAutoTTSEnabled ? Color.accentColor : (isDark ? Color.white.opacity(0.70) : Color.black.opacity(0.60)))
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .fill(tts.isAutoTTSEnabled ? Color.accentColor.opacity(0.15) : (isDark ? Color.white.opacity(0.08) : Color.black.opacity(0.06)))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .help(tts.isAutoTTSEnabled ? "Tai nghe: Đang BẬT phiên dịch viên trực tiếp (\(tts.autoTarget.shortTitle))" : "Bật phát âm qua tai nghe (Phiên dịch viên trực tiếp)")
+
                     // Font Size Cycle Button
                     Button {
                         cycleFontSize()
@@ -1679,11 +2353,33 @@ struct OverlayView: View {
                     .buttonStyle(.plain)
                     .help("Đổi cỡ chữ phụ đề (13, 15, 18, 21)")
 
-                    // Quick Copy Button
-                    if let row = model.captions.last, !row.vietnamese.isEmpty {
+                    // Quick Speak Button (Nghe câu đang hiển thị)
+                    if let row = model.captions.last, (!row.vietnamese.isEmpty || !row.original.isEmpty) {
+                        let textToSpeak = (model.subtitleMode == .originalOnly || row.vietnamese.isEmpty) ? row.original : row.vietnamese
+                        let langToSpeak = (model.subtitleMode == .originalOnly || row.vietnamese.isEmpty) ? model.sourceLanguage : model.targetLanguage
+                        let isSpeakingThis = tts.isSpeaking && tts.currentlySpeakingText == textToSpeak
+
                         Button {
+                            if isSpeakingThis {
+                                tts.stop()
+                            } else {
+                                tts.speak(id: row.id, text: textToSpeak, language: langToSpeak)
+                            }
+                        } label: {
+                            Image(systemName: isSpeakingThis ? "speaker.wave.3.fill" : "speaker.wave.2")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(isSpeakingThis ? Color.accentColor : (isDark ? Color.white.opacity(0.7) : Color.black.opacity(0.65)))
+                        }
+                        .buttonStyle(.plain)
+                        .help(isSpeakingThis ? "Dừng đọc" : "Phát âm thanh câu này")
+                    }
+
+                    // Quick Copy Button
+                    if let row = model.captions.last, (!row.vietnamese.isEmpty || !row.original.isEmpty) {
+                        Button {
+                            let textToCopy = (model.subtitleMode == .originalOnly || row.vietnamese.isEmpty) ? row.original : row.vietnamese
                             NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(row.vietnamese, forType: .string)
+                            NSPasteboard.general.setString(textToCopy, forType: .string)
                             copiedEffect = true
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                                 copiedEffect = false
@@ -1694,7 +2390,7 @@ struct OverlayView: View {
                                 .foregroundStyle(copiedEffect ? Color.green : (isDark ? Color.white.opacity(0.7) : Color.black.opacity(0.65)))
                         }
                         .buttonStyle(.plain)
-                        .help("Sao chép bản dịch hiện tại")
+                        .help(model.subtitleMode == .originalOnly ? "Sao chép câu gốc" : "Sao chép bản dịch hiện tại")
                     }
 
                     // Clear Subtitles Button
@@ -1761,102 +2457,157 @@ struct OverlayView: View {
                                 // Previous sentence preview for reading continuity (dimmed)
                                 if model.captions.count >= 2 {
                                     let prev = model.captions[model.captions.count - 2]
-                                    if !prev.vietnamese.isEmpty || !prev.original.isEmpty {
-                                        VStack(alignment: .leading, spacing: 1) {
-                                            if !prev.original.isEmpty {
-                                                Text(prev.original)
-                                                    .font(.system(size: max(10, fontSize - 4), weight: .regular))
-                                                    .foregroundStyle(isDark ? Color.white.opacity(0.38) : Color.black.opacity(0.38))
-                                                    .fixedSize(horizontal: false, vertical: true)
-                                            }
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        if model.subtitleMode != .translationOnly && !prev.original.isEmpty {
+                                            Text(prev.original)
+                                                .font(.system(size: max(10, fontSize - 4), weight: .regular))
+                                                .foregroundStyle(isDark ? Color.white.opacity(0.38) : Color.black.opacity(0.38))
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
+                                        if model.subtitleMode != .originalOnly && (!prev.vietnamese.isEmpty || !prev.original.isEmpty) {
                                             Text(prev.vietnamese.isEmpty ? prev.original : prev.vietnamese)
                                                 .font(.system(size: max(11, fontSize - 3), weight: .medium, design: .rounded))
                                                 .foregroundStyle(isDark ? Color.white.opacity(0.52) : Color.black.opacity(0.50))
                                                 .fixedSize(horizontal: false, vertical: true)
                                         }
-                                        .padding(.bottom, 1)
-
-                                        Divider()
-                                            .opacity(isDark ? 0.15 : 0.12)
                                     }
+                                    .padding(.bottom, 1)
+
+                                    Divider()
+                                        .opacity(isDark ? 0.15 : 0.12)
                                 }
 
                                 // Active sentence: full multi-line wrapping without cutoffs
                                 if let row = model.captions.last {
                                     VStack(alignment: .leading, spacing: 3) {
-                                        // Original English text
-                                        if !row.original.isEmpty {
-                                            Text(row.original)
-                                                .font(.system(size: max(11, fontSize - 3), weight: .regular))
-                                                .foregroundStyle(isDark ? Color.white.opacity(0.72) : Color(red: 0.22, green: 0.25, blue: 0.32))
+                                        if model.subtitleMode == .originalOnly {
+                                            // Real-time Closed Caption (CC - 0ms): Prominent font & primary gradient
+                                            if !row.original.isEmpty {
+                                                Text(row.original)
+                                                    .font(.system(size: fontSize, weight: .bold, design: .rounded))
+                                                    .foregroundStyle(
+                                                        isDark
+                                                            ? LinearGradient(
+                                                                colors: [
+                                                                    Color(red: 0.35, green: 0.96, blue: 0.85),
+                                                                    Color(red: 0.20, green: 0.88, blue: 0.98)
+                                                                ],
+                                                                startPoint: .topLeading,
+                                                                endPoint: .bottomTrailing
+                                                            )
+                                                            : LinearGradient(
+                                                                colors: [
+                                                                    Color(red: 0.03, green: 0.50, blue: 0.45),
+                                                                    Color(red: 0.02, green: 0.40, blue: 0.68)
+                                                                ],
+                                                                startPoint: .topLeading,
+                                                                endPoint: .bottomTrailing
+                                                            )
+                                                    )
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                            }
+                                        } else if model.subtitleMode == .translationOnly {
+                                            // Translation only
+                                            Text(row.vietnamese.isEmpty ? "Đang dịch…" : row.vietnamese)
+                                                .font(.system(size: fontSize, weight: .bold, design: .rounded))
+                                                .foregroundStyle(
+                                                    isDark
+                                                        ? LinearGradient(
+                                                            colors: [
+                                                                Color(red: 0.35, green: 0.96, blue: 0.85),
+                                                                Color(red: 0.20, green: 0.88, blue: 0.98)
+                                                            ],
+                                                            startPoint: .topLeading,
+                                                            endPoint: .bottomTrailing
+                                                        )
+                                                        : LinearGradient(
+                                                            colors: [
+                                                                Color(red: 0.03, green: 0.50, blue: 0.45),
+                                                                Color(red: 0.02, green: 0.40, blue: 0.68)
+                                                            ],
+                                                            startPoint: .topLeading,
+                                                            endPoint: .bottomTrailing
+                                                        )
+                                                )
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        } else {
+                                            // Bilingual: Original (dimmed) + Translation (crystal gradient)
+                                            if !row.original.isEmpty {
+                                                Text(row.original)
+                                                    .font(.system(size: max(11, fontSize - 3), weight: .regular))
+                                                    .foregroundStyle(isDark ? Color.white.opacity(0.72) : Color(red: 0.22, green: 0.25, blue: 0.32))
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                            }
+
+                                            Text(row.vietnamese.isEmpty ? "Đang dịch…" : row.vietnamese)
+                                                .font(.system(size: fontSize, weight: .bold, design: .rounded))
+                                                .foregroundStyle(
+                                                    isDark
+                                                        ? LinearGradient(
+                                                            colors: [
+                                                                Color(red: 0.35, green: 0.96, blue: 0.85),
+                                                                Color(red: 0.20, green: 0.88, blue: 0.98)
+                                                            ],
+                                                            startPoint: .topLeading,
+                                                            endPoint: .bottomTrailing
+                                                        )
+                                                        : LinearGradient(
+                                                            colors: [
+                                                                Color(red: 0.03, green: 0.50, blue: 0.45),
+                                                                Color(red: 0.02, green: 0.40, blue: 0.68)
+                                                            ],
+                                                            startPoint: .topLeading,
+                                                            endPoint: .bottomTrailing
+                                                        )
+                                                )
                                                 .fixedSize(horizontal: false, vertical: true)
                                         }
-
-                                        // Vietnamese translation (crystal-sharp adaptive gradient, NO text shadow)
-                                        Text(row.vietnamese.isEmpty ? "Đang dịch…" : row.vietnamese)
-                                            .font(.system(size: fontSize, weight: .bold, design: .rounded))
-                                            .foregroundStyle(
-                                                isDark
-                                                    ? LinearGradient(
-                                                        colors: [
-                                                             Color(red: 0.35, green: 0.96, blue: 0.85),
-                                                             Color(red: 0.20, green: 0.88, blue: 0.98)
-                                                        ],
-                                                        startPoint: .topLeading,
-                                                        endPoint: .bottomTrailing
-                                                    )
-                                                    : LinearGradient(
-                                                        colors: [
-                                                             Color(red: 0.03, green: 0.50, blue: 0.45),
-                                                             Color(red: 0.02, green: 0.40, blue: 0.68)
-                                                        ],
-                                                        startPoint: .topLeading,
-                                                        endPoint: .bottomTrailing
-                                                    )
-                                            )
-                                            .fixedSize(horizontal: false, vertical: true)
                                     }
                                     .padding(.vertical, 2)
                                     .overlay(alignment: .topTrailing) {
                                         if hoveredRowID == row.id {
                                             HStack(spacing: 3) {
-                                                Button {
-                                                    NSPasteboard.general.clearContents()
-                                                    NSPasteboard.general.setString(row.vietnamese, forType: .string)
-                                                    copiedReplyText = "VI"
-                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { copiedReplyText = "" }
-                                                } label: {
-                                                    HStack(spacing: 2) {
-                                                        Image(systemName: copiedReplyText == "VI" ? "checkmark" : "doc.on.doc")
-                                                        Text("VI")
+                                                if model.subtitleMode != .originalOnly && !row.vietnamese.isEmpty {
+                                                    Button {
+                                                        NSPasteboard.general.clearContents()
+                                                        NSPasteboard.general.setString(row.vietnamese, forType: .string)
+                                                        copiedReplyText = "VI"
+                                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { copiedReplyText = "" }
+                                                    } label: {
+                                                        HStack(spacing: 2) {
+                                                            Image(systemName: copiedReplyText == "VI" ? "checkmark" : "doc.on.doc")
+                                                            Text(model.targetLanguage.shortName.uppercased())
+                                                        }
+                                                        .font(.system(size: 8.5, weight: .bold))
+                                                        .padding(.horizontal, 5)
+                                                        .padding(.vertical, 2)
+                                                        .background(isDark ? Color.black.opacity(0.8) : Color.white.opacity(0.9))
+                                                        .clipShape(Capsule())
                                                     }
-                                                    .font(.system(size: 8.5, weight: .bold))
-                                                    .padding(.horizontal, 5)
-                                                    .padding(.vertical, 2)
-                                                    .background(isDark ? Color.black.opacity(0.8) : Color.white.opacity(0.9))
-                                                    .clipShape(Capsule())
+                                                    .buttonStyle(.plain)
+                                                    .help("Sao chép bản dịch")
                                                 }
-                                                .buttonStyle(.plain)
-                                                .help("Sao chép bản dịch tiếng Việt")
 
-                                                Button {
-                                                    NSPasteboard.general.clearContents()
-                                                    NSPasteboard.general.setString(row.original, forType: .string)
-                                                    copiedReplyText = "EN"
-                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { copiedReplyText = "" }
-                                                } label: {
-                                                    HStack(spacing: 2) {
-                                                        Image(systemName: copiedReplyText == "EN" ? "checkmark" : "doc.on.doc")
-                                                        Text("EN")
+                                                if model.subtitleMode != .translationOnly && !row.original.isEmpty {
+                                                    Button {
+                                                        NSPasteboard.general.clearContents()
+                                                        NSPasteboard.general.setString(row.original, forType: .string)
+                                                        copiedReplyText = "ORIG"
+                                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { copiedReplyText = "" }
+                                                    } label: {
+                                                        HStack(spacing: 2) {
+                                                            Image(systemName: copiedReplyText == "ORIG" ? "checkmark" : "doc.on.doc")
+                                                            Text(model.sourceLanguage.shortName.uppercased())
+                                                        }
+                                                        .font(.system(size: 8.5, weight: .bold))
+                                                        .padding(.horizontal, 5)
+                                                        .padding(.vertical, 2)
+                                                        .background(isDark ? Color.black.opacity(0.8) : Color.white.opacity(0.9))
+                                                        .clipShape(Capsule())
                                                     }
-                                                    .font(.system(size: 8.5, weight: .bold))
-                                                    .padding(.horizontal, 5)
-                                                    .padding(.vertical, 2)
-                                                    .background(isDark ? Color.black.opacity(0.8) : Color.white.opacity(0.9))
-                                                    .clipShape(Capsule())
+                                                    .buttonStyle(.plain)
+                                                    .help("Sao chép câu tiếng gốc")
                                                 }
-                                                .buttonStyle(.plain)
-                                                .help("Sao chép câu tiếng Anh gốc")
 
                                                 Button {
                                                     model.generateSuggestions(for: row.original)
@@ -1873,7 +2624,7 @@ struct OverlayView: View {
                                                     .clipShape(Capsule())
                                                 }
                                                 .buttonStyle(.plain)
-                                                .help("Gợi ý câu trả lời tiếng Anh cho câu này")
+                                                .help("Gợi ý câu trả lời AI cho câu này")
                                             }
                                             .offset(y: -6)
                                         }
@@ -2014,6 +2765,8 @@ enum MascotExpression: Int, CaseIterable {
     case winkRight             // • ‿ <
     case happySmile            // ^ ‿ ^
     case happySquint           // > ‿ <
+    case sleeping              // u ‿ u (nhắm ngủ say)
+    case loveHeart             // ♥ ‿ ♥ (mắt trái tim ngắm hoa / bướm)
 }
 
 struct EyeClosedArc: View {
@@ -2038,6 +2791,119 @@ struct EyeClosedArc: View {
             style: StrokeStyle(lineWidth: max(2.0, size * 0.20), lineCap: .round)
         )
         .shadow(color: Color.cyan.opacity(0.85), radius: 2)
+    }
+}
+
+struct SleepingEyeView: View {
+    let size: CGFloat
+    let isLeft: Bool
+
+    var body: some View {
+        let w = size * 1.25
+        let h = size * 1.22
+
+        ZStack {
+            // 1. Pearl-white 3D robotic eyelid that matches Chip Chip's shell and 100% covers the blue eye
+            Ellipse()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.81, green: 0.84, blue: 0.90), // Top socket depth shadow
+                            Color(red: 0.95, green: 0.96, blue: 0.98), // Pearl-white robotic eyelid center
+                            Color(red: 0.87, green: 0.90, blue: 0.94)  // Lower eyelid soft shading
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: w, height: h)
+                .overlay(
+                    Ellipse()
+                        .stroke(
+                            Color(red: 0.72, green: 0.76, blue: 0.84).opacity(0.55),
+                            lineWidth: 0.9
+                        )
+                )
+                .shadow(color: Color(red: 0.3, green: 0.35, blue: 0.45).opacity(0.18), radius: 1.5, y: 1)
+
+            // 2. Delicate upper eyelid crease / fold (depth effect)
+            Path { path in
+                path.move(to: CGPoint(x: w * 0.22, y: h * 0.30))
+                path.addQuadCurve(
+                    to: CGPoint(x: w * 0.78, y: h * 0.30),
+                    control: CGPoint(x: w * 0.50, y: h * 0.22)
+                )
+            }
+            .stroke(
+                Color(red: 0.60, green: 0.65, blue: 0.75).opacity(0.35),
+                style: StrokeStyle(lineWidth: 1.0, lineCap: .round)
+            )
+
+            // 3. Natural soft dark closed eye seam: serene curved seam line (︶)
+            Path { path in
+                let startY = h * 0.52
+                let ctrlY = h * 0.70 // Soft natural resting downward curve (︶)
+                path.move(to: CGPoint(x: w * 0.16, y: startY))
+                path.addQuadCurve(
+                    to: CGPoint(x: w * 0.84, y: startY),
+                    control: CGPoint(x: w * 0.50, y: ctrlY)
+                )
+
+                // Delicate soft eyelashes at outer corner
+                if isLeft {
+                    path.move(to: CGPoint(x: w * 0.24, y: startY + 0.8))
+                    path.addLine(to: CGPoint(x: w * 0.10, y: startY - 2.8))
+                    path.move(to: CGPoint(x: w * 0.30, y: startY + 2.0))
+                    path.addLine(to: CGPoint(x: w * 0.18, y: startY - 1.2))
+                } else {
+                    path.move(to: CGPoint(x: w * 0.76, y: startY + 0.8))
+                    path.addLine(to: CGPoint(x: w * 0.90, y: startY - 2.8))
+                    path.move(to: CGPoint(x: w * 0.70, y: startY + 2.0))
+                    path.addLine(to: CGPoint(x: w * 0.82, y: startY - 1.2))
+                }
+            }
+            .stroke(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.22, green: 0.25, blue: 0.34),
+                        Color(red: 0.28, green: 0.32, blue: 0.42)
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ),
+                style: StrokeStyle(lineWidth: max(1.8, size * 0.15), lineCap: .round, lineJoin: .round)
+            )
+
+            // 4. Soft gentle blush beneath the closed eyelid
+            Ellipse()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color(red: 1.0, green: 0.45, blue: 0.60).opacity(0.40),
+                            Color.clear
+                        ],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: w * 0.3
+                    )
+                )
+                .frame(width: w * 0.65, height: h * 0.30)
+                .offset(y: h * 0.30)
+        }
+        .frame(width: w, height: h)
+    }
+}
+
+struct EyeHeartTwinkle: View {
+    let size: CGFloat
+
+    var body: some View {
+        Image(systemName: "heart.fill")
+            .font(.system(size: size * 0.70, weight: .bold))
+            .foregroundStyle(
+                LinearGradient(colors: [Color(red: 1.0, green: 0.4, blue: 0.7), Color.white], startPoint: .top, endPoint: .bottom)
+            )
+            .shadow(color: Color.pink.opacity(0.85), radius: 2)
     }
 }
 
@@ -2128,34 +2994,52 @@ struct MascotFacialExpressionOverlay: View {
 
         ZStack {
             // 1. Left Eye
-            EyeContainer(size: eyeD) {
-                switch expression {
-                case .happySmile:
-                    EyeClosedArc(size: eyeD)
-                case .winkLeft:
-                    EyeClosedArc(size: eyeD)
-                case .winkRight:
-                    EyeOpenTwinkle(size: eyeD)
-                case .happySquint:
-                    EyeSquintAngle(size: eyeD, isLeft: true)
+            if expression == .sleeping {
+                SleepingEyeView(size: eyeD, isLeft: true)
+                    .position(leftEyeCenter)
+            } else {
+                EyeContainer(size: eyeD) {
+                    switch expression {
+                    case .happySmile:
+                        EyeClosedArc(size: eyeD)
+                    case .winkLeft:
+                        EyeClosedArc(size: eyeD)
+                    case .winkRight:
+                        EyeOpenTwinkle(size: eyeD)
+                    case .happySquint:
+                        EyeSquintAngle(size: eyeD, isLeft: true)
+                    case .sleeping:
+                        EmptyView()
+                    case .loveHeart:
+                        EyeHeartTwinkle(size: eyeD)
+                    }
                 }
+                .position(leftEyeCenter)
             }
-            .position(leftEyeCenter)
 
             // 2. Right Eye
-            EyeContainer(size: eyeD) {
-                switch expression {
-                case .happySmile:
-                    EyeClosedArc(size: eyeD)
-                case .winkLeft:
-                    EyeOpenTwinkle(size: eyeD)
-                case .winkRight:
-                    EyeClosedArc(size: eyeD)
-                case .happySquint:
-                    EyeSquintAngle(size: eyeD, isLeft: false)
+            if expression == .sleeping {
+                SleepingEyeView(size: eyeD, isLeft: false)
+                    .position(rightEyeCenter)
+            } else {
+                EyeContainer(size: eyeD) {
+                    switch expression {
+                    case .happySmile:
+                        EyeClosedArc(size: eyeD)
+                    case .winkLeft:
+                        EyeOpenTwinkle(size: eyeD)
+                    case .winkRight:
+                        EyeClosedArc(size: eyeD)
+                    case .happySquint:
+                        EyeSquintAngle(size: eyeD, isLeft: false)
+                    case .sleeping:
+                        EmptyView()
+                    case .loveHeart:
+                        EyeHeartTwinkle(size: eyeD)
+                    }
                 }
+                .position(rightEyeCenter)
             }
-            .position(rightEyeCenter)
 
             // 3. Cheeks (Soft cute blush)
             Ellipse()
@@ -2172,6 +3056,67 @@ struct MascotFacialExpressionOverlay: View {
     }
 }
 
+struct AnimatedMascot3DView: View {
+    let size: CGFloat
+    let legSwing: Double
+
+    var body: some View {
+        let w = size * (621.0 / 783.0)
+        let h = size
+        let legW = size * (110.0 / 783.0)
+        let legH = size * (125.0 / 783.0)
+        let leftLegOffsetX = size * (-65.5 / 783.0)
+        let rightLegOffsetX = size * (67.5 / 783.0)
+        let legOffsetY = size * (319.0 / 783.0)
+
+        let leftAngle = legSwing
+        let rightAngle = -legSwing
+
+        let leftLift = (leftAngle > 0 ? CGFloat(abs(sin(leftAngle * .pi / 180.0))) * (size * 0.038) : 0)
+        let rightLift = (rightAngle > 0 ? CGFloat(abs(sin(rightAngle * .pi / 180.0))) * (size * 0.038) : 0)
+
+        ZStack {
+            // 1. Left Leg (behind hip)
+            if let legPath = Bundle.main.path(forResource: "MascotLegLeft", ofType: "png"),
+               let legImg = NSImage(contentsOfFile: legPath) {
+                Image(nsImage: legImg)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: legW, height: legH)
+                    .rotationEffect(.degrees(leftAngle), anchor: UnitPoint(x: 0.65, y: 0.15))
+                    .offset(x: leftLegOffsetX, y: legOffsetY - leftLift)
+            }
+
+            // 2. Right Leg
+            if let legPath = Bundle.main.path(forResource: "MascotLegRight", ofType: "png"),
+               let legImg = NSImage(contentsOfFile: legPath) {
+                Image(nsImage: legImg)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: legW, height: legH)
+                    .rotationEffect(.degrees(rightAngle), anchor: UnitPoint(x: 0.35, y: 0.15))
+                    .offset(x: rightLegOffsetX, y: legOffsetY - rightLift)
+            }
+
+            // 3. Body (Torso, head, headphones)
+            if let bodyPath = Bundle.main.path(forResource: "MascotBody", ofType: "png"),
+               let bodyImg = NSImage(contentsOfFile: bodyPath) {
+                Image(nsImage: bodyImg)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: w, height: h)
+            } else if let fullPath = Bundle.main.path(forResource: "Mascot3D", ofType: "png"),
+                      let fullImg = NSImage(contentsOfFile: fullPath) {
+                Image(nsImage: fullImg)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: w, height: h)
+            }
+        }
+        .frame(width: w, height: h)
+    }
+}
+
 // MARK: - Mimo Companion Avatar View
 
 struct MiniAvatarView: View {
@@ -2180,6 +3125,12 @@ struct MiniAvatarView: View {
     var isWorking: Bool = false
     var expression: MascotExpression? = nil
     var isHovered: Bool? = nil
+    var isBackView: Bool = false
+    var isSleeping: Bool = false
+    var isWalking: Bool = false
+    var walkingTowardRight: Bool = true
+    var facing: MascotFacing? = nil
+    var legSwing: Double = 0.0
 
     @State private var internalHovered = false
     @State private var internalExpression: MascotExpression = .winkLeft
@@ -2198,27 +3149,70 @@ struct MiniAvatarView: View {
     }
 
     private var showOverlay: Bool {
-        (!isWorking && activeStyle != "pixel") && activeHovered
+        (!isWorking && !isBackView && !isSleeping && !isWalking && facing == nil && activeStyle != "pixel") && (activeHovered || expression != nil)
     }
 
     var body: some View {
         let isPixel = (activeStyle == "pixel")
-        let preferredResource = isPixel ? "Mini" : (isWorking ? "MascotWriting" : "Mascot3D")
-        let fallbackResource = isWorking ? "Mascot3D" : (isPixel ? "Mascot3D" : "Mini")
 
         ZStack {
-            if let path = Bundle.main.path(forResource: preferredResource, ofType: "png") ?? Bundle.main.path(forResource: fallbackResource, ofType: "png"),
-               let nsImage = NSImage(contentsOfFile: path) {
-                Image(nsImage: nsImage)
-                    .interpolation(isPixel ? .none : .high)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: size)
+            if isPixel {
+                if let path = Bundle.main.path(forResource: "Mini", ofType: "png"),
+                   let nsImage = NSImage(contentsOfFile: path) {
+                    Image(nsImage: nsImage)
+                        .interpolation(.none)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: size)
+                } else {
+                    AppLogoView(size: size)
+                }
+            } else if isSleeping {
+                if let path = Bundle.main.path(forResource: "MascotSleeping", ofType: "png") ?? Bundle.main.path(forResource: "Mascot3D", ofType: "png"),
+                   let nsImage = NSImage(contentsOfFile: path) {
+                    Image(nsImage: nsImage)
+                        .interpolation(.high)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: size * 0.90)
+                } else {
+                    AppLogoView(size: size)
+                }
+            } else if isBackView {
+                if let path = Bundle.main.path(forResource: "MascotBack", ofType: "png") ?? Bundle.main.path(forResource: "Mascot3D", ofType: "png"),
+                   let nsImage = NSImage(contentsOfFile: path) {
+                    Image(nsImage: nsImage)
+                        .interpolation(.high)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: size)
+                } else {
+                    AppLogoView(size: size)
+                }
+            } else if isWalking {
+                MascotWalkSpriteView(size: size, towardRight: walkingTowardRight)
+            } else if let facing {
+                MascotAngleView(facing: facing, size: size)
+                    .id(facing)
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.12), value: facing)
+            } else if isWorking {
+                if let path = Bundle.main.path(forResource: "MascotWriting", ofType: "png") ?? Bundle.main.path(forResource: "Mascot3D", ofType: "png"),
+                   let nsImage = NSImage(contentsOfFile: path) {
+                    Image(nsImage: nsImage)
+                        .interpolation(.high)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: size)
+                } else {
+                    AppLogoView(size: size)
+                }
             } else {
-                AppLogoView(size: size)
+                // 3D Companion Avatar with Lifelike Moving Legs
+                AnimatedMascot3DView(size: size, legSwing: legSwing)
             }
 
-            // Eye winking overlay khi rê chuột tương tác (KHÔNG chớp mắt tự động khi IDLE để hình luôn mượt mà, không giật)
+            // Eye winking overlay khi rê chuột tương tác (không hiển thị khi quay lưng)
             if showOverlay {
                 MascotFacialExpressionOverlay(size: size, expression: activeExpression)
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
@@ -2278,99 +3272,1045 @@ final class MascotHostingView<Content: View>: NSHostingView<Content> {
     }
 }
 
+// MARK: - Chip Chip Idle Activities Accessories & Visual Effects
+
+struct MascotSleepingDeskBase: View {
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            // Shadow beneath desk
+            Ellipse()
+                .fill(Color.black.opacity(0.18))
+                .frame(width: 96, height: 14)
+                .offset(y: 5)
+
+            // Wooden Desk surface where Chip Chip rests peacefully
+            ZStack {
+                // Table top wood plank
+                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.82, green: 0.65, blue: 0.48),
+                                Color(red: 0.65, green: 0.48, blue: 0.32)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(width: 88, height: 8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                            .stroke(Color(red: 0.92, green: 0.78, blue: 0.62).opacity(0.6), lineWidth: 0.8)
+                    )
+
+                // Table edge trim
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(Color(red: 0.52, green: 0.36, blue: 0.22))
+                    .frame(width: 86, height: 3)
+                    .offset(y: 4)
+            }
+            .offset(y: 2)
+
+            // Cozy warm night cup on the right side of the desk
+            HStack {
+                Spacer()
+                ZStack {
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(Color(red: 0.95, green: 0.85, blue: 0.75))
+                        .frame(width: 7, height: 8)
+                    Circle()
+                        .fill(Color.yellow.opacity(0.6))
+                        .frame(width: 5, height: 2)
+                        .offset(y: -3)
+                }
+                .offset(x: -8, y: -2)
+            }
+            .frame(width: 88)
+        }
+    }
+}
+
+struct MascotSleepingEffects: View {
+    let time: Double
+
+    var body: some View {
+        ZStack {
+            // Floating Zzz letters softly ascending from sleeping Chip Chip
+            ForEach(0..<3) { i in
+                let offsetPhase = fmod(time * 0.40 + Double(i) * 0.33, 1.0)
+                let zX = CGFloat(8 + sin(offsetPhase * .pi * 2) * 6 + Double(i) * 6)
+                let zY = CGFloat(-36 - offsetPhase * 32)
+                let zScale = CGFloat(0.55 + offsetPhase * 0.65)
+                let zAlpha = sin(offsetPhase * .pi) * 0.95
+
+                Text(i == 0 ? "Z" : (i == 1 ? "z" : "z"))
+                    .font(.system(size: 11, weight: .black, design: .rounded))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color(red: 0.4, green: 0.85, blue: 1.0), Color(red: 0.7, green: 0.5, blue: 1.0)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .shadow(color: Color.purple.opacity(0.45), radius: 2)
+                    .scaleEffect(zScale)
+                    .opacity(zAlpha)
+                    .offset(x: zX, y: zY)
+            }
+        }
+    }
+}
+
+struct MascotMusicEffects: View {
+    let time: Double
+
+    var body: some View {
+        ZStack {
+            // Sound wave pulses radiating directly from Chip Chip's built-in headphones
+            ForEach(0..<2) { i in
+                let pulsePhase = fmod(time * 1.8 + Double(i) * 0.5, 1.0)
+                let waveScale = CGFloat(0.7 + pulsePhase * 0.9)
+                let waveAlpha = (1.0 - pulsePhase) * 0.75
+
+                // Left ear sound wave
+                Circle()
+                    .stroke(
+                        LinearGradient(colors: [Color.cyan.opacity(0.85), Color.purple.opacity(0.4)], startPoint: .top, endPoint: .bottom),
+                        lineWidth: 1.5
+                    )
+                    .frame(width: 18, height: 18)
+                    .scaleEffect(waveScale)
+                    .opacity(waveAlpha)
+                    .offset(x: -26, y: -22)
+
+                // Right ear sound wave
+                Circle()
+                    .stroke(
+                        LinearGradient(colors: [Color.purple.opacity(0.85), Color.pink.opacity(0.4)], startPoint: .top, endPoint: .bottom),
+                        lineWidth: 1.5
+                    )
+                    .frame(width: 18, height: 18)
+                    .scaleEffect(waveScale)
+                    .opacity(waveAlpha)
+                    .offset(x: 26, y: -22)
+            }
+
+            // Dancing colorful musical notes floating around
+            ForEach(0..<4) { i in
+                let phase = fmod(time * 0.65 + Double(i) * 0.25, 1.0)
+                let noteIcons = ["music.note", "music.quarternote.3", "music.note.list", "music.mic"]
+                let isLeft = (i % 2 == 0)
+                let nX = (isLeft ? -1.0 : 1.0) * CGFloat(16 + sin(phase * .pi * 2 + Double(i)) * 8 + Double(i) * 4)
+                let nY = CGFloat(-38 - phase * 32)
+                let nScale = CGFloat(0.65 + phase * 0.45)
+                let nRot = sin(time * 3.5 + Double(i)) * 22.0
+                let nAlpha = sin(phase * .pi) * 0.95
+
+                Image(systemName: noteIcons[i % noteIcons.count])
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: isLeft
+                                ? [Color(red: 0.35, green: 0.85, blue: 1.0), Color(red: 0.75, green: 0.45, blue: 1.0)]
+                                : [Color(red: 1.0, green: 0.40, blue: 0.75), Color(red: 1.0, green: 0.75, blue: 0.25)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .shadow(color: isLeft ? Color.cyan.opacity(0.6) : Color.pink.opacity(0.6), radius: 3)
+                    .rotationEffect(.degrees(nRot))
+                    .scaleEffect(nScale)
+                    .opacity(nAlpha)
+                    .offset(x: nX, y: nY)
+            }
+
+            // Sparkle beats on rhythm
+            ForEach(0..<2) { i in
+                let spPhase = fmod(time * 1.4 + Double(i) * 0.5, 1.0)
+                Image(systemName: "sparkle")
+                    .font(.system(size: 7))
+                    .foregroundStyle(Color.yellow)
+                    .offset(x: (i == 0 ? -18 : 18) + CGFloat(sin(spPhase * 4) * 4), y: -48 - CGFloat(spPhase * 10))
+                    .opacity(sin(spPhase * .pi) * 0.8)
+                    .scaleEffect(CGFloat(0.5 + spPhase * 0.5))
+            }
+        }
+    }
+}
+
+struct MascotButterflyEffects: View {
+    let time: Double
+
+    var body: some View {
+        let bx = CGFloat(sin(time * 1.6) * 26)
+        let by = CGFloat(-40 + cos(time * 2.2) * 16)
+        let wingFlap = abs(sin(time * 16.0))
+        let flightAngle = cos(time * 1.6) * 25.0
+
+        ZStack {
+            // Sparkle pollen trail behind butterfly
+            ForEach(0..<2) { i in
+                let trailPhase = fmod(time * 1.5 + Double(i) * 0.5, 1.0)
+                let trailAlpha = sin(trailPhase * .pi) * 0.8
+                Circle()
+                    .fill(Color(red: 1.0, green: 0.85, blue: 0.3))
+                    .frame(width: 2.5, height: 2.5)
+                    .shadow(color: Color.yellow, radius: 2)
+                    .offset(x: bx - CGFloat(sin(time * 1.6) * 4) - CGFloat(trailPhase * 6),
+                            y: by + CGFloat(cos(time * 2.2) * 4) + CGFloat(trailPhase * 6))
+                    .opacity(trailAlpha)
+            }
+
+            // The animated flapping butterfly
+            ZStack {
+                HStack(spacing: 0.5) {
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(
+                            LinearGradient(colors: [Color.cyan, Color.purple], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        )
+                        .rotationEffect(.degrees(-70))
+                        .scaleEffect(x: CGFloat(0.3 + wingFlap * 0.7), y: 1.0, anchor: .trailing)
+
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(
+                            LinearGradient(colors: [Color.pink, Color.orange], startPoint: .topTrailing, endPoint: .bottomLeading)
+                        )
+                        .rotationEffect(.degrees(70))
+                        .scaleEffect(x: CGFloat(0.3 + wingFlap * 0.7), y: 1.0, anchor: .leading)
+                }
+
+                Capsule()
+                    .fill(Color(white: 0.15))
+                    .frame(width: 2, height: 7)
+            }
+            .rotationEffect(.degrees(flightAngle))
+            .shadow(color: Color.cyan.opacity(0.65), radius: 3)
+            .offset(x: bx, y: by)
+        }
+    }
+}
+
+struct MascotFlowerPlant: View {
+    var body: some View {
+        VStack(spacing: -3) {
+            // Flower blossom
+            Image(systemName: "camera.macro")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [Color.pink, Color.orange, Color.yellow],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .shadow(color: Color.pink.opacity(0.65), radius: 2.5)
+
+            // Stem with attached leaves
+            ZStack {
+                // Stem
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.35, green: 0.82, blue: 0.40),
+                                Color(red: 0.20, green: 0.65, blue: 0.28)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(width: 2.4, height: 16)
+
+                // Left leaf firmly attached to the stem
+                Image(systemName: "leaf.fill")
+                    .font(.system(size: 7))
+                    .foregroundStyle(Color(red: 0.28, green: 0.74, blue: 0.35))
+                    .rotationEffect(.degrees(-45))
+                    .offset(x: -4.5, y: 1)
+
+                // Right small leaf
+                Image(systemName: "leaf.fill")
+                    .font(.system(size: 5.5))
+                    .foregroundStyle(Color(red: 0.35, green: 0.80, blue: 0.42))
+                    .rotationEffect(.degrees(40))
+                    .offset(x: 4, y: -2.5)
+            }
+            .frame(width: 14, height: 16)
+        }
+    }
+}
+
+struct MascotFlowerEffects: View {
+    let time: Double
+
+    var body: some View {
+        let sway = sin(time * 2.0) * 4.0
+        ZStack {
+            // Grassy base diorama (Tiểu cảnh cỏ tròn xinh dưới chân)
+            Capsule()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.green.opacity(0.30),
+                            Color.green.opacity(0.12)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: 84, height: 7)
+                .overlay(
+                    Capsule()
+                        .stroke(Color.green.opacity(0.25), lineWidth: 0.6)
+                )
+                .offset(y: 3)
+
+            // Tiny grass blades on the patch
+            HStack(spacing: 8) {
+                Image(systemName: "leaf.fill")
+                    .font(.system(size: 5.5))
+                    .foregroundStyle(Color.green.opacity(0.55))
+                    .rotationEffect(.degrees(-20))
+                Spacer()
+                Image(systemName: "leaf.fill")
+                    .font(.system(size: 5))
+                    .foregroundStyle(Color.green.opacity(0.50))
+                    .rotationEffect(.degrees(15))
+            }
+            .frame(width: 50)
+            .offset(y: 1.5)
+
+            // Small yellow side bud on the left to balance the scene
+            VStack(spacing: -2) {
+                Image(systemName: "camera.macro")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(
+                        LinearGradient(colors: [Color.yellow, Color.orange], startPoint: .top, endPoint: .bottom)
+                    )
+                Capsule()
+                    .fill(Color(red: 0.25, green: 0.70, blue: 0.32))
+                    .frame(width: 1.8, height: 8)
+            }
+            .rotationEffect(.degrees(-sway * 0.7), anchor: .bottom)
+            .offset(x: -24, y: 0)
+
+            // Main Blooming Flower at lower right corner with stem, leaves, and gentle wind sway
+            MascotFlowerPlant()
+                .rotationEffect(.degrees(sway), anchor: .bottom)
+                .offset(x: 24, y: -2)
+
+            // Floral sparkles
+            ForEach(0..<2) { i in
+                let pPhase = fmod(time * 0.7 + Double(i) * 0.5, 1.0)
+                Image(systemName: "sparkle")
+                    .font(.system(size: 7))
+                    .foregroundStyle(Color(red: 1.0, green: 0.6, blue: 0.8))
+                    .offset(x: 23 - CGFloat(pPhase * 8), y: -16 - CGFloat(pPhase * 14))
+                    .opacity(sin(pPhase * .pi) * 0.85)
+                    .scaleEffect(CGFloat(0.5 + pPhase * 0.5))
+            }
+        }
+    }
+}
+
+struct MascotTeaEffects: View {
+    let time: Double
+
+    var body: some View {
+        ZStack {
+            // Tea / Coffee mug held by Chip Chip
+            ZStack {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(LinearGradient(colors: [Color.orange.opacity(0.9), Color.brown.opacity(0.85)], startPoint: .top, endPoint: .bottom))
+                    .frame(width: 14, height: 11)
+                    .overlay(RoundedRectangle(cornerRadius: 3).stroke(Color.white.opacity(0.6), lineWidth: 0.6))
+
+                Circle()
+                    .stroke(Color.orange, lineWidth: 1.2)
+                    .frame(width: 5, height: 5)
+                    .offset(x: 8)
+
+                // Rising steam swirls
+                ForEach(0..<2) { i in
+                    let sPhase = fmod(time * 0.8 + Double(i) * 0.5, 1.0)
+                    Path { path in
+                        path.move(to: CGPoint(x: 0, y: 12))
+                        path.addCurve(to: CGPoint(x: 2, y: 0), control1: CGPoint(x: -3, y: 8), control2: CGPoint(x: 3, y: 4))
+                    }
+                    .stroke(Color.white.opacity(0.7), style: StrokeStyle(lineWidth: 1.2, lineCap: .round))
+                    .frame(width: 6, height: 14)
+                    .offset(x: CGFloat((i == 0 ? -2 : 3) + sin(sPhase * 4.0) * 1.5), y: CGFloat(-12 - sPhase * 10))
+                    .opacity(sin(sPhase * .pi) * 0.8)
+                }
+            }
+            .offset(x: 0, y: -6)
+        }
+    }
+}
+
+
+// MARK: - Fishing Activity Diorama (Tiểu cảnh câu cá trọn vẹn)
+
+struct MascotBambooRodShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX, y: rect.minY),
+            control: CGPoint(x: rect.minX + rect.width * 0.42, y: rect.minY + 2.0)
+        )
+        return path
+    }
+}
+
+struct MascotFishingLineShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        return path
+    }
+}
+
+struct MascotFishingBase: View {
+    let time: Double
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            // 1. Soft island drop shadow
+            Ellipse()
+                .fill(Color.black.opacity(0.18))
+                .frame(width: 108, height: 16)
+                .offset(y: 4)
+
+            // 2. Clear Blue Curved Pond on the right
+            ZStack {
+                // Pond water basin
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.15, green: 0.75, blue: 0.92).opacity(0.40),
+                                Color(red: 0.08, green: 0.45, blue: 0.78).opacity(0.25)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(width: 58, height: 14)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            .stroke(Color.cyan.opacity(0.40), lineWidth: 0.8)
+                    )
+                    .offset(x: 20, y: 1)
+
+                // Expanding water ripples under the bobber
+                ForEach(0..<2) { i in
+                    let rPhase = fmod(time * 0.85 + Double(i) * 0.5, 1.0)
+                    Ellipse()
+                        .stroke(Color.white.opacity(Double(1.0 - rPhase) * 0.45), lineWidth: 0.8)
+                        .frame(width: CGFloat(8 + rPhase * 16), height: CGFloat(3.5 + rPhase * 6))
+                        .offset(x: 34, y: 1)
+                }
+
+                // Tiny water lily leaf & flower
+                ZStack {
+                    Circle()
+                        .fill(Color(red: 0.25, green: 0.78, blue: 0.45).opacity(0.85))
+                        .frame(width: 7.5, height: 5.5)
+                    Circle()
+                        .fill(Color.pink.opacity(0.9))
+                        .frame(width: 2.8, height: 2.8)
+                        .offset(y: -1)
+                }
+                .offset(x: 13, y: 0)
+            }
+
+            // 3. Wooden Pier / Dock on the left (Where Chip Chip sits facing the pond)
+            ZStack {
+                HStack(spacing: 1.5) {
+                    ForEach(0..<5) { plank in
+                        RoundedRectangle(cornerRadius: 1.5)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color(red: 0.74, green: 0.54, blue: 0.36),
+                                        Color(red: 0.56, green: 0.38, blue: 0.22)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .frame(width: 8.5, height: 6)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 1.5)
+                                    .stroke(Color.black.opacity(0.12), lineWidth: 0.5)
+                            )
+                    }
+                }
+                .offset(x: -20, y: 1)
+
+                // Dock pier wooden piles into the water
+                HStack(spacing: 24) {
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(Color(red: 0.45, green: 0.30, blue: 0.18))
+                        .frame(width: 3.5, height: 7)
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(Color(red: 0.45, green: 0.30, blue: 0.18))
+                        .frame(width: 3.5, height: 7)
+                }
+                .offset(x: -20, y: 5)
+
+                // Cute wooden bait bucket sitting behind Chip Chip on the dock
+                ZStack {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color(red: 0.65, green: 0.45, blue: 0.28), Color(red: 0.42, green: 0.28, blue: 0.16)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .frame(width: 8, height: 7.5)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 2)
+                                .stroke(Color(red: 0.85, green: 0.75, blue: 0.5).opacity(0.6), lineWidth: 0.6)
+                        )
+
+                    // Water shimmer inside bucket
+                    Ellipse()
+                        .fill(Color.cyan.opacity(0.7))
+                        .frame(width: 6.5, height: 2.2)
+                        .offset(y: -2.8)
+
+                    // Tiny metal wire handle (properly bounded Ellipse)
+                    Ellipse()
+                        .stroke(Color.gray.opacity(0.75), lineWidth: 0.8)
+                        .frame(width: 7, height: 5)
+                        .offset(y: -4.5)
+                }
+                .offset(x: -37, y: -1)
+            }
+        }
+    }
+}
+
+struct MascotFishingOverlay: View {
+    let time: Double
+
+    var body: some View {
+        let bobberY = sin(time * 3.0) * 1.8
+        let isNibbling = sin(time * 0.9) > 0.65
+        let extraNibbleDip: CGFloat = isNibbling ? CGFloat(abs(sin(time * 12.0)) * 2.5) : 0
+
+        let rodTipX: CGFloat = 28
+        let rodTipY: CGFloat = -26 + CGFloat(sin(time * 3.0) * 1.0) - extraNibbleDip
+        let lineTargetX: CGFloat = 34
+        let lineTargetY: CGFloat = 0 + bobberY + extraNibbleDip
+
+        ZStack {
+            // Flexible bamboo fishing rod held right in Chip Chip's hand with bounded frame
+            MascotBambooRodShape()
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.88, green: 0.68, blue: 0.38),
+                            Color(red: 1.0, green: 0.88, blue: 0.55)
+                        ],
+                        startPoint: .bottomLeading,
+                        endPoint: .topTrailing
+                    ),
+                    style: StrokeStyle(lineWidth: 1.8, lineCap: .round)
+                )
+                .frame(width: 31, height: 20)
+                .offset(x: 12.5, y: -16)
+
+            // Fishing reel handle near Chip Chip's hand
+            Circle()
+                .stroke(Color.gray.opacity(0.85), lineWidth: 1.0)
+                .frame(width: 4, height: 4)
+                .offset(x: -3, y: -6)
+
+            // Fishing line from rod tip down to the bobber with bounded frame
+            let lineH = max(4.0, lineTargetY - rodTipY)
+            let lineW = max(1.0, lineTargetX - rodTipX)
+            MascotFishingLineShape()
+                .stroke(Color.white.opacity(0.85), style: StrokeStyle(lineWidth: 0.8, lineCap: .round))
+                .frame(width: lineW, height: lineH)
+                .offset(x: (rodTipX + lineTargetX) / 2.0, y: (rodTipY + lineTargetY) / 2.0)
+
+            // Two-tone Red & White Fishing Bobber (Phao câu)
+            ZStack {
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 5.5, height: 5.5)
+                Circle()
+                    .fill(Color.red)
+                    .frame(width: 5.5, height: 5.5)
+                    .mask(
+                        Rectangle()
+                            .frame(width: 6, height: 3)
+                            .offset(y: -1.5)
+                    )
+            }
+            .shadow(color: Color.red.opacity(0.4), radius: 1.5)
+            .offset(x: lineTargetX, y: lineTargetY)
+
+            // Playful jumping fish leaping out of water
+            let fishCycle = fmod(time * 0.35, 1.0)
+            if fishCycle > 0.65 {
+                let jumpProgress = (fishCycle - 0.65) / 0.35
+                let fishX = CGFloat(18 + jumpProgress * 24)
+                let fishY = CGFloat(-sin(jumpProgress * .pi) * 16)
+                let fishRot = (jumpProgress - 0.5) * 80.0
+
+                Image(systemName: "fish.fill")
+                    .font(.system(size: 7.5, weight: .bold))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color.orange, Color.yellow],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .rotationEffect(.degrees(fishRot))
+                    .offset(x: fishX, y: fishY)
+                    .shadow(color: Color.orange.opacity(0.5), radius: 2)
+
+                // Water splash droplets
+                ForEach(0..<2) { d in
+                    Circle()
+                        .fill(Color.cyan.opacity(0.85))
+                        .frame(width: 2, height: 2)
+                        .offset(x: fishX + CGFloat((d == 0 ? -3 : 4)), y: fishY + 3)
+                        .opacity(sin(jumpProgress * .pi))
+                }
+            }
+        }
+    }
+}
+
+struct MascotStrollingEffects: View {
+    let time: Double
+    let walkX: CGFloat
+
+    var body: some View {
+        ZStack {
+            // Self-contained Park Lawn Island (Tiểu cảnh công viên bo tròn trọn vẹn)
+            ZStack(alignment: .bottom) {
+                // Soft ground shadow
+                Ellipse()
+                    .fill(Color.black.opacity(0.18))
+                    .frame(width: 98, height: 14)
+                    .offset(y: 4)
+
+                // Rounded park lawn island
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.40, green: 0.82, blue: 0.46).opacity(0.35),
+                                Color(red: 0.22, green: 0.62, blue: 0.32).opacity(0.15)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(width: 92, height: 8)
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.green.opacity(0.30), lineWidth: 0.8)
+                    )
+                    .offset(y: 2)
+
+                // Stepping stones & clover flowers along the path
+                HStack(spacing: 12) {
+                    Circle()
+                        .fill(Color.secondary.opacity(0.20))
+                        .frame(width: 4, height: 2.5)
+                    Image(systemName: "leaf.fill")
+                        .font(.system(size: 6.5))
+                        .foregroundStyle(Color.green.opacity(0.65))
+                        .rotationEffect(.degrees(-15))
+                    Image(systemName: "camera.macro")
+                        .font(.system(size: 6.5))
+                        .foregroundStyle(Color.pink.opacity(0.55))
+                    Circle()
+                        .fill(Color.secondary.opacity(0.20))
+                        .frame(width: 4, height: 2.5)
+                    Image(systemName: "leaf.fill")
+                        .font(.system(size: 6.5))
+                        .foregroundStyle(Color.green.opacity(0.65))
+                        .rotationEffect(.degrees(20))
+                }
+                .offset(y: 0.5)
+            }
+
+            // Step dust puffs under Chip Chip's feet
+            ForEach(0..<2) { i in
+                let dustPhase = fmod(time * 2.4 + Double(i) * 0.5, 1.0)
+                Circle()
+                    .fill(Color.primary.opacity(0.12))
+                    .frame(width: 4 * (1 - dustPhase), height: 2.5 * (1 - dustPhase))
+                    .offset(x: walkX + (i == 0 ? -6 : 6), y: 3 + dustPhase * 2.5)
+                    .opacity(sin(dustPhase * .pi) * 0.6)
+            }
+
+            // Drifting park leaves staying within the diorama
+            ForEach(0..<2) { i in
+                let leafPhase = fmod(time * 0.8 + Double(i) * 0.5, 1.0)
+                let lX = CGFloat(-22 + leafPhase * 44)
+                let lY = CGFloat(-8 - sin(leafPhase * .pi) * 12)
+                let lRot = leafPhase * 360.0
+
+                Image(systemName: i == 0 ? "leaf.fill" : "sparkle")
+                    .font(.system(size: i == 0 ? 6.5 : 5.5))
+                    .foregroundStyle(i == 0 ? Color(red: 0.5, green: 0.85, blue: 0.4).opacity(0.7) : Color.yellow.opacity(0.6))
+                    .rotationEffect(.degrees(lRot))
+                    .offset(x: lX, y: lY)
+                    .opacity(sin(leafPhase * .pi) * 0.8)
+            }
+        }
+    }
+}
+
 // MARK: - Floating Mimo Assistant Widget
 
 struct FloatingMascotView: View {
     @ObservedObject var model: MeetingModel
     @State private var isHovered = false
     @State private var showQuickMenu = false
+    @State private var lastActiveDate = Date()
+
+    private let activitiesList: [MascotIdleActivity] = [
+        .fishing,
+        .sleeping,
+        .strolling,
+        .catchingButterfly,
+        .pickingFlowers,
+        .listeningMusic,
+        .sippingTea
+    ]
+
+    private struct MascotMotionState {
+        var bobY: CGFloat = 0
+        var tilt: Double = 0
+        var squashX: CGFloat = 1.0
+        var squashY: CGFloat = 1.0
+        var scaleX: CGFloat = 1.0
+        var walkX: CGFloat = 0
+        var expression: MascotExpression? = nil
+        var strokeX: CGFloat = 0
+        var strokeY: CGFloat = 0
+        var penAngle: Double = 0
+        var shadowRad: CGFloat = 3.2
+        var shadowOffsetY: CGFloat = 2.5
+        var shadowAlpha: Double = 0.20
+        var legSwing: Double = 0.0
+        var turnY: Double = 0.0
+    }
+
+    private func computeMotion(time: Double, speed: Double, isIdle: Bool, activeActivity: MascotIdleActivity) -> MascotMotionState {
+        var m = MascotMotionState()
+        if model.running {
+            m.strokeX = CGFloat(sin(time * 10.0 * speed) * 3.5)
+            m.strokeY = CGFloat(cos(time * 10.0 * speed) * 1.8)
+            m.penAngle = sin(time * 10.0 * speed) * 14.0
+            m.bobY = CGFloat(sin(time * 4.5 * speed) * 1.2)
+            m.tilt = sin(time * 4.5 * speed) * 1.8
+            m.shadowRad = 3.0
+            m.shadowOffsetY = 2.0
+            m.shadowAlpha = 0.22
+            m.legSwing = 0.0
+            m.turnY = 0.0
+            return m
+        }
+        if isHovered {
+            let hopProgress = CGFloat(abs(sin(time * 6.0)))
+            m.bobY = -hopProgress * 8.0
+            m.tilt = sin(time * 6.0) * 2.8
+            m.squashX = 1.0 + (1.0 - hopProgress) * 0.05 - hopProgress * 0.02
+            m.squashY = 1.0 - (1.0 - hopProgress) * 0.05 + hopProgress * 0.03
+            m.shadowRad = 3.5 + hopProgress * 3.5
+            m.shadowOffsetY = 2.5 + hopProgress * 4.0
+            m.shadowAlpha = 0.30 - Double(hopProgress) * 0.10
+            m.legSwing = Double(hopProgress * 10.0)
+            m.turnY = 0.0
+            return m
+        }
+        // Khi bật chế độ đi dạo Dock Bar và máy đang rảnh
+        if model.isDockWalkEnabled && !model.running {
+            let isPaused = model.dockWalkPauseUntil != nil
+            if isPaused {
+                // Đang tạm dừng quay người chuyển hướng ở mép màn hình: giữ dáng đứng thẳng tự nhiên
+                m.bobY = 0.0
+                m.tilt = 0.0
+                m.turnY = 0.0
+                m.scaleX = model.mascotStyle == "pixel" && model.dockWalkDirection < 0 ? -1.0 : 1.0
+                m.squashX = 1.0
+                m.squashY = 1.0
+                m.expression = .happySmile
+                m.legSwing = 0.0
+            } else {
+                // Đang bước đi dọc thanh Dock:
+                // Bộ chuyển động MascotSprites 8-frame đã có sẵn trọng tâm, bước chân và góc nghiêng 3D tự nhiên
+                if model.mascotStyle == "pixel" {
+                    let stepBounce = abs(sin(time * 5.2))
+                    m.bobY = -CGFloat(stepBounce * 3.8)
+                    m.scaleX = model.dockWalkDirection < 0 ? -1.0 : 1.0
+                    m.tilt = (model.dockWalkDirection >= 0 ? 3.5 : -3.5)
+                } else {
+                    // Dùng bộ sprite mượt mà: không xoay lệch 2D, không giật méo hình, chân chạm đất vững vàng
+                    m.bobY = 0.0
+                    m.scaleX = 1.0
+                    m.tilt = 0.0
+                    m.turnY = 0.0
+                    m.squashX = 1.0
+                    m.squashY = 1.0
+                    m.legSwing = 0.0
+                }
+                m.expression = .happySmile
+            }
+            m.shadowRad = 3.5
+            m.shadowOffsetY = 2.0
+            m.shadowAlpha = 0.20
+            return m
+        }
+        if isIdle {
+            switch activeActivity {
+            case .fishing:
+                let fishBreath = sin(time * 1.5)
+                m.walkX = -13.0
+                m.bobY = 4.0 + CGFloat(fishBreath * 0.8)
+                m.tilt = 3.0 + sin(time * 1.0) * 0.8
+                m.expression = nil
+                m.shadowRad = 3.5
+                m.shadowOffsetY = 2.0
+                m.shadowAlpha = 0.22
+                m.legSwing = 0.0
+            case .sleeping:
+                let sleepBreath = sin(time * 1.2)
+                m.walkX = -4.0
+                m.bobY = 3.0 + CGFloat(sleepBreath * 1.0)
+                m.tilt = sin(time * 1.2) * 0.6
+                m.squashX = CGFloat(1.02 - sleepBreath * 0.015)
+                m.squashY = CGFloat(0.98 + sleepBreath * 0.02)
+                m.expression = nil
+                m.shadowRad = 3.5
+                m.shadowOffsetY = 2.0
+                m.shadowAlpha = 0.20
+                m.legSwing = 0.0
+            case .strolling:
+                m.walkX = CGFloat(sin(time * 1.3) * 14.0)
+                let stepBounce = abs(sin(time * 5.2))
+                m.bobY = -CGFloat(stepBounce * 4.0)
+                m.tilt = sin(time * 2.6) * 4.0
+                m.scaleX = cos(time * 1.3) >= 0 ? 1.0 : -1.0
+                m.expression = .happySmile
+                m.shadowRad = 3.2
+                m.shadowOffsetY = 2.5
+                m.shadowAlpha = 0.22
+                // Dynamic Lifelike Walking Legs (Hai chân sải bước luân phiên)
+                m.legSwing = sin(time * 5.2) * 22.0
+            case .catchingButterfly:
+                let bx = sin(time * 1.6) * 26.0
+                m.tilt = (bx / 26.0) * 8.0
+                let reachHop = max(0, sin(time * 3.2))
+                m.bobY = -CGFloat(reachHop * 3.5)
+                m.expression = (sin(time * 2.8) > 0.3) ? .loveHeart : .happySquint
+                m.shadowRad = 3.2
+                m.shadowOffsetY = 2.6
+                m.shadowAlpha = 0.22
+                m.legSwing = Double(reachHop * 10.0)
+            case .pickingFlowers:
+                let flowerCycle = sin(time * 1.8)
+                m.tilt = 10.0 + flowerCycle * 2.0
+                m.bobY = 3.5 + CGFloat(flowerCycle * 1.5)
+                m.expression = .happySmile
+                m.shadowRad = 3.0
+                m.shadowOffsetY = 2.2
+                m.shadowAlpha = 0.20
+                m.legSwing = 0.0
+            case .listeningMusic:
+                let groovePulse = abs(sin(time * 6.5))
+                m.bobY = -CGFloat(groovePulse * 5.0)
+                m.tilt = sin(time * 3.25) * 4.5
+                m.squashX = CGFloat(1.0 + groovePulse * 0.03)
+                m.squashY = CGFloat(1.0 - groovePulse * 0.04)
+                m.expression = (sin(time * 4.0) > 0) ? .happySmile : .happySquint
+                m.shadowRad = 3.5
+                m.shadowOffsetY = 2.8
+                m.shadowAlpha = 0.25
+                // Foot tapping to music beat
+                m.legSwing = max(0, sin(time * 6.5)) * 14.0
+            case .sippingTea:
+                let sipCycle = sin(time * 1.6)
+                m.bobY = 1.0 + CGFloat(sipCycle * 1.2)
+                m.tilt = sin(time * 0.8) * 1.5
+                m.expression = .happySmile
+                m.shadowRad = 3.0
+                m.shadowOffsetY = 2.3
+                m.shadowAlpha = 0.20
+            case .auto:
+                let idleCycle = sin(time * 1.5)
+                m.bobY = CGFloat(idleCycle * 1.8)
+                m.tilt = sin(time * 0.75) * 1.2
+                m.squashX = CGFloat(1.0 - idleCycle * 0.012)
+                m.squashY = CGFloat(1.0 + idleCycle * 0.018)
+                m.shadowRad = 3.2
+                m.shadowOffsetY = 2.5
+                m.shadowAlpha = 0.20
+            }
+        } else {
+            let idleCycle = sin(time * 1.5)
+            m.bobY = CGFloat(idleCycle * 1.8)
+            m.tilt = sin(time * 0.75) * 1.2
+            m.squashX = CGFloat(1.0 - idleCycle * 0.012)
+            m.squashY = CGFloat(1.0 + idleCycle * 0.018)
+            m.shadowRad = 3.2
+            m.shadowOffsetY = 2.5
+            m.shadowAlpha = 0.20
+        }
+        return m
+    }
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
-            let time = context.date.timeIntervalSinceReferenceDate
+            let now = context.date
+            let time = now.timeIntervalSinceReferenceDate
             let isHearingSpeech = (Date().timeIntervalSince(model.lastAudio ?? .distantPast) < 1.8)
             let speed: Double = isHearingSpeech ? 1.4 : 1.0
 
-            // 1. Continuous handwriting stroke oscillation
-            let strokeX: CGFloat = model.running ? CGFloat(sin(time * 10.0 * speed) * 3.5) : 0
-            let strokeY: CGFloat = model.running ? CGFloat(cos(time * 10.0 * speed) * 1.8) : 0
-            let penAngle: Double = model.running ? (sin(time * 10.0 * speed) * 14.0) : 0
+            let idleDuration = now.timeIntervalSince(lastActiveDate)
+            let isUserChosenActivity = (model.mascotIdleActivity != .auto)
+            let isIdle = !model.running && !isHovered && (isUserChosenActivity || idleDuration >= 6.0)
 
-            // 2. Gentle hopping when hovered (nhảy nhảy nhẹ nhàng, nhịp nhàng vui tươi khi rê chuột)
-            let hopProgress: CGFloat = isHovered ? CGFloat(abs(sin(time * 6.0))) : 0
-            let hopY: CGFloat = isHovered ? -hopProgress * 8.0 : 0
-            let hopTilt: Double = isHovered ? (sin(time * 6.0) * 2.8) : 0
-            let hoverSquashX: CGFloat = isHovered ? (1.0 + (1.0 - hopProgress) * 0.05 - hopProgress * 0.02) : 1.0
-            let hoverSquashY: CGFloat = isHovered ? (1.0 - (1.0 - hopProgress) * 0.05 + hopProgress * 0.03) : 1.0
+            let activeActivity: MascotIdleActivity = {
+                if model.isDockWalkEnabled {
+                    return .auto
+                } else if !isIdle {
+                    return .auto
+                } else if model.mascotIdleActivity != .auto {
+                    return model.mascotIdleActivity
+                } else {
+                    let cycleTime = max(0, idleDuration - 6.0)
+                    let idx = Int(cycleTime / 18.0) % activitiesList.count
+                    return activitiesList[idx]
+                }
+            }()
 
-            // 3. Smooth, gentle ambient breathing & floating in IDLE (Hành động thở & bồng bềnh êm ái khi nghỉ ngơi, KHÔNG giật)
-            // Chu kỳ thở chậm rãi ~4.2s, biên độ 1.8pt vừa phải để tạo cảm giác sống động nhưng thư thái
-            let idleCycle = sin(time * 1.5)
-            let idleFloatingY: CGFloat = CGFloat(idleCycle * 1.8)
-            let idleTilt: Double = sin(time * 0.75) * 1.2
-            let idleSquashX: CGFloat = CGFloat(1.0 - idleCycle * 0.012)
-            let idleSquashY: CGFloat = CGFloat(1.0 + idleCycle * 0.018)
+            let m = computeMotion(time: time, speed: speed, isIdle: isIdle, activeActivity: activeActivity)
 
-            // 4. Mascot subtle breathing and writing body sway khi làm việc
-            let writingBobY: CGFloat = model.running ? CGFloat(sin(time * 4.5 * speed) * 1.2) : 0
-            let writingTilt: Double = model.running ? (sin(time * 4.5 * speed) * 1.8) : 0
+            let strokeX = m.strokeX
+            let strokeY = m.strokeY
+            let penAngle = m.penAngle
+            let totalBobY = m.bobY
+            let totalTilt = m.tilt
+            let totalSquashX = m.squashX
+            let totalSquashY = m.squashY
+            let actScaleX = m.scaleX
+            let walkOffsetX = m.walkX
+            let expressionToUse = m.expression
+            let shadowRad = m.shadowRad
+            let shadowOffsetY = m.shadowOffsetY
+            let shadowAlpha = m.shadowAlpha
 
-            let totalBobY: CGFloat = model.running ? writingBobY : (isHovered ? hopY : idleFloatingY)
-            let totalTilt: Double = model.running ? writingTilt : (isHovered ? hopTilt : idleTilt)
-            let totalSquashX: CGFloat = isHovered ? hoverSquashX : (model.running ? 1.0 : idleSquashX)
-            let totalSquashY: CGFloat = isHovered ? hoverSquashY : (model.running ? 1.0 : idleSquashY)
-
-            // Đổ bóng mềm mại thay đổi nhịp nhàng theo độ nổi
-            let shadowRad: CGFloat = isHovered
-                ? (3.5 + hopProgress * 3.5)
-                : (model.running ? 3.0 : CGFloat(2.8 + (idleCycle + 1.0) * 0.5))
-            let shadowOffsetY: CGFloat = isHovered
-                ? (2.5 + hopProgress * 4.0)
-                : (model.running ? 2.0 : CGFloat(2.0 + (idleCycle + 1.0) * 0.4))
-            let shadowAlpha: Double = isHovered
-                ? (0.30 - Double(hopProgress) * 0.10)
-                : (model.running ? 0.22 : (0.22 - idleCycle * 0.03))
-
-            // Floating note ink sparkles (2 alternating cycles)
             let sparkPhase1 = fmod(time * 1.3, 1.0)
             let sparkPhase2 = fmod((time * 1.3) + 0.5, 1.0)
 
-            ZStack(alignment: .topTrailing) {
-                ZStack(alignment: .bottomTrailing) {
-                    // Mimo Companion Avatar: Switch to active note-taking with pen on paper
-                    MiniAvatarView(
-                        size: model.mascotStyle == "pixel" ? 64 : 80,
-                        style: model.mascotStyle,
-                        isWorking: model.running,
-                        isHovered: isHovered
-                    )
-                    .scaleEffect(x: (isHovered ? 1.06 : 1.0) * totalSquashX, y: (isHovered ? 1.06 : 1.0) * totalSquashY, anchor: .bottom)
-                    .offset(x: 0, y: totalBobY)
-                    .rotationEffect(.degrees(totalTilt), anchor: .bottom)
-                    .shadow(
-                        color: Color.black.opacity(shadowAlpha),
-                        radius: shadowRad,
-                        y: shadowOffsetY
-                    )
-                    .animation(.spring(response: 0.35, dampingFraction: 0.65), value: isHovered)
-                    .animation(.spring(response: 0.35, dampingFraction: 0.75), value: model.running)
+            let legSwing = m.legSwing
 
-                    // Lively Writing Pencil & Scribble Note Effects (Only when actively recording/translating)
-                    if model.running {
-                        // Notebook written ink lines on paper
-                        VStack(alignment: .leading, spacing: 2.2) {
+            ZStack(alignment: .bottom) {
+                // Background Dioramas (Tiểu cảnh trọn vẹn bo tròn) - chỉ hiện khi không bật đi dạo Dock:
+                if !model.isDockWalkEnabled && isIdle && activeActivity == .fishing {
+                    MascotFishingBase(time: time)
+                }
+
+                if !model.isDockWalkEnabled && isIdle && activeActivity == .sleeping {
+                    MascotSleepingDeskBase()
+                }
+
+                if !model.isDockWalkEnabled && isIdle && activeActivity == .strolling {
+                    MascotStrollingEffects(time: time, walkX: walkOffsetX)
+                }
+
+                if !model.isDockWalkEnabled && isIdle && activeActivity == .pickingFlowers {
+                    MascotFlowerEffects(time: time)
+                }
+
+                // Mimo Companion Avatar
+                MiniAvatarView(
+                    size: model.mascotStyle == "pixel" ? 64 : 80,
+                    style: model.mascotStyle,
+                    isWorking: model.running,
+                    expression: expressionToUse,
+                    isHovered: isHovered,
+                    isBackView: !model.isDockWalkEnabled && isIdle && activeActivity == .fishing,
+                    isSleeping: !model.isDockWalkEnabled && isIdle && activeActivity == .sleeping,
+                    isWalking: model.isDockWalkEnabled && !model.running && !isHovered && model.dockWalkPauseUntil == nil,
+                    walkingTowardRight: model.dockWalkDirection >= 0,
+                    facing: model.isDockWalkEnabled && !model.running && !isHovered ? model.dockWalkPauseUntil.map {
+                        MascotFacing.turning(elapsed: 1.8 - $0.timeIntervalSince(now), towardRight: model.dockWalkDirection >= 0)
+                    } : nil,
+                    legSwing: legSwing
+                )
+                .scaleEffect(x: (isHovered ? 1.06 : 1.0) * totalSquashX * actScaleX, y: (isHovered ? 1.06 : 1.0) * totalSquashY, anchor: .bottom)
+                .offset(x: walkOffsetX, y: totalBobY)
+                .rotationEffect(.degrees(totalTilt), anchor: .bottom)
+                .shadow(
+                    color: Color.black.opacity(shadowAlpha),
+                    radius: shadowRad,
+                    y: shadowOffsetY
+                )
+                .animation(.spring(response: 0.35, dampingFraction: 0.70), value: actScaleX)
+                .animation(.spring(response: 0.35, dampingFraction: 0.65), value: isHovered)
+                .animation(.spring(response: 0.35, dampingFraction: 0.75), value: model.running)
+
+                // Foreground Activity Overlays - chỉ hiện khi không bật đi dạo Dock:
+                if !model.isDockWalkEnabled && isIdle && activeActivity == .fishing {
+                    MascotFishingOverlay(time: time)
+                        .offset(y: totalBobY)
+                }
+
+                if !model.isDockWalkEnabled && isIdle && activeActivity == .sleeping {
+                    MascotSleepingEffects(time: time)
+                        .offset(x: walkOffsetX, y: totalBobY)
+                }
+
+                if !model.isDockWalkEnabled && isIdle && activeActivity == .listeningMusic {
+                    MascotMusicEffects(time: time)
+                        .offset(x: walkOffsetX, y: totalBobY)
+                }
+
+                if !model.isDockWalkEnabled && isIdle && activeActivity == .catchingButterfly {
+                    MascotButterflyEffects(time: time)
+                }
+
+                if !model.isDockWalkEnabled && isIdle && activeActivity == .sippingTea {
+                    MascotTeaEffects(time: time)
+                        .offset(x: walkOffsetX, y: totalBobY)
+                }
+
+                // Lively Writing Pencil & Scribble Note Effects (Precisely on the spiral notebook Chip Chip holds)
+                if model.running {
+                    Group {
+                        // Scribble lines on the open notebook page
+                        VStack(alignment: .leading, spacing: 2.0) {
                             Capsule()
-                                .fill(Color.accentColor.opacity(0.85))
-                                .frame(width: max(4, min(14, 8 + strokeX * 1.2)), height: 1.8)
+                                .fill(Color(red: 0.12, green: 0.52, blue: 0.92).opacity(0.85))
+                                .frame(width: max(3.5, min(10.5, 6.5 + strokeX * 0.9)), height: 1.5)
                             Capsule()
-                                .fill(Color.accentColor.opacity(0.65))
-                                .frame(width: max(3, min(16, 11 - strokeX * 0.9)), height: 1.8)
+                                .fill(Color(red: 0.12, green: 0.52, blue: 0.92).opacity(0.65))
+                                .frame(width: max(2.5, min(9.0, 7.5 - strokeX * 0.7)), height: 1.5)
                         }
-                        .offset(x: -12, y: -22)
+                        .rotationEffect(.degrees(-10))
+                        .offset(x: 10 + walkOffsetX, y: -20 + totalBobY)
 
-                        // Stylus/Pen dipping and writing cursive strokes
+                        // Golden Stylus/Pencil actively writing on the notebook
                         Image(systemName: "pencil")
-                            .font(.system(size: 13, weight: .black))
+                            .font(.system(size: 11, weight: .black))
                             .foregroundStyle(
                                 LinearGradient(
                                     colors: [
@@ -2382,63 +4322,72 @@ struct FloatingMascotView: View {
                                 )
                             )
                             .rotationEffect(.degrees(-35 + penAngle), anchor: .bottomLeading)
-                            .offset(x: -12 + strokeX, y: -25 + strokeY)
+                            .offset(x: 10 + strokeX + walkOffsetX, y: -21 + strokeY + totalBobY)
                             .shadow(color: Color.orange.opacity(0.55), radius: 2, y: 1)
 
-                        // Floating ink sparkle 1
+                        // Writing sparkles directly from the notebook
                         Image(systemName: "sparkle")
-                            .font(.system(size: 8, weight: .bold))
+                            .font(.system(size: 7, weight: .bold))
                             .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.98))
-                            .offset(x: -18 - CGFloat(sparkPhase1 * 8), y: -30 - CGFloat(sparkPhase1 * 18))
-                            .opacity(sin(sparkPhase1 * .pi) * 0.9)
-                            .scaleEffect(CGFloat(0.6 + sparkPhase1 * 0.5))
+                            .offset(x: 15 + CGFloat(sparkPhase1 * 6) + walkOffsetX, y: -26 - CGFloat(sparkPhase1 * 12) + totalBobY)
+                            .opacity(sin(sparkPhase1 * .pi) * 0.85)
+                            .scaleEffect(CGFloat(0.6 + sparkPhase1 * 0.4))
 
-                        // Floating mini note dot 2
                         Circle()
                             .fill(Color(red: 1.0, green: 0.75, blue: 0.2))
-                            .frame(width: 3.5, height: 3.5)
-                            .offset(x: -8 - CGFloat(sparkPhase2 * 10), y: -28 - CGFloat(sparkPhase2 * 16))
-                            .opacity(sin(sparkPhase2 * .pi) * 0.8)
+                            .frame(width: 3, height: 3)
+                            .offset(x: 7 - CGFloat(sparkPhase2 * 6) + walkOffsetX, y: -23 - CGFloat(sparkPhase2 * 10) + totalBobY)
+                            .opacity(sin(sparkPhase2 * .pi) * 0.75)
                     }
-                }
-                .frame(width: 86, height: 104, alignment: .bottom)
-                .padding(.top, 14) // Tăng view top để khi Mimo nhảy lên không bị cắt đỉnh đầu!
-
-                // Mini Status Indicator Dot (Chỉ hiện khi có action Viết hoặc Suy nghĩ/Xử lý, ẩn khi bình thường)
-                if model.running || model.busy {
-                    ZStack {
-                        Circle()
-                            .fill(
-                                model.busy
-                                    ? LinearGradient(colors: [Color.purple, Color.cyan], startPoint: .topLeading, endPoint: .bottomTrailing)
-                                    : LinearGradient(colors: [Color.green, Color.teal], startPoint: .topLeading, endPoint: .bottomTrailing)
-                            )
-                            .frame(width: 15, height: 15)
-                            .overlay(Circle().stroke(Color.white, lineWidth: 1.8))
-                            .shadow(color: (model.busy ? Color.purple : Color.green).opacity(0.65), radius: 3)
-
-                        Image(systemName: model.busy ? "ellipsis" : "pencil.and.scribble")
-                            .font(.system(size: model.busy ? 7 : 6.5, weight: .black))
-                            .foregroundStyle(.white)
-                    }
-                    .offset(x: 2, y: 12)
-                    .transition(.scale(scale: 0.5).combined(with: .opacity))
-                    .animation(.spring(response: 0.35, dampingFraction: 0.7), value: model.busy)
-                    .animation(.spring(response: 0.35, dampingFraction: 0.7), value: model.running)
                 }
             }
-            .frame(width: 100, height: 122, alignment: .bottom)
+            .frame(width: 140, height: 120, alignment: .bottom)
+            .padding(.top, 14)
+            .padding(.bottom, 12)
+            .frame(width: 160, height: 148, alignment: .bottom)
             .contentShape(Rectangle())
             .onHover { hovering in
                 isHovered = hovering
+                model.isMascotHovered = hovering
+                if hovering {
+                    lastActiveDate = Date()
+                }
             }
             .onTapGesture {
+                lastActiveDate = Date()
                 showQuickMenu.toggle()
             }
             .popover(isPresented: $showQuickMenu, arrowEdge: .leading) {
                 MascotQuickActionsPopover(model: model, isPresented: $showQuickMenu)
             }
             .contextMenu {
+                // Submenu: Chọn hoạt cảnh Chip Chip
+                Menu {
+                    Picker("Hoạt cảnh Chip Chip", selection: $model.mascotIdleActivity) {
+                        ForEach(MascotIdleActivity.allCases) { act in
+                            HStack {
+                                Image(systemName: act.icon)
+                                Text(act.title)
+                            }
+                            .tag(act)
+                        }
+                    }
+                } label: {
+                    Label("Hoạt cảnh khi rảnh: \(model.mascotIdleActivity.shortTitle)", systemImage: model.mascotIdleActivity.icon)
+                }
+
+                // Toggle Đi dạo dưới Dock Bar (chỉ đi dạo khi rảnh rỗi)
+                Button {
+                    model.isDockWalkEnabled.toggle()
+                } label: {
+                    Label(
+                        model.isDockWalkEnabled ? "Đi dạo dọc Dock Bar: Đang BẬT" : "Đi dạo dọc Dock Bar: Đang TẮT",
+                        systemImage: model.isDockWalkEnabled ? "checkmark.circle.fill" : "figure.walk"
+                    )
+                }
+
+                Divider()
+
                 Button {
                     Task {
                         if model.running { await model.stop() }
@@ -2481,13 +4430,14 @@ struct FloatingMascotView: View {
                     Label("Tạm biệt Chip Chip (Ẩn)", systemImage: "xmark")
                 }
             }
-            .help("Chip Chip: Bấm để trò chuyện & thao tác nhanh, kéo để dạo chơi trên màn hình!")
+            .help("Chip Chip: \(model.isDockWalkEnabled ? "Đang đi dạo thư giãn dọc Dock Bar" : (isIdle ? activeActivity.title : (model.running ? "Đang ghi chép cuộc họp" : "Sẵn sàng hỗ trợ bạn")))")
         }
     }
 }
 
 struct MascotQuickActionsPopover: View {
     @ObservedObject var model: MeetingModel
+    @ObservedObject private var tts = TTSService.shared
     @Binding var isPresented: Bool
     @State private var tipIndex = 0
     @State private var quickViText = ""
@@ -2512,13 +4462,44 @@ struct MascotQuickActionsPopover: View {
         if model.running {
             return "Chip Chip đang chăm chú nghe & ghi chép bản dịch cuộc họp nè! 📝🎧"
         }
-        return mimoQuotes[tipIndex % mimoQuotes.count]
+        if model.isDockWalkEnabled {
+            return "Chip Chip đang đi dạo thảnh thơi dọc thanh Dock Bar nè! Bạn làm việc vui vẻ nha 🚶‍♂️✨"
+        }
+        switch model.mascotIdleActivity {
+        case .fishing:
+            return "Ngồi buông cần câu cá thảnh thơi bên hồ nước trong xanh... Yên bình ghê! 🎣🐟"
+        case .sleeping:
+            return "Khò khò... Chip Chip chợp mắt tí nha, khi nào bắt đầu họp cứ gọi tớ nhé! zZz 💤"
+        case .strolling:
+            return "Đi dạo vài bước quanh màn hình cho thư giãn gân cốt nào! 🚶‍♂️✨"
+        case .catchingButterfly:
+            return "Oa, có chú bướm xinh dập dờn bay qua nè! Đẹp quá đi mất 🦋✨"
+        case .pickingFlowers:
+            return "Bông hoa này ngát hương thơm thật đó! Tặng bạn một ngày làm việc thật vui nha 🌸"
+        case .listeningMusic:
+            return "Giai điệu này chill quá! Đeo tai nghe nhún nhảy chuẩn bị họp nè 🎧🎵"
+        case .sippingTea:
+            return "Nhâm nhi tách trà ấm thơm lừng cho tỉnh táo làm việc nhé bạn ơi! ☕️"
+        case .auto:
+            return mimoQuotes[tipIndex % mimoQuotes.count]
+        }
     }
 
     private func translateAndCopyQuickText() {
         let trimmed = quickViText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         isTranslatingQuick = true
+
+        var providerToUse = model.provider
+        var keyToUse = model.key.trimmingCharacters(in: .whitespacesAndNewlines)
+        var modelNameToUse = model.modelName
+
+        if keyToUse.isEmpty && !model.coPilotKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && model.coPilotProvider != .apple && model.coPilotProvider != .free {
+            providerToUse = model.coPilotProvider
+            keyToUse = model.coPilotKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            modelNameToUse = model.coPilotModel
+        }
+
         Task {
             do {
                 let res = try await AITranslator.quickTranslateDetailed(
@@ -2526,9 +4507,9 @@ struct MascotQuickActionsPopover: View {
                     from: .vietnamese,
                     to: .english,
                     domain: model.domainSpecialty,
-                    provider: model.provider,
-                    model: model.modelName,
-                    key: model.key
+                    provider: providerToUse,
+                    model: modelNameToUse,
+                    key: keyToUse
                 )
                 await MainActor.run {
                     self.quickEnResult = res.primary
@@ -2665,6 +4646,67 @@ struct MascotQuickActionsPopover: View {
             }
             .buttonStyle(.plain)
             .help("Bấm vào để đổi câu chuyện với Chip Chip")
+
+            // Bộ chọn hoạt cảnh giải trí khi rảnh
+            HStack(spacing: 6) {
+                HStack(spacing: 4) {
+                    Image(systemName: model.mascotIdleActivity.icon)
+                        .foregroundStyle(Color.accentColor)
+                        .font(.system(size: 10))
+                    Text("Hoạt cảnh:")
+                        .font(.system(size: 10.5, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+
+                Menu {
+                    Picker("Hoạt cảnh khi rảnh", selection: $model.mascotIdleActivity) {
+                        ForEach(MascotIdleActivity.allCases) { act in
+                            HStack {
+                                Image(systemName: act.icon)
+                                Text(act.title)
+                            }
+                            .tag(act)
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(model.mascotIdleActivity.shortTitle)
+                            .font(.system(size: 10.5, weight: .bold))
+                            .lineLimit(1)
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 8))
+                    }
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Color.secondary.opacity(0.12))
+                    .foregroundStyle(.primary)
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                }
+                .menuStyle(.borderlessButton)
+
+                Spacer()
+
+                // Nút bật/tắt Đi dạo dọc Dock Bar
+                Button {
+                    model.isDockWalkEnabled.toggle()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: model.isDockWalkEnabled ? "figure.walk.circle.fill" : "figure.walk")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(model.isDockWalkEnabled ? Color.green : Color.secondary)
+                        Text(model.isDockWalkEnabled ? "Đi dạo Dock: Bật" : "Đi dạo Dock")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(model.isDockWalkEnabled ? Color.green : Color.secondary)
+                    }
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(model.isDockWalkEnabled ? Color.green.opacity(0.14) : Color.secondary.opacity(0.10))
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .help("Chip Chip tự động đi dạo qua lại dọc theo thanh Dock Bar khi máy rảnh rỗi")
+            }
+            .padding(.horizontal, 2)
 
             // Mini Quick Chat (Khung Dịch nhanh sáng sủa, nền trắng tinh tế)
             VStack(alignment: .leading, spacing: 7) {
@@ -2805,25 +4847,46 @@ struct MascotQuickActionsPopover: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                            Button {
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(quickEnResult, forType: .string)
-                                quickCopied = true
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { quickCopied = false }
-                            } label: {
-                                HStack(spacing: 3) {
-                                    Image(systemName: quickCopied ? "checkmark" : "doc.on.doc")
-                                    Text(quickCopied ? "Đã copy" : "Copy")
+                            HStack(spacing: 4) {
+                                let isSpeakingQuick = tts.isSpeaking && tts.currentlySpeakingText == quickEnResult
+                                Button {
+                                    if isSpeakingQuick {
+                                        tts.stop()
+                                    } else {
+                                        tts.speak(text: quickEnResult, language: .english)
+                                    }
+                                } label: {
+                                    Image(systemName: isSpeakingQuick ? "speaker.wave.3.fill" : "speaker.wave.2")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundStyle(isSpeakingQuick ? Color.accentColor : Color.secondary)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 4)
+                                        .background(Color.secondary.opacity(0.12))
+                                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                                 }
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(quickCopied ? Color.green : Color.white)
-                                .padding(.horizontal, 7)
-                                .padding(.vertical, 4)
-                                .background(quickCopied ? Color.green.opacity(0.2) : Color.accentColor)
-                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                .buttonStyle(.plain)
+                                .help(isSpeakingQuick ? "Dừng đọc" : "Phát âm câu dịch tiếng Anh")
+
+                                Button {
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString(quickEnResult, forType: .string)
+                                    quickCopied = true
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { quickCopied = false }
+                                } label: {
+                                    HStack(spacing: 3) {
+                                        Image(systemName: quickCopied ? "checkmark" : "doc.on.doc")
+                                        Text(quickCopied ? "Đã copy" : "Copy")
+                                    }
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(quickCopied ? Color.green : Color.white)
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 4)
+                                    .background(quickCopied ? Color.green.opacity(0.2) : Color.accentColor)
+                                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                }
+                                .buttonStyle(.plain)
+                                .help("Copy lại câu dịch này")
                             }
-                            .buttonStyle(.plain)
-                            .help("Copy lại câu dịch này")
                         }
 
                         // Hiển thị gợi ý các phương án khác nếu có
@@ -2831,33 +4894,50 @@ struct MascotQuickActionsPopover: View {
                             Divider().opacity(0.3)
                             VStack(alignment: .leading, spacing: 4) {
                                 ForEach(quickAlternatives) { alt in
-                                    Button {
-                                        NSPasteboard.general.clearContents()
-                                        NSPasteboard.general.setString(alt.text, forType: .string)
-                                        copiedAltID = alt.id
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copiedAltID = nil }
-                                    } label: {
-                                        HStack(spacing: 6) {
-                                            Text(alt.tone)
-                                                .font(.system(size: 8.5, weight: .bold))
-                                                .padding(.horizontal, 4)
-                                                .padding(.vertical, 1.5)
-                                                .background(Color.secondary.opacity(0.12))
-                                                .clipShape(Capsule())
+                                    HStack(spacing: 6) {
+                                        Button {
+                                            NSPasteboard.general.clearContents()
+                                            NSPasteboard.general.setString(alt.text, forType: .string)
+                                            copiedAltID = alt.id
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copiedAltID = nil }
+                                        } label: {
+                                            HStack(spacing: 6) {
+                                                Text(alt.tone)
+                                                    .font(.system(size: 8.5, weight: .bold))
+                                                    .padding(.horizontal, 4)
+                                                    .padding(.vertical, 1.5)
+                                                    .background(Color.secondary.opacity(0.12))
+                                                    .clipShape(Capsule())
 
-                                            Text(alt.text)
-                                                .font(.system(size: 10))
-                                                .lineLimit(1)
-                                                .foregroundStyle(.secondary)
+                                                Text(alt.text)
+                                                    .font(.system(size: 10))
+                                                    .lineLimit(1)
+                                                    .foregroundStyle(.secondary)
 
-                                            Spacer()
+                                                Spacer()
 
-                                            Image(systemName: copiedAltID == alt.id ? "checkmark" : "doc.on.doc")
-                                                .font(.system(size: 9))
-                                                .foregroundStyle(copiedAltID == alt.id ? Color.green : .secondary)
+                                                Image(systemName: copiedAltID == alt.id ? "checkmark" : "doc.on.doc")
+                                                    .font(.system(size: 9))
+                                                    .foregroundStyle(copiedAltID == alt.id ? Color.green : .secondary)
+                                            }
                                         }
+                                        .buttonStyle(.plain)
+
+                                        let isSpeakingAlt = tts.isSpeaking && tts.currentlySpeakingText == alt.text
+                                        Button {
+                                            if isSpeakingAlt {
+                                                tts.stop()
+                                            } else {
+                                                tts.speak(text: alt.text, language: .english)
+                                            }
+                                        } label: {
+                                            Image(systemName: isSpeakingAlt ? "speaker.wave.3.fill" : "speaker.wave.2")
+                                                .font(.system(size: 9))
+                                                .foregroundStyle(isSpeakingAlt ? Color.accentColor : .secondary)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .help("Nghe phát âm")
                                     }
-                                    .buttonStyle(.plain)
                                 }
                             }
                         }
@@ -2892,47 +4972,65 @@ struct MascotQuickActionsPopover: View {
                     }
 
                     ForEach(model.suggestedReplies.prefix(2)) { reply in
-                        Button {
-                            NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(reply.english, forType: .string)
-                            copiedReplyID = reply.id
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copiedReplyID = nil }
-                        } label: {
-                            HStack(alignment: .top, spacing: 6) {
-                                Text(reply.tone)
-                                    .font(.system(size: 8.5, weight: .bold))
-                                    .padding(.horizontal, 5)
-                                    .padding(.vertical, 1.5)
-                                    .background(Color.purple.opacity(0.15))
-                                    .foregroundStyle(.purple)
-                                    .clipShape(Capsule())
+                        HStack(spacing: 4) {
+                            Button {
+                                NSPasteboard.general.clearContents()
+                                NSPasteboard.general.setString(reply.english, forType: .string)
+                                copiedReplyID = reply.id
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copiedReplyID = nil }
+                            } label: {
+                                HStack(alignment: .top, spacing: 6) {
+                                    Text(reply.tone)
+                                        .font(.system(size: 8.5, weight: .bold))
+                                        .padding(.horizontal, 5)
+                                        .padding(.vertical, 1.5)
+                                        .background(Color.purple.opacity(0.15))
+                                        .foregroundStyle(.purple)
+                                        .clipShape(Capsule())
 
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(reply.english)
-                                        .font(.system(size: 10.5, weight: .semibold))
-                                        .foregroundStyle(.primary)
-                                        .lineLimit(1)
-                                    Text(reply.vietnamese)
-                                        .font(.system(size: 9.5))
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(reply.english)
+                                            .font(.system(size: 10.5, weight: .semibold))
+                                            .foregroundStyle(.primary)
+                                            .lineLimit(1)
+                                        Text(reply.vietnamese)
+                                            .font(.system(size: 9.5))
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+
+                                    Spacer()
+
+                                    Image(systemName: copiedReplyID == reply.id ? "checkmark.circle.fill" : "doc.on.doc")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(copiedReplyID == reply.id ? Color.green : .secondary)
                                 }
-
-                                Spacer()
-
-                                Image(systemName: copiedReplyID == reply.id ? "checkmark.circle.fill" : "doc.on.doc")
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(copiedReplyID == reply.id ? Color.green : .secondary)
                             }
-                            .padding(6)
-                            .background(Color(nsColor: .controlBackgroundColor).opacity(0.65))
-                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                    .stroke(Color.primary.opacity(0.06), lineWidth: 0.8)
-                            )
+                            .buttonStyle(.plain)
+
+                            let isSpeakingRep = tts.isSpeaking && tts.currentlySpeakingText == reply.english
+                            Button {
+                                if isSpeakingRep {
+                                    tts.stop()
+                                } else {
+                                    tts.speak(text: reply.english, language: .english)
+                                }
+                            } label: {
+                                Image(systemName: isSpeakingRep ? "speaker.wave.3.fill" : "speaker.wave.2")
+                                    .font(.system(size: 9.5))
+                                    .foregroundStyle(isSpeakingRep ? Color.purple : .secondary)
+                                    .padding(4)
+                            }
+                            .buttonStyle(.plain)
+                            .help("Phát âm câu trả lời này")
                         }
-                        .buttonStyle(.plain)
+                        .padding(6)
+                        .background(Color(nsColor: .controlBackgroundColor).opacity(0.65))
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .stroke(Color.primary.opacity(0.06), lineWidth: 0.8)
+                        )
                     }
                 }
             }
@@ -3023,6 +5121,138 @@ struct MascotQuickActionsPopover: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .stroke(model.isOverlayVisible ? Color.orange.opacity(0.25) : Color.primary.opacity(0.07), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+
+            // Translate Selected Text Action
+            Button {
+                isPresented = false
+                Task {
+                    await GlobalHotkeyManager.shared.triggerSelectionTranslation()
+                }
+            } label: {
+                HStack(spacing: 9) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(Color.teal)
+                            .frame(width: 24, height: 24)
+
+                        Image(systemName: "text.magnifyingglass")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+
+                    Text("Dịch từ bôi đen")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.primary)
+
+                    Spacer()
+
+                    Text("Option + D")
+                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.secondary.opacity(0.12))
+                        .foregroundStyle(.secondary)
+                        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color(nsColor: .controlBackgroundColor).opacity(0.85))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.primary.opacity(0.07), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+
+            // AI Fix Grammar & Polish Action (Option + F)
+            Button {
+                isPresented = false
+                Task {
+                    await GlobalHotkeyManager.shared.triggerGrammarFixAndPolish()
+                }
+            } label: {
+                HStack(spacing: 9) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(Color.purple)
+                            .frame(width: 24, height: 24)
+
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+
+                    Text("Sửa ngữ pháp & làm mượt")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.primary)
+
+                    Spacer()
+
+                    Text("Option + F")
+                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.secondary.opacity(0.12))
+                        .foregroundStyle(.secondary)
+                        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color(nsColor: .controlBackgroundColor).opacity(0.85))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.primary.opacity(0.07), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+
+            // Vocabulary Notebook Action
+            Button {
+                isPresented = false
+                model.showMainWindow()
+                model.selectedDashboardTab = 1
+                model.selectedNotebookTab = 1
+            } label: {
+                HStack(spacing: 9) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(Color.indigo)
+                            .frame(width: 24, height: 24)
+
+                        Image(systemName: "character.book.closed.fill")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+
+                    Text("Sổ từ vựng & Flashcards")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.primary)
+
+                    Spacer()
+
+                    let count = VocabularyManager.shared.items.count
+                    if count > 0 {
+                        Text("\(count)")
+                            .font(.system(size: 9.5, weight: .bold))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1.5)
+                            .background(Color.indigo.opacity(0.15))
+                            .foregroundStyle(Color.indigo)
+                            .clipShape(Capsule())
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color(nsColor: .controlBackgroundColor).opacity(0.85))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.primary.opacity(0.07), lineWidth: 1)
                 )
             }
             .buttonStyle(.plain)
@@ -3137,6 +5367,7 @@ struct MascotQuickActionsPopover: View {
                 )
             }
         )
+        .enableAppleTranslationSession(source: .vietnamese, target: .english)
     }
 }
 
@@ -3156,9 +5387,11 @@ struct MainDashboardView: View {
 
                     Text("TransTools")
                         .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .lineLimit(1)
 
                     Text(appVersionDisplay)
                         .font(.system(size: 10, weight: .bold))
+                        .lineLimit(1)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.secondary.opacity(0.12))
@@ -3166,6 +5399,8 @@ struct MainDashboardView: View {
 
                     AutoUpdateNavBadge()
                 }
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
 
                 Spacer()
 
@@ -3201,6 +5436,7 @@ struct MainDashboardView: View {
                         withAnimation(.easeInOut(duration: 0.2)) { model.selectedDashboardTab = 2 }
                     }
                 }
+                .fixedSize(horizontal: true, vertical: false)
                 .padding(4)
                 .background(Color(nsColor: .controlBackgroundColor).opacity(0.8))
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -3219,6 +5455,8 @@ struct MainDashboardView: View {
                         HStack(spacing: 6) {
                             Image(systemName: model.isFloatingMascotVisible ? "sparkles.tv.fill" : "sparkles.tv")
                             Text("Trợ lý Chip Chip")
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
                         }
                         .font(.system(size: 12, weight: .medium))
                         .padding(.horizontal, 10)
@@ -3228,6 +5466,7 @@ struct MainDashboardView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                     .buttonStyle(.plain)
+                    .fixedSize(horizontal: true, vertical: false)
                     .help("Bật/Tắt trợ lý Chip Chip nổi trên màn hình để thao tác nhanh")
 
                     Button {
@@ -3236,6 +5475,8 @@ struct MainDashboardView: View {
                         HStack(spacing: 6) {
                             Image(systemName: model.isOverlayVisible ? "pip.exit" : "pip.enter")
                             Text("Phụ đề nổi")
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
                         }
                         .font(.system(size: 12, weight: .medium))
                         .padding(.horizontal, 10)
@@ -3245,6 +5486,7 @@ struct MainDashboardView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                     .buttonStyle(.plain)
+                    .fixedSize(horizontal: true, vertical: false)
                     .help(model.isOverlayVisible ? "Tắt cửa sổ phụ đề nổi" : "Mở cửa sổ phụ đề nổi luôn hiển thị trên cùng")
 
                     Button {
@@ -3329,25 +5571,37 @@ struct NavTabButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 7) {
+            HStack(spacing: 6) {
                 Image(systemName: icon)
                     .font(.system(size: 12, weight: .medium))
 
                 Text(title)
                     .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
 
                 if let badge {
-                    Text(badge)
-                        .font(.system(size: 9, weight: .black))
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(badgeColor.opacity(0.2))
-                        .foregroundStyle(badgeColor)
-                        .clipShape(Capsule())
+                    HStack(spacing: 3) {
+                        if badge == "LIVE" {
+                            Circle()
+                                .fill(badgeColor)
+                                .frame(width: 5, height: 5)
+                        }
+                        Text(badge)
+                            .font(.system(size: 8.5, weight: .bold))
+                            .lineLimit(1)
+                    }
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1.5)
+                    .background(badgeColor.opacity(0.18))
+                    .foregroundStyle(badgeColor)
+                    .clipShape(Capsule())
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 7)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, 11)
+            .padding(.vertical, 6)
             .background(isSelected ? Color(nsColor: .selectedControlColor).opacity(0.18) : Color.clear)
             .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -3399,33 +5653,35 @@ struct AudioSourceSelectorMenu: View {
                 Label("Tải lại danh sách ứng dụng", systemImage: "arrow.clockwise")
             }
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: 7) {
                 // Icon badge box
                 ZStack {
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .fill(sourceColor.opacity(0.16))
-                        .frame(width: 24, height: 24)
+                        .frame(width: 22, height: 22)
 
                     Image(systemName: sourceIcon)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(sourceColor)
                 }
 
-                // Clean single line title
+                // Clean single line title with tail truncation
                 Text(sourceTitle)
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundStyle(.primary)
                     .lineLimit(1)
+                    .truncationMode(.tail)
 
-                Spacer(minLength: 8)
+                Spacer(minLength: 4)
 
                 // Dropdown chevron
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 9, weight: .bold))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
+            .lineLimit(1)
             .padding(.horizontal, 10)
-            .frame(minWidth: 200, maxWidth: 300)
+            .frame(minWidth: 150, maxWidth: 210)
             .frame(height: 36)
             .background(Color(nsColor: .controlBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -3434,7 +5690,7 @@ struct AudioSourceSelectorMenu: View {
                     .stroke(Color.primary.opacity(0.08), lineWidth: 1)
             )
         }
-        .menuStyle(.borderlessButton)
+        .buttonStyle(.plain)
         .disabled(model.running || model.busy)
         .help("Chọn nguồn âm thanh cần nhận diện và dịch")
     }
@@ -3513,10 +5769,13 @@ struct LanguagePairSelectorMenu: View {
                     Text(model.sourceLanguage.shortName)
                         .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(.primary)
+                        .lineLimit(1)
                     Image(systemName: "chevron.down")
                         .font(.system(size: 8, weight: .semibold))
                         .foregroundStyle(.secondary)
                 }
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
                 .padding(.horizontal, 8)
                 .frame(height: 36)
                 .background(Color(nsColor: .controlBackgroundColor))
@@ -3527,87 +5786,101 @@ struct LanguagePairSelectorMenu: View {
                 )
             }
             .buttonStyle(.plain)
+            .fixedSize(horizontal: true, vertical: false)
             .help("Chọn ngôn ngữ nguồn (nghe & nhận diện giọng nói)")
 
-            // Quick Swap Button (⇄)
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    model.swapLanguages()
-                }
-                if model.running {
-                    Task { await model.restartSpeechRecognition() }
-                }
-            } label: {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .fill(Color.accentColor.opacity(0.12))
-                        .frame(width: 32, height: 36)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                .stroke(Color.accentColor.opacity(0.25), lineWidth: 1)
-                        )
+            // Quick Swap & Target Language Menu (Hidden when in Original Only mode)
+            if model.subtitleMode != .originalOnly {
+                // Quick Swap Button (⇄)
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        model.swapLanguages()
+                    }
+                    if model.running {
+                        Task { await model.restartSpeechRecognition() }
+                    }
+                } label: {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(Color.accentColor.opacity(0.12))
+                            .frame(width: 32, height: 36)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                    .stroke(Color.accentColor.opacity(0.25), lineWidth: 1)
+                            )
 
-                    Image(systemName: "arrow.left.arrow.right")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(Color.accentColor)
+                        Image(systemName: "arrow.left.arrow.right")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Color.accentColor)
+                    }
                 }
-            }
-            .buttonStyle(.plain)
-            .help("Đổi chiều ngôn ngữ nhanh (⇄)")
+                .buttonStyle(.plain)
+                .fixedSize(horizontal: true, vertical: false)
+                .help("Đổi chiều ngôn ngữ nhanh (⇄)")
+                .transition(.scale(scale: 0.8).combined(with: .opacity))
 
-            // Target Language Menu
-            Menu {
-                Section("Ngôn ngữ đích (Phụ đề/Bản dịch)") {
-                    ForEach(AppLanguage.allCases) { lang in
-                        Button {
-                            model.targetLanguage = lang
-                        } label: {
-                            HStack {
-                                Text("\(lang.flag) \(lang.displayName)")
-                                if model.targetLanguage == lang {
-                                    Spacer()
-                                    Image(systemName: "checkmark")
+                // Target Language Menu
+                Menu {
+                    Section("Ngôn ngữ đích (Phụ đề/Bản dịch)") {
+                        ForEach(AppLanguage.allCases) { lang in
+                            Button {
+                                model.targetLanguage = lang
+                            } label: {
+                                HStack {
+                                    Text("\(lang.flag) \(lang.displayName)")
+                                    if model.targetLanguage == lang {
+                                        Spacer()
+                                        Image(systemName: "checkmark")
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                Divider()
+                    Divider()
 
-                Section("Cặp ngôn ngữ thông dụng") {
-                    presetButton(title: "🇺🇸 Tiếng Anh ⇄ 🇻🇳 Tiếng Việt", src: .english, dst: .vietnamese)
-                    presetButton(title: "🇮🇳 Tiếng Anh (Ấn Độ) ➔ 🇻🇳 Tiếng Việt", src: .englishIndia, dst: .vietnamese)
-                    presetButton(title: "🇮🇹 Tiếng Ý ⇄ 🇻🇳 Tiếng Việt", src: .italian, dst: .vietnamese)
-                    presetButton(title: "🇻🇳 Tiếng Việt ⇄ 🇺🇸 Tiếng Anh", src: .vietnamese, dst: .english)
-                    presetButton(title: "🇨🇳 Tiếng Trung ⇄ 🇻🇳 Tiếng Việt", src: .chinese, dst: .vietnamese)
-                    presetButton(title: "🇻🇳 Tiếng Việt ⇄ 🇨🇳 Tiếng Trung", src: .vietnamese, dst: .chinese)
-                    presetButton(title: "🇯🇵 Tiếng Nhật ⇄ 🇻🇳 Tiếng Việt", src: .japanese, dst: .vietnamese)
-                    presetButton(title: "🇰🇷 Tiếng Hàn ⇄ 🇻🇳 Tiếng Việt", src: .korean, dst: .vietnamese)
+                    Section("Cặp ngôn ngữ thông dụng") {
+                        presetButton(title: "🇺🇸 Tiếng Anh ⇄ 🇻🇳 Tiếng Việt", src: .english, dst: .vietnamese)
+                        presetButton(title: "🇮🇳 Tiếng Anh (Ấn Độ) ➔ 🇻🇳 Tiếng Việt", src: .englishIndia, dst: .vietnamese)
+                        presetButton(title: "🇮🇹 Tiếng Ý ⇄ 🇻🇳 Tiếng Việt", src: .italian, dst: .vietnamese)
+                        presetButton(title: "🇻🇳 Tiếng Việt ⇄ 🇺🇸 Tiếng Anh", src: .vietnamese, dst: .english)
+                        presetButton(title: "🇨🇳 Tiếng Trung ⇄ 🇻🇳 Tiếng Việt", src: .chinese, dst: .vietnamese)
+                        presetButton(title: "🇻🇳 Tiếng Việt ⇄ 🇨🇳 Tiếng Trung", src: .vietnamese, dst: .chinese)
+                        presetButton(title: "🇯🇵 Tiếng Nhật ⇄ 🇻🇳 Tiếng Việt", src: .japanese, dst: .vietnamese)
+                        presetButton(title: "🇰🇷 Tiếng Hàn ⇄ 🇻🇳 Tiếng Việt", src: .korean, dst: .vietnamese)
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Text(model.targetLanguage.flag)
+                            .font(.system(size: 13))
+                        Text(model.targetLanguage.shortName)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.horizontal, 8)
+                    .frame(height: 36)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                    )
                 }
-            } label: {
-                HStack(spacing: 5) {
-                    Text(model.targetLanguage.flag)
-                        .font(.system(size: 13))
-                    Text(model.targetLanguage.shortName)
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(.primary)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 8, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 8)
-                .frame(height: 36)
-                .background(Color(nsColor: .controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-                )
+                .buttonStyle(.plain)
+                .fixedSize(horizontal: true, vertical: false)
+                .help("Chọn ngôn ngữ dịch ra (phụ đề & ghi chú)")
+                .transition(.scale(scale: 0.8).combined(with: .opacity))
             }
-            .buttonStyle(.plain)
-            .help("Chọn ngôn ngữ dịch ra (phụ đề & ghi chú)")
         }
+        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: model.subtitleMode)
+        .lineLimit(1)
+        .fixedSize(horizontal: true, vertical: false)
     }
 
     private func presetButton(title: String, src: AppLanguage, dst: AppLanguage) -> some View {
@@ -3620,6 +5893,231 @@ struct LanguagePairSelectorMenu: View {
     }
 }
 
+// MARK: - Subtitle Display Mode Selector Menu
+
+struct SubtitleModeSelectorMenu: View {
+    @ObservedObject var model: MeetingModel
+
+    var body: some View {
+        Menu {
+            Section("Chế độ hiển thị phụ đề") {
+                ForEach(SubtitleDisplayMode.allCases) { mode in
+                    Button {
+                        model.subtitleMode = mode
+                    } label: {
+                        HStack {
+                            Label(mode.title, systemImage: mode.icon)
+                            if model.subtitleMode == mode {
+                                Spacer()
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: model.subtitleMode.icon)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(model.subtitleMode == .originalOnly ? Color.green : Color.accentColor)
+                Text(model.subtitleMode.shortTitle)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, 8)
+            .frame(height: 36)
+            .background(Color(nsColor: .controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .stroke(model.subtitleMode == .originalOnly ? Color.green.opacity(0.35) : Color.primary.opacity(0.08), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .fixedSize(horizontal: true, vertical: false)
+        .help("Chế độ phụ đề: Song ngữ, Chỉ tiếng gốc (CC), hoặc Chỉ bản dịch")
+    }
+}
+
+// MARK: - Earphone Text-to-Speech (TTS) Control Menu
+
+struct EarphoneTTSControlMenu: View {
+    @ObservedObject var model: MeetingModel
+    @ObservedObject var tts = TTSService.shared
+
+    private var activeLocale: String {
+        tts.autoTarget == .translation ? model.targetLanguage.speechLocale : model.sourceLanguage.speechLocale
+    }
+
+    private var availableVoices: [TTSVoiceOption] {
+        tts.availableVoices(for: activeLocale)
+    }
+
+    var body: some View {
+        Menu {
+            Section("Tai nghe & Đọc trực tiếp (TTS)") {
+                Button {
+                    tts.isAutoTTSEnabled.toggle()
+                } label: {
+                    HStack {
+                        Label(tts.isAutoTTSEnabled ? "Tắt tự động đọc tai nghe" : "Bật tự động đọc tai nghe", systemImage: tts.isAutoTTSEnabled ? "headphones" : "headphones")
+                        if tts.isAutoTTSEnabled {
+                            Spacer()
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+
+                Button {
+                    let lang = (tts.autoTarget == .translation ? model.targetLanguage : model.sourceLanguage)
+                    tts.preview(language: lang)
+                } label: {
+                    Label(tts.isSpeaking ? "Đang phát thử..." : "🔊 Nghe thử giọng đọc", systemImage: "speaker.wave.2")
+                }
+
+                if tts.isSpeaking {
+                    Button(role: .destructive) {
+                        tts.stop()
+                    } label: {
+                        Label("Dừng đọc ngay lập tức", systemImage: "stop.circle")
+                    }
+                }
+            }
+
+            Divider()
+
+            Section("Nội dung đọc vào tai nghe") {
+                ForEach(TTSService.AutoSpeakTarget.allCases) { target in
+                    Button {
+                        tts.autoTarget = target
+                    } label: {
+                        HStack {
+                            Text(target.title)
+                            if tts.autoTarget == target {
+                                Spacer()
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            }
+
+            Divider()
+
+            Section("Phong cách giọng đọc (Tone & Cảm xúc)") {
+                ForEach(VoiceTone.allCases) { tone in
+                    Button {
+                        tts.voiceTone = tone
+                    } label: {
+                        HStack {
+                            Label(tone.title, systemImage: tone.icon)
+                            if tts.voiceTone == tone {
+                                Spacer()
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            }
+
+            Divider()
+
+            Section("Giọng đọc (\(tts.autoTarget == .translation ? model.targetLanguage.shortName : model.sourceLanguage.shortName))") {
+                Button {
+                    tts.selectedVoiceID = nil
+                } label: {
+                    HStack {
+                        Text("✨ Tự động (Ưu tiên giọng AI tự nhiên nhất)")
+                        if tts.selectedVoiceID == nil {
+                            Spacer()
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+
+                ForEach(availableVoices) { voice in
+                    Button {
+                        tts.selectedVoiceID = voice.id
+                    } label: {
+                        HStack {
+                            Text(voice.displayName)
+                            if tts.selectedVoiceID == voice.id {
+                                Spacer()
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            }
+
+            Divider()
+
+            Section("Tốc độ giọng đọc") {
+                Button("Rất chậm - Luyện nghe (0.40x)") { tts.speechRate = 0.40 }
+                Button("Chậm rãi - Rõ từng chữ (0.44x)") { tts.speechRate = 0.44 }
+                Button("Chuẩn tự nhiên - Khuyên dùng (0.46x)") { tts.speechRate = 0.46 }
+                Button("Nhanh - Tốc độ họp (0.52x)") { tts.speechRate = 0.52 }
+                Button("Rất nhanh (0.58x)") { tts.speechRate = 0.58 }
+            }
+
+            Divider()
+
+            Section("Hệ thống") {
+                Button {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.Accessibility-Settings.extension?SpokenContent") {
+                        NSWorkspace.shared.open(url)
+                    }
+                } label: {
+                    Label("Mở Cài đặt Giọng nói máy Mac...", systemImage: "gearshape")
+                }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                ZStack {
+                    Image(systemName: tts.isAutoTTSEnabled ? "headphones.circle.fill" : "headphones")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(tts.isAutoTTSEnabled ? Color.purple : Color.secondary)
+
+                    if tts.isSpeaking {
+                        Circle()
+                            .fill(Color.green)
+                            .frame(width: 5, height: 5)
+                            .offset(x: 5, y: -5)
+                    }
+                }
+
+                Text(tts.isAutoTTSEnabled ? "Tai nghe: BẬT" : "Tai nghe")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(tts.isAutoTTSEnabled ? Color.purple : Color.primary)
+                    .lineLimit(1)
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, 8)
+            .frame(height: 36)
+            .background(Color(nsColor: .controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .stroke(tts.isAutoTTSEnabled ? Color.purple.opacity(0.35) : Color.primary.opacity(0.08), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .fixedSize(horizontal: true, vertical: false)
+        .help("Text to Speech (TTS) phát trực tiếp qua tai nghe: Tự động phiên dịch giọng nói thì thầm vào tai nghe hoặc nghe phát âm")
+    }
+}
+
 // MARK: - Tab 1: Meeting & Live Captions
 
 struct MeetingView: View {
@@ -3629,18 +6127,18 @@ struct MeetingView: View {
         VStack(spacing: 12) {
             // Control Hub Card
             VStack(spacing: 8) {
-                HStack(spacing: 10) {
+                HStack(spacing: 8) {
                     // Audio Source Selector - Spacious Modern Menu
                     AudioSourceSelectorMenu(model: model)
 
                     // Standalone Quick Refresh Button
                     Button {
-                        Task { await model.refresh() }
+                        Task { await model.refresh(userInitiated: true) }
                     } label: {
                         ZStack {
                             RoundedRectangle(cornerRadius: 9, style: .continuous)
                                 .fill(Color(nsColor: .controlBackgroundColor))
-                                .frame(width: 36, height: 36)
+                                .frame(width: 32, height: 36)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 9, style: .continuous)
                                         .stroke(Color.primary.opacity(0.08), lineWidth: 1)
@@ -3652,13 +6150,23 @@ struct MeetingView: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .fixedSize(horizontal: true, vertical: false)
                     .help("Tải lại danh sách ứng dụng")
                     .disabled(model.running || model.busy)
 
                     // Language Pair Selector & Quick Swap
                     LanguagePairSelectorMenu(model: model)
+                        .layoutPriority(1)
 
-                    Spacer()
+                    // Subtitle Display Mode Selector
+                    SubtitleModeSelectorMenu(model: model)
+                        .layoutPriority(1)
+
+                    // Earphone Text-to-Speech (TTS) Mode
+                    EarphoneTTSControlMenu(model: model)
+                        .layoutPriority(1)
+
+                    Spacer(minLength: 8)
 
                     // Live Signal & Audio Monitor Pill
                     TimelineView(.periodic(from: .now, by: 1)) { context in
@@ -3742,9 +6250,7 @@ struct MeetingView: View {
 
                         if model.warning.localizedCaseInsensitiveContains("Dictation") || model.warning.localizedCaseInsensitiveContains("Siri") {
                             Button {
-                                if let url = URL(string: "x-apple.systempreferences:com.apple.Keyboard-Settings.extension") {
-                                    NSWorkspace.shared.open(url)
-                                }
+                                model.promptPermissionSettings(for: .dictation)
                             } label: {
                                 HStack(spacing: 4) {
                                     Image(systemName: "keyboard")
@@ -3758,10 +6264,42 @@ struct MeetingView: View {
                                 .clipShape(Capsule())
                             }
                             .buttonStyle(.plain)
+                        } else if model.warning.localizedCaseInsensitiveContains("Microphone") {
+                            Button {
+                                model.promptPermissionSettings(for: .microphone)
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "mic.fill")
+                                    Text("Cấp quyền Microphone")
+                                }
+                                .font(.system(size: 11, weight: .bold))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(Color.orange)
+                                .foregroundStyle(.white)
+                                .clipShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
+                        } else if model.warning.localizedCaseInsensitiveContains("Speech Recognition") {
+                            Button {
+                                model.promptPermissionSettings(for: .speechRecognition)
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "waveform.and.mic")
+                                    Text("Cấp quyền Nhận diện giọng nói")
+                                }
+                                .font(.system(size: 11, weight: .bold))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(Color.orange)
+                                .foregroundStyle(.white)
+                                .clipShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
                         } else if model.warning.localizedCaseInsensitiveContains("màn hình") || model.warning.localizedCaseInsensitiveContains("Screen") || model.warning.localizedCaseInsensitiveContains("TCC") {
                             HStack(spacing: 8) {
                                 Button {
-                                    model.openScreenCaptureSettings()
+                                    model.promptPermissionSettings(for: .screenCapture)
                                 } label: {
                                     HStack(spacing: 4) {
                                         Image(systemName: "lock.shield.fill")
@@ -3812,6 +6350,9 @@ struct MeetingView: View {
                     .stroke(Color.primary.opacity(0.06), lineWidth: 1)
             )
 
+            // Permanent Keyboard Shortcut & Developer Phrases Guide on Main Dashboard
+            KeyboardShortcutGuideCard()
+
             // Subtitle Stream Section
             ZStack {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -3822,53 +6363,100 @@ struct MeetingView: View {
                     )
 
                 if model.captions.isEmpty {
-                    VStack(spacing: 16) {
-                        if model.showMascot {
-                            MiniAvatarView(size: 110, style: model.mascotStyle)
+                    if model.running {
+                        VStack(spacing: 16) {
+                            if model.showMascot {
+                                MiniAvatarView(size: 100, style: model.mascotStyle, isWorking: true)
+                                    .padding(.bottom, 2)
+                            } else {
+                                HStack(spacing: 4) {
+                                    ForEach(0..<5) { i in
+                                        RoundedRectangle(cornerRadius: 1.5)
+                                            .fill(LinearGradient(colors: [.green, .teal], startPoint: .top, endPoint: .bottom))
+                                            .frame(width: 3.5, height: CGFloat(10 + (i % 3) * 8))
+                                    }
+                                }
                                 .padding(.bottom, 4)
-                        } else {
-                            Image(systemName: "waveform.badge.mic")
-                                .font(.system(size: 46))
-                                .foregroundStyle(LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                .padding(.bottom, 4)
-                        }
+                            }
 
-                        VStack(spacing: 6) {
-                            Text("Sẵn sàng nghe & phiên dịch")
-                                .font(.system(size: 17, weight: .bold, design: .rounded))
+                            VStack(spacing: 6) {
+                                Text("Đang lắng nghe âm thanh...")
+                                    .font(.system(size: 16, weight: .bold, design: .rounded))
 
-                            Text("Chọn nguồn âm thanh (Âm thanh hệ thống hoặc Teams) rồi bấm Bắt đầu.")
-                                .font(.system(size: 13))
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                                .frame(maxWidth: 420)
+                                Text(model.lastAudio != nil
+                                    ? "Đã kết nối luồng âm thanh! Phụ đề đang hiển thị theo thời gian thực khi có người nói..."
+                                    : "Đang chờ phát hiện giọng nói từ nguồn âm thanh đã chọn...")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .frame(maxWidth: 420)
+                            }
                         }
+                        .padding(32)
+                        .transition(.opacity)
+                    } else {
+                        VStack(spacing: 16) {
+                            if model.showMascot {
+                                MiniAvatarView(size: 110, style: model.mascotStyle)
+                                    .padding(.bottom, 4)
+                            } else {
+                                Image(systemName: "waveform.badge.mic")
+                                    .font(.system(size: 46))
+                                    .foregroundStyle(LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                    .padding(.bottom, 4)
+                            }
 
-                        // Feature badges
-                        HStack(spacing: 12) {
-                            FeatureBadge(icon: "lock.shield", text: "Nhận diện tiếng Anh offline")
-                            FeatureBadge(icon: "sparkles", text: "\(model.provider.shortName) dịch tiếng Việt")
-                            FeatureBadge(icon: "speaker.wave.3", text: "Thu mọi âm thanh hệ thống")
+                            VStack(spacing: 6) {
+                                Text("Sẵn sàng nghe & phiên dịch")
+                                    .font(.system(size: 17, weight: .bold, design: .rounded))
+
+                                Text("Chọn nguồn âm thanh (Âm thanh hệ thống hoặc Teams) rồi bấm Bắt đầu.")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .frame(maxWidth: 420)
+                            }
+
+                            // Feature badges
+                            HStack(spacing: 12) {
+                                FeatureBadge(icon: "lock.shield", text: "Nhận diện tiếng Anh offline")
+                                FeatureBadge(icon: "sparkles", text: "\(model.provider.shortName) dịch tiếng Việt")
+                                FeatureBadge(icon: "speaker.wave.3", text: "Thu mọi âm thanh hệ thống")
+                            }
+                            .padding(.top, 4)
                         }
-                        .padding(.top, 4)
+                        .padding(32)
                     }
-                    .padding(32)
                 } else {
                     ScrollViewReader { proxy in
                         ScrollView {
                             LazyVStack(spacing: 12) {
                                 ForEach(model.captions) { row in
-                                    CaptionCardView(caption: row)
-                                        .id(row.id)
+                                    CaptionCardView(
+                                        caption: row,
+                                        isLive: (row.id == model.currentID && model.running),
+                                        mode: model.subtitleMode,
+                                        sourceLanguage: model.sourceLanguage,
+                                        targetLanguage: model.targetLanguage
+                                    )
+                                    .id(row.id)
                                 }
+
+                                // Khoảng hở dưới đáy giúp card cuối không bị dính sát mép dưới container
+                                Color.clear
+                                    .frame(height: 38)
+                                    .id("SCROLL_BOTTOM_ANCHOR")
                             }
-                            .padding(16)
+                            .padding(.horizontal, 16)
+                            .padding(.top, 16)
+                            .padding(.bottom, 8)
                         }
                         .onChange(of: model.captions.last?.original) { _, _ in
-                            if let id = model.captions.last?.id {
-                                withAnimation(.easeOut(duration: 0.2)) {
-                                    proxy.scrollTo(id, anchor: .bottom)
-                                }
+                            proxy.scrollTo("SCROLL_BOTTOM_ANCHOR", anchor: .bottom)
+                        }
+                        .onChange(of: model.captions.count) { _, _ in
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                proxy.scrollTo("SCROLL_BOTTOM_ANCHOR", anchor: .bottom)
                             }
                         }
                     }
@@ -3885,7 +6473,7 @@ struct MeetingView: View {
                         .background(Color.secondary.opacity(0.15))
                         .clipShape(Capsule())
 
-                    Text("đoạn phụ đề • English → Tiếng Việt")
+                    Text("đoạn phụ đề • \(model.sourceLanguage.shortName) → \(model.targetLanguage.shortName) • \(model.subtitleMode.shortTitle)")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
@@ -3992,6 +6580,11 @@ struct MeetingView: View {
 
 struct CaptionCardView: View {
     let caption: Caption
+    var isLive: Bool = false
+    var mode: SubtitleDisplayMode = .bilingual
+    var sourceLanguage: AppLanguage = .english
+    var targetLanguage: AppLanguage = .vietnamese
+    @ObservedObject private var tts = TTSService.shared
     @State private var copiedOriginal = false
     @State private var copiedVietnamese = false
 
@@ -4011,31 +6604,111 @@ struct CaptionCardView: View {
                 .background(Color.secondary.opacity(0.1))
                 .clipShape(Capsule())
 
+                if isLive {
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(Color.green)
+                            .frame(width: 6, height: 6)
+                        Text("Đang nói…")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Color.green)
+                    }
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2.5)
+                    .background(Color.green.opacity(0.12))
+                    .clipShape(Capsule())
+                }
+
+                if tts.isSpeaking && (tts.currentlySpeakingCaptionID == caption.id || tts.currentlySpeakingText == caption.original || tts.currentlySpeakingText == caption.vietnamese) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "headphones")
+                        Image(systemName: "waveform")
+                    }
+                    .font(.system(size: 9.5, weight: .bold))
+                    .foregroundStyle(Color.purple)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2.5)
+                    .background(Color.purple.opacity(0.12))
+                    .clipShape(Capsule())
+                }
+
                 Spacer()
 
-                // Copy Original Button
-                Button {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(caption.original, forType: .string)
-                    copiedOriginal = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copiedOriginal = false }
-                } label: {
-                    HStack(spacing: 3) {
-                        Image(systemName: copiedOriginal ? "checkmark" : "doc.on.doc")
-                        Text("EN")
+                // Speak Original Button
+                if mode != .translationOnly && !caption.original.isEmpty {
+                    let isSpeakingOrig = tts.isSpeaking && tts.currentlySpeakingText == caption.original
+                    Button {
+                        if isSpeakingOrig {
+                            tts.stop()
+                        } else {
+                            tts.speak(id: caption.id, text: caption.original, language: sourceLanguage)
+                        }
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: isSpeakingOrig ? "speaker.wave.3.fill" : "speaker.wave.2")
+                            Text("Đọc")
+                        }
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(isSpeakingOrig ? Color.blue : .secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(isSpeakingOrig ? Color.blue.opacity(0.15) : Color.secondary.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                     }
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(copiedOriginal ? .green : .secondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Color.secondary.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .buttonStyle(.plain)
+                    .help("Nghe phát âm tiếng gốc (\(sourceLanguage.displayName))")
                 }
-                .buttonStyle(.plain)
-                .help("Sao chép câu tiếng Anh gốc")
 
-                // Copy Vietnamese Button
-                if !caption.vietnamese.isEmpty {
+                // Copy Original Button
+                if mode != .translationOnly && !caption.original.isEmpty {
+                    Button {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(caption.original, forType: .string)
+                        copiedOriginal = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copiedOriginal = false }
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: copiedOriginal ? "checkmark" : "doc.on.doc")
+                            Text(sourceLanguage.shortName.uppercased())
+                        }
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(copiedOriginal ? .green : .secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.secondary.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Sao chép câu tiếng gốc")
+                }
+
+                // Speak Translation Button
+                if mode != .originalOnly && !caption.vietnamese.isEmpty {
+                    let isSpeakingTrans = tts.isSpeaking && tts.currentlySpeakingText == caption.vietnamese
+                    Button {
+                        if isSpeakingTrans {
+                            tts.stop()
+                        } else {
+                            tts.speak(id: caption.id, text: caption.vietnamese, language: targetLanguage)
+                        }
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: isSpeakingTrans ? "speaker.wave.3.fill" : "speaker.wave.2")
+                            Text("Dịch")
+                        }
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(isSpeakingTrans ? Color.green : .secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(isSpeakingTrans ? Color.green.opacity(0.15) : Color.secondary.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Nghe bản dịch (\(targetLanguage.displayName))")
+                }
+
+                // Copy Translation Button
+                if mode != .originalOnly && !caption.vietnamese.isEmpty {
                     Button {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(caption.vietnamese, forType: .string)
@@ -4044,7 +6717,7 @@ struct CaptionCardView: View {
                     } label: {
                         HStack(spacing: 3) {
                             Image(systemName: copiedVietnamese ? "checkmark" : "doc.on.doc")
-                            Text("VI")
+                            Text(targetLanguage.shortName.uppercased())
                         }
                         .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(copiedVietnamese ? .green : .secondary)
@@ -4054,52 +6727,56 @@ struct CaptionCardView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                     }
                     .buttonStyle(.plain)
-                    .help("Sao chép bản dịch tiếng Việt")
+                    .help("Sao chép bản dịch")
                 }
             }
 
-            // Original English text
-            HStack(alignment: .top, spacing: 8) {
-                Text("EN")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.blue.opacity(0.8))
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 2)
-                    .background(Color.blue.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-                    .padding(.top, 1)
+            // Original Source Text
+            if mode != .translationOnly {
+                HStack(alignment: .top, spacing: 8) {
+                    Text(sourceLanguage.shortName.uppercased())
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.blue.opacity(0.8))
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Color.blue.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                        .padding(.top, 1)
 
-                Text(caption.original)
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            // Vietnamese Translation
-            HStack(alignment: .top, spacing: 8) {
-                Text("VI")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.green.opacity(0.9))
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 2)
-                    .background(Color.green.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-                    .padding(.top, 2)
-
-                if caption.vietnamese.isEmpty {
-                    HStack(spacing: 6) {
-                        ProgressView().controlSize(.small)
-                        Text("Đang dịch AI…")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(.secondary)
-                    }
-                } else {
-                    Text(caption.vietnamese)
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.primary)
+                    Text(caption.original)
+                        .font(.system(size: mode == .originalOnly ? 15 : 14, weight: mode == .originalOnly ? .semibold : .regular))
+                        .foregroundStyle(mode == .originalOnly ? .primary : .secondary)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+
+            // Translation Text
+            if mode != .originalOnly {
+                HStack(alignment: .top, spacing: 8) {
+                    Text(targetLanguage.shortName.uppercased())
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.green.opacity(0.9))
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Color.green.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                        .padding(.top, 2)
+
+                    if caption.vietnamese.isEmpty {
+                        HStack(spacing: 6) {
+                            ProgressView().controlSize(.small)
+                            Text("Đang dịch AI…")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        }
+                    } else {
+                        Text(caption.vietnamese)
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.primary)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
             }
         }
@@ -4110,9 +6787,10 @@ struct CaptionCardView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                .stroke(isLive ? Color.accentColor.opacity(0.35) : Color.primary.opacity(0.06), lineWidth: isLive ? 1.5 : 1)
         )
-        .shadow(color: .black.opacity(0.03), radius: 4, y: 1)
+        .shadow(color: isLive ? Color.accentColor.opacity(0.08) : Color.black.opacity(0.03), radius: isLive ? 8 : 4, y: isLive ? 2 : 1)
+        .animation(.easeInOut(duration: 0.25), value: isLive)
     }
 }
 
@@ -4150,6 +6828,9 @@ struct QuickTranslateView: View {
     @State private var error = ""
     @State private var copied = false
     @State private var copiedAltID: UUID? = nil
+    @State private var polishing = false
+    @State private var lastActionWasPolish = false
+    @State private var polishedLanguage: AppLanguage = .english
 
     var body: some View {
         VStack(spacing: 14) {
@@ -4264,44 +6945,226 @@ struct QuickTranslateView: View {
             }
             .padding(.horizontal, 4)
 
-            // 3. Two-Pane Translation Studio
-            HStack(spacing: 16) {
+            // 3. Language Selector Bar (Nút chuyển đổi ngôn ngữ nằm ở phía trên ngang hàng ngôn ngữ) & Action Buttons
+            HStack(spacing: 10) {
+                // Ngôn ngữ nguồn
+                Menu {
+                    ForEach(AppLanguage.allCases) { lang in
+                        Button {
+                            model.sourceLanguage = lang
+                        } label: {
+                            HStack {
+                                Text("\(lang.flag) \(lang.displayName)")
+                                if model.sourceLanguage == lang {
+                                    Spacer()
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(model.sourceLanguage.shortName)
+                            .font(.system(size: 10, weight: .bold))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.green.opacity(0.15))
+                            .foregroundStyle(.green)
+                            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+
+                        Text("\(model.sourceLanguage.flag) \(model.sourceLanguage.displayName)")
+                            .font(.system(size: 12.5, weight: .semibold))
+
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 10)
+                    .frame(height: 32)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+
+                // Nút Swap ⇄ (Nằm ngang hàng với 2 ngôn ngữ phía trên)
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        model.swapLanguages()
+                        let oldOutput = output
+                        if !oldOutput.isEmpty {
+                            output = input
+                            input = oldOutput
+                            translationResult = QuickTranslationResult(primary: output)
+                        }
+                    }
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(Color(nsColor: .controlBackgroundColor))
+                            .frame(width: 32, height: 32)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.accentColor.opacity(0.25), lineWidth: 1)
+                            )
+
+                        Image(systemName: "arrow.left.arrow.right")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Color.accentColor)
+                    }
+                }
+                .buttonStyle(.plain)
+                .help("Đổi chiều ngôn ngữ & hoán đổi nội dung (⇄)")
+
+                // Ngôn ngữ đích
+                Menu {
+                    ForEach(AppLanguage.allCases) { lang in
+                        Button {
+                            model.targetLanguage = lang
+                        } label: {
+                            HStack {
+                                Text("\(lang.flag) \(lang.displayName)")
+                                if model.targetLanguage == lang {
+                                    Spacer()
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(model.targetLanguage.shortName)
+                            .font(.system(size: 10, weight: .bold))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.blue.opacity(0.15))
+                            .foregroundStyle(.blue)
+                            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+
+                        Text("\(model.targetLanguage.flag) \(model.targetLanguage.displayName)")
+                            .font(.system(size: 12.5, weight: .semibold))
+
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 10)
+                    .frame(height: 32)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+
+                // Nút Sửa lỗi & Làm mượt theo ngôn ngữ chọn (Fix & Polish)
+                HStack(spacing: 0) {
+                    Button {
+                        polishLanguageNow(lang: model.sourceLanguage)
+                    } label: {
+                        HStack(spacing: 5) {
+                            if polishing {
+                                ProgressView()
+                                    .controlSize(.small)
+                            } else {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
+                            Text("Sửa lỗi (\(model.sourceLanguage.shortName))")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .padding(.leading, 10)
+                        .padding(.trailing, 6)
+                        .frame(height: 32)
+                    }
+                    .buttonStyle(.plain)
+
+                    Menu {
+                        Button {
+                            polishLanguageNow(lang: model.sourceLanguage)
+                        } label: {
+                            Label("Sửa lỗi theo \(model.sourceLanguage.displayName) (Nguồn)", systemImage: "checkmark")
+                        }
+                        Button {
+                            polishLanguageNow(lang: model.targetLanguage)
+                        } label: {
+                            Text("Sửa lỗi theo \(model.targetLanguage.displayName) (Đích)")
+                        }
+                        Divider()
+                        ForEach(AppLanguage.allCases.filter { $0 != model.sourceLanguage && $0 != model.targetLanguage }) { lang in
+                            Button {
+                                polishLanguageNow(lang: lang)
+                            } label: {
+                                Text("\(lang.flag) \(lang.displayName)")
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8, weight: .bold))
+                            .frame(width: 18, height: 32)
+                    }
+                    .menuStyle(.borderlessButton)
+                }
+                .foregroundStyle(.purple)
+                .background(Color.purple.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.purple.opacity(0.28), lineWidth: 1)
+                )
+                .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || polishing || translating)
+                .help("Sửa lỗi ngữ pháp, chính tả & hoàn thiện câu theo \(model.sourceLanguage.displayName) (hoặc chọn ngôn ngữ khác)")
+
+                // Nút Dịch ngay
+                Button {
+                    translateNow()
+                } label: {
+                    HStack(spacing: 6) {
+                        if translating {
+                            ProgressView()
+                                .controlSize(.small)
+                                .colorInvert()
+                        } else {
+                            Image(systemName: "arrow.right.circle.fill")
+                                .font(.system(size: 12, weight: .bold))
+                        }
+                        Text("Dịch ngay")
+                            .font(.system(size: 12, weight: .bold))
+                    }
+                    .padding(.horizontal, 14)
+                    .frame(height: 32)
+                    .foregroundStyle(.white)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.blue, Color.purple],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .shadow(color: .purple.opacity(0.25), radius: 3, y: 1)
+                }
+                .buttonStyle(.plain)
+                .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || translating || polishing)
+                .keyboardShortcut(.return, modifiers: .command)
+                .help("Dịch sang \(model.targetLanguage.displayName) (⌘ + Enter)")
+            }
+
+            // 4. Two-Pane Translation & Polish Studio (Trái: Nhập liệu, Phải: Kết quả)
+            HStack(spacing: 14) {
                 // Left Panel: Source Input
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Menu {
-                            ForEach(AppLanguage.allCases) { lang in
-                                Button {
-                                    model.sourceLanguage = lang
-                                } label: {
-                                    HStack {
-                                        Text("\(lang.flag) \(lang.displayName)")
-                                        if model.sourceLanguage == lang {
-                                            Spacer()
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
-                            }
-                        } label: {
-                            HStack(spacing: 6) {
-                                Text(model.sourceLanguage.shortName)
-                                    .font(.system(size: 10, weight: .bold))
-                                    .padding(.horizontal, 5)
-                                    .padding(.vertical, 2)
-                                    .background(Color.green.opacity(0.15))
-                                    .foregroundStyle(.green)
-                                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-
-                                Text("\(model.sourceLanguage.flag) \(model.sourceLanguage.displayName)")
-                                    .font(.system(size: 13, weight: .semibold))
-
-                                Image(systemName: "chevron.down")
-                                    .font(.system(size: 8, weight: .semibold))
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .buttonStyle(.plain)
+                        Text("VĂN BẢN GỐC (\(model.sourceLanguage.shortName.uppercased()))")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.secondary)
 
                         Spacer()
 
@@ -4322,7 +7185,7 @@ struct QuickTranslateView: View {
 
                     ZStack(alignment: .topLeading) {
                         if input.isEmpty {
-                            Text("Nhập câu hoặc đoạn văn bản (\(model.sourceLanguage.displayName))…\nBấm các gợi ý mẫu ở trên hoặc gõ nội dung cần dịch và bấm ⌘ + Enter")
+                            Text("Nhập câu hoặc đoạn văn bản (\(model.sourceLanguage.displayName))…\nBấm các gợi ý mẫu ở trên hoặc gõ nội dung và bấm ⌘ + Enter")
                                 .font(.system(size: 14))
                                 .foregroundStyle(.tertiary)
                                 .padding(12)
@@ -4355,164 +7218,89 @@ struct QuickTranslateView: View {
                     }
                 }
 
-                // Middle Translate & Swap Trigger Column
-                VStack(spacing: 14) {
-                    Spacer()
-
-                    // Swap languages & texts
-                    Button {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            model.swapLanguages()
-                            let oldOutput = output
-                            if !oldOutput.isEmpty {
-                                output = input
-                                input = oldOutput
-                                translationResult = QuickTranslationResult(primary: output)
-                            }
-                        }
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Color(nsColor: .controlBackgroundColor))
-                                .frame(width: 36, height: 36)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.accentColor.opacity(0.25), lineWidth: 1)
-                                )
-
-                            Image(systemName: "arrow.left.arrow.right")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(Color.accentColor)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .help("Đổi chiều ngôn ngữ & hoán đổi nội dung (⇄)")
-
-                    // Translate button
-                    Button {
-                        translateNow()
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color.blue, Color.purple],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(width: 44, height: 44)
-                                .shadow(color: .purple.opacity(0.35), radius: 8, y: 3)
-
-                            if translating {
-                                ProgressView()
-                                    .controlSize(.small)
-                                    .colorInvert()
-                            } else {
-                                Image(systemName: "arrow.right")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundStyle(.white)
-                            }
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || translating)
-                    .keyboardShortcut(.return, modifiers: .command)
-
-                    Spacer()
-                }
-
-                // Right Panel: Target Output
+                // Right Panel: Output & Polish Result
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Menu {
-                            ForEach(AppLanguage.allCases) { lang in
-                                Button {
-                                    model.targetLanguage = lang
-                                } label: {
-                                    HStack {
-                                        Text("\(lang.flag) \(lang.displayName)")
-                                        if model.targetLanguage == lang {
-                                            Spacer()
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
+                        if lastActionWasPolish {
+                            HStack(spacing: 4) {
+                                Image(systemName: "sparkles")
+                                    .foregroundStyle(.purple)
+                                Text("ĐÃ SỬA LỖI & LÀM MƯỢT (\(polishedLanguage.shortName.uppercased()))")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundStyle(.purple)
                             }
-                        } label: {
-                            HStack(spacing: 6) {
-                                Text(model.targetLanguage.shortName)
-                                    .font(.system(size: 10, weight: .bold))
-                                    .padding(.horizontal, 5)
-                                    .padding(.vertical, 2)
-                                    .background(Color.blue.opacity(0.15))
-                                    .foregroundStyle(.blue)
-                                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-
-                                Text("\(model.targetLanguage.flag) \(model.targetLanguage.displayName)")
-                                    .font(.system(size: 13, weight: .semibold))
-
-                                Image(systemName: "chevron.down")
-                                    .font(.system(size: 8, weight: .semibold))
-                                    .foregroundStyle(.secondary)
-                            }
+                        } else {
+                            Text("KẾT QUẢ DỊCH (\(model.targetLanguage.shortName.uppercased()))")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.plain)
 
                         Spacer()
 
                         if !output.isEmpty {
-                            Button {
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(output, forType: .string)
-                                copied = true
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copied = false }
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                                    Text(copied ? "Đã sao chép!" : "Sao chép")
+                            HStack(spacing: 8) {
+                                if lastActionWasPolish {
+                                    Button {
+                                        input = output
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "arrow.turn.down.left")
+                                            Text("Dùng bản này")
+                                        }
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundStyle(.purple)
+                                        .padding(.horizontal, 9)
+                                        .padding(.vertical, 4)
+                                        .background(Color.purple.opacity(0.12))
+                                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .help("Gán nội dung đã sửa lỗi vào ô nhập liệu bên trái")
                                 }
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(copied ? .green : Color.accentColor)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
-                                .background(copied ? Color.green.opacity(0.12) : Color.accentColor.opacity(0.1))
-                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                                Button {
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString(output, forType: .string)
+                                    copied = true
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copied = false }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                                        Text(copied ? "Đã sao chép!" : "Sao chép")
+                                    }
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(copied ? .green : Color.accentColor)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(copied ? Color.green.opacity(0.12) : Color.accentColor.opacity(0.1))
+                                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
 
                     ScrollView {
                         VStack(alignment: .leading, spacing: 12) {
                             if output.isEmpty {
-                                Text(translating ? "Đang dịch câu của bạn theo chuyên ngành \(model.domainSpecialty.title)…" : "Kết quả bản dịch (\(model.targetLanguage.displayName)) sẽ xuất hiện tại đây.")
+                                Text(translating ? "Đang dịch câu của bạn theo chuyên ngành \(model.domainSpecialty.title)…" : (polishing ? "Đang kiểm tra ngữ pháp và làm mượt câu theo \(polishedLanguage.displayName)…" : "Kết quả bản dịch (\(model.targetLanguage.displayName)) hoặc sửa lỗi sẽ xuất hiện tại đây."))
                                     .font(.system(size: 14))
                                     .foregroundStyle(.tertiary)
                                     .padding(12)
                             } else {
-                                // Primary result
-                                VStack(alignment: .leading, spacing: 5) {
-                                    HStack {
-                                        Text("BẢN DỊCH CHUẨN (\(model.domainSpecialty.shortName.uppercased()))")
-                                            .font(.system(size: 9.5, weight: .bold))
-                                            .foregroundStyle(Color.accentColor)
-                                        Spacer()
-                                    }
+                                // Primary result (Đã bỏ label "BẢN DỊCH CHUẨN" theo yêu cầu người dùng)
+                                Text(output)
+                                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                    .lineSpacing(4)
+                                    .foregroundStyle(.primary)
+                                    .textSelection(.enabled)
+                                    .padding(12)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(lastActionWasPolish ? Color.purple.opacity(0.06) : Color.accentColor.opacity(0.06))
+                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
-                                    Text(output)
-                                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                                        .lineSpacing(4)
-                                        .foregroundStyle(.primary)
-                                        .textSelection(.enabled)
-                                }
-                                .padding(12)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color.accentColor.opacity(0.06))
-                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                                // Alternatives / Gợi ý phương án diễn đạt khác
-                                if !translationResult.alternatives.isEmpty {
+                                // Alternatives / Gợi ý phương án diễn đạt khác (khi dịch)
+                                if !lastActionWasPolish && !translationResult.alternatives.isEmpty {
                                     VStack(alignment: .leading, spacing: 8) {
                                         HStack(spacing: 5) {
                                             Image(systemName: "sparkles")
@@ -4617,16 +7405,22 @@ struct QuickTranslateView: View {
             }
         }
         .padding(20)
+        .enableAppleTranslationSession(source: model.sourceLanguage, target: model.targetLanguage)
     }
 
     private func translateNow() {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        translating = true; error = ""; copied = false
+        translating = true; error = ""; copied = false; lastActionWasPolish = false
         let domain = model.domainSpecialty
-        let currentProvider = model.provider
-        let currentModel = model.modelName
-        let currentKey = model.key.trimmingCharacters(in: .whitespacesAndNewlines)
+        var currentProvider = model.provider
+        var currentModel = model.modelName
+        var currentKey = model.key.trimmingCharacters(in: .whitespacesAndNewlines)
+        if currentKey.isEmpty && !model.coPilotKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && model.coPilotProvider != .apple && model.coPilotProvider != .free {
+            currentProvider = model.coPilotProvider
+            currentModel = model.coPilotModel
+            currentKey = model.coPilotKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
         let src = model.sourceLanguage
         let dst = model.targetLanguage
         Task {
@@ -4647,6 +7441,41 @@ struct QuickTranslateView: View {
                 self.error = error.localizedDescription
             }
             translating = false
+        }
+    }
+
+    private func polishLanguageNow(lang: AppLanguage? = nil) {
+        let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        polishing = true; error = ""; copied = false; lastActionWasPolish = true
+        let targetLang = lang ?? model.sourceLanguage
+        polishedLanguage = targetLang
+        let domain = model.domainSpecialty
+        var currentProvider = model.provider
+        var currentModel = model.modelName
+        var currentKey = model.key.trimmingCharacters(in: .whitespacesAndNewlines)
+        if currentKey.isEmpty && !model.coPilotKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && model.coPilotProvider != .apple && model.coPilotProvider != .free {
+            currentProvider = model.coPilotProvider
+            currentModel = model.coPilotModel
+            currentKey = model.coPilotKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        Task {
+            do {
+                let polished = try await AITranslator.fixAndPolishLanguage(
+                    text,
+                    language: targetLang,
+                    domain: domain,
+                    provider: currentProvider,
+                    model: currentModel,
+                    key: currentKey
+                )
+                output = polished
+                translationResult = QuickTranslationResult(primary: polished)
+                error = ""
+            } catch {
+                self.error = error.localizedDescription
+            }
+            polishing = false
         }
     }
 }
@@ -4740,13 +7569,13 @@ struct SettingsPopoverView: View {
 
                         Divider()
 
-                        // 2. Động cơ miễn phí mặc định
+                        // 2. Bộ dịch miễn phí tích hợp
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("ĐỘNG CƠ DỊCH MIỄN PHÍ (KHÔNG TỐN TOKEN)")
+                            Text("BỘ DỊCH MIỄN PHÍ TÍCH HỢP")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundStyle(.secondary)
 
-                            // Card 1: Apple Native (Default)
+                            // Card 1: Apple Translate (Default)
                             Button {
                                 model.setProvider(.apple)
                             } label: {
@@ -4758,7 +7587,7 @@ struct SettingsPopoverView: View {
 
                                     VStack(alignment: .leading, spacing: 2) {
                                         HStack {
-                                            Text("Apple Native (Mặc định)")
+                                            Text("Apple Translate (Mặc định)")
                                                 .font(.system(size: 12, weight: .bold))
                                             Text("Khuyên dùng")
                                                 .font(.system(size: 9, weight: .bold))
@@ -4768,7 +7597,7 @@ struct SettingsPopoverView: View {
                                                 .foregroundStyle(.green)
                                                 .clipShape(Capsule())
                                         }
-                                        Text("0 Token • 100% Ngoại tuyến • Tốc độ tức thì ~15ms.")
+                                        Text("Miễn phí • Tích hợp trên máy • Tốc độ siêu tốc")
                                             .font(.system(size: 10))
                                             .foregroundStyle(.secondary)
                                     }
@@ -4794,9 +7623,9 @@ struct SettingsPopoverView: View {
                                         .frame(width: 22)
 
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("Google Dịch Miễn Phí (Web)")
+                                        Text("Google Dịch (Miễn phí)")
                                             .font(.system(size: 12, weight: .bold))
-                                        Text("0 Token • Không cần API key • Giao thức web.")
+                                        Text("Miễn phí • Không cần thiết lập")
                                             .font(.system(size: 10))
                                             .foregroundStyle(.secondary)
                                     }
@@ -4824,70 +7653,147 @@ struct SettingsPopoverView: View {
                                 let hasKey = model.hasKeyForProvider(p)
                                 let isSelected = (model.provider == p)
 
-                                Button {
-                                    if hasKey {
-                                        model.setProvider(p)
-                                    } else {
-                                        model.coPilotProvider = p
-                                        selectedTab = 1
-                                    }
-                                } label: {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: p.icon)
-                                            .font(.system(size: 17))
-                                            .foregroundStyle(isSelected ? Color.accentColor : (hasKey ? .primary : .secondary))
-                                            .frame(width: 22)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Button {
+                                        if hasKey {
+                                            model.setProvider(p)
+                                        } else {
+                                            model.coPilotProvider = p
+                                            selectedTab = 1
+                                        }
+                                    } label: {
+                                        HStack(spacing: 12) {
+                                            Image(systemName: p.icon)
+                                                .font(.system(size: 17))
+                                                .foregroundStyle(isSelected ? Color.accentColor : (hasKey ? .primary : .secondary))
+                                                .frame(width: 22)
 
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            HStack(spacing: 6) {
-                                                Text(p.displayName)
-                                                    .font(.system(size: 12, weight: .bold))
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                HStack(spacing: 6) {
+                                                    Text(p.displayName)
+                                                        .font(.system(size: 12, weight: .bold))
 
-                                                if hasKey {
-                                                    Text("Đã có Key")
-                                                        .font(.system(size: 9, weight: .bold))
-                                                        .padding(.horizontal, 5)
-                                                        .padding(.vertical, 1)
-                                                        .background(Color.green.opacity(0.18))
-                                                        .foregroundStyle(.green)
-                                                        .clipShape(Capsule())
-                                                } else {
-                                                    Text("Chưa cài Key")
-                                                        .font(.system(size: 9, weight: .medium))
-                                                        .padding(.horizontal, 5)
-                                                        .padding(.vertical, 1)
-                                                        .background(Color.secondary.opacity(0.15))
-                                                        .foregroundStyle(.secondary)
-                                                        .clipShape(Capsule())
+                                                    if hasKey {
+                                                        Text("Đã có Key")
+                                                            .font(.system(size: 9, weight: .bold))
+                                                            .padding(.horizontal, 5)
+                                                            .padding(.vertical, 1)
+                                                            .background(Color.green.opacity(0.18))
+                                                            .foregroundStyle(.green)
+                                                            .clipShape(Capsule())
+                                                    } else {
+                                                        Text("Chưa cài Key")
+                                                            .font(.system(size: 9, weight: .medium))
+                                                            .padding(.horizontal, 5)
+                                                            .padding(.vertical, 1)
+                                                            .background(Color.secondary.opacity(0.15))
+                                                            .foregroundStyle(.secondary)
+                                                            .clipShape(Capsule())
+                                                    }
                                                 }
+
+                                                let activeModelForP = isSelected ? model.modelName : (UserDefaults.standard.string(forKey: "AIModel_\(p.rawValue)") ?? p.defaultModel)
+                                                Text(hasKey ? "Áp dụng prompt \(model.domainSpecialty.shortName) • Model: \(activeModelForP)" : "Bấm để thêm API Key mở khóa trợ lý này")
+                                                    .font(.system(size: 10))
+                                                    .foregroundStyle(.secondary)
                                             }
 
-                                            Text(hasKey ? "Áp dụng prompt \(model.domainSpecialty.shortName) • Model: \(p.defaultModel)" : "Bấm để thêm API Key mở khóa trợ lý này")
-                                                .font(.system(size: 10))
-                                                .foregroundStyle(.secondary)
-                                        }
+                                            Spacer()
 
-                                        Spacer()
-
-                                        if hasKey {
-                                            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                                                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary.opacity(0.4))
-                                        } else {
-                                            Text("Cài Key")
-                                                .font(.system(size: 10, weight: .semibold))
-                                                .foregroundStyle(Color.accentColor)
-                                                .padding(.horizontal, 6)
-                                                .padding(.vertical, 2)
-                                                .background(Color.accentColor.opacity(0.12))
-                                                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                                            if hasKey {
+                                                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                                                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary.opacity(0.4))
+                                            } else {
+                                                Text("Cài Key")
+                                                    .font(.system(size: 10, weight: .semibold))
+                                                    .foregroundStyle(Color.accentColor)
+                                                    .padding(.horizontal, 6)
+                                                    .padding(.vertical, 2)
+                                                    .background(Color.accentColor.opacity(0.12))
+                                                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                                            }
                                         }
+                                        .padding(9)
+                                        .background(isSelected ? Color.accentColor.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
+                                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(isSelected ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: 1.2))
                                     }
-                                    .padding(9)
-                                    .background(isSelected ? Color.accentColor.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
-                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                    .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(isSelected ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: 1.2))
+                                    .buttonStyle(.plain)
+
+                                    // Inline Model Picker & Chips for the selected provider
+                                    if isSelected && hasKey {
+                                        VStack(alignment: .leading, spacing: 6) {
+                                            HStack(spacing: 6) {
+                                                Text("Model phụ đề:")
+                                                    .font(.system(size: 10, weight: .semibold))
+                                                    .foregroundStyle(.secondary)
+
+                                                Menu {
+                                                    ForEach(p.defaultModels, id: \.self) { dm in
+                                                        Button {
+                                                            model.updateModelName(dm, for: p)
+                                                        } label: {
+                                                            HStack {
+                                                                Text(dm)
+                                                                if model.modelName == dm {
+                                                                    Spacer()
+                                                                    Image(systemName: "checkmark")
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                } label: {
+                                                    HStack(spacing: 4) {
+                                                        Text(model.modelName)
+                                                            .font(.system(size: 10.5, weight: .bold, design: .monospaced))
+                                                        Image(systemName: "chevron.up.chevron.down")
+                                                            .font(.system(size: 8))
+                                                            .foregroundStyle(.secondary)
+                                                    }
+                                                    .padding(.horizontal, 8)
+                                                    .padding(.vertical, 3)
+                                                    .background(Color(nsColor: .controlBackgroundColor))
+                                                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                                    .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Color.primary.opacity(0.12), lineWidth: 1))
+                                                }
+                                                .menuStyle(.borderlessButton)
+
+                                                Spacer()
+                                            }
+
+                                            // Quick Model Chips
+                                            ScrollView(.horizontal, showsIndicators: false) {
+                                                HStack(spacing: 5) {
+                                                    ForEach(p.defaultModels, id: \.self) { dm in
+                                                        let isCurModel = (model.modelName == dm)
+                                                        Button {
+                                                            model.updateModelName(dm, for: p)
+                                                        } label: {
+                                                            HStack(spacing: 3) {
+                                                                if isCurModel {
+                                                                    Image(systemName: "checkmark")
+                                                                        .font(.system(size: 7, weight: .bold))
+                                                                }
+                                                                Text(dm)
+                                                                    .font(.system(size: 9.5, weight: isCurModel ? .bold : .medium, design: .monospaced))
+                                                            }
+                                                            .padding(.horizontal, 7)
+                                                            .padding(.vertical, 3)
+                                                            .background(isCurModel ? Color.accentColor.opacity(0.18) : Color(nsColor: .controlBackgroundColor))
+                                                            .foregroundStyle(isCurModel ? Color.accentColor : Color.secondary)
+                                                            .clipShape(Capsule())
+                                                            .overlay(Capsule().stroke(isCurModel ? Color.accentColor.opacity(0.4) : Color.primary.opacity(0.08), lineWidth: 1))
+                                                        }
+                                                        .buttonStyle(.plain)
+                                                    }
+                                                }
+                                                .padding(.vertical, 1)
+                                            }
+                                        }
+                                        .padding(.leading, 34)
+                                        .padding(.vertical, 3)
+                                    }
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
                     }
@@ -4901,7 +7807,7 @@ struct SettingsPopoverView: View {
                         Text("TRỢ LÝ AI GỢI Ý CÂU TRẢ LỜI GIAO TIẾP")
                             .font(.system(size: 11, weight: .bold))
                             .foregroundStyle(.secondary)
-                        Text("Khi nghe đồng nghiệp nói, AI phân tích ý tứ và chuẩn bị sẵn 3 câu trả lời tiếng Anh (kèm sắc thái & nghĩa tiếng Việt). Phụ đề vẫn chạy miễn phí trên Apple Native, chỉ tốn token khi gợi ý câu trả lời.")
+                        Text("Khi nghe đồng nghiệp nói, AI phân tích ý tứ và chuẩn bị sẵn 3 câu trả lời tiếng Anh (kèm sắc thái & nghĩa tiếng Việt). Phụ đề cuộc họp luôn dịch miễn phí ngay trên máy của bạn.")
                             .font(.system(size: 11))
                             .foregroundStyle(.secondary)
                     }
@@ -4974,7 +7880,7 @@ struct SettingsPopoverView: View {
                                     Section("Mô hình khuyên dùng") {
                                         ForEach(recommended, id: \.self) { m in
                                             Button {
-                                                model.coPilotModel = m
+                                                model.updateModelName(m, for: model.coPilotProvider)
                                             } label: {
                                                 if model.coPilotModel == m {
                                                     Label(m + " (Đang chọn)", systemImage: "checkmark")
@@ -4990,7 +7896,7 @@ struct SettingsPopoverView: View {
                                     Section("Tất cả mô hình (\(others.count))") {
                                         ForEach(others, id: \.self) { m in
                                             Button {
-                                                model.coPilotModel = m
+                                                model.updateModelName(m, for: model.coPilotProvider)
                                             } label: {
                                                 if model.coPilotModel == m {
                                                     Label(m + " (Đang chọn)", systemImage: "checkmark")
@@ -5103,7 +8009,7 @@ struct SettingsPopoverView: View {
                                         ForEach(model.coPilotProvider.defaultModels, id: \.self) { dm in
                                             let isSel = (model.coPilotModel == dm)
                                             Button {
-                                                model.coPilotModel = dm
+                                                model.updateModelName(dm, for: model.coPilotProvider)
                                             } label: {
                                                 HStack(spacing: 4) {
                                                     if isSel {
@@ -5281,6 +8187,59 @@ struct SettingsPopoverView: View {
                         }
                         .pickerStyle(.segmented)
                     }
+
+                    Divider()
+
+                    // Dịch nhanh từ vựng toàn hệ thống
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("DỊCH NHANH TỪ VỰNG TOÀN HỆ THỐNG")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.secondary)
+
+                        HStack(spacing: 10) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(Color.accentColor.opacity(0.12))
+                                    .frame(width: 32, height: 32)
+                                Image(systemName: "command.circle.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundStyle(Color.accentColor)
+                            }
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack {
+                                    Text("Phím tắt dịch từ bôi đen:")
+                                        .font(.system(size: 11.5, weight: .semibold))
+                                    Text("Option + D")
+                                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color.accentColor.opacity(0.15))
+                                        .foregroundStyle(Color.accentColor)
+                                        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                                    Text("hoặc")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(.secondary)
+                                    Text("Option + T")
+                                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color.secondary.opacity(0.12))
+                                        .foregroundStyle(.secondary)
+                                        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                                }
+
+                                Text("Bôi đen chữ bất kỳ rồi bấm Option + D. Chip Chip sẽ hiện bóng thoại dịch nghĩa trên đầu và cho phép lưu vào Sổ từ vựng.")
+                                    .font(.system(size: 10.5))
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        .padding(9)
+                        .background(Color(nsColor: .controlBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.primary.opacity(0.08), lineWidth: 1))
+                    }
                 }
             }
 
@@ -5325,7 +8284,7 @@ struct SettingsPopoverView: View {
         } else if lower.contains("deepseek-reasoner") {
             return "Mô hình lý luận chuyên sâu (DeepSeek-R1)"
         } else if lower.contains("haiku") {
-            return "Phản hồi chớp mắt & tiết kiệm token"
+            return "Phản hồi chớp mắt & siêu nhanh"
         } else if lower.contains("sonnet") {
             return "Văn phong sắc sảo, tự nhiên nhất"
         }
@@ -5562,6 +8521,9 @@ struct AboutAppPopoverView: View {
 
     var body: some Scene {
         WindowGroup {
+            if ProcessInfo.processInfo.arguments.contains("--mascot-preview") {
+                MascotSpritePreviewView()
+            } else {
             MainDashboardView(model: model)
                 .background(WindowAccessor { window in
                     model.attachMainWindow(window)
@@ -5570,9 +8532,14 @@ struct AboutAppPopoverView: View {
                     appDelegate.model = model
                     MenuBarManager.shared.setup(with: model)
                 }
+            }
         }
         .defaultSize(width: 980, height: 720)
         .windowStyle(.hiddenTitleBar)
+        .commands { MascotSpriteCommands() }
+        Window("Bộ chuyển động mascot", id: "mascot-sprites") {
+            MascotSpritePreviewView()
+        }
+        .defaultSize(width: 980, height: 640)
     }
 }
-

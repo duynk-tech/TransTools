@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "canvas": [
+    621,
+    783
+  ],
+  "baseline": 769,
+  "frameRate": 10,
+  "angles": [
+    "front",
+    "front_right",
+    "right",
+    "back_right",
+    "back",
+    "back_left",
+    "left",
+    "front_left"
+  ],
+  "walkFramesPerDirection": 8,
+  "leftViews": "mirrored from right-facing views for UI use",
+  "source": "imagegen opaque masters + Python chroma matte and alignment",
+  "files": {
+    "angles/angle_back.png": "283e93cebf9ee93104ace3190c978fbcbb6e8fa3397f6b49e1a23a6313cd9384",
+    "angles/angle_back_left.png": "2550a16e47f8feef1996a17e5ecef05e656151835b131e4501674f9da257dd01",
+    "angles/angle_back_right.png": "c2624bb3067567adc3c5763e99bbb1cbbdbee6b1f4e9b50b10fa8e0311f6ad27",
+    "angles/angle_front.png": "e4d5c046ebbca1bef8f1a66a6b9f740e24532db99296df8e35bf3988703082d8",
+    "angles/angle_front_left.png": "6d1b830330ea61e5efe395c66c1eb995c560b7b6ab3c86485e4f05c000910f4b",
+    "angles/angle_front_right.png": "57e5ffb8a2f21fb9ca8661cb6d41aefcbed2dbd1f595ecb5da34820a7945af3a",
+    "angles/angle_left.png": "817d1d93b08da4fb3919a4b79baf13b486bf83f7038bdacd88307c92dc9ed3b3",
+    "angles/angle_right.png": "82b27c6f8e2f29f4ab90ffb6ac59142573d900ae47df6c2d9f133cc68dcc9d21",
+    "walk_left/walk_left_00.png": "a5fdc26d7b26c8168c78c768ca52bf2fe4f9700351e00a4127616ce90f817d8f",
+    "walk_left/walk_left_01.png": "53f7ade612f01d74252f3076e71824131605b6a36daf083656124db5ca5294b7",
+    "walk_left/walk_left_02.png": "adfed3155203ae43099ab7aa255fa4755667274cf2875d2745c14d1741233b0e",
+    "walk_left/walk_left_03.png": "2d4f5212788fe438f5358e232911b2e0a0c5cf0664247e83f18f4af06a38db84",
+    "walk_left/walk_left_04.png": "7af7d9fc5a75fb1081e6ba44b58adfe8fe4815b43d440fc8bd37123e2768b141",
+    "walk_left/walk_left_05.png": "0c1124062e5e986669a01277460ead369a5472e65d715037760cf441f2e67100",
+    "walk_left/walk_left_06.png": "5e954e9e233655211647fa727820534364eb366d42797b0076d3a0792b692424",
+    "walk_left/walk_left_07.png": "a959c14e2e0a341b6831f39e1610ef2e3a5ff9ec08bf70dd20c5eb62a9be479a",
+    "walk_right/walk_right_00.png": "f1c7ccf79853da1e310341ff36ae347129a4e96d1309135dc35abfd70713f484",
+    "walk_right/walk_right_01.png": "0cf93659208a5bb3fcaf6f6575f92803f55206ba306b4fcba8995544373e5565",
+    "walk_right/walk_right_02.png": "0bae6241da4e76812b0f134ff80de1029c65c2e02c630e123d28005198755691",
+    "walk_right/walk_right_03.png": "42b9af85a166ae02d2a29982793a3cce6e9c42250b6bde22344e7768c90d8c7b",
+    "walk_right/walk_right_04.png": "8c2547c9e6968f8388c2548d8cd8f027efec21d026153acc0c70d74db91543d3",
+    "walk_right/walk_right_05.png": "d95b47f85c97f1288f6e59d58da40d29725e39c9f870981f0b4674c740e7d0e6",
+    "walk_right/walk_right_06.png": "ff810500aa263a64bec568f03e7a4b821dfae35fad4db1c7d02ca4439ac290d5",
+    "walk_right/walk_right_07.png": "2259f248daf99ed540f4b9c58105f673e1e0dde2127f6d2aa703fe8e1d92d8cb"
+  }
+}

@@ -229,14 +229,22 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
                     throw NSError(domain: "AppUpdater", code: -2, userInfo: [NSLocalizedDescriptionKey: "Lỗi giải nén tệp cập nhật."])
                 }
 
-                // Find .app inside extracted folder
+                // Find .app inside extracted folder (recursively in case archive has a root folder)
                 let fileManager = FileManager.default
-                let extractedContents = try fileManager.contentsOfDirectory(atPath: extractedDir.path)
-                guard let appFileName = extractedContents.first(where: { $0.hasSuffix(".app") }) else {
-                    throw NSError(domain: "AppUpdater", code: -3, userInfo: [NSLocalizedDescriptionKey: "Không tìm thấy tệp TransTools.app trong bản cập nhật."])
+                var foundAppPath: String? = nil
+                if let subpaths = try? fileManager.subpathsOfDirectory(atPath: extractedDir.path) {
+                    for path in subpaths {
+                        if path.hasSuffix(".app") {
+                            foundAppPath = extractedDir.appendingPathComponent(path).path
+                            break
+                        }
+                    }
                 }
 
-                let newAppPath = extractedDir.appendingPathComponent(appFileName).path
+                guard let newAppPath = foundAppPath else {
+                    throw NSError(domain: "AppUpdater", code: -3, userInfo: [NSLocalizedDescriptionKey: "Không tìm thấy tệp TransTools.app trong bản cập nhật đã giải nén."])
+                }
+
                 let currentAppPath = Bundle.main.bundleURL.path
 
                 self.installStatusMessage = "Đang cập nhật và khởi động lại TransTools..."
@@ -305,9 +313,9 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
     }
 
     // MARK: - Execute Detached Update Script
-
     private func launchUpdateScript(newAppPath: String, currentAppPath: String, tempDir: String) throws {
         let pid = ProcessInfo.processInfo.processIdentifier
+        let scriptPath = "/tmp/transtools_relaunch_\(pid).sh"
 
         let scriptContent = """
         #!/bin/bash
@@ -315,40 +323,50 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
         NEW_APP="\(newAppPath)"
         CURRENT_APP="\(currentAppPath)"
         TEMP_DIR="\(tempDir)"
+        SCRIPT_PATH="\(scriptPath)"
 
-        # Wait for old app process to terminate
+        # 1. Chờ ứng dụng cũ thoát hoàn toàn
         while kill -0 "$TARGET_PID" 2>/dev/null; do
-            sleep 0.3
+            sleep 0.2
         done
+        sleep 0.5
 
-        # Remove quarantine attribute from new binary
+        # 2. Gỡ bỏ thuộc tính hạn chế kiểm duyệt khỏi bản cập nhật mới
         /usr/bin/xattr -dr com.apple.quarantine "$NEW_APP" 2>/dev/null || true
 
-        # Replace app bundle
+        # 3. Thay thế tệp ứng dụng an toàn
         /bin/rm -rf "$CURRENT_APP"
         /usr/bin/ditto "$NEW_APP" "$CURRENT_APP"
 
-        # Cleanup temporary files
-        /bin/rm -rf "$TEMP_DIR"
+        # 4. Gỡ bỏ mọi quarantine và làm sạch thuộc tính mở rộng trên app vừa cài đặt
+        /usr/bin/xattr -cr "$CURRENT_APP" 2>/dev/null || true
 
-        # Relaunch the new application
-        /usr/bin/open "$CURRENT_APP"
+        # 5. Cập nhật lại cơ sở dữ liệu LaunchServices của macOS
+        /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$CURRENT_APP" 2>/dev/null || true
+
+        # 6. Đồng bộ hóa dữ liệu xuống đĩa
+        /bin/sync
+        sleep 0.5
+
+        # 7. Tự động Re-Open / Khởi động lại phiên bản mới
+        /usr/bin/open -n "$CURRENT_APP" || /usr/bin/open "$CURRENT_APP"
+
+        # 8. Dọn dẹp tệp tạm thời
+        /bin/rm -rf "$TEMP_DIR" 2>/dev/null || true
+        /bin/rm -f "$SCRIPT_PATH" 2>/dev/null || true
         exit 0
         """
 
-        let scriptFile = URL(fileURLWithPath: tempDir).appendingPathComponent("install_update.sh")
-        try scriptContent.write(to: scriptFile, atomically: true, encoding: .utf8)
+        try scriptContent.write(toFile: scriptPath, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptPath)
 
-        // Set executable permissions
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptFile.path)
-
-        // Execute background detached process
+        // Thực thi script ngầm độc lập với tiến trình hiện tại
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/bash")
-        process.arguments = [scriptFile.path]
+        process.arguments = [scriptPath]
         try process.run()
 
-        // Terminate current running application cleanly
+        // Thoát ứng dụng hiện tại để script thực hiện thay thế và Re-Open
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             NSApplication.shared.terminate(nil)
         }
@@ -775,10 +793,111 @@ struct SettingsUpdateTabView: View {
                 .padding(10)
                 .background(Color(nsColor: .controlBackgroundColor))
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                // 4. Feature Highlights & What's New Card
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("TÍNH NĂNG NỔI BẬT CỦA BẢN NÀY")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.secondary)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color.accentColor)
+                                .frame(width: 14)
+                            Text("Phụ đề song ngữ 0ms: Apple Native, Gemini 2.0 Flash, GPT-4o, DeepSeek.")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.primary)
+                        }
+
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "face.smiling.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.orange)
+                                .frame(width: 14)
+                            Text("Trợ lý Chip Chip: Đi dạo thanh Dock khi rảnh, ghi chép và biểu cảm sinh động.")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.primary)
+                        }
+
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "command")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.purple)
+                                .frame(width: 14)
+                            Text("Phím tắt toàn cục: ⌥ + D dịch từ vựng, ⌥ + F sửa lỗi ngữ pháp tiếng Anh tức thì.")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.primary)
+                        }
+
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "doc.richtext.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.blue)
+                                .frame(width: 14)
+                            Text("Sổ tay cuộc họp & Từ vựng: Xuất Word (.docx), CSV và Flashcards.")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.primary)
+                        }
+                    }
+                }
+                .padding(10)
+                .background(Color(nsColor: .controlBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                // 5. Community & Support Card
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("KÊNH ĐÓNG GÓP & HỖ TRỢ")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.secondary)
+
+                    HStack(spacing: 8) {
+                        Button {
+                            if let url = URL(string: "\(AppUpdater.repoURLString)/issues") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: "exclamationmark.bubble")
+                                Text("Báo lỗi & Góp ý")
+                            }
+                            .font(.system(size: 11, weight: .medium))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.secondary.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            if let url = URL(string: AppUpdater.repoURLString) {
+                                NSWorkspace.shared.open(url)
+                            }
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: "star.fill")
+                                    .foregroundStyle(.yellow)
+                                Text("Star trên GitHub")
+                            }
+                            .font(.system(size: 11, weight: .medium))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.secondary.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                        }
+                        .buttonStyle(.plain)
+
+                        Spacer()
+                    }
+                }
+                .padding(10)
+                .background(Color(nsColor: .controlBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
             .padding(.trailing, 2)
         }
-        .frame(height: 380)
+        .frame(maxHeight: 460)
     }
 }
 

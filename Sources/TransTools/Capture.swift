@@ -52,7 +52,7 @@ final class AudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 
     func start(applicationID: String) async throws {
-        let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: false)
+        let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
         guard let display = content.displays.first,
               let app = content.applications.first(where: { $0.bundleIdentifier == applicationID }) else {
             throw NSError(domain: "Capture", code: 1, userInfo: [NSLocalizedDescriptionKey: "Không tìm thấy ứng dụng. Hãy mở Teams và tải lại danh sách."])
@@ -63,8 +63,8 @@ final class AudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
         config.excludesCurrentProcessAudio = true
         config.sampleRate = 16000
         config.channelCount = 1
-        config.width = 2
-        config.height = 2
+        config.width = 16
+        config.height = 16
         config.minimumFrameInterval = CMTime(value: 1, timescale: 1)
         let newStream = SCStream(filter: filter, configuration: config, delegate: self)
         try newStream.addStreamOutput(self, type: .audio, sampleHandlerQueue: queue)
@@ -74,7 +74,7 @@ final class AudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 
     func startSystemAudio() async throws {
-        let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: false)
+        let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
         guard let display = content.displays.first else {
             throw NSError(domain: "Capture", code: 2, userInfo: [NSLocalizedDescriptionKey: "Không tìm thấy màn hình. Kiểm tra quyền Screen & System Audio Recording."])
         }
@@ -87,8 +87,8 @@ final class AudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
         config.excludesCurrentProcessAudio = true
         config.sampleRate = 16000
         config.channelCount = 1
-        config.width = 2
-        config.height = 2
+        config.width = 16
+        config.height = 16
         config.minimumFrameInterval = CMTime(value: 1, timescale: 1)
         let newStream = SCStream(filter: filter, configuration: config, delegate: self)
         try newStream.addStreamOutput(self, type: .audio, sampleHandlerQueue: queue)

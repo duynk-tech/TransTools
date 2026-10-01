@@ -2,10 +2,73 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
+// MARK: - Web-Style Tab Item (Flat Icons, Underline Indicator)
+
+private struct NotebookWebTabItem: View {
+    let title: String
+    let icon: String
+    let count: Int
+    let isSelected: Bool
+    let action: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 0) {
+                HStack(spacing: 7) {
+                    Image(systemName: icon)
+                        .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                        .foregroundStyle(isSelected ? Color.accentColor : (isHovered ? .primary : .secondary))
+
+                    Text(title)
+                        .font(.system(size: 13, weight: isSelected ? .bold : .medium))
+                        .foregroundStyle(isSelected ? .primary : (isHovered ? .primary : .secondary))
+
+                    Text("\(count)")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            isSelected
+                                ? Color.accentColor.opacity(0.14)
+                                : Color.secondary.opacity(0.1)
+                        )
+                        .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                        .clipShape(Capsule())
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .contentShape(Rectangle())
+
+                // Web-style active indicator bar
+                ZStack {
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(height: 2.5)
+
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 1.5)
+                            .fill(Color.accentColor)
+                            .frame(height: 2.5)
+                    }
+                }
+            }
+            .background(
+                isHovered && !isSelected
+                    ? Color.primary.opacity(0.04)
+                    : Color.clear
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+    }
+}
+
 // MARK: - Meeting Notebook & Session Manager
 
 struct MeetingNotebookView: View {
     @ObservedObject var model: MeetingModel
+    @ObservedObject var vocabManager = VocabularyManager.shared
     @State private var searchText = ""
     @State private var transcriptSearch = ""
     @State private var sessionToDelete: MeetingSession? = nil
@@ -30,7 +93,42 @@ struct MeetingNotebookView: View {
     }
 
     var body: some View {
-        HSplitView {
+        VStack(spacing: 0) {
+            // Top Section Web-Style Tab Bar: Sổ tay cuộc họp vs Sổ từ vựng
+            HStack(spacing: 4) {
+                NotebookWebTabItem(
+                    title: "Sổ tay cuộc họp",
+                    icon: "bubble.left.and.text.bubble.right.fill",
+                    count: model.sessions.count,
+                    isSelected: model.selectedNotebookTab == 0
+                ) {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        model.selectedNotebookTab = 0
+                    }
+                }
+
+                NotebookWebTabItem(
+                    title: "Sổ từ vựng",
+                    icon: "character.book.closed.fill",
+                    count: vocabManager.items.count,
+                    isSelected: model.selectedNotebookTab == 1
+                ) {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        model.selectedNotebookTab = 1
+                    }
+                }
+
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .background(Color(nsColor: .controlBackgroundColor).opacity(0.85))
+            .overlay(
+                Divider().opacity(0.4),
+                alignment: .bottom
+            )
+
+            if model.selectedNotebookTab == 0 {
+                HSplitView {
             // Left Pane: Session List & Search
             VStack(spacing: 0) {
                 // Header
@@ -192,6 +290,10 @@ struct MeetingNotebookView: View {
                 Text("Hành động này sẽ xóa toàn bộ bản dịch song ngữ và ghi chú của \"\(s.title)\".")
             }
         }
+            } else {
+                VocabularyNotebookSectionView()
+            }
+        }
     }
 }
 
@@ -205,16 +307,21 @@ private struct SessionRowItem: View {
     @State private var isHovered = false
 
     var formattedTime: String {
-        let df = DateFormatter()
-        df.locale = Locale(identifier: "vi_VN")
+        let timeDF = DateFormatter()
+        timeDF.locale = Locale(identifier: "vi_VN")
+        timeDF.dateFormat = "HH:mm"
+        let timeStr = timeDF.string(from: session.createdAt)
+
         if Calendar.current.isDateInToday(session.createdAt) {
-            df.dateFormat = "HH:mm • Hôm nay"
+            return "\(timeStr) • Hôm nay"
         } else if Calendar.current.isDateInYesterday(session.createdAt) {
-            df.dateFormat = "HH:mm • Hôm qua"
+            return "\(timeStr) • Hôm qua"
         } else {
-            df.dateFormat = "HH:mm • dd/MM/yy"
+            let dateDF = DateFormatter()
+            dateDF.locale = Locale(identifier: "vi_VN")
+            dateDF.dateFormat = "dd/MM/yy"
+            return "\(timeStr) • \(dateDF.string(from: session.createdAt))"
         }
-        return df.string(from: session.createdAt)
     }
 
     var durationText: String {
@@ -313,7 +420,7 @@ private struct SessionDetailView: View {
     @State private var editableTitle = ""
     @State private var notesText = ""
     @State private var transcriptQuery = ""
-    @State private var isNotesExpanded = true
+    @State private var isNotesExpanded = false
     @State private var copiedConfirmation = false
 
     var filteredCaptions: [CaptionRecord] {
@@ -327,10 +434,17 @@ private struct SessionDetailView: View {
     }
 
     var formattedFullDate: String {
-        let df = DateFormatter()
-        df.locale = Locale(identifier: "vi_VN")
-        df.dateFormat = "HH:mm • EEEE, dd/MM/yyyy"
-        return df.string(from: session.createdAt)
+        let timeDF = DateFormatter()
+        timeDF.locale = Locale(identifier: "vi_VN")
+        timeDF.dateFormat = "HH:mm"
+        let timeStr = timeDF.string(from: session.createdAt)
+
+        let dateDF = DateFormatter()
+        dateDF.locale = Locale(identifier: "vi_VN")
+        dateDF.dateFormat = "EEEE, dd/MM/yyyy"
+        let dateStr = dateDF.string(from: session.createdAt)
+
+        return "\(timeStr) • \(dateStr)"
     }
 
     var formattedDuration: String {
@@ -447,25 +561,32 @@ private struct SessionDetailView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     // Session Metadata Strip
-                    HStack(spacing: 12) {
-                        MetaBadge(icon: "calendar", label: formattedFullDate, color: .blue)
-                        MetaBadge(icon: "clock", label: formattedDuration, color: .orange)
-                        MetaBadge(icon: "speaker.wave.2", label: session.audioSource, color: .green)
-                        MetaBadge(icon: "text.bubble", label: "\(session.captions.count) đoạn phụ đề", color: .purple)
-                        Spacer()
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            MetaBadge(icon: "calendar", label: formattedFullDate, color: .blue)
+                            MetaBadge(icon: "clock", label: formattedDuration, color: .orange)
+                            MetaBadge(icon: "speaker.wave.2", label: session.audioSource, color: .green)
+                            MetaBadge(icon: "text.bubble", label: "\(session.captions.count) đoạn phụ đề", color: .purple)
+                        }
                     }
                     .padding(.top, 4)
 
-                    // Personal Notes & Action Items Box
-                    VStack(alignment: .leading, spacing: 8) {
+                    // Personal Notes & Action Items Box (Mặc định thu gọn, bấm để mở rộng)
+                    VStack(alignment: .leading, spacing: isNotesExpanded ? 10 : 0) {
                         HStack {
                             Label("Ghi chú & Hành động (Action Items)", systemImage: "note.text")
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundStyle(.purple)
 
+                            if !notesText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isNotesExpanded {
+                                Text("• Đã có ghi chú")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.purple)
+                            }
+
                             Spacer()
 
-                            Text("Tự động lưu khi nhập")
+                            Text(isNotesExpanded ? "Tự động lưu khi nhập" : "Bấm để mở")
                                 .font(.system(size: 10))
                                 .foregroundStyle(.secondary)
 
@@ -480,6 +601,12 @@ private struct SessionDetailView: View {
                                     .padding(4)
                             }
                             .buttonStyle(.plain)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isNotesExpanded.toggle()
+                            }
                         }
 
                         if isNotesExpanded {
@@ -498,7 +625,7 @@ private struct SessionDetailView: View {
                                 }
                         }
                     }
-                    .padding(14)
+                    .padding(12)
                     .background(Color.purple.opacity(0.05))
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay(
@@ -597,6 +724,8 @@ private struct MetaBadge: View {
             Text(label)
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(.primary.opacity(0.85))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
         }
         .padding(.horizontal, 9)
         .padding(.vertical, 5)
@@ -606,6 +735,7 @@ private struct MetaBadge: View {
             RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .stroke(Color.primary.opacity(0.06), lineWidth: 1)
         )
+        .fixedSize()
     }
 }
 
@@ -614,6 +744,7 @@ private struct MetaBadge: View {
 private struct NotebookCaptionCard: View {
     let index: Int
     let item: CaptionRecord
+    @ObservedObject private var tts = TTSService.shared
     @State private var isHovered = false
     @State private var copiedText: String? = nil
 
@@ -637,16 +768,52 @@ private struct NotebookCaptionCard: View {
                     .foregroundStyle(.secondary)
                     .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
 
+                if tts.isSpeaking && (tts.currentlySpeakingText == item.original || tts.currentlySpeakingText == item.vietnamese) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "speaker.wave.3.fill")
+                        Text("Đang đọc…")
+                            .font(.system(size: 9.5, weight: .bold))
+                    }
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color.purple)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2.5)
+                    .background(Color.purple.opacity(0.12))
+                    .clipShape(Capsule())
+                }
+
                 Spacer()
 
                 if isHovered {
                     HStack(spacing: 4) {
+                        let isSpeakingOrig = tts.isSpeaking && tts.currentlySpeakingText == item.original
+                        Button {
+                            if isSpeakingOrig {
+                                tts.stop()
+                            } else {
+                                tts.speak(text: item.original, language: .english)
+                            }
+                        } label: {
+                            HStack(spacing: 3) {
+                                Image(systemName: isSpeakingOrig ? "speaker.wave.3.fill" : "speaker.wave.2")
+                                Text("Gốc")
+                            }
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(isSpeakingOrig ? Color.purple : .primary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(isSpeakingOrig ? Color.purple.opacity(0.15) : Color.secondary.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Nghe phát âm tiếng gốc")
+
                         Button {
                             copy(item.original)
                         } label: {
                             HStack(spacing: 3) {
                                 Image(systemName: "doc.on.doc")
-                                Text("EN")
+                                Text("Gốc")
                             }
                             .font(.system(size: 10, weight: .medium))
                             .padding(.horizontal, 6)
@@ -655,26 +822,50 @@ private struct NotebookCaptionCard: View {
                             .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                         }
                         .buttonStyle(.plain)
-                        .help("Sao chép tiếng Anh")
+                        .help("Sao chép câu thoại gốc")
 
-                        Button {
-                            copy(item.vietnamese)
-                        } label: {
-                            HStack(spacing: 3) {
-                                Image(systemName: "doc.on.doc")
-                                Text("VI")
+                        if !item.vietnamese.isEmpty {
+                            let isSpeakingTrans = tts.isSpeaking && tts.currentlySpeakingText == item.vietnamese
+                            Button {
+                                if isSpeakingTrans {
+                                    tts.stop()
+                                } else {
+                                    tts.speak(text: item.vietnamese, language: .vietnamese)
+                                }
+                            } label: {
+                                HStack(spacing: 3) {
+                                    Image(systemName: isSpeakingTrans ? "speaker.wave.3.fill" : "speaker.wave.2")
+                                    Text("Dịch")
+                                }
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(isSpeakingTrans ? Color.purple : .primary)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(isSpeakingTrans ? Color.purple.opacity(0.15) : Color.secondary.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                             }
-                            .font(.system(size: 10, weight: .medium))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(Color.secondary.opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                            .buttonStyle(.plain)
+                            .help("Nghe bản dịch tiếng Việt")
+
+                            Button {
+                                copy(item.vietnamese)
+                            } label: {
+                                HStack(spacing: 3) {
+                                    Image(systemName: "doc.on.doc")
+                                    Text("Dịch")
+                                }
+                                .font(.system(size: 10, weight: .medium))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(Color.secondary.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                            .help("Sao chép bản dịch")
                         }
-                        .buttonStyle(.plain)
-                        .help("Sao chép tiếng Việt")
 
                         Button {
-                            copy("[\(timestampString)]\nEN: \(item.original)\nVI: \(item.vietnamese)")
+                            copy("[\(timestampString)]\n[Gốc]: \(item.original)\n[Dịch]: \(item.vietnamese)")
                         } label: {
                             HStack(spacing: 3) {
                                 Image(systemName: "square.and.arrow.up")

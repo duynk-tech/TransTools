@@ -22,8 +22,8 @@ enum AIProvider: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .apple: return "Apple Translate (Trên máy, 0 token, Siêu tốc)"
-        case .free: return "Google Dịch (Miễn phí web, 0 token)"
+        case .apple: return "Apple Translate (Miễn phí trên máy, Siêu tốc)"
+        case .free: return "Google Dịch (Miễn phí web)"
         case .gemini: return "Google Gemini"
         case .openai: return "OpenAI (ChatGPT)"
         case .deepseek: return "DeepSeek"
@@ -33,8 +33,8 @@ enum AIProvider: String, CaseIterable, Identifiable {
 
     var shortName: String {
         switch self {
-        case .apple: return "Apple Native"
-        case .free: return "Google Free"
+        case .apple: return "Apple Translate"
+        case .free: return "Google Dịch"
         case .gemini: return "Gemini"
         case .openai: return "OpenAI"
         case .deepseek: return "DeepSeek"
@@ -66,7 +66,7 @@ enum AIProvider: String, CaseIterable, Identifiable {
     var defaultModels: [String] {
         switch self {
         case .apple:
-            return ["Apple Neural Engine (On-Device)"]
+            return ["Apple Translate (Tích hợp trên máy)"]
         case .free:
             return ["Tiêu chuẩn (Standard)"]
         case .gemini:
@@ -256,23 +256,90 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Codable {
     }
 }
 
+// MARK: - Subtitle Display Mode (Bilingual / CC Source Only / Translation Only)
+
+public enum SubtitleDisplayMode: String, CaseIterable, Identifiable, Codable {
+    case bilingual = "bilingual"              // Song ngữ (Gốc + Dịch)
+    case originalOnly = "originalOnly"        // Chỉ tiếng gốc (CC - 0ms, không dịch)
+    case translationOnly = "translationOnly"  // Chỉ bản dịch
+
+    public var id: String { rawValue }
+
+    public var title: String {
+        switch self {
+        case .bilingual: return "Song ngữ (Gốc + Dịch)"
+        case .originalOnly: return "Chỉ tiếng gốc (CC)"
+        case .translationOnly: return "Chỉ bản dịch"
+        }
+    }
+
+    public var shortTitle: String {
+        switch self {
+        case .bilingual: return "Song ngữ"
+        case .originalOnly: return "Tiếng gốc (CC)"
+        case .translationOnly: return "Bản dịch"
+        }
+    }
+
+    public var icon: String {
+        switch self {
+        case .bilingual: return "character.bubble"
+        case .originalOnly: return "captions.bubble"
+        case .translationOnly: return "text.bubble"
+        }
+    }
+}
+
 #if canImport(Translation)
 @available(macOS 15.0, *)
 @MainActor
 enum AppleNativeTranslator {
-    static var session: TranslationSession?
+    static var sessions: [String: TranslationSession] = [:]
+    static var session: TranslationSession? {
+        get { sessions.values.first }
+        set {
+            if let val = newValue {
+                sessions["default"] = val
+            }
+        }
+    }
+
+    static func sessionKey(from source: AppLanguage, to target: AppLanguage) -> String {
+        "\(source.appleLanguageCode)->\(target.appleLanguageCode)"
+    }
+
+    static func register(_ session: TranslationSession, from source: AppLanguage, to target: AppLanguage) {
+        let key = sessionKey(from: source, to: target)
+        sessions[key] = session
+    }
+
+    static func getSession(from source: AppLanguage, to target: AppLanguage) -> TranslationSession? {
+        let key = sessionKey(from: source, to: target)
+        if let s = sessions[key] { return s }
+        for (k, s) in sessions {
+            if k == "\(source.appleLanguageCode)->\(target.appleLanguageCode)" {
+                return s
+            }
+        }
+        return nil
+    }
 
     static func translate(_ text: String, from source: AppLanguage = .english, to target: AppLanguage = .vietnamese) async throws -> String {
-        guard let session else {
-            return try await AITranslator.freeTranslate(text, from: source, to: target)
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "" }
+
+        if let session = getSession(from: source, to: target) {
+            do {
+                let response = try await session.translate(trimmed)
+                let cleaned = response.targetText.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !cleaned.isEmpty && (source == target || cleaned.lowercased() != trimmed.lowercased()) {
+                    return cleaned
+                }
+            } catch {
+                // fall through to free fallback
+            }
         }
-        do {
-            let response = try await session.translate(text)
-            let cleaned = response.targetText.trimmingCharacters(in: .whitespacesAndNewlines)
-            return cleaned.isEmpty ? text : cleaned
-        } catch {
-            return try await AITranslator.freeTranslate(text, from: source, to: target)
-        }
+        return try await AITranslator.freeTranslate(trimmed, from: source, to: target)
     }
 
     static func viToEn(_ text: String) async throws -> String {
@@ -479,7 +546,7 @@ struct AITranslator {
     static func fetchModels(for provider: AIProvider, key: String) async throws -> [String] {
         switch provider {
         case .apple:
-            return ["Apple Neural Engine (On-Device)"]
+            return ["Apple Translate (Tích hợp trên máy)"]
         case .free:
             return ["Tiêu chuẩn (Standard)"]
         case .gemini:
@@ -562,6 +629,13 @@ struct AITranslator {
         }
     }
 
+    // MARK: - In-Memory Ultra-Fast Translation Cache
+    private static let translationCache: NSCache<NSString, NSString> = {
+        let cache = NSCache<NSString, NSString>()
+        cache.countLimit = 500
+        return cache
+    }()
+
     // MARK: - Translation Endpoints
     static func translate(
         _ text: String,
@@ -572,20 +646,39 @@ struct AITranslator {
         model: String,
         key: String
     ) async throws -> String {
+        let cleanText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanText.isEmpty else { return "" }
+
+        let cacheKey = "\(source.rawValue)_\(target.rawValue)_\(domain.rawValue)_\(provider.rawValue)_\(cleanText.lowercased())" as NSString
+        if let cached = translationCache.object(forKey: cacheKey) {
+            return cached as String
+        }
+
+        var translated = ""
         if provider == .apple {
             #if canImport(Translation)
             if #available(macOS 15.0, *) {
-                return try await AppleNativeTranslator.translate(text, from: source, to: target)
+                translated = try await AppleNativeTranslator.translate(cleanText, from: source, to: target)
             }
             #endif
-            return try await freeTranslate(text, from: source, to: target)
+            if translated.isEmpty || (source != target && translated.lowercased() == cleanText.lowercased()) {
+                translated = try await freeTranslate(cleanText, from: source, to: target)
+            }
+        } else {
+            let trimmedKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
+            if provider == .free || trimmedKey.isEmpty {
+                translated = try await freeTranslate(cleanText, from: source, to: target)
+            } else {
+                let prompt = "\(domain.promptDescription(from: source, to: target))\n\nTranscript:\n\(cleanText)"
+                translated = try await callAI(prompt: prompt, provider: provider, model: model, key: trimmedKey)
+            }
         }
-        let trimmedKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
-        if provider == .free || trimmedKey.isEmpty {
-            return try await freeTranslate(text, from: source, to: target)
+
+        let result = translated.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !result.isEmpty {
+            translationCache.setObject(result as NSString, forKey: cacheKey)
         }
-        let prompt = "\(domain.promptDescription(from: source, to: target))\n\nTranscript:\n\(text)"
-        return try await callAI(prompt: prompt, provider: provider, model: model, key: trimmedKey)
+        return result
     }
 
     // MARK: - Quick Translation with Domain Specialty & Smart Alternatives
@@ -656,7 +749,17 @@ struct AITranslator {
 
                 return QuickTranslationResult(primary: primaryText, alternatives: alternatives)
             } catch {
-                let fallback = try await translate(trimmedText, from: source, to: target, domain: domain, provider: provider, model: model, key: trimmedKey)
+                #if canImport(Translation)
+                if #available(macOS 15.0, *) {
+                    if let appleResult = try? await AppleNativeTranslator.translate(trimmedText, from: source, to: target), !appleResult.isEmpty {
+                        return QuickTranslationResult(primary: appleResult)
+                    }
+                }
+                #endif
+                if let freeResult = try? await freeTranslate(trimmedText, from: source, to: target), !freeResult.isEmpty {
+                    return QuickTranslationResult(primary: freeResult)
+                }
+                let fallback = try await translate(trimmedText, from: source, to: target, domain: domain, provider: .free, model: "", key: "")
                 return QuickTranslationResult(primary: fallback)
             }
         }
@@ -689,6 +792,72 @@ struct AITranslator {
         key: String
     ) async throws -> QuickTranslationResult {
         try await quickTranslateDetailed(text, from: .vietnamese, to: .english, domain: domain, style: style, provider: provider, model: model, key: key)
+    }
+
+    // MARK: - AI Grammar Correction & Polish (Option + F & Studio)
+    static func fixAndPolishLanguage(
+        _ text: String,
+        language: AppLanguage = .english,
+        domain: DomainSpecialty = .developer,
+        provider: AIProvider,
+        model: String,
+        key: String
+    ) async throws -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "" }
+
+        let trimmedKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        if provider != .apple && provider != .free && !trimmedKey.isEmpty {
+            let prompt = """
+            You are an elite bilingual language editor and communication coach specializing in \(domain.title).
+            The user wants to fix any grammatical mistakes, typos, spelling, tense, punctuation, awkward word choices, and polish this text written in \(language.displayName) so it sounds completely natural, native, and professional for work/chat.
+
+            Input text:
+            "\(trimmed)"
+
+            Instructions:
+            - Fix all grammar, spelling, punctuation, and structural errors in \(language.displayName).
+            - Keep the original intent and tone intact.
+            - Make the phrasing smooth, clear, and native-sounding.
+            - Output ONLY the polished \(language.displayName) text, with NO explanations, NO quotes, NO extra commentary.
+            """
+
+            do {
+                let aiOutput = try await callAI(prompt: prompt, provider: provider, model: model, key: trimmedKey)
+                let cleaned = aiOutput.trimmingCharacters(in: CharacterSet(charactersIn: " \"'`\n\r\t"))
+                if !cleaned.isEmpty {
+                    return cleaned
+                }
+            } catch {
+                // Fallback to roundtrip
+            }
+        }
+
+        // Free Fallback: Nếu là tiếng Anh thì roundtrip qua tiếng Việt và ngược lại
+        do {
+            if language == .english {
+                let vi = try await freeEnToVi(trimmed)
+                let enPolished = try await freeViToEn(vi)
+                return enPolished.isEmpty ? trimmed : enPolished
+            } else if language == .vietnamese {
+                let en = try await freeViToEn(trimmed)
+                let viPolished = try await freeEnToVi(en)
+                return viPolished.isEmpty ? trimmed : viPolished
+            }
+            return trimmed
+        } catch {
+            return trimmed
+        }
+    }
+
+    static func fixAndPolishEnglish(
+        _ text: String,
+        domain: DomainSpecialty = .developer,
+        provider: AIProvider,
+        model: String,
+        key: String
+    ) async throws -> String {
+        try await fixAndPolishLanguage(text, language: .english, domain: domain, provider: provider, model: model, key: key)
     }
 
     // MARK: - Smart AI Meeting Reply Suggestions with Deep Context
@@ -812,6 +981,18 @@ struct AITranslator {
                     ReplySuggestion(english: "I have a slightly different thought, may I share it?", vietnamese: "Tôi có một góc nhìn hơi khác một chút, tôi xin phép chia sẻ nhé?", tone: "Góp ý")
                 ]
             }
+        } else if lower.contains("help") || lower.contains("need") || lower.contains("support") || lower.contains("assist") {
+            return [
+                ReplySuggestion(english: "Got it, I understand the requirement clearly.", vietnamese: "Tôi đã hiểu rõ yêu cầu rồi.", tone: "Đã hiểu"),
+                ReplySuggestion(english: "Do you need any help with this task?", vietnamese: "Bạn có cần mình hỗ trợ gì về task này không?", tone: "Hỗ trợ"),
+                ReplySuggestion(english: "Let me walk you through the implementation.", vietnamese: "Để tôi giải thích chi tiết giải pháp cho bạn.", tone: "Giải thích")
+            ]
+        } else if lower.contains("how") || lower.contains("why") || lower.contains("explain") || lower.contains("bug") || lower.contains("error") {
+            return [
+                ReplySuggestion(english: "First of all, let's check the system logs.", vietnamese: "Đầu tiên, chúng ta cần kiểm tra logs hệ thống.", tone: "Đầu tiên"),
+                ReplySuggestion(english: "I'll investigate the root cause and update you shortly.", vietnamese: "Tôi sẽ tìm nguyên nhân gốc rễ và báo lại sớm.", tone: "Tìm lỗi"),
+                ReplySuggestion(english: "Let me walk you through the logic step by step.", vietnamese: "Để tôi giải thích từng bước logic cho bạn.", tone: "Chi tiết")
+            ]
         } else if lower.contains("when") || lower.contains("deadline") || lower.contains("eta") || lower.contains("timeline") {
             return [
                 ReplySuggestion(english: "We're aiming to deliver this by tomorrow afternoon.", vietnamese: "Chúng tôi dự kiến bàn giao vào chiều mai.", tone: "Thời hạn"),
@@ -820,38 +1001,55 @@ struct AITranslator {
             ]
         } else {
             return [
-                ReplySuggestion(english: "Got it, that makes total sense. Thank you!", vietnamese: "Tôi hiểu rồi, rất rõ ràng. Cảm ơn bạn!", tone: "Xác nhận"),
-                ReplySuggestion(english: "Could you clarify that point a bit more for me?", vietnamese: "Bạn có thể làm rõ hơn điểm đó giúp tôi được không?", tone: "Hỏi lại"),
-                ReplySuggestion(english: "I will take note of this and follow up shortly.", vietnamese: "Tôi sẽ ghi nhận điều này và trao đổi thêm sớm.", tone: "Ghi nhận")
+                ReplySuggestion(english: "Got it, I understand. I'll take care of it.", vietnamese: "Tôi đã hiểu rõ rồi. Tôi sẽ phụ trách phần việc này.", tone: "Đã hiểu"),
+                ReplySuggestion(english: "Do you need any help with that?", vietnamese: "Bạn có cần trợ giúp gì về phần này không?", tone: "Hỏi han"),
+                ReplySuggestion(english: "First of all, let's align on the scope.", vietnamese: "Đầu tiên, hãy thống nhất về phạm vi công việc.", tone: "Đầu tiên")
             ]
         }
     }
 
-    // MARK: - Free Google Translate (No API Key Required, 0 tokens)
+    // MARK: - Free Web Translate (Fast, 0 tokens, no captcha block)
     static func freeTranslate(_ text: String, from source: AppLanguage = .english, to target: AppLanguage = .vietnamese) async throws -> String {
-        guard let encoded = text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "https://translate.googleapis.com/translate_a/single?client=gtx&sl=\(source.googleLanguageCode)&tl=\(target.googleLanguageCode)&dt=t&q=\(encoded)") else {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "" }
+        guard let encoded = trimmed.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
             throw NSError(domain: "Translate", code: 0, userInfo: [NSLocalizedDescriptionKey: "Lỗi mã hóa câu dịch."])
         }
-        var request = URLRequest(url: url)
-        request.timeoutInterval = 8
-        request.setValue("Mozilla/5.0", forHTTPHeaderField: "User-Agent")
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
-            throw NSError(domain: "Translate", code: 1, userInfo: [NSLocalizedDescriptionKey: "Dịch tự động tạm thời không phản hồi."])
-        }
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [Any],
-              let outer = json.first as? [Any] else {
-            throw NSError(domain: "Translate", code: 2, userInfo: [NSLocalizedDescriptionKey: "Không giải mã được kết quả dịch."])
-        }
-        var result = ""
-        for item in outer {
-            if let pair = item as? [Any], let translated = pair.first as? String {
-                result += translated
+
+        // Endpoint 1: Chrome Extension dictionary API (Fast, no rate-limit captcha block)
+        if let url = URL(string: "https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=\(source.googleLanguageCode)&tl=\(target.googleLanguageCode)&q=\(encoded)") {
+            var request = URLRequest(url: url)
+            request.timeoutInterval = 7
+            request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)", forHTTPHeaderField: "User-Agent")
+            if let (data, response) = try? await URLSession.shared.data(for: request),
+               (response as? HTTPURLResponse)?.statusCode == 200,
+               let array = try? JSONSerialization.jsonObject(with: data) as? [String],
+               let first = array.first, !first.isEmpty {
+                return first.trimmingCharacters(in: .whitespacesAndNewlines)
             }
         }
-        let cleaned = result.trimmingCharacters(in: .whitespacesAndNewlines)
-        return cleaned.isEmpty ? text : cleaned
+
+        // Endpoint 2: Standard gtx endpoint fallback
+        if let url = URL(string: "https://translate.googleapis.com/translate_a/single?client=gtx&sl=\(source.googleLanguageCode)&tl=\(target.googleLanguageCode)&dt=t&q=\(encoded)") {
+            var request = URLRequest(url: url)
+            request.timeoutInterval = 7
+            request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)", forHTTPHeaderField: "User-Agent")
+            if let (data, response) = try? await URLSession.shared.data(for: request),
+               (response as? HTTPURLResponse)?.statusCode == 200,
+               let json = try? JSONSerialization.jsonObject(with: data) as? [Any],
+               let outer = json.first as? [Any] {
+                var result = ""
+                for item in outer {
+                    if let pair = item as? [Any], let translated = pair.first as? String {
+                        result += translated
+                    }
+                }
+                let cleaned = result.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !cleaned.isEmpty { return cleaned }
+            }
+        }
+
+        throw NSError(domain: "Translate", code: 1, userInfo: [NSLocalizedDescriptionKey: "Không thể kết nối đến dịch vụ dịch thuật."])
     }
 
     static func freeEnToVi(_ text: String) async throws -> String {
@@ -878,30 +1076,10 @@ struct AITranslator {
             return try await freeEnToVi(prompt)
         case .gemini:
             var modelPath = selectedModel
+            if modelPath.contains("2.5") { modelPath = "gemini-2.0-flash" }
             if modelPath.hasPrefix("models/") { modelPath = String(modelPath.dropFirst(7)) }
-            let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/\(modelPath):generateContent?key=\(key)"
-            guard let url = URL(string: endpoint) else {
-                throw NSError(domain: "Gemini", code: 0, userInfo: [NSLocalizedDescriptionKey: "URL không hợp lệ. Kiểm tra API key."])
-            }
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.timeoutInterval = 15
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            let body: [String: Any] = [
-                "contents": [["parts": [["text": prompt]]]],
-                "generationConfig": ["temperature": 0.1, "maxOutputTokens": 1024]
-            ]
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-            if !(200...299).contains(statusCode) {
-                if let errJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let errorObj = errJson["error"] as? [String: Any],
-                   let msg = errorObj["message"] as? String {
-                    throw NSError(domain: "Gemini", code: statusCode, userInfo: [NSLocalizedDescriptionKey: "Gemini (HTTP \(statusCode)): \(msg)"])
-                }
-                throw NSError(domain: "Gemini", code: statusCode, userInfo: [NSLocalizedDescriptionKey: "Gemini dịch thất bại (HTTP \(statusCode)). Hãy thử đổi model khác trong Cài đặt."])
-            }
+            if modelPath.isEmpty { modelPath = "gemini-2.0-flash" }
+
             struct GeminiResp: Decodable {
                 struct Candidate: Decodable {
                     struct Content: Decodable {
@@ -912,11 +1090,54 @@ struct AITranslator {
                 }
                 let candidates: [Candidate]?
             }
-            let decoded = try JSONDecoder().decode(GeminiResp.self, from: data)
-            guard let translated = decoded.candidates?.first?.content?.parts?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines), !translated.isEmpty else {
-                throw NSError(domain: "Gemini", code: 0, userInfo: [NSLocalizedDescriptionKey: "Gemini không trả về kết quả dịch."])
+
+            func executeGemini(for targetModel: String) async throws -> String {
+                let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/\(targetModel):generateContent?key=\(key)"
+                guard let url = URL(string: endpoint) else {
+                    throw NSError(domain: "Gemini", code: 0, userInfo: [NSLocalizedDescriptionKey: "URL không hợp lệ. Kiểm tra API key."])
+                }
+                var request = URLRequest(url: url)
+                request.httpMethod = "POST"
+                request.timeoutInterval = 15
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                let body: [String: Any] = [
+                    "contents": [["parts": [["text": prompt]]]],
+                    "generationConfig": ["temperature": 0.1, "maxOutputTokens": 1024]
+                ]
+                request.httpBody = try JSONSerialization.data(withJSONObject: body)
+                let (data, response) = try await URLSession.shared.data(for: request)
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+                if !(200...299).contains(statusCode) {
+                    if let errJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let errorObj = errJson["error"] as? [String: Any],
+                       let msg = errorObj["message"] as? String {
+                        throw NSError(domain: "Gemini", code: statusCode, userInfo: [NSLocalizedDescriptionKey: "Gemini (HTTP \(statusCode)): \(msg)"])
+                    }
+                    throw NSError(domain: "Gemini", code: statusCode, userInfo: [NSLocalizedDescriptionKey: "Gemini dịch thất bại (HTTP \(statusCode)). Hãy thử đổi model khác trong Cài đặt."])
+                }
+                let decoded = try JSONDecoder().decode(GeminiResp.self, from: data)
+                guard let translated = decoded.candidates?.first?.content?.parts?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines), !translated.isEmpty else {
+                    throw NSError(domain: "Gemini", code: 0, userInfo: [NSLocalizedDescriptionKey: "Gemini không trả về kết quả dịch."])
+                }
+                return translated
             }
-            return translated
+
+            do {
+                return try await executeGemini(for: modelPath)
+            } catch {
+                // If model failed with 404 or deprecated, auto-fallback to official stable models
+                if modelPath != "gemini-2.0-flash" {
+                    if let fallback20 = try? await executeGemini(for: "gemini-2.0-flash") {
+                        return fallback20
+                    }
+                }
+                if modelPath != "gemini-1.5-flash" {
+                    if let fallback15 = try? await executeGemini(for: "gemini-1.5-flash") {
+                        return fallback15
+                    }
+                }
+                throw error
+            }
 
         case .openai, .deepseek:
             let endpoint = provider == .openai ? "https://api.openai.com/v1/chat/completions" : "https://api.deepseek.com/chat/completions"
@@ -1002,8 +1223,13 @@ final class LiveSpeech {
     private var task: SFSpeechRecognitionTask?
     private let lock = NSLock()
     private var generation = UUID()
+    private var pendingCMSamples: [CMSampleBuffer] = []
+    private var pendingPCMBuffers: [AVAudioPCMBuffer] = []
+    private let maxPendingBuffers = 35 // ~1.5 - 2s buffer queue for seamless rotation
+
     var onResult: ((String, Bool) -> Void)?
     var onError: ((Error) -> Void)?
+    var onSessionEndedOrTimeout: (() -> Void)?
 
     func start(localeIdentifier: String = "en-US") throws {
         let rec = SFSpeechRecognizer(locale: Locale(identifier: localeIdentifier))
@@ -1014,25 +1240,68 @@ final class LiveSpeech {
             throw NSError(domain: "Speech", code: 2, userInfo: [NSLocalizedDescriptionKey: "Apple Speech chưa sẵn sàng cho \(localeIdentifier). Vui lòng vào Cài đặt hệ thống (System Settings) → Bàn phím (Keyboard) → Bật 'Đọc chính tả' (Dictation)."])
         }
         self.recognizer = rec
-        stop()
+
+        lock.lock()
+        // Gracefully end previous request without purging buffer queue
+        request?.endAudio()
+        task?.cancel()
+        task = nil
+
         let next = SFSpeechAudioBufferRecognitionRequest()
         next.shouldReportPartialResults = true
+        next.taskHint = .dictation
+        next.addsPunctuation = true
         if rec.supportsOnDeviceRecognition {
             next.requiresOnDeviceRecognition = true
         } else {
             next.requiresOnDeviceRecognition = false
         }
+
+        // Drain any pending buffered audio samples into the new request so no audio is lost during rotation
+        for sample in pendingCMSamples {
+            next.appendAudioSampleBuffer(sample)
+        }
+        pendingCMSamples.removeAll()
+        for pcm in pendingPCMBuffers {
+            next.append(pcm)
+        }
+        pendingPCMBuffers.removeAll()
+
         let token = UUID()
-        lock.lock(); request = next; generation = token; lock.unlock()
+        request = next
+        generation = token
+        lock.unlock()
+
         task = rec.recognitionTask(with: next) { [weak self] result, error in
             guard let self else { return }
-            self.lock.lock(); let current = self.generation == token; self.lock.unlock()
+            self.lock.lock()
+            let current = (self.generation == token)
+            self.lock.unlock()
             guard current else { return }
-            if let result { self.onResult?(result.bestTranscription.formattedString, result.isFinal) }
+
+            if let result {
+                self.onResult?(result.bestTranscription.formattedString, result.isFinal)
+                if result.isFinal {
+                    self.onSessionEndedOrTimeout?()
+                }
+            }
+
             if let error {
                 let nsErr = error as NSError
                 let desc = error.localizedDescription
-                if desc.localizedCaseInsensitiveContains("Siri") || desc.localizedCaseInsensitiveContains("Dictation") || nsErr.domain.contains("Assistant") || nsErr.code == 1700 || nsErr.code == 1107 {
+
+                // Transient / normal completion errors that should trigger seamless re-anchor, NOT terminate app:
+                // Code 203: Retry / silence timeout
+                // Code 216: Recognition request finished or cancelled during rotation
+                // Code 1110: No speech detected in slice
+                // Code 209: Apple 60-second recognition limit exceeded
+                // Code 301: Request cancelled
+                let isTransient = (nsErr.domain.contains("Assistant") || nsErr.domain.contains("Speech")) &&
+                    (nsErr.code == 203 || nsErr.code == 216 || nsErr.code == 1110 || nsErr.code == 209 || nsErr.code == 301)
+
+                if isTransient {
+                    self.onSessionEndedOrTimeout?()
+                } else if desc.localizedCaseInsensitiveContains("Siri") || desc.localizedCaseInsensitiveContains("Dictation") || nsErr.code == 1700 || nsErr.code == 1107 {
                     let friendly = NSError(
                         domain: "Speech",
                         code: 1700,
@@ -1045,10 +1314,523 @@ final class LiveSpeech {
             }
         }
     }
-    func append(_ sample: CMSampleBuffer) { lock.lock(); defer { lock.unlock() }; request?.appendAudioSampleBuffer(sample) }
-    func append(_ buffer: AVAudioPCMBuffer) { lock.lock(); defer { lock.unlock() }; request?.append(buffer) }
+
+    func append(_ sample: CMSampleBuffer) {
+        lock.lock()
+        defer { lock.unlock() }
+        if let req = request {
+            req.appendAudioSampleBuffer(sample)
+        } else {
+            pendingCMSamples.append(sample)
+            if pendingCMSamples.count > maxPendingBuffers {
+                pendingCMSamples.removeFirst()
+            }
+        }
+    }
+
+    func append(_ buffer: AVAudioPCMBuffer) {
+        lock.lock()
+        defer { lock.unlock() }
+        if let req = request {
+            req.append(buffer)
+        } else {
+            pendingPCMBuffers.append(buffer)
+            if pendingPCMBuffers.count > maxPendingBuffers {
+                pendingPCMBuffers.removeFirst()
+            }
+        }
+    }
+
     func stop() {
-        lock.lock(); generation = UUID(); request?.endAudio(); request = nil; lock.unlock()
-        task?.cancel(); task = nil
+        lock.lock()
+        generation = UUID()
+        request?.endAudio()
+        request = nil
+        pendingCMSamples.removeAll()
+        pendingPCMBuffers.removeAll()
+        lock.unlock()
+        task?.cancel()
+        task = nil
+    }
+}
+
+// MARK: - Text-to-Speech (TTS) Earphone Interpreter & Pronunciation Service
+
+public enum VoiceTone: String, CaseIterable, Identifiable {
+    case natural = "natural"       // Tự nhiên & Chuẩn mực
+    case warm = "warm"             // Ấm áp & Truyền cảm
+    case energetic = "energetic"   // Tươi sáng & Năng động
+    case articulate = "articulate" // Rõ ràng & Từng chữ (Luyện nghe)
+
+    public var id: String { rawValue }
+    public var title: String {
+        switch self {
+        case .natural: return "Tự nhiên & Chuẩn mực (Khuyên dùng)"
+        case .warm: return "Ấm áp & Truyền cảm"
+        case .energetic: return "Tươi sáng & Năng động"
+        case .articulate: return "Rõ ràng & Từng chữ (Học tập)"
+        }
+    }
+    public var icon: String {
+        switch self {
+        case .natural: return "sparkles"
+        case .warm: return "heart.fill"
+        case .energetic: return "sun.max.fill"
+        case .articulate: return "character.book.closed.fill"
+        }
+    }
+    public var pitchMultiplier: Float {
+        switch self {
+        case .natural: return 1.03
+        case .warm: return 0.96
+        case .energetic: return 1.08
+        case .articulate: return 1.00
+        }
+    }
+    public var rateModifier: Float {
+        switch self {
+        case .natural: return 0.0
+        case .warm: return -0.02
+        case .energetic: return 0.02
+        case .articulate: return -0.05
+        }
+    }
+    public var postDelay: TimeInterval {
+        switch self {
+        case .natural: return 0.18
+        case .warm: return 0.20
+        case .energetic: return 0.15
+        case .articulate: return 0.28
+        }
+    }
+}
+
+public struct TTSVoiceOption: Identifiable, Hashable {
+    public let id: String
+    public let name: String
+    public let language: String
+    public let quality: AVSpeechSynthesisVoiceQuality
+    public let isNeural: Bool
+    public let displayName: String
+
+    public init(voice: AVSpeechSynthesisVoice) {
+        self.id = voice.identifier
+        self.name = voice.name
+        self.language = voice.language
+        self.quality = voice.quality
+
+        let idLower = voice.identifier.lowercased()
+        let isHighQ = voice.quality == .premium || voice.quality == .enhanced || idLower.contains("neural") || idLower.contains("siri")
+        self.isNeural = isHighQ
+
+        if idLower.contains("gryphon-neural_vi-vn-a") {
+            self.displayName = "Siri Nữ Bắc (Truyền cảm - AI)"
+        } else if idLower.contains("gryphon-neural_vi-vn-c") {
+            self.displayName = "Siri Nữ Nam (Ấm áp - AI)"
+        } else if idLower.contains("siri.natural.nora") {
+            self.displayName = "Nora (Siri Mỹ - AI)"
+        } else if idLower.contains("siri.natural.simone") {
+            self.displayName = "Simone (Siri Mỹ - AI)"
+        } else if voice.name.lowercased().contains("linh") {
+            self.displayName = isHighQ ? "Linh (Nâng cao - AI)" : "Linh (Tiêu chuẩn)"
+        } else if voice.name.lowercased().contains("samantha") {
+            self.displayName = isHighQ ? "Samantha (Nâng cao - AI)" : "Samantha (Tiêu chuẩn)"
+        } else if voice.name.lowercased().contains("daniel") {
+            self.displayName = "Daniel (Anh - UK chuẩn)"
+        } else {
+            let qualityTag = isHighQ ? " (AI)" : ""
+            self.displayName = "\(voice.name)\(qualityTag)"
+        }
+    }
+}
+
+@MainActor
+public final class TTSService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
+    public static let shared = TTSService()
+
+    public enum AutoSpeakTarget: String, CaseIterable, Identifiable {
+        case translation = "translation" // Đọc bản dịch (Phiên dịch viên tai nghe)
+        case original = "original"       // Đọc câu gốc (Luyện nghe ngoại ngữ)
+
+        public var id: String { rawValue }
+        public var title: String {
+            switch self {
+            case .translation: return "Đọc bản dịch (Phiên dịch viên)"
+            case .original: return "Đọc câu gốc (Luyện nghe)"
+            }
+        }
+        public var shortTitle: String {
+            switch self {
+            case .translation: return "Bản dịch"
+            case .original: return "Câu gốc"
+            }
+        }
+    }
+
+    private let synthesizer = AVSpeechSynthesizer()
+    @Published public private(set) var isSpeaking = false
+    @Published public private(set) var currentlySpeakingCaptionID: UUID?
+    @Published public private(set) var currentlySpeakingText: String?
+
+    // Auto-TTS for Live Meetings
+    @Published public var isAutoTTSEnabled: Bool = {
+        UserDefaults.standard.bool(forKey: "TTS_AutoEnabled")
+    }() {
+        didSet {
+            UserDefaults.standard.set(isAutoTTSEnabled, forKey: "TTS_AutoEnabled")
+            if !isAutoTTSEnabled {
+                stop()
+            }
+        }
+    }
+
+    @Published public var autoTarget: AutoSpeakTarget = {
+        let raw = UserDefaults.standard.string(forKey: "TTS_AutoTarget") ?? "translation"
+        return AutoSpeakTarget(rawValue: raw) ?? .translation
+    }() {
+        didSet {
+            UserDefaults.standard.set(autoTarget.rawValue, forKey: "TTS_AutoTarget")
+        }
+    }
+
+    @Published public var voiceTone: VoiceTone = {
+        let raw = UserDefaults.standard.string(forKey: "TTS_VoiceTone") ?? "natural"
+        return VoiceTone(rawValue: raw) ?? .natural
+    }() {
+        didSet {
+            UserDefaults.standard.set(voiceTone.rawValue, forKey: "TTS_VoiceTone")
+        }
+    }
+
+    @Published public var selectedVoiceID: String? = {
+        UserDefaults.standard.string(forKey: "TTS_SelectedVoiceID")
+    }() {
+        didSet {
+            UserDefaults.standard.set(selectedVoiceID, forKey: "TTS_SelectedVoiceID")
+        }
+    }
+
+    @Published public var speechRate: Float = {
+        let val = UserDefaults.standard.float(forKey: "TTS_Rate")
+        return (val >= 0.3 && val <= 0.8) ? val : 0.46 // Standard natural speaking rate
+    }() {
+        didSet {
+            UserDefaults.standard.set(speechRate, forKey: "TTS_Rate")
+        }
+    }
+
+    @Published public var speechVolume: Float = {
+        let val = UserDefaults.standard.float(forKey: "TTS_Volume")
+        return (val > 0) ? val : 1.0
+    }() {
+        didSet {
+            UserDefaults.standard.set(speechVolume, forKey: "TTS_Volume")
+        }
+    }
+
+    // Queue for meeting subtitle playback
+    private var speechQueue: [(id: UUID, text: String, language: AppLanguage)] = []
+    private var spokenCaptionIDs = Set<UUID>()
+
+    override private init() {
+        super.init()
+        synthesizer.delegate = self
+    }
+
+    // MARK: - Smart Normalization for Natural Speech Prosody
+    public static func normalizeForSpeech(_ text: String, languageLocale: String) -> String {
+        var s = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !s.isEmpty else { return "" }
+
+        // Remove markdown formatting
+        s = s.replacingOccurrences(of: "\\*\\*(.*?)\\*\\*", with: "$1", options: .regularExpression)
+        s = s.replacingOccurrences(of: "\\*(.*?)\\*", with: "$1", options: .regularExpression)
+        s = s.replacingOccurrences(of: "`([^`]+)`", with: "$1", options: .regularExpression)
+        s = s.replacingOccurrences(of: "~~(.*?)~~", with: "$1", options: .regularExpression)
+
+        // Remove sound effect and noise subtitle tags: [laughter], (cười), [applause], [tiếng nhạc], v.v.
+        s = s.replacingOccurrences(of: "\\[[^\\]]*\\]", with: "", options: .regularExpression)
+        s = s.replacingOccurrences(of: "\\((cười|tiếng cười|vỗ tay|tiếng vỗ tay|nhạc|tiếng nhạc|ho|thở dài|laughter|applause|music|sigh|cough)[^\\)]*\\)", with: "", options: [.regularExpression, .caseInsensitive])
+
+        // Remove URLs and web paths
+        s = s.replacingOccurrences(of: "https?://\\S+", with: languageLocale.hasPrefix("vi") ? "đường dẫn liên kết" : "link", options: .regularExpression)
+        s = s.replacingOccurrences(of: "www\\.\\S+", with: languageLocale.hasPrefix("vi") ? "đường dẫn liên kết" : "link", options: .regularExpression)
+
+        // Clean punctuation artifacts
+        s = s.replacingOccurrences(of: "\\.{2,}", with: ".", options: .regularExpression)
+        s = s.replacingOccurrences(of: "\\?{2,}", with: "?", options: .regularExpression)
+        s = s.replacingOccurrences(of: "!{2,}", with: "!", options: .regularExpression)
+        s = s.replacingOccurrences(of: "\\s*--+\\s*", with: ", ", options: .regularExpression)
+        s = s.replacingOccurrences(of: "\\s*—\\s*", with: ", ", options: .regularExpression)
+        s = s.replacingOccurrences(of: "[\"“”'‘’]", with: "", options: .regularExpression)
+
+        if languageLocale.hasPrefix("vi") {
+            // Conversational & Acronym Replacements for Vietnamese Speech
+            let replacements: [(String, String)] = [
+                ("\\bAI\\b", "A.I"),
+                ("\\bAPI\\b", "A P I"),
+                ("\\bUI/UX\\b", "U I, U X"),
+                ("\\bUI\\b", "U I"),
+                ("\\bUX\\b", "U X"),
+                ("\\bPR\\b", "P R"),
+                ("\\bQA\\b", "Q A"),
+                ("\\bQC\\b", "Q C"),
+                ("\\bPM\\b", "P M"),
+                ("\\bIT\\b", "I T"),
+                ("\\bCEO\\b", "C E O"),
+                ("\\bCTO\\b", "C T O"),
+                ("\\bCFO\\b", "C F O"),
+                ("\\bHR\\b", "H R"),
+                ("\\biOS\\b", "i O S"),
+                ("\\bmacOS\\b", "mác O S"),
+                ("\\bOK\\b", "Ok"),
+                ("\\bok\\b", "Ok"),
+                ("\\bID\\b", "I D"),
+                ("\\bURL\\b", "U R L"),
+                ("\\bSQL\\b", "S Q L"),
+                ("\\bvs\\b", "với"),
+                ("\\betc\\.?\\b", "vân vân"),
+                ("\\be\\.g\\.?\\b", "ví dụ như"),
+                ("\\bi\\.e\\.?\\b", "tức là"),
+                ("%", " phần trăm "),
+                ("\\$", " đô la "),
+                ("€", " ơ-rô "),
+                ("¥", " yên "),
+                ("₫", " đồng "),
+                ("\\bVND\\b", " đồng "),
+                ("&", " và "),
+                ("\\s*/\\s*", " hoặc ")
+            ]
+            for (pattern, repl) in replacements {
+                s = s.replacingOccurrences(of: pattern, with: repl, options: .regularExpression)
+            }
+
+            // Insert prosodic breathing commas before conjunctions in long sentences
+            let conjunctions = ["tuy nhiên", "mặt khác", "đồng thời", "do đó", "vì vậy", "ngoài ra", "hơn nữa", "thực ra", "nói cách khác"]
+            for conj in conjunctions {
+                s = s.replacingOccurrences(of: " (?<!, )" + conj, with: ", " + conj, options: [.regularExpression, .caseInsensitive])
+            }
+        } else if languageLocale.hasPrefix("en") {
+            let replacements: [(String, String)] = [
+                ("%", " percent "),
+                ("\\$", " dollars "),
+                ("€", " euros "),
+                ("¥", " yen "),
+                ("&", " and "),
+                ("\\betc\\.?\\b", "etcetera"),
+                ("\\be\\.g\\.?\\b", "for example"),
+                ("\\bi\\.e\\.?\\b", "that is"),
+                ("\\s*/\\s*", " or ")
+            ]
+            for (pattern, repl) in replacements {
+                s = s.replacingOccurrences(of: pattern, with: repl, options: .regularExpression)
+            }
+        }
+
+        // Collapse multiple spaces
+        s = s.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        return s.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    // Manual playback of a specific caption/text
+    public func speak(id: UUID? = nil, text: String, language: AppLanguage) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        // If already speaking this exact caption or text, toggle pause/stop
+        if isSpeaking && (currentlySpeakingText == trimmed || (currentlySpeakingCaptionID == id && id != nil)) {
+            stop()
+            return
+        }
+
+        stop()
+        currentlySpeakingCaptionID = id
+        currentlySpeakingText = trimmed
+        playUtterance(text: trimmed, language: language)
+    }
+
+    // Quick Voice & Tone Preview
+    public func preview(text: String? = nil, language: AppLanguage = .vietnamese) {
+        let sampleText: String
+        if let text = text, !text.isEmpty {
+            sampleText = text
+        } else {
+            switch language {
+            case .vietnamese:
+                sampleText = "Xin chào! Đây là trợ lý dịch thuật TransTools. Giọng đọc tự nhiên, rõ ràng và chuẩn ngữ cảnh."
+            case .english, .englishIndia:
+                sampleText = "Hello! This is TransTools live earphone interpreter. Speaking clearly and naturally."
+            default:
+                sampleText = "Xin chào! Đây là trợ lý dịch thuật TransTools."
+            }
+        }
+        stop()
+        playUtterance(text: sampleText, language: language)
+    }
+
+    // Called automatically by MeetingModel when a caption is finalized and translated
+    public func enqueueAutoTTS(id: UUID, original: String, translation: String, sourceLang: AppLanguage, targetLang: AppLanguage) {
+        guard isAutoTTSEnabled else { return }
+        guard !spokenCaptionIDs.contains(id) else { return }
+
+        let textToSpeak: String
+        let langToUse: AppLanguage
+        switch autoTarget {
+        case .translation:
+            let trans = translation.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trans.isEmpty else { return }
+            textToSpeak = trans
+            langToUse = targetLang
+        case .original:
+            let orig = original.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !orig.isEmpty else { return }
+            textToSpeak = orig
+            langToUse = sourceLang
+        }
+
+        spokenCaptionIDs.insert(id)
+
+        // Keep real-time queue short so we never lag behind the speaker
+        if speechQueue.count >= 2 {
+            speechQueue.removeFirst()
+        }
+        speechQueue.append((id: id, text: textToSpeak, language: langToUse))
+
+        if !isSpeaking {
+            processNextInQueue()
+        }
+    }
+
+    private func processNextInQueue() {
+        guard !speechQueue.isEmpty else {
+            isSpeaking = false
+            currentlySpeakingCaptionID = nil
+            currentlySpeakingText = nil
+            return
+        }
+        let item = speechQueue.removeFirst()
+        currentlySpeakingCaptionID = item.id
+        currentlySpeakingText = item.text
+        playUtterance(text: item.text, language: item.language)
+    }
+
+    private func playUtterance(text: String, language: AppLanguage) {
+        let cleaned = Self.normalizeForSpeech(text, languageLocale: language.speechLocale)
+        guard !cleaned.isEmpty else {
+            processNextInQueue()
+            return
+        }
+
+        let utterance = AVSpeechUtterance(string: cleaned)
+        let effectiveRate = max(0.25, min(0.75, speechRate + voiceTone.rateModifier))
+        utterance.rate = effectiveRate
+        utterance.volume = speechVolume
+        utterance.pitchMultiplier = voiceTone.pitchMultiplier
+        utterance.preUtteranceDelay = 0.06
+        utterance.postUtteranceDelay = voiceTone.postDelay
+
+        // Select best or user-chosen voice for the locale
+        if let voice = bestVoice(for: language.speechLocale) {
+            utterance.voice = voice
+        } else if let fallbackVoice = AVSpeechSynthesisVoice(language: language.speechLocale) {
+            utterance.voice = fallbackVoice
+        }
+
+        isSpeaking = true
+        synthesizer.speak(utterance)
+    }
+
+    public func stop() {
+        speechQueue.removeAll()
+        if synthesizer.isSpeaking {
+            synthesizer.stopSpeaking(at: .immediate)
+        }
+        isSpeaking = false
+        currentlySpeakingCaptionID = nil
+        currentlySpeakingText = nil
+    }
+
+    public func clearHistory() {
+        spokenCaptionIDs.removeAll()
+        speechQueue.removeAll()
+        stop()
+    }
+
+    // Available voices for a specific locale
+    public func availableVoices(for locale: String) -> [TTSVoiceOption] {
+        let prefix = String(locale.prefix(2)).lowercased()
+        let allVoices = AVSpeechSynthesisVoice.speechVoices().filter {
+            $0.language.lowercased() == locale.lowercased() || $0.language.lowercased().starts(with: prefix)
+        }
+
+        var seen = Set<String>()
+        var options: [TTSVoiceOption] = []
+
+        let sorted = allVoices.sorted { v1, v2 in
+            let q1 = (v1.quality == .premium ? 3 : (v1.quality == .enhanced ? 2 : 1))
+            let q2 = (v2.quality == .premium ? 3 : (v2.quality == .enhanced ? 2 : 1))
+            if q1 != q2 { return q1 > q2 }
+            return v1.name < v2.name
+        }
+
+        for v in sorted {
+            let key = "\(v.name)_\(v.quality.rawValue)"
+            if !seen.contains(key) {
+                seen.insert(key)
+                options.append(TTSVoiceOption(voice: v))
+            }
+        }
+        return options
+    }
+
+    // Best voice picker (Prioritizes Siri Neural / Premium / Enhanced voices)
+    public func bestVoice(for locale: String) -> AVSpeechSynthesisVoice? {
+        // If user manually chose a voice and it matches the locale, respect it
+        if let customID = selectedVoiceID, !customID.isEmpty,
+           let chosenVoice = AVSpeechSynthesisVoice(identifier: customID),
+           (chosenVoice.language.lowercased() == locale.lowercased() || chosenVoice.language.lowercased().starts(with: locale.prefix(2).lowercased())) {
+            return chosenVoice
+        }
+
+        let prefix = String(locale.prefix(2)).lowercased()
+        let voices = AVSpeechSynthesisVoice.speechVoices().filter {
+            $0.language.lowercased() == locale.lowercased() || $0.language.lowercased().starts(with: prefix)
+        }
+
+        // 1. Check for Neural / Siri voices (e.g. gryphon-neural or siri.natural)
+        if let neural = voices.first(where: {
+            let id = $0.identifier.lowercased()
+            return (id.contains("gryphon-neural") || id.contains("siri.natural")) && $0.quality != .default
+        }) {
+            return neural
+        }
+
+        // 2. Check for Premium quality
+        if let premium = voices.first(where: { $0.quality == .premium }) {
+            return premium
+        }
+
+        // 3. Check for Enhanced quality
+        if let enhanced = voices.first(where: { $0.quality == .enhanced }) {
+            return enhanced
+        }
+
+        // 4. Fallback to standard
+        return voices.first ?? AVSpeechSynthesisVoice(language: locale)
+    }
+
+    // AVSpeechSynthesizerDelegate
+    nonisolated public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        Task { @MainActor in
+            self.processNextInQueue()
+        }
+    }
+
+    nonisolated public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        Task { @MainActor in
+            self.isSpeaking = false
+            self.currentlySpeakingCaptionID = nil
+            self.currentlySpeakingText = nil
+        }
     }
 }
