@@ -2196,7 +2196,7 @@ struct MiniAvatarView: View {
 
     private var activeExpression: MascotExpression {
         if isNaturalBlinking && !activeHovered {
-            return .happySmile
+            return internalExpression
         }
         return expression ?? internalExpression
     }
@@ -2246,14 +2246,24 @@ struct MiniAvatarView: View {
             }
         }
         .task {
+            var cycle = 0
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 3_500_000_000)
+                try? await Task.sleep(nanoseconds: 3_800_000_000)
                 guard !isWorking && !activeHovered else { continue }
-                withAnimation(.easeInOut(duration: 0.12)) {
+                cycle += 1
+
+                if cycle % 3 == 0 {
+                    let candidates: [MascotExpression] = [.happySmile, .winkLeft, .happySquint]
+                    internalExpression = candidates.randomElement() ?? .happySmile
+                } else {
+                    internalExpression = .happySmile
+                }
+
+                withAnimation(.easeInOut(duration: 0.14)) {
                     isNaturalBlinking = true
                 }
-                try? await Task.sleep(nanoseconds: 180_000_000)
-                withAnimation(.easeInOut(duration: 0.12)) {
+                try? await Task.sleep(nanoseconds: 200_000_000)
+                withAnimation(.easeInOut(duration: 0.14)) {
                     isNaturalBlinking = false
                 }
             }
@@ -2303,28 +2313,50 @@ struct FloatingMascotView: View {
     @State private var showQuickMenu = false
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: !model.running && !isHovered)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let time = context.date.timeIntervalSinceReferenceDate
             let isHearingSpeech = (Date().timeIntervalSince(model.lastAudio ?? .distantPast) < 1.8)
             let speed: Double = isHearingSpeech ? 1.4 : 1.0
 
-            // Continuous handwriting stroke oscillation
+            // 1. Continuous handwriting stroke oscillation
             let strokeX: CGFloat = model.running ? CGFloat(sin(time * 10.0 * speed) * 3.5) : 0
             let strokeY: CGFloat = model.running ? CGFloat(cos(time * 10.0 * speed) * 1.8) : 0
             let penAngle: Double = model.running ? (sin(time * 10.0 * speed) * 14.0) : 0
 
-            // Gentle hopping when hovered (nhảy nhảy nhẹ nhàng, nhịp nhàng vui tươi)
+            // 2. Gentle hopping when hovered (nhảy nhảy nhẹ nhàng, nhịp nhàng vui tươi khi rê chuột)
             let hopProgress: CGFloat = isHovered ? CGFloat(abs(sin(time * 6.0))) : 0
             let hopY: CGFloat = isHovered ? -hopProgress * 8.0 : 0
             let hopTilt: Double = isHovered ? (sin(time * 6.0) * 2.8) : 0
-            let squashX: CGFloat = isHovered ? (1.0 + (1.0 - hopProgress) * 0.05 - hopProgress * 0.02) : 1.0
-            let squashY: CGFloat = isHovered ? (1.0 - (1.0 - hopProgress) * 0.05 + hopProgress * 0.03) : 1.0
+            let hoverSquashX: CGFloat = isHovered ? (1.0 + (1.0 - hopProgress) * 0.05 - hopProgress * 0.02) : 1.0
+            let hoverSquashY: CGFloat = isHovered ? (1.0 - (1.0 - hopProgress) * 0.05 + hopProgress * 0.03) : 1.0
 
-            // Mascot subtle breathing and writing body sway
+            // 3. Smooth, gentle ambient breathing & floating in IDLE (Hành động thở & bồng bềnh êm ái khi nghỉ ngơi, KHÔNG giật)
+            // Chu kỳ thở chậm rãi ~4.2s, biên độ 1.8pt vừa phải để tạo cảm giác sống động nhưng thư thái
+            let idleCycle = sin(time * 1.5)
+            let idleFloatingY: CGFloat = CGFloat(idleCycle * 1.8)
+            let idleTilt: Double = sin(time * 0.75) * 1.2
+            let idleSquashX: CGFloat = CGFloat(1.0 - idleCycle * 0.012)
+            let idleSquashY: CGFloat = CGFloat(1.0 + idleCycle * 0.018)
+
+            // 4. Mascot subtle breathing and writing body sway khi làm việc
             let writingBobY: CGFloat = model.running ? CGFloat(sin(time * 4.5 * speed) * 1.2) : 0
-            let totalBobY: CGFloat = writingBobY + hopY
             let writingTilt: Double = model.running ? (sin(time * 4.5 * speed) * 1.8) : 0
-            let totalTilt: Double = writingTilt + hopTilt
+
+            let totalBobY: CGFloat = model.running ? writingBobY : (isHovered ? hopY : idleFloatingY)
+            let totalTilt: Double = model.running ? writingTilt : (isHovered ? hopTilt : idleTilt)
+            let totalSquashX: CGFloat = isHovered ? hoverSquashX : (model.running ? 1.0 : idleSquashX)
+            let totalSquashY: CGFloat = isHovered ? hoverSquashY : (model.running ? 1.0 : idleSquashY)
+
+            // Đổ bóng mềm mại thay đổi nhịp nhàng theo độ nổi
+            let shadowRad: CGFloat = isHovered
+                ? (3.5 + hopProgress * 3.5)
+                : (model.running ? 3.0 : CGFloat(2.8 + (idleCycle + 1.0) * 0.5))
+            let shadowOffsetY: CGFloat = isHovered
+                ? (2.5 + hopProgress * 4.0)
+                : (model.running ? 2.0 : CGFloat(2.0 + (idleCycle + 1.0) * 0.4))
+            let shadowAlpha: Double = isHovered
+                ? (0.30 - Double(hopProgress) * 0.10)
+                : (model.running ? 0.22 : (0.22 - idleCycle * 0.03))
 
             // Floating note ink sparkles (2 alternating cycles)
             let sparkPhase1 = fmod(time * 1.3, 1.0)
@@ -2339,13 +2371,13 @@ struct FloatingMascotView: View {
                         isWorking: model.running,
                         isHovered: isHovered
                     )
-                    .scaleEffect(x: (isHovered ? 1.06 : 1.0) * squashX, y: (isHovered ? 1.06 : 1.0) * squashY, anchor: .bottom)
+                    .scaleEffect(x: (isHovered ? 1.06 : 1.0) * totalSquashX, y: (isHovered ? 1.06 : 1.0) * totalSquashY, anchor: .bottom)
                     .offset(x: 0, y: totalBobY)
                     .rotationEffect(.degrees(totalTilt), anchor: .bottom)
                     .shadow(
-                        color: Color.black.opacity(isHovered ? (0.30 - Double(hopProgress) * 0.10) : 0.22),
-                        radius: isHovered ? (3.5 + hopProgress * 3.5) : 3.0,
-                        y: isHovered ? (2.5 + hopProgress * 4.0) : 2.0
+                        color: Color.black.opacity(shadowAlpha),
+                        radius: shadowRad,
+                        y: shadowOffsetY
                     )
                     .animation(.spring(response: 0.35, dampingFraction: 0.65), value: isHovered)
                     .animation(.spring(response: 0.35, dampingFraction: 0.75), value: model.running)
