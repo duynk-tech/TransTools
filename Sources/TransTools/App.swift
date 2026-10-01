@@ -2183,7 +2183,6 @@ struct MiniAvatarView: View {
 
     @State private var internalHovered = false
     @State private var internalExpression: MascotExpression = .winkLeft
-    @State private var isNaturalBlinking = false
     @AppStorage("MascotStyle") private var savedStyle: String = "3d"
 
     private var activeStyle: String {
@@ -2195,14 +2194,11 @@ struct MiniAvatarView: View {
     }
 
     private var activeExpression: MascotExpression {
-        if isNaturalBlinking && !activeHovered {
-            return internalExpression
-        }
-        return expression ?? internalExpression
+        expression ?? internalExpression
     }
 
     private var showOverlay: Bool {
-        (!isWorking && activeStyle != "pixel") && (activeHovered || isNaturalBlinking)
+        (!isWorking && activeStyle != "pixel") && activeHovered
     }
 
     var body: some View {
@@ -2222,7 +2218,7 @@ struct MiniAvatarView: View {
                 AppLogoView(size: size)
             }
 
-            // Eye winking / blinking overlay (Giữ trọn vẹn hành động mắt nháy mắt, KHÔNG có icon biểu tượng dư thừa)
+            // Eye winking overlay khi rê chuột tương tác (KHÔNG chớp mắt tự động khi IDLE để hình luôn mượt mà, không giật)
             if showOverlay {
                 MascotFacialExpressionOverlay(size: size, expression: activeExpression)
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
@@ -2243,29 +2239,6 @@ struct MiniAvatarView: View {
             if isHov && !isWorking {
                 let candidates: [MascotExpression] = [.winkLeft, .winkRight, .happySmile, .happySquint]
                 internalExpression = candidates.filter { $0 != internalExpression }.randomElement() ?? .winkLeft
-            }
-        }
-        .task {
-            var cycle = 0
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 3_800_000_000)
-                guard !isWorking && !activeHovered else { continue }
-                cycle += 1
-
-                if cycle % 3 == 0 {
-                    let candidates: [MascotExpression] = [.happySmile, .winkLeft, .happySquint]
-                    internalExpression = candidates.randomElement() ?? .happySmile
-                } else {
-                    internalExpression = .happySmile
-                }
-
-                withAnimation(.easeInOut(duration: 0.14)) {
-                    isNaturalBlinking = true
-                }
-                try? await Task.sleep(nanoseconds: 200_000_000)
-                withAnimation(.easeInOut(duration: 0.14)) {
-                    isNaturalBlinking = false
-                }
             }
         }
     }
