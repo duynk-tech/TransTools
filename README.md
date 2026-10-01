@@ -1,7 +1,8 @@
 # TransTools — v1.2.0
 
 > **Bộ công cụ dịch thuật trực tiếp âm thanh cuộc họp, phụ đề nổi song ngữ & trợ lý AI thông minh trên macOS.**  
-> Phát triển bởi: **DuyNK-Tech** ([khacduy90@gmail.com](mailto:khacduy90@gmail.com)) • GitHub: [duynk-tech/TransTools](https://github.com/duynk-tech/TransTools)
+> 🌐 **Website giới thiệu:** [duynk-tech.github.io/TransTools](https://duynk-tech.github.io/TransTools/)  
+> 👤 **Phát triển bởi:** **DuyNK-Tech** ([khacduy90@gmail.com](mailto:khacduy90@gmail.com)) • GitHub: [duynk-tech/TransTools](https://github.com/duynk-tech/TransTools)
 
 ---
 
