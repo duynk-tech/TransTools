@@ -2487,9 +2487,11 @@ struct MascotQuickActionsPopover: View {
     @State private var tipIndex = 0
     @State private var quickViText = ""
     @State private var quickEnResult = ""
+    @State private var quickAlternatives: [TranslationAlternative] = []
     @State private var isTranslatingQuick = false
     @State private var quickCopied = false
     @State private var copiedReplyID: UUID? = nil
+    @State private var copiedAltID: UUID? = nil
 
     private var mimoQuotes: [String] {
         [
@@ -2514,18 +2516,21 @@ struct MascotQuickActionsPopover: View {
         isTranslatingQuick = true
         Task {
             do {
-                let en = try await AITranslator.viToEn(
+                let res = try await AITranslator.quickTranslateDetailed(
                     trimmed,
-                    style: .developer,
+                    from: .vietnamese,
+                    to: .english,
+                    domain: model.domainSpecialty,
                     provider: model.provider,
                     model: model.modelName,
                     key: model.key
                 )
                 await MainActor.run {
-                    self.quickEnResult = en
+                    self.quickEnResult = res.primary
+                    self.quickAlternatives = res.alternatives
                     self.isTranslatingQuick = false
                     NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(en, forType: .string)
+                    NSPasteboard.general.setString(res.primary, forType: .string)
                     self.quickCopied = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                         self.quickCopied = false
@@ -2534,6 +2539,7 @@ struct MascotQuickActionsPopover: View {
             } catch {
                 await MainActor.run {
                     self.quickEnResult = "Lỗi dịch: \(error.localizedDescription)"
+                    self.quickAlternatives = []
                     self.isTranslatingQuick = false
                 }
             }
@@ -2666,7 +2672,42 @@ struct MascotQuickActionsPopover: View {
                             .font(.system(size: 9.5, weight: .bold))
                             .foregroundStyle(Color.orange)
                     }
+
                     Spacer()
+
+                    // Menu chọn nhanh chuyên ngành dịch thuật
+                    Menu {
+                        ForEach(DomainSpecialty.allCases) { d in
+                            Button {
+                                model.domainSpecialty = d
+                            } label: {
+                                HStack {
+                                    Image(systemName: d.icon)
+                                    Text(d.title)
+                                    if model.domainSpecialty == d {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: model.domainSpecialty.icon)
+                                .font(.system(size: 8.5))
+                            Text(model.domainSpecialty.shortName)
+                                .font(.system(size: 9, weight: .bold))
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 7, weight: .bold))
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2.5)
+                        .background(Color.orange.opacity(0.12))
+                        .foregroundStyle(Color.orange)
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Chọn chuyên ngành: \(model.domainSpecialty.title)")
+
                     if quickCopied {
                         HStack(spacing: 3) {
                             Image(systemName: "checkmark.circle.fill")
@@ -2674,6 +2715,32 @@ struct MascotQuickActionsPopover: View {
                         }
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(Color.green)
+                    }
+                }
+
+                // Gợi ý câu mẫu nhanh theo chuyên ngành đang chọn
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 5) {
+                        ForEach(model.domainSpecialty.quickPhrases.prefix(5), id: \.self) { phrase in
+                            Button {
+                                quickViText = phrase
+                                translateAndCopyQuickText()
+                            } label: {
+                                Text(phrase)
+                                    .font(.system(size: 9))
+                                    .lineLimit(1)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(Color(nsColor: .textBackgroundColor).opacity(0.9))
+                                    .foregroundStyle(.primary)
+                                    .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                                            .stroke(Color.primary.opacity(0.08), lineWidth: 0.8)
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
 
@@ -2724,33 +2791,71 @@ struct MascotQuickActionsPopover: View {
                 }
 
                 if !quickEnResult.isEmpty {
-                    HStack(alignment: .top, spacing: 8) {
-                        Text(quickEnResult)
-                            .font(.system(size: 11, weight: .medium, design: .rounded))
-                            .foregroundStyle(.primary)
-                            .lineLimit(nil)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(alignment: .top, spacing: 8) {
+                            Text(quickEnResult)
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundStyle(.primary)
+                                .lineLimit(nil)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
 
-                        Button {
-                            NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(quickEnResult, forType: .string)
-                            quickCopied = true
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { quickCopied = false }
-                        } label: {
-                            HStack(spacing: 3) {
-                                Image(systemName: quickCopied ? "checkmark" : "doc.on.doc")
-                                Text(quickCopied ? "Đã copy" : "Copy")
+                            Button {
+                                NSPasteboard.general.clearContents()
+                                NSPasteboard.general.setString(quickEnResult, forType: .string)
+                                quickCopied = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { quickCopied = false }
+                            } label: {
+                                HStack(spacing: 3) {
+                                    Image(systemName: quickCopied ? "checkmark" : "doc.on.doc")
+                                    Text(quickCopied ? "Đã copy" : "Copy")
+                                }
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(quickCopied ? Color.green : Color.white)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 4)
+                                .background(quickCopied ? Color.green.opacity(0.2) : Color.accentColor)
+                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                             }
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(quickCopied ? Color.green : Color.white)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 4)
-                            .background(quickCopied ? Color.green.opacity(0.2) : Color.accentColor)
-                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            .buttonStyle(.plain)
+                            .help("Copy lại câu dịch này")
                         }
-                        .buttonStyle(.plain)
-                        .help("Copy lại câu dịch này")
+
+                        // Hiển thị gợi ý các phương án khác nếu có
+                        if !quickAlternatives.isEmpty {
+                            Divider().opacity(0.3)
+                            VStack(alignment: .leading, spacing: 4) {
+                                ForEach(quickAlternatives) { alt in
+                                    Button {
+                                        NSPasteboard.general.clearContents()
+                                        NSPasteboard.general.setString(alt.text, forType: .string)
+                                        copiedAltID = alt.id
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copiedAltID = nil }
+                                    } label: {
+                                        HStack(spacing: 6) {
+                                            Text(alt.tone)
+                                                .font(.system(size: 8.5, weight: .bold))
+                                                .padding(.horizontal, 4)
+                                                .padding(.vertical, 1.5)
+                                                .background(Color.secondary.opacity(0.12))
+                                                .clipShape(Capsule())
+
+                                            Text(alt.text)
+                                                .font(.system(size: 10))
+                                                .lineLimit(1)
+                                                .foregroundStyle(.secondary)
+
+                                            Spacer()
+
+                                            Image(systemName: copiedAltID == alt.id ? "checkmark" : "doc.on.doc")
+                                                .font(.system(size: 9))
+                                                .foregroundStyle(copiedAltID == alt.id ? Color.green : .secondary)
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
                     }
                     .padding(8)
                     .background(Color.accentColor.opacity(0.08))
@@ -4027,64 +4132,117 @@ struct FeatureBadge: View {
     }
 }
 
-// MARK: - Tab 2: Quick Translate (Việt → Anh)
+// MARK: - Tab 2: Quick Translate (Đa chuyên ngành & Gợi ý thông minh)
 
 struct QuickTranslateView: View {
     @ObservedObject var model: MeetingModel
     @State private var input = ""
     @State private var output = ""
-    @State private var style: AITranslator.WritingStyle = .developer
+    @State private var translationResult = QuickTranslationResult()
     @State private var translating = false
     @State private var error = ""
     @State private var copied = false
+    @State private var copiedAltID: UUID? = nil
 
     var body: some View {
-        VStack(spacing: 16) {
-            // Style Selector Bar
+        VStack(spacing: 14) {
+            // 1. Chuyên ngành dịch thuật Selector Bar
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Phong cách dịch")
-                        .font(.system(size: 13, weight: .semibold))
-                    Text("Chọn ngữ cảnh câu tiếng Anh mong muốn")
+                    HStack(spacing: 6) {
+                        Image(systemName: model.domainSpecialty.icon)
+                            .foregroundStyle(Color.accentColor)
+                        Text("Chuyên ngành dịch thuật:")
+                            .font(.system(size: 13, weight: .bold))
+                        Text(model.domainSpecialty.title)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Color.accentColor)
+                    }
+                    Text("AI tự động tối ưu thuật ngữ & văn phong phù hợp với chuyên ngành này")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
 
                 Spacer()
 
-                HStack(spacing: 8) {
-                    ForEach(AITranslator.WritingStyle.allCases) { s in
+                HStack(spacing: 6) {
+                    ForEach(DomainSpecialty.allCases) { d in
                         Button {
-                            style = s
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: s == .developer ? "chevron.left.forwardslash.chevron.right" : "envelope.badge.fill")
-                                    .font(.system(size: 11))
-
-                                Text(s.rawValue)
-                                    .font(.system(size: 12, weight: style == s ? .semibold : .regular))
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                model.domainSpecialty = d
                             }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 7)
-                            .background(style == s ? Color.accentColor : Color.secondary.opacity(0.1))
-                            .foregroundStyle(style == s ? .white : .primary)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: d.icon)
+                                    .font(.system(size: 11))
+                                Text(d.shortName)
+                                    .font(.system(size: 12, weight: model.domainSpecialty == d ? .semibold : .regular))
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(model.domainSpecialty == d ? Color.accentColor : Color.secondary.opacity(0.1))
+                            .foregroundStyle(model.domainSpecialty == d ? .white : .primary)
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         }
                         .buttonStyle(.plain)
+                        .help(d.title)
                     }
                 }
             }
-            .padding(14)
+            .padding(12)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(Color(nsColor: .controlBackgroundColor).opacity(0.6))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(Color.primary.opacity(0.06), lineWidth: 1)
             )
 
-            // Two-Pane Translation Studio
+            // 2. Gợi ý mẫu câu nhanh theo chuyên ngành (Interactive Suggestion Chips)
+            HStack(spacing: 8) {
+                HStack(spacing: 4) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.purple)
+                    Text("Gợi ý mẫu:")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.purple)
+                }
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(model.domainSpecialty.quickPhrases, id: \.self) { phrase in
+                            Button {
+                                input = phrase
+                                translateNow()
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.system(size: 9))
+                                        .foregroundStyle(Color.accentColor)
+                                    Text(phrase)
+                                        .font(.system(size: 11))
+                                        .lineLimit(1)
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color(nsColor: .controlBackgroundColor))
+                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                        .stroke(Color.primary.opacity(0.08), lineWidth: 0.8)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .help("Bấm để chèn và dịch ngay câu này")
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 4)
+
+            // 3. Two-Pane Translation Studio
             HStack(spacing: 16) {
                 // Left Panel: Source Input
                 VStack(alignment: .leading, spacing: 10) {
@@ -4128,6 +4286,8 @@ struct QuickTranslateView: View {
                         if !input.isEmpty {
                             Button {
                                 input = ""
+                                output = ""
+                                translationResult = QuickTranslationResult()
                             } label: {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(.system(size: 13))
@@ -4140,7 +4300,7 @@ struct QuickTranslateView: View {
 
                     ZStack(alignment: .topLeading) {
                         if input.isEmpty {
-                            Text("Nhập câu hoặc đoạn văn bản (\(model.sourceLanguage.displayName))…\nVí dụ: 'API này trả về lỗi 500 khi payload thiếu trường userId, nhờ bạn review PR giúp mình'")
+                            Text("Nhập câu hoặc đoạn văn bản (\(model.sourceLanguage.displayName))…\nBấm các gợi ý mẫu ở trên hoặc gõ nội dung cần dịch và bấm ⌘ + Enter")
                                 .font(.system(size: 14))
                                 .foregroundStyle(.tertiary)
                                 .padding(12)
@@ -4185,6 +4345,7 @@ struct QuickTranslateView: View {
                             if !oldOutput.isEmpty {
                                 output = input
                                 input = oldOutput
+                                translationResult = QuickTranslationResult(primary: output)
                             }
                         }
                     } label: {
@@ -4266,7 +4427,7 @@ struct QuickTranslateView: View {
                                     .foregroundStyle(.blue)
                                     .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
 
-                                Text("\(model.targetLanguage.flag) \(model.targetLanguage.displayName) (\(style.rawValue))")
+                                Text("\(model.targetLanguage.flag) \(model.targetLanguage.displayName)")
                                     .font(.system(size: 13, weight: .semibold))
 
                                 Image(systemName: "chevron.down")
@@ -4301,22 +4462,94 @@ struct QuickTranslateView: View {
                     }
 
                     ScrollView {
-                        VStack(alignment: .leading) {
+                        VStack(alignment: .leading, spacing: 12) {
                             if output.isEmpty {
-                                Text(translating ? "Đang dịch câu của bạn…" : "Kết quả bản dịch (\(model.targetLanguage.displayName)) sẽ xuất hiện tại đây.")
+                                Text(translating ? "Đang dịch câu của bạn theo chuyên ngành \(model.domainSpecialty.title)…" : "Kết quả bản dịch (\(model.targetLanguage.displayName)) sẽ xuất hiện tại đây.")
                                     .font(.system(size: 14))
                                     .foregroundStyle(.tertiary)
                                     .padding(12)
                             } else {
-                                Text(output)
-                                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                                    .lineSpacing(4)
-                                    .foregroundStyle(.primary)
-                                    .textSelection(.enabled)
-                                    .padding(12)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                // Primary result
+                                VStack(alignment: .leading, spacing: 5) {
+                                    HStack {
+                                        Text("BẢN DỊCH CHUẨN (\(model.domainSpecialty.shortName.uppercased()))")
+                                            .font(.system(size: 9.5, weight: .bold))
+                                            .foregroundStyle(Color.accentColor)
+                                        Spacer()
+                                    }
+
+                                    Text(output)
+                                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                        .lineSpacing(4)
+                                        .foregroundStyle(.primary)
+                                        .textSelection(.enabled)
+                                }
+                                .padding(12)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.accentColor.opacity(0.06))
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                                // Alternatives / Gợi ý phương án diễn đạt khác
+                                if !translationResult.alternatives.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        HStack(spacing: 5) {
+                                            Image(systemName: "sparkles")
+                                                .font(.system(size: 10))
+                                                .foregroundStyle(.purple)
+                                            Text("GỢI Ý PHƯƠNG ÁN DIỄN ĐẠT KHÁC")
+                                                .font(.system(size: 10, weight: .bold))
+                                                .foregroundStyle(.purple)
+                                        }
+                                        .padding(.top, 4)
+
+                                        ForEach(translationResult.alternatives) { alt in
+                                            HStack(alignment: .top, spacing: 10) {
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(alt.tone)
+                                                        .font(.system(size: 10, weight: .bold))
+                                                        .foregroundStyle(.secondary)
+                                                    Text(alt.text)
+                                                        .font(.system(size: 13, weight: .medium))
+                                                        .foregroundStyle(.primary)
+                                                        .textSelection(.enabled)
+                                                }
+
+                                                Spacer()
+
+                                                Button {
+                                                    NSPasteboard.general.clearContents()
+                                                    NSPasteboard.general.setString(alt.text, forType: .string)
+                                                    copiedAltID = alt.id
+                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                                        copiedAltID = nil
+                                                    }
+                                                } label: {
+                                                    HStack(spacing: 3) {
+                                                        Image(systemName: copiedAltID == alt.id ? "checkmark" : "doc.on.doc")
+                                                        Text(copiedAltID == alt.id ? "Đã chép" : "Chép")
+                                                    }
+                                                    .font(.system(size: 10, weight: .semibold))
+                                                    .padding(.horizontal, 7)
+                                                    .padding(.vertical, 3)
+                                                    .background(copiedAltID == alt.id ? Color.green.opacity(0.18) : Color.secondary.opacity(0.12))
+                                                    .foregroundStyle(copiedAltID == alt.id ? Color.green : Color.primary)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 5))
+                                                }
+                                                .buttonStyle(.plain)
+                                            }
+                                            .padding(10)
+                                            .background(Color(nsColor: .windowBackgroundColor).opacity(0.6))
+                                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                                    .stroke(Color.primary.opacity(0.06), lineWidth: 0.8)
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
+                        .padding(10)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color(nsColor: .controlBackgroundColor))
@@ -4337,7 +4570,7 @@ struct QuickTranslateView: View {
                             let engineInfo = model.key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                                 ? "Google Free • Miễn phí"
                                 : "\(model.provider.displayName) • \(model.modelName)"
-                            Text(engineInfo)
+                            Text("\(engineInfo) • \(model.domainSpecialty.title)")
                                 .font(.system(size: 11))
                                 .foregroundStyle(.tertiary)
                         }
@@ -4350,13 +4583,13 @@ struct QuickTranslateView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "info.circle.fill")
                         .foregroundStyle(.blue)
-                    Text("Đang dùng bộ dịch nhanh Google Free (miễn phí). Nhập \(model.provider.displayName) API Key trong Cài đặt nếu bạn muốn áp dụng văn phong AI chuẩn.")
+                    Text("Đang dùng bộ dịch nhanh Google Free (miễn phí). Nhập \(model.provider.displayName) API Key trong Cài đặt nếu bạn muốn nhận đầy đủ gợi ý và phong cách dịch AI chuẩn.")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                     Spacer()
                 }
                 .padding(.horizontal, 14)
-                .padding(.vertical, 10)
+                .padding(.vertical, 8)
                 .background(Color.blue.opacity(0.08))
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
@@ -4368,7 +4601,7 @@ struct QuickTranslateView: View {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         translating = true; error = ""; copied = false
-        let currentStyle = style
+        let domain = model.domainSpecialty
         let currentProvider = model.provider
         let currentModel = model.modelName
         let currentKey = model.key.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -4376,16 +4609,18 @@ struct QuickTranslateView: View {
         let dst = model.targetLanguage
         Task {
             do {
-                let result = try await AITranslator.quickTranslate(
+                let result = try await AITranslator.quickTranslateDetailed(
                     text,
                     from: src,
                     to: dst,
-                    style: currentStyle,
+                    domain: domain,
                     provider: currentProvider,
                     model: currentModel,
                     key: currentKey
                 )
-                output = result; error = ""
+                output = result.primary
+                translationResult = result
+                error = ""
             } catch {
                 self.error = error.localizedDescription
             }

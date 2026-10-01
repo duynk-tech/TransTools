@@ -365,6 +365,67 @@ enum DomainSpecialty: String, CaseIterable, Identifiable {
             """
         }
     }
+
+    var quickPhrases: [String] {
+        switch self {
+        case .developer:
+            return [
+                "Nhờ bạn review PR này giúp mình nhé",
+                "Mình đã deploy bản fix lên staging để kiểm thử",
+                "API đang trả về mã lỗi 500 do thiếu tham số",
+                "Cần họp sync lại về database schema và endpoint",
+                "Tính năng này đã hoàn thành và sẵn sàng merge"
+            ]
+        case .business:
+            return [
+                "Chúng ta có thể lên lịch họp sync-up vào ngày mai không?",
+                "Xin gửi bạn tài liệu tổng kết biên bản cuộc họp",
+                "Dự án hiện tại đang triển khai đúng tiến độ",
+                "Nhờ anh/chị xác nhận lại ngân sách và thời hạn",
+                "Rất vui được hợp tác cùng quý đối tác"
+            ]
+        case .daily:
+            return [
+                "Cảm ơn bạn rất nhiều vì đã hỗ trợ nhiệt tình!",
+                "Hôm nay công việc của bạn có thuận lợi không?",
+                "Hẹn gặp lại bạn vào buổi họp tiếp theo nhé",
+                "Tôi hoàn toàn đồng ý với ý kiến của bạn",
+                "Cho mình xin lỗi vì đã phản hồi chậm trễ"
+            ]
+        case .finance:
+            return [
+                "Báo cáo doanh thu quý này ghi nhận mức tăng trưởng tốt",
+                "Các khoản chi phí phát sinh cần được ban giám đốc duyệt",
+                "Chỉ số ROI và dòng tiền của quý này đang rất khả quan",
+                "Kế hoạch phân bổ ngân sách dự kiến cho quý sau"
+            ]
+        case .medical:
+            return [
+                "Bệnh nhân cần được kiểm tra các chỉ số sinh hiệu định kỳ",
+                "Phác đồ điều trị này đã được hội đồng chuyên môn thông qua",
+                "Xin lưu ý về tiền sử dị ứng thuốc của người bệnh"
+            ]
+        }
+    }
+}
+
+// MARK: - Quick Translation Models with Smart Alternatives
+
+struct QuickTranslationResult: Equatable {
+    var primary: String = ""
+    var alternatives: [TranslationAlternative] = []
+}
+
+struct TranslationAlternative: Identifiable, Equatable, Hashable {
+    let id: UUID
+    let tone: String
+    let text: String
+
+    init(id: UUID = UUID(), tone: String, text: String) {
+        self.id = id
+        self.tone = tone
+        self.text = text
+    }
 }
 
 // MARK: - Smart AI Meeting Reply Suggestion Model
@@ -522,26 +583,107 @@ struct AITranslator {
         return try await callAI(prompt: prompt, provider: provider, model: model, key: trimmedKey)
     }
 
+    // MARK: - Quick Translation with Domain Specialty & Smart Alternatives
+    static func quickTranslateDetailed(
+        _ text: String,
+        from source: AppLanguage,
+        to target: AppLanguage,
+        domain: DomainSpecialty = .developer,
+        style: WritingStyle? = nil,
+        provider: AIProvider,
+        model: String,
+        key: String
+    ) async throws -> QuickTranslationResult {
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else { return QuickTranslationResult() }
+
+        let trimmedKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        if provider != .apple && provider != .free && !trimmedKey.isEmpty {
+            let styleDirective = style != nil ? "Style constraint: \(style!.label)." : ""
+            let prompt = """
+            You are a senior bilingual translator specializing in \(domain.title).
+            Translate the following \(source.displayName) text into \(target.displayName).
+
+            Directives:
+            - Context & Domain: \(domain.shortName) terminology and nuances.
+            \(styleDirective)
+            - Provide 3 distinct outputs:
+              1. PRIMARY: The most natural, accurate, and professional translation matching \(domain.title).
+              2. CONCISE: A short, punchy version perfect for rapid chat/Slack.
+              3. FORMAL: A polite, diplomatic version perfect for email or executive communication.
+
+            Input text:
+            "\(trimmedText)"
+
+            Output format (strictly 3 lines, nothing else):
+            PRIMARY: <translation>
+            CONCISE: <translation>
+            FORMAL: <translation>
+            """
+
+            do {
+                let aiResponse = try await callAI(prompt: prompt, provider: provider, model: model, key: trimmedKey)
+                var primaryText = ""
+                var alternatives: [TranslationAlternative] = []
+
+                let lines = aiResponse.components(separatedBy: .newlines)
+                for line in lines {
+                    let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+                    if trimmedLine.uppercased().hasPrefix("PRIMARY:") {
+                        let content = trimmedLine.dropFirst("PRIMARY:".count).trimmingCharacters(in: CharacterSet(charactersIn: " \"'`\t"))
+                        primaryText = content
+                    } else if trimmedLine.uppercased().hasPrefix("CONCISE:") {
+                        let content = trimmedLine.dropFirst("CONCISE:".count).trimmingCharacters(in: CharacterSet(charactersIn: " \"'`\t"))
+                        if !content.isEmpty {
+                            alternatives.append(TranslationAlternative(tone: "Ngắn gọn (Chat/Slack)", text: content))
+                        }
+                    } else if trimmedLine.uppercased().hasPrefix("FORMAL:") {
+                        let content = trimmedLine.dropFirst("FORMAL:".count).trimmingCharacters(in: CharacterSet(charactersIn: " \"'`\t"))
+                        if !content.isEmpty {
+                            alternatives.append(TranslationAlternative(tone: "Trang trọng (Email/Đối tác)", text: content))
+                        }
+                    }
+                }
+
+                if primaryText.isEmpty {
+                    primaryText = aiResponse.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+
+                return QuickTranslationResult(primary: primaryText, alternatives: alternatives)
+            } catch {
+                let fallback = try await translate(trimmedText, from: source, to: target, domain: domain, provider: provider, model: model, key: trimmedKey)
+                return QuickTranslationResult(primary: fallback)
+            }
+        }
+
+        // Apple Native or Free Google Translator
+        let fallback = try await translate(trimmedText, from: source, to: target, domain: domain, provider: provider, model: model, key: trimmedKey)
+        return QuickTranslationResult(primary: fallback)
+    }
+
     static func quickTranslate(
         _ text: String,
         from source: AppLanguage,
         to target: AppLanguage,
-        style: WritingStyle,
+        style: WritingStyle = .developer,
         domain: DomainSpecialty = .developer,
         provider: AIProvider,
         model: String,
         key: String
     ) async throws -> String {
-        let trimmedKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
-        if provider != .apple && provider != .free && !trimmedKey.isEmpty {
-            let prompt = "\(style.prompt(from: source, to: target))\n\n\(text)"
-            return try await callAI(prompt: prompt, provider: provider, model: model, key: trimmedKey)
-        }
-        return try await translate(text, from: source, to: target, domain: domain, provider: provider, model: model, key: trimmedKey)
+        let res = try await quickTranslateDetailed(text, from: source, to: target, domain: domain, style: style, provider: provider, model: model, key: key)
+        return res.primary
     }
 
-    static func viToEn(_ text: String, style: WritingStyle, provider: AIProvider, model: String, key: String) async throws -> String {
-        try await quickTranslate(text, from: .vietnamese, to: .english, style: style, provider: provider, model: model, key: key)
+    static func viToEn(
+        _ text: String,
+        style: WritingStyle = .developer,
+        domain: DomainSpecialty = .developer,
+        provider: AIProvider,
+        model: String,
+        key: String
+    ) async throws -> QuickTranslationResult {
+        try await quickTranslateDetailed(text, from: .vietnamese, to: .english, domain: domain, style: style, provider: provider, model: model, key: key)
     }
 
     // MARK: - Smart AI Meeting Reply Suggestions with Deep Context
