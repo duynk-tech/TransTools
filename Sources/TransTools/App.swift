@@ -4178,48 +4178,63 @@ struct QuickTranslateView: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            // 1. Chuyên ngành dịch thuật Selector Bar
+            // 1. Chuyên ngành dịch thuật Selector Bar (Dropdown Menu đồng bộ với Cài đặt)
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
-                        Image(systemName: model.domainSpecialty.icon)
+                        Image(systemName: "character.book.closed.fill")
                             .foregroundStyle(Color.accentColor)
+                            .font(.system(size: 13))
                         Text("Chuyên ngành dịch thuật:")
                             .font(.system(size: 13, weight: .bold))
-                        Text(model.domainSpecialty.title)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Color.accentColor)
                     }
-                    Text("AI tự động tối ưu thuật ngữ & văn phong phù hợp với chuyên ngành này")
+                    Text("AI tự động tối ưu hóa ngữ cảnh và thuật ngữ theo từng lĩnh vực")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
 
                 Spacer()
 
-                HStack(spacing: 6) {
+                Menu {
                     ForEach(DomainSpecialty.allCases) { d in
                         Button {
                             withAnimation(.easeInOut(duration: 0.15)) {
                                 model.domainSpecialty = d
                             }
                         } label: {
-                            HStack(spacing: 5) {
-                                Image(systemName: d.icon)
-                                    .font(.system(size: 11))
-                                Text(d.shortName)
-                                    .font(.system(size: 12, weight: model.domainSpecialty == d ? .semibold : .regular))
+                            if model.domainSpecialty == d {
+                                Label(d.title + " (Đang chọn)", systemImage: "checkmark")
+                            } else {
+                                Label(d.title, systemImage: d.icon)
                             }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(model.domainSpecialty == d ? Color.accentColor : Color.secondary.opacity(0.1))
-                            .foregroundStyle(model.domainSpecialty == d ? .white : .primary)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         }
-                        .buttonStyle(.plain)
-                        .help(d.title)
                     }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: model.domainSpecialty.icon)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.accentColor)
+                            .frame(width: 18)
+
+                        Text(model.domainSpecialty.title)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.primary)
+
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 12)
+                    .frame(height: 34)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+                    )
                 }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
             }
             .padding(12)
             .background(
