@@ -8,7 +8,9 @@
 
 ## 🌟 Tính năng nổi bật
 
-- 🎙️ **Thu âm thanh hệ thống trực tiếp**: Thu âm thanh từ Microsoft Teams, Zoom, Google Meet, Slack hoặc tất cả ứng dụng mà không cần đăng nhập hay cấu hình phức tạp (ScreenCaptureKit).
+- 🌐 **Hỗ trợ 10 ngôn ngữ & giọng điệu chuyên biệt**:
+  - Tiếng Anh (Mỹ/UK `en-US`), **Tiếng Anh Ấn Độ (Indian English `en-IN`)** với bộ nhận diện giọng điệu chuyên sâu.
+  - **Tiếng Ý (`it-IT`)**, Tiếng Việt (`vi-VN`), Tiếng Trung (`zh-CN`), Tiếng Nhật (`ja-JP`), Tiếng Hàn (`ko-KR`), Tiếng Pháp (`fr-FR`), Tiếng Đức (`de-DE`), Tiếng Tây Ban Nha (`es-ES`).
 - ⚡ **Dịch thuật đa động cơ (Multi-engine AI)**:
   - **Apple Native Translation**: Dịch on-device hoàn toàn miễn phí, 0 token, siêu tốc ~15ms và bảo mật tuyệt đối.
   - **Cloud AI Engines**: Hỗ trợ Google Gemini, OpenAI GPT-4o, Anthropic Claude, DeepSeek API (mã hóa an toàn cục bộ bằng Apple CryptoKit AES-256 gắn với phần cứng).

@@ -162,6 +162,7 @@ enum CredentialStore {
 
 public enum AppLanguage: String, CaseIterable, Identifiable, Codable {
     case english = "en"
+    case englishIndia = "en_IN"
     case vietnamese = "vi"
     case chinese = "zh"
     case japanese = "ja"
@@ -169,12 +170,14 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Codable {
     case french = "fr"
     case german = "de"
     case spanish = "es"
+    case italian = "it"
 
     public var id: String { rawValue }
 
     public var displayName: String {
         switch self {
-        case .english: return "Tiếng Anh"
+        case .english: return "Tiếng Anh (US/UK)"
+        case .englishIndia: return "Tiếng Anh (Ấn Độ)"
         case .vietnamese: return "Tiếng Việt"
         case .chinese: return "Tiếng Trung"
         case .japanese: return "Tiếng Nhật"
@@ -182,12 +185,14 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Codable {
         case .french: return "Tiếng Pháp"
         case .german: return "Tiếng Đức"
         case .spanish: return "Tiếng T.B.Nha"
+        case .italian: return "Tiếng Ý"
         }
     }
 
     public var shortName: String {
         switch self {
         case .english: return "EN"
+        case .englishIndia: return "EN-IN"
         case .vietnamese: return "VI"
         case .chinese: return "ZH"
         case .japanese: return "JA"
@@ -195,12 +200,14 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Codable {
         case .french: return "FR"
         case .german: return "DE"
         case .spanish: return "ES"
+        case .italian: return "IT"
         }
     }
 
     public var flag: String {
         switch self {
         case .english: return "🇺🇸"
+        case .englishIndia: return "🇮🇳"
         case .vietnamese: return "🇻🇳"
         case .chinese: return "🇨🇳"
         case .japanese: return "🇯🇵"
@@ -208,12 +215,14 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Codable {
         case .french: return "🇫🇷"
         case .german: return "🇩🇪"
         case .spanish: return "🇪🇸"
+        case .italian: return "🇮🇹"
         }
     }
 
     public var speechLocale: String {
         switch self {
         case .english: return "en-US"
+        case .englishIndia: return "en-IN"
         case .vietnamese: return "vi-VN"
         case .chinese: return "zh-CN"
         case .japanese: return "ja-JP"
@@ -221,12 +230,13 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Codable {
         case .french: return "fr-FR"
         case .german: return "de-DE"
         case .spanish: return "es-ES"
+        case .italian: return "it-IT"
         }
     }
 
     public var appleLanguageCode: String {
         switch self {
-        case .english: return "en"
+        case .english, .englishIndia: return "en"
         case .vietnamese: return "vi"
         case .chinese: return "zh-Hans"
         case .japanese: return "ja"
@@ -234,12 +244,13 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Codable {
         case .french: return "fr"
         case .german: return "de"
         case .spanish: return "es"
+        case .italian: return "it"
         }
     }
 
     public var googleLanguageCode: String {
         switch self {
-        case .english: return "en"
+        case .english, .englishIndia: return "en"
         case .vietnamese: return "vi"
         case .chinese: return "zh-CN"
         case .japanese: return "ja"
@@ -247,6 +258,7 @@ public enum AppLanguage: String, CaseIterable, Identifiable, Codable {
         case .french: return "fr"
         case .german: return "de"
         case .spanish: return "es"
+        case .italian: return "it"
         }
     }
 }
