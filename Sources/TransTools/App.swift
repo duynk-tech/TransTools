@@ -4949,62 +4949,122 @@ struct SettingsPopoverView: View {
                     }
 
                     // Model Dropdown & Fetch
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("Model")
+                            Text("Mô hình xử lý (Model)")
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(.secondary)
                             Spacer()
                             if model.isFetchingCoPilotModels {
                                 HStack(spacing: 4) {
                                     ProgressView().controlSize(.mini)
-                                    Text("Đang tải model...")
+                                    Text("Đang tải model từ API...")
                                         .font(.system(size: 10))
                                         .foregroundStyle(.secondary)
                                 }
                             } else if !model.availableCoPilotModels.isEmpty {
-                                Text("\(model.availableCoPilotModels.count) model")
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(.tertiary)
+                                HStack(spacing: 4) {
+                                    Circle()
+                                        .fill(Color.green)
+                                        .frame(width: 5, height: 5)
+                                    Text("\(model.availableCoPilotModels.count) model khả dụng")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
 
                         HStack(spacing: 8) {
                             Menu {
-                                if model.availableCoPilotModels.isEmpty {
-                                    Button("Chưa có danh sách (Bấm làm mới để tải)") {}
-                                        .disabled(true)
-                                } else {
-                                    ForEach(model.availableCoPilotModels, id: \.self) { m in
-                                        Button {
-                                            model.coPilotModel = m
-                                        } label: {
-                                            HStack {
-                                                Text(m)
+                                let allModels = model.availableCoPilotModels.isEmpty ? model.coPilotProvider.defaultModels : model.availableCoPilotModels
+                                let recommended = allModels.filter { isModelRecommended($0) }
+                                let others = allModels.filter { !isModelRecommended($0) }
+
+                                if !recommended.isEmpty {
+                                    Section("Mô hình khuyên dùng") {
+                                        ForEach(recommended, id: \.self) { m in
+                                            Button {
+                                                model.coPilotModel = m
+                                            } label: {
                                                 if model.coPilotModel == m {
-                                                    Spacer()
-                                                    Image(systemName: "checkmark")
+                                                    Label(m + " (Đang chọn)", systemImage: "checkmark")
+                                                } else {
+                                                    Label(m, systemImage: "sparkles")
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if !others.isEmpty {
+                                    Section("Tất cả mô hình (\(others.count))") {
+                                        ForEach(others, id: \.self) { m in
+                                            Button {
+                                                model.coPilotModel = m
+                                            } label: {
+                                                if model.coPilotModel == m {
+                                                    Label(m + " (Đang chọn)", systemImage: "checkmark")
+                                                } else {
+                                                    Text(m)
                                                 }
                                             }
                                         }
                                     }
                                 }
                             } label: {
-                                HStack {
-                                    Text(model.coPilotModel.isEmpty ? "Chọn model..." : model.coPilotModel)
-                                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                                        .foregroundStyle(.primary)
+                                HStack(spacing: 10) {
+                                    // Icon badge
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .fill(Color.accentColor.opacity(0.14))
+                                            .frame(width: 32, height: 32)
+                                        Image(systemName: model.coPilotProvider.icon)
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundStyle(Color.accentColor)
+                                    }
+
+                                    // Title and description
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        HStack(spacing: 6) {
+                                            Text(model.coPilotModel.isEmpty ? "Chọn model..." : model.coPilotModel)
+                                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                                .foregroundStyle(.primary)
+
+                                            if isModelRecommended(model.coPilotModel) {
+                                                Text("Khuyên dùng")
+                                                    .font(.system(size: 8, weight: .bold))
+                                                    .padding(.horizontal, 5)
+                                                    .padding(.vertical, 1)
+                                                    .background(Color.green.opacity(0.18))
+                                                    .foregroundStyle(.green)
+                                                    .clipShape(Capsule())
+                                            }
+                                        }
+
+                                        Text(modelSubtitle(for: model.coPilotModel))
+                                            .font(.system(size: 10))
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+
                                     Spacer()
-                                    Image(systemName: "chevron.up.chevron.down")
-                                        .font(.system(size: 9, weight: .bold))
-                                        .foregroundStyle(.secondary)
+
+                                    // Chevron
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                            .fill(Color.primary.opacity(0.06))
+                                            .frame(width: 22, height: 22)
+                                        Image(systemName: "chevron.up.chevron.down")
+                                            .font(.system(size: 9, weight: .bold))
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
                                 .padding(.horizontal, 10)
-                                .frame(height: 34)
+                                .frame(height: 44)
                                 .background(Color(nsColor: .controlBackgroundColor))
-                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
                                         .stroke(Color.primary.opacity(0.12), lineWidth: 1)
                                 )
                             }
@@ -5014,32 +5074,89 @@ struct SettingsPopoverView: View {
                                 Task { await model.fetchCoPilotModels() }
                             } label: {
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
                                         .fill(Color(nsColor: .controlBackgroundColor))
-                                        .frame(width: 34, height: 34)
+                                        .frame(width: 44, height: 44)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            RoundedRectangle(cornerRadius: 10, style: .continuous)
                                                 .stroke(Color.primary.opacity(0.12), lineWidth: 1)
                                         )
 
                                     if model.isFetchingCoPilotModels {
-                                        ProgressView().controlSize(.mini)
+                                        ProgressView().controlSize(.small)
                                     } else {
-                                        Image(systemName: "arrow.clockwise")
-                                            .font(.system(size: 11, weight: .semibold))
-                                            .foregroundStyle(Color.accentColor)
+                                        VStack(spacing: 2) {
+                                            Image(systemName: "arrow.clockwise")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundStyle(Color.accentColor)
+                                            Text("Cập nhật")
+                                                .font(.system(size: 7, weight: .bold))
+                                                .foregroundStyle(.secondary)
+                                        }
                                     }
                                 }
                             }
                             .buttonStyle(.plain)
                             .disabled(model.isFetchingCoPilotModels || model.coPilotKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                            .help("Lấy danh sách model từ API")
+                            .help(model.coPilotKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Vui lòng nhập API Key trước khi lấy model" : "Lấy danh sách model mới nhất từ API \(model.coPilotProvider.shortName)")
+                        }
+
+                        // Quick Model Suggestion Chips
+                        if !model.coPilotProvider.defaultModels.isEmpty {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Gợi ý chọn nhanh:")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.secondary)
+
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 6) {
+                                        ForEach(model.coPilotProvider.defaultModels, id: \.self) { dm in
+                                            let isSel = (model.coPilotModel == dm)
+                                            Button {
+                                                model.coPilotModel = dm
+                                            } label: {
+                                                HStack(spacing: 4) {
+                                                    if isSel {
+                                                        Image(systemName: "checkmark")
+                                                            .font(.system(size: 8, weight: .bold))
+                                                    }
+                                                    Text(dm)
+                                                        .font(.system(size: 10, weight: isSel ? .bold : .medium, design: .monospaced))
+                                                }
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
+                                                .background(isSel ? Color.accentColor.opacity(0.18) : Color(nsColor: .controlBackgroundColor))
+                                                .foregroundStyle(isSel ? Color.accentColor : Color.secondary)
+                                                .clipShape(Capsule())
+                                                .overlay(
+                                                    Capsule()
+                                                        .stroke(isSel ? Color.accentColor.opacity(0.4) : Color.primary.opacity(0.1), lineWidth: 1)
+                                                )
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
+                                    .padding(.vertical, 1)
+                                }
+                            }
                         }
 
                         if !model.coPilotFetchMessage.isEmpty {
-                            Text(model.coPilotFetchMessage)
-                                .font(.system(size: 10))
-                                .foregroundStyle(model.coPilotFetchMessage.contains("Lỗi") ? Color.red : Color.green)
+                            let isErr = model.coPilotFetchMessage.contains("Lỗi") || model.coPilotFetchMessage.contains("Vui lòng")
+                            HStack(spacing: 6) {
+                                Image(systemName: isErr ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(isErr ? Color.red : Color.green)
+                                Text(model.coPilotFetchMessage)
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundStyle(isErr ? Color.red : Color.green)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(isErr ? Color.red.opacity(0.08) : Color.green.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            .transition(.opacity)
                         }
                     }
 
@@ -5199,6 +5316,35 @@ struct SettingsPopoverView: View {
         case .deepseek: return "sk-..."
         case .claude: return "sk-ant-..."
         }
+    }
+
+    private func modelSubtitle(for name: String) -> String {
+        let lower = name.lowercased()
+        if lower.contains("2.0-flash") {
+            return "Siêu tốc độ & phản xạ thông minh nhất"
+        } else if lower.contains("1.5-flash") {
+            return "Nhanh nhẹ, ổn định & tối ưu chi phí"
+        } else if lower.contains("1.5-pro") {
+            return "Tư duy ngữ cảnh sâu & phân tích phức tạp"
+        } else if lower.contains("4o-mini") {
+            return "Tốc độ cao & chi phí tối ưu nhất"
+        } else if lower.contains("4o") {
+            return "Mô hình đa phương thức hàng đầu OpenAI"
+        } else if lower.contains("deepseek-chat") {
+            return "Văn phong tự nhiên & chi phí cực rẻ"
+        } else if lower.contains("deepseek-reasoner") {
+            return "Mô hình lý luận chuyên sâu (DeepSeek-R1)"
+        } else if lower.contains("haiku") {
+            return "Phản hồi chớp mắt & tiết kiệm token"
+        } else if lower.contains("sonnet") {
+            return "Văn phong sắc sảo, tự nhiên nhất"
+        }
+        return "Mô hình ngôn ngữ AI thế hệ mới"
+    }
+
+    private func isModelRecommended(_ name: String) -> Bool {
+        let lower = name.lowercased()
+        return lower.contains("2.0-flash") || lower.contains("4o-mini") || lower.contains("deepseek-chat") || lower.contains("haiku")
     }
 }
 
