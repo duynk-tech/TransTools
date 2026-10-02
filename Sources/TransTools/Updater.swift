@@ -12,7 +12,6 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
 
     static let repoOwner = "duynk-tech"
     static let repoName = "TransTools"
-    static let repoURLString = "https://github.com/duynk-tech/TransTools"
     static let releasesAPIURL = URL(string: "https://trans-tools.vercel.app/updates/latest.json")!
     static let releasesURLString = "https://trans-tools.vercel.app/releases"
 

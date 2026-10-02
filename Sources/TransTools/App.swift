@@ -230,6 +230,25 @@ enum AppPermissionType {
         }
     }
 
+    /// Selected keyed AI first, then configured assistant, then another saved AI.
+    var configuredAI: (provider: AIProvider, model: String, key: String)? {
+        let candidates = [provider, coPilotProvider] + AIProvider.allCases
+        for candidate in candidates where candidate != .apple && candidate != .free {
+            let candidateKey = (candidate == provider ? key : candidate == coPilotProvider ? coPilotKey : CredentialStore.read(for: candidate)).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !candidateKey.isEmpty {
+                let name = candidate == provider ? modelName : candidate == coPilotProvider ? coPilotModel : UserDefaults.standard.string(forKey: "AIModel_\(candidate.rawValue)") ?? candidate.defaultModel
+                return (candidate, name, candidateKey)
+            }
+        }
+        return nil
+    }
+
+    func preferConfiguredAIIfNeeded() {
+        guard UserDefaults.standard.object(forKey: "TranslationProviderExplicitChoice") == nil,
+              let ai = configuredAI else { return }
+        setProvider(ai.provider)
+    }
+
     func hasKeyForProvider(_ p: AIProvider) -> Bool {
         let k = CredentialStore.read(for: p).trimmingCharacters(in: .whitespacesAndNewlines)
         return !k.isEmpty
@@ -403,11 +422,12 @@ enum AppPermissionType {
             }
         }
         loadSessions()
+        preferConfiguredAIIfNeeded()
 
         MeetingModel.shared = self
         GlobalHotkeyManager.shared.registerHotkeys()
 
-        // 3. Tự động kiểm tra bản cập nhật mới trên GitHub sau 3 giây khởi động
+        // 3. Tự động kiểm tra bản cập nhật mới sau 3 giây khởi động
         Task { @MainActor in
             let autoCheck = UserDefaults.standard.object(forKey: "AutoCheckUpdates") as? Bool ?? true
             if autoCheck {
@@ -523,6 +543,7 @@ enum AppPermissionType {
     }
 
     func setProvider(_ newProvider: AIProvider) {
+        UserDefaults.standard.set(true, forKey: "TranslationProviderExplicitChoice")
         guard provider != newProvider else { return }
         provider = newProvider
         UserDefaults.standard.set(newProvider.rawValue, forKey: "AIProvider")
@@ -584,6 +605,7 @@ enum AppPermissionType {
             try CredentialStore.save(trimmedKey, for: provider)
             UserDefaults.standard.set(modelName, forKey: "AIModel_\(provider.rawValue)")
             UserDefaults.standard.set(provider.rawValue, forKey: "AIProvider")
+            activeKey = trimmedKey
             status = "Đã lưu thiết lập \(provider.displayName)."
         } catch {
             warning = "Không lưu được khóa mã hóa: \(error.localizedDescription)"
@@ -732,6 +754,20 @@ enum AppPermissionType {
         if !captions.isEmpty {
             saveCurrentSession()
             status = "Đã dừng. Toàn bộ cuộc họp đã được lưu vào Sổ tay."
+            if let ai = configuredAI, let savedID = selectedSessionID {
+                let transcript = captions.map { "[\(Self.timestamp($0.start))] \($0.original)" }.joined(separator: "\n")
+                let domain = domainSpecialty
+                Task { [weak self] in
+                    do {
+                        let summary = try await AITranslator.summarizeMeeting(transcript, domain: domain, provider: ai.provider, model: ai.model, key: ai.key)
+                        guard let self, let index = self.sessions.firstIndex(where: { $0.id == savedID }) else { return }
+                        let existing = self.sessions[index].notes
+                        self.updateSessionNotes(id: savedID, notes: existing + (existing.isEmpty ? "" : "\n\n") + "Tóm tắt cuộc họp\n" + summary)
+                    } catch {
+                        self?.warning = "Đã lưu phụ đề. Chưa thể tóm tắt cuộc họp: \(error.localizedDescription)"
+                    }
+                }
+            }
         } else {
             status = "Đã dừng. Chọn nguồn âm thanh để bắt đầu phiên mới."
         }
@@ -7778,8 +7814,10 @@ struct QuickTranslateView: View {
                                 .foregroundStyle(.red)
                                 .lineLimit(1)
                         } else {
-                            let engineInfo = model.key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                ? "Google Free • Miễn phí"
+                            let engineInfo = model.provider == .apple
+                                ? "Apple Translate • Trên thiết bị"
+                                : model.provider == .free || model.key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                ? "Google Dịch • Miễn phí"
                                 : "\(model.provider.displayName) • \(model.modelName)"
                             Text("\(engineInfo) • \(model.domainSpecialty.title)")
                                 .font(.system(size: 11))
@@ -7793,14 +7831,9 @@ struct QuickTranslateView: View {
         guard !text.isEmpty else { return }
         translating = true; error = ""; copied = false; lastActionWasPolish = false
         let domain = model.domainSpecialty
-        var currentProvider = model.provider
-        var currentModel = model.modelName
-        var currentKey = model.key.trimmingCharacters(in: .whitespacesAndNewlines)
-        if currentKey.isEmpty && !model.coPilotKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && model.coPilotProvider != .apple && model.coPilotProvider != .free {
-            currentProvider = model.coPilotProvider
-            currentModel = model.coPilotModel
-            currentKey = model.coPilotKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
+        let currentProvider = model.provider
+        let currentModel = model.modelName
+        let currentKey = model.key.trimmingCharacters(in: .whitespacesAndNewlines)
         let src = model.sourceLanguage
         let dst = model.targetLanguage
         Task {
@@ -8797,37 +8830,6 @@ struct AboutAppPopoverView: View {
                     }
                     .buttonStyle(.plain)
                     .help("Sao chép địa chỉ email")
-                }
-
-                // GitHub
-                HStack(spacing: 10) {
-                    Image(systemName: "link.circle.fill")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.purple)
-                        .frame(width: 20)
-
-                    Text("Git:")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.secondary)
-
-                    Button {
-                        if let url = URL(string: "https://github.com/duynk-tech/TransTools") {
-                            NSWorkspace.shared.open(url)
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text("github.com/duynk-tech/TransTools")
-                                .font(.system(size: 12, weight: .medium))
-                                .underline()
-                            Image(systemName: "arrow.up.right.square")
-                                .font(.system(size: 10))
-                        }
-                        .foregroundStyle(TransToolsTheme.accent)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Mở trang GitHub repository trong trình duyệt")
-
-                    Spacer()
                 }
 
                 // Check updates button
