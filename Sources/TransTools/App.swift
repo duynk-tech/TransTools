@@ -7582,6 +7582,14 @@ struct QuickTranslateView: View {
     private var resultPanel: some View {
                 // Right Panel: Output & Polish Result
                 VStack(alignment: .leading, spacing: 10) {
+                    resultHeader
+                    resultContent
+                    resultFooter
+                }
+    }
+
+
+    private var resultHeader: some View {
                     HStack {
                         if lastActionWasPolish {
                             HStack(spacing: 4) {
@@ -7631,7 +7639,7 @@ struct QuickTranslateView: View {
                                         Text(copied ? "Đã sao chép!" : "Sao chép")
                                     }
                                     .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(copied ? .green : TransToolsTheme.accent)
+                                    .foregroundStyle(copied ? Color.green : TransToolsTheme.accent)
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 4)
                                     .background(copied ? Color.green.opacity(0.12) : TransToolsTheme.accent.opacity(0.1))
@@ -7642,6 +7650,9 @@ struct QuickTranslateView: View {
                         }
                     }
 
+    }
+
+    private var resultContent: some View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 12) {
                             if output.isEmpty {
@@ -7731,6 +7742,9 @@ struct QuickTranslateView: View {
                             .stroke(Color.primary.opacity(0.08), lineWidth: 1)
                     )
 
+    }
+
+    private var resultFooter: some View {
                     // Footer of Right Panel
                     HStack {
                         if !error.isEmpty {
@@ -7748,9 +7762,7 @@ struct QuickTranslateView: View {
                         }
                         Spacer()
                     }
-                }
     }
-
     private func translateNow() {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
