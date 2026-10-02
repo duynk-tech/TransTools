@@ -8832,6 +8832,37 @@ struct AboutAppPopoverView: View {
                     .help("Sao chép địa chỉ email")
                 }
 
+                // GitHub
+                HStack(spacing: 10) {
+                    Image(systemName: "link.circle.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.purple)
+                        .frame(width: 20)
+
+                    Text("Git:")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+
+                    Button {
+                        if let url = URL(string: "https://github.com/duynk-tech/TransTools") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text("github.com/duynk-tech/TransTools")
+                                .font(.system(size: 12, weight: .medium))
+                                .underline()
+                            Image(systemName: "arrow.up.right.square")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundStyle(TransToolsTheme.accent)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Mở trang GitHub repository trong trình duyệt")
+
+                    Spacer()
+                }
+
                 // Check updates button
                 HStack {
                     Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
