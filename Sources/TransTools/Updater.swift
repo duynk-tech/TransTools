@@ -53,7 +53,9 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
     @Published var releaseNotes: String = ""
     @Published var downloadURL: URL? = nil
     @Published var htmlURL: URL? = nil
-    @Published var lastCheckedDate: Date? = nil
+    @Published var lastCheckedDate: Date? = UserDefaults.standard.object(forKey: "UpdateLastCheckedDate") as? Date {
+        didSet { UserDefaults.standard.set(lastCheckedDate, forKey: "UpdateLastCheckedDate") }
+    }
 
     // Download & Install Progress
     @Published var isDownloading: Bool = false
@@ -261,6 +263,17 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
         }
     }
 
+    func cancelDownload() {
+        downloadTask?.cancel()
+        downloadTask = nil
+        if let continuation = downloadContinuation {
+            downloadContinuation = nil
+            continuation.resume(throwing: CancellationError())
+        }
+        isDownloading = false
+        installStatusMessage = "Đã hủy tải xuống."
+    }
+
     private func startDownloadWithProgress(from url: URL) async throws -> URL {
         try await withCheckedThrowingContinuation { continuation in
             self.downloadContinuation = continuation
@@ -325,11 +338,20 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
         TEMP_DIR="\(tempDir)"
         SCRIPT_PATH="\(scriptPath)"
 
-        # 1. Chờ ứng dụng cũ thoát hoàn toàn
+        # 1. Chờ ứng dụng cũ thoát hoàn toàn (tối đa 3 giây, nếu quá thì buộc đóng tiến trình)
+        COUNT=0
         while kill -0 "$TARGET_PID" 2>/dev/null; do
             sleep 0.2
+            COUNT=$((COUNT + 1))
+            if [ "$COUNT" -ge 10 ]; then
+                kill -15 "$TARGET_PID" 2>/dev/null || true
+            fi
+            if [ "$COUNT" -ge 18 ]; then
+                kill -9 "$TARGET_PID" 2>/dev/null || true
+                break
+            fi
         done
-        sleep 0.5
+        sleep 0.4
 
         # 2. Gỡ bỏ thuộc tính hạn chế kiểm duyệt khỏi bản cập nhật mới
         /usr/bin/xattr -dr com.apple.quarantine "$NEW_APP" 2>/dev/null || true
@@ -346,7 +368,7 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
 
         # 6. Đồng bộ hóa dữ liệu xuống đĩa
         /bin/sync
-        sleep 0.5
+        sleep 0.4
 
         # 7. Tự động Re-Open / Khởi động lại phiên bản mới
         /usr/bin/open -n "$CURRENT_APP" || /usr/bin/open "$CURRENT_APP"
@@ -369,6 +391,10 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
         // Thoát ứng dụng hiện tại để script thực hiện thay thế và Re-Open
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             NSApplication.shared.terminate(nil)
+            // Đảm bảo đóng ứng dụng hoàn toàn nếu NSApp.terminate bị hoãn
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                exit(0)
+            }
         }
     }
 }
@@ -378,6 +404,16 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
 struct UpdateSheetView: View {
     @ObservedObject var updater = AppUpdater.shared
     @Environment(\.dismiss) private var dismiss
+    var isPresented: Binding<Bool>? = nil
+
+    private func closeSheet() {
+        if updater.isDownloading {
+            updater.cancelDownload()
+        }
+        updater.showUpdateSheet = false
+        isPresented?.wrappedValue = false
+        dismiss()
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -420,13 +456,15 @@ struct UpdateSheetView: View {
                 Spacer()
 
                 Button {
-                    updater.showUpdateSheet = false
+                    closeSheet()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 14))
+                        .font(.system(size: 16))
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
+                .help("Đóng (Esc)")
+                .keyboardShortcut(.cancelAction)
             }
 
             Divider()
@@ -449,13 +487,22 @@ struct UpdateSheetView: View {
                 }
 
                 if updater.isDownloading {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 8) {
                         ProgressView(value: updater.downloadProgress)
                             .progressViewStyle(.linear)
 
-                        Text(updater.installStatusMessage)
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
+                        HStack {
+                            Text(updater.installStatusMessage)
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Button("Hủy") {
+                                closeSheet()
+                            }
+                            .buttonStyle(.plain)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.red)
+                        }
                     }
                     .padding(.top, 4)
                 } else {
@@ -493,6 +540,19 @@ struct UpdateSheetView: View {
                             }
                             .buttonStyle(.plain)
                         }
+
+                        Button {
+                            closeSheet()
+                        } label: {
+                            Text("Để sau")
+                                .font(.system(size: 11, weight: .medium))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color.secondary.opacity(0.12))
+                                .foregroundStyle(.secondary)
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             } else {
@@ -539,16 +599,30 @@ struct UpdateSheetView: View {
 
                         Spacer()
 
+                        Button {
+                            closeSheet()
+                        } label: {
+                            Text("Đóng")
+                                .font(.system(size: 11, weight: .medium))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 6)
+                                .background(Color.accentColor.opacity(0.15))
+                                .foregroundStyle(Color.accentColor)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                        }
+                        .buttonStyle(.plain)
+                        .keyboardShortcut(.defaultAction)
+
                         if let htmlURL = URL(string: "\(AppUpdater.repoURLString)/releases") {
                             Button {
                                 NSWorkspace.shared.open(htmlURL)
                             } label: {
                                 HStack(spacing: 4) {
-                                    Text("Lịch sử cập nhật trên GitHub")
+                                    Text("Lịch sử")
                                     Image(systemName: "arrow.up.right.square")
                                 }
                                 .font(.system(size: 11))
-                                .foregroundStyle(Color.accentColor)
+                                .foregroundStyle(.secondary)
                             }
                             .buttonStyle(.plain)
                         }
@@ -564,7 +638,7 @@ struct UpdateSheetView: View {
             }
         }
         .padding(16)
-        .frame(width: 380)
+        .frame(width: 400)
         .background(Color(nsColor: .windowBackgroundColor))
     }
 }
@@ -592,9 +666,6 @@ struct AutoUpdateNavBadge: View {
             }
             .buttonStyle(.plain)
             .help("Đã có bản cập nhật mới v\(updater.latestVersion)! Nhấn để nâng cấp ngay.")
-            .popover(isPresented: $updater.showUpdateSheet) {
-                UpdateSheetView()
-            }
         }
     }
 }
@@ -603,301 +674,59 @@ struct AutoUpdateNavBadge: View {
 
 struct SettingsUpdateTabView: View {
     @ObservedObject var updater = AppUpdater.shared
-    @AppStorage("AutoCheckUpdates") private var autoCheckUpdates: Bool = true
+    @AppStorage("AutoCheckUpdates") private var autoCheckUpdates = true
+
+    private var lastChecked: String {
+        guard let date = updater.lastCheckedDate else { return "Kiểm tra lần cuối: Chưa kiểm tra" }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "vi_VN")
+        formatter.dateFormat = "HH:mm d 'tháng' M, yyyy"
+        return "Kiểm tra lần cuối: \(formatter.string(from: date))"
+    }
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: true) {
-            VStack(alignment: .leading, spacing: 14) {
-                // 1. Current App Info Card
-                HStack(spacing: 12) {
-                    MiniAvatarView(size: 38)
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 6) {
-                            Text("TransTools")
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
-                            Text(updater.currentVersionDisplay)
-                                .font(.system(size: 10, weight: .bold))
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.secondary.opacity(0.12))
-                                .clipShape(Capsule())
-                        }
-                        Text("Phát triển bởi DuyNK-Tech • GitHub: duynk-tech/TransTools")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Cập nhật phần mềm")
+                .font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
+                .padding(.leading, 12)
+            VStack(alignment: .leading, spacing: 10) {
+                Text(lastChecked).font(.system(size: 12)).foregroundStyle(.secondary)
+                Toggle("Tự động kiểm tra bản cập nhật", isOn: $autoCheckUpdates)
+                    .help("Kiểm tra bản phát hành trên GitHub khi mở TransTools.")
+                Toggle("Tự động tải bản cập nhật và cài đặt khi thoát TransTools", isOn: .constant(false))
+                    .disabled(true)
+                    .help("Chưa bật chức năng tự động cài đặt khi thoát.")
+                HStack(spacing: 8) {
+                    Button(updater.isChecking ? "Đang kiểm tra…" : "Kiểm tra bản cập nhật…") {
+                        updater.checkForUpdates(userInitiated: true)
+                    }.disabled(updater.isChecking || updater.isDownloading)
+                    Button("Lịch sử phiên bản") {
+                        if let url = URL(string: "\(AppUpdater.repoURLString)/releases") { NSWorkspace.shared.open(url) }
                     }
-                    Spacer()
+                }.buttonStyle(.bordered).controlSize(.small)
+                if updater.isDownloading {
+                    ProgressView(value: updater.downloadProgress)
                 }
-                .padding(10)
-                .background(Color(nsColor: .controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                // 2. Auto Check Toggle
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("TỰ ĐỘNG CẬP NHẬT TỪ GITHUB")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.secondary)
-
-                    Toggle("Tự động kiểm tra bản phát hành mới khi mở ứng dụng", isOn: $autoCheckUpdates)
-                        .font(.system(size: 12, weight: .medium))
-
-                    Text("Khi có release mới trên github.com/duynk-tech/TransTools, ứng dụng sẽ thông báo và cho phép tự động tải về cài đặt.")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                        .lineSpacing(2)
+                if updater.hasError {
+                    Text(updater.errorMessage).foregroundStyle(.red)
+                } else if !updater.installStatusMessage.isEmpty {
+                    Text(updater.installStatusMessage).foregroundStyle(.secondary)
                 }
-                .padding(10)
-                .background(Color(nsColor: .controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                // 3. Status & Action Card
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("TRẠNG THÁI PHIÊN BẢN")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        if let date = updater.lastCheckedDate {
-                            Text("Kiểm tra lần cuối: \(date.formatted(date: .omitted, time: .shortened))")
-                                .font(.system(size: 10))
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
-
-                    if updater.updateAvailable {
-                        HStack(spacing: 10) {
-                            Image(systemName: "arrow.up.circle.fill")
-                                .font(.system(size: 22))
-                                .foregroundStyle(Color.green)
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Đã có bản cập nhật mới: v\(updater.latestVersion)!")
-                                    .font(.system(size: 13, weight: .bold))
-                                    .foregroundStyle(Color.green)
-                                Text(updater.releaseTitle.isEmpty ? "Khuyến nghị nâng cấp để nhận các tính năng mới." : updater.releaseTitle)
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                        }
-                        .padding(10)
-                        .background(Color.green.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                        if updater.isDownloading {
-                            VStack(alignment: .leading, spacing: 6) {
-                                ProgressView(value: updater.downloadProgress)
-                                    .progressViewStyle(.linear)
-                                Text(updater.installStatusMessage)
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.secondary)
-                            }
-                        } else {
-                            HStack(spacing: 8) {
-                                Button {
-                                    updater.downloadAndInstallUpdate()
-                                } label: {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "arrow.down.circle.fill")
-                                        Text("Nâng cấp & Khởi động lại ngay")
-                                    }
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 7)
-                                    .background(Color.accentColor)
-                                    .foregroundStyle(.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                                }
-                                .buttonStyle(.plain)
-
-                                if let htmlURL = updater.htmlURL {
-                                    Button {
-                                        NSWorkspace.shared.open(htmlURL)
-                                    } label: {
-                                        HStack(spacing: 4) {
-                                            Text("Xem Release")
-                                            Image(systemName: "arrow.up.right.square")
-                                        }
-                                        .font(.system(size: 11))
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 7)
-                                        .background(Color.secondary.opacity(0.12))
-                                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                        }
-                    } else {
-                        HStack(spacing: 10) {
-                            Image(systemName: "checkmark.seal.fill")
-                                .font(.system(size: 20))
-                                .foregroundStyle(Color.green)
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(updater.installStatusMessage.isEmpty ? "TransTools đang ở phiên bản mới nhất (\(updater.currentVersionDisplay))" : updater.installStatusMessage)
-                                    .font(.system(size: 12, weight: .medium))
-                            }
-                            Spacer()
-                        }
-                        .padding(10)
-                        .background(Color.secondary.opacity(0.06))
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                        HStack {
-                            Button {
-                                updater.checkForUpdates(userInitiated: true)
-                            } label: {
-                                HStack(spacing: 6) {
-                                    if updater.isChecking {
-                                        ProgressView().controlSize(.small)
-                                    } else {
-                                        Image(systemName: "arrow.clockwise")
-                                    }
-                                    Text(updater.isChecking ? "Đang kiểm tra từ GitHub..." : "Kiểm tra bản cập nhật mới")
-                                }
-                                .font(.system(size: 12, weight: .medium))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Color.accentColor.opacity(0.12))
-                                .foregroundStyle(Color.accentColor)
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(updater.isChecking)
-
-                            Spacer()
-
-                            if let url = URL(string: "\(AppUpdater.repoURLString)/releases") {
-                                Button {
-                                    NSWorkspace.shared.open(url)
-                                } label: {
-                                    HStack(spacing: 4) {
-                                        Text("Releases trên GitHub")
-                                        Image(systemName: "arrow.up.right.square")
-                                    }
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(Color.accentColor)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
-
-                    if updater.hasError {
-                        Text(updater.errorMessage)
-                            .font(.system(size: 11))
-                            .foregroundStyle(.red)
-                    }
+                if updater.updateAvailable && !updater.isDownloading {
+                    Button("Cập nhật ngay lên v\(updater.latestVersion)") { updater.downloadAndInstallUpdate() }
+                        .buttonStyle(.bordered).controlSize(.small)
                 }
-                .padding(10)
-                .background(Color(nsColor: .controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                // 4. Feature Highlights & What's New Card
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("TÍNH NĂNG NỔI BẬT CỦA BẢN NÀY")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.secondary)
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 11))
-                                .foregroundStyle(Color.accentColor)
-                                .frame(width: 14)
-                            Text("Phụ đề song ngữ 0ms: Apple Native, Gemini 2.0 Flash, GPT-4o, DeepSeek.")
-                                .font(.system(size: 11))
-                                .foregroundStyle(.primary)
-                        }
-
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "face.smiling.fill")
-                                .font(.system(size: 11))
-                                .foregroundStyle(.orange)
-                                .frame(width: 14)
-                            Text("Trợ lý Chip Chip: Đi dạo thanh Dock khi rảnh, ghi chép và biểu cảm sinh động.")
-                                .font(.system(size: 11))
-                                .foregroundStyle(.primary)
-                        }
-
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "command")
-                                .font(.system(size: 11))
-                                .foregroundStyle(.purple)
-                                .frame(width: 14)
-                            Text("Phím tắt toàn cục: ⌥ + D dịch từ vựng, ⌥ + F sửa lỗi ngữ pháp tiếng Anh tức thì.")
-                                .font(.system(size: 11))
-                                .foregroundStyle(.primary)
-                        }
-
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "doc.richtext.fill")
-                                .font(.system(size: 11))
-                                .foregroundStyle(.blue)
-                                .frame(width: 14)
-                            Text("Sổ tay cuộc họp & Từ vựng: Xuất Word (.docx), CSV và Flashcards.")
-                                .font(.system(size: 11))
-                                .foregroundStyle(.primary)
-                        }
-                    }
-                }
-                .padding(10)
-                .background(Color(nsColor: .controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                // 5. Community & Support Card
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("KÊNH ĐÓNG GÓP & HỖ TRỢ")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.secondary)
-
-                    HStack(spacing: 8) {
-                        Button {
-                            if let url = URL(string: "\(AppUpdater.repoURLString)/issues") {
-                                NSWorkspace.shared.open(url)
-                            }
-                        } label: {
-                            HStack(spacing: 5) {
-                                Image(systemName: "exclamationmark.bubble")
-                                Text("Báo lỗi & Góp ý")
-                            }
-                            .font(.system(size: 11, weight: .medium))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(Color.secondary.opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                        }
-                        .buttonStyle(.plain)
-
-                        Button {
-                            if let url = URL(string: AppUpdater.repoURLString) {
-                                NSWorkspace.shared.open(url)
-                            }
-                        } label: {
-                            HStack(spacing: 5) {
-                                Image(systemName: "star.fill")
-                                    .foregroundStyle(.yellow)
-                                Text("Star trên GitHub")
-                            }
-                            .font(.system(size: 11, weight: .medium))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(Color.secondary.opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                        }
-                        .buttonStyle(.plain)
-
-                        Spacer()
-                    }
-                }
-                .padding(10)
-                .background(Color(nsColor: .controlBackgroundColor))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
-            .padding(.trailing, 2)
+            .font(.system(size: 12))
+            .toggleStyle(.switch).controlSize(.mini)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(Color(nsColor: .controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.secondary.opacity(0.12), lineWidth: 1))
+            Text("TransTools \(updater.currentVersionDisplay)")
+                .font(.system(size: 11)).foregroundStyle(.tertiary).padding(.leading, 12)
         }
-        .frame(maxHeight: 460)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
-

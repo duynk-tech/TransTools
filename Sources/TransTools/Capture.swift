@@ -51,13 +51,91 @@ final class AudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
         }
     }
 
-    func start(applicationID: String) async throws {
-        let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
-        guard let display = content.displays.first,
-              let app = content.applications.first(where: { $0.bundleIdentifier == applicationID }) else {
-            throw NSError(domain: "Capture", code: 1, userInfo: [NSLocalizedDescriptionKey: "Không tìm thấy ứng dụng. Hãy mở Teams và tải lại danh sách."])
+    private func isTargetApp(_ app: SCRunningApplication, targetID: String, targetApp: SCRunningApplication?) -> Bool {
+        let appBundleID = app.bundleIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
+        if appBundleID.isEmpty { return false }
+
+        // 1. Exact bundle ID or PID match
+        if appBundleID == targetID { return true }
+        if let targetPID = targetApp?.processID, app.processID == targetPID { return true }
+
+        // 2. PWA match (Chrome / Edge / Chromium Web Apps)
+        // E.g. targetID = "com.microsoft.edgemac.app.cinhimbnkkaeohfgghhklpknlkffjgod"
+        // Host browser = "com.microsoft.edgemac"
+        if targetID.contains(".app.") {
+            let hostPrefix = targetID.components(separatedBy: ".app.").first ?? ""
+            if !hostPrefix.isEmpty {
+                if appBundleID == hostPrefix || appBundleID.hasPrefix(hostPrefix + ".") || appBundleID.hasPrefix(hostPrefix) {
+                    return true
+                }
+            }
         }
-        let filter = SCContentFilter(display: display, including: [app], exceptingWindows: [])
+
+        // Reverse PWA relationship: target is host browser, app is its PWA or helper
+        if appBundleID.contains(".app.") && appBundleID.hasPrefix(targetID) {
+            return true
+        }
+
+        // 3. Helper processes or suite processes with same bundle prefix
+        // E.g. com.google.Chrome & com.google.Chrome.helper, com.microsoft.teams2 & com.microsoft.teams2.helper
+        if appBundleID.hasPrefix(targetID + ".") || targetID.hasPrefix(appBundleID + ".") {
+            return true
+        }
+
+        let targetComponents = targetID.components(separatedBy: ".")
+        if targetComponents.count >= 3 {
+            let basePrefix = targetComponents.prefix(3).joined(separator: ".")
+            if appBundleID.hasPrefix(basePrefix) {
+                return true
+            }
+        }
+
+        // 4. Safari / WebKit WebContent
+        if targetID.localizedCaseInsensitiveContains("safari") {
+            if appBundleID.localizedCaseInsensitiveContains("webkit") || appBundleID.localizedCaseInsensitiveContains("safari") {
+                return true
+            }
+        }
+
+        // 5. Match by application name
+        if let targetName = targetApp?.applicationName.trimmingCharacters(in: .whitespacesAndNewlines), !targetName.isEmpty {
+            let appName = app.applicationName.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !appName.isEmpty {
+                if appName.localizedCaseInsensitiveCompare(targetName) == .orderedSame {
+                    return true
+                }
+                if appName.localizedCaseInsensitiveContains(targetName) || targetName.localizedCaseInsensitiveContains(appName) {
+                    return true
+                }
+            }
+        }
+
+        return false
+    }
+
+    func start(applicationID: String) async throws {
+        let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: false)
+        guard let display = content.displays.first else {
+            throw NSError(domain: "Capture", code: 2, userInfo: [NSLocalizedDescriptionKey: "Không tìm thấy màn hình. Kiểm tra quyền Screen & System Audio Recording."])
+        }
+
+        let targetApp = content.applications.first(where: { $0.bundleIdentifier == applicationID })
+            ?? content.applications.first(where: { isTargetApp($0, targetID: applicationID, targetApp: nil) })
+
+        guard let foundTarget = targetApp else {
+            throw NSError(domain: "Capture", code: 1, userInfo: [NSLocalizedDescriptionKey: "Không tìm thấy ứng dụng đã chọn. Hãy mở lại ứng dụng và tải lại danh sách."])
+        }
+
+        // In macOS, multi-process apps (Edge, Chrome, Teams, PWAs) render audio in helper or host processes.
+        // Capturing via display filter with excludingApplications ensures all audio engines of the target app
+        // (including audio renderers and helper processes) are captured, while TransTools and all other unrelated apps are muted.
+        let myPID = ProcessInfo.processInfo.processIdentifier
+        let excludedApps = content.applications.filter { app in
+            if app.processID == myPID { return true }
+            return !isTargetApp(app, targetID: applicationID, targetApp: foundTarget)
+        }
+
+        let filter = SCContentFilter(display: display, excludingApplications: excludedApps, exceptingWindows: [])
         let config = SCStreamConfiguration()
         config.capturesAudio = true
         config.excludesCurrentProcessAudio = true
@@ -74,7 +152,7 @@ final class AudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 
     func startSystemAudio() async throws {
-        let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
+        let content = try await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: false)
         guard let display = content.displays.first else {
             throw NSError(domain: "Capture", code: 2, userInfo: [NSLocalizedDescriptionKey: "Không tìm thấy màn hình. Kiểm tra quyền Screen & System Audio Recording."])
         }

@@ -20,6 +20,14 @@ if [ -d Resources ]; then
     cp Resources/MascotBody.png build/TransTools.app/Contents/Resources/MascotBody.png 2>/dev/null || true
     cp Resources/MascotLegLeft.png build/TransTools.app/Contents/Resources/MascotLegLeft.png 2>/dev/null || true
     cp Resources/MascotLegRight.png build/TransTools.app/Contents/Resources/MascotLegRight.png 2>/dev/null || true
+    if [ -d Resources/MascotModel ]; then
+        mkdir -p build/TransTools.app/Contents/Resources/MascotModel
+        cp -R Resources/MascotModel/. build/TransTools.app/Contents/Resources/MascotModel/
+    fi
+    if [ -d Resources/MascotActivities ]; then
+        mkdir -p build/TransTools.app/Contents/Resources/MascotActivities
+        cp -R Resources/MascotActivities/. build/TransTools.app/Contents/Resources/MascotActivities/
+    fi
     if [ -d Resources/MascotSprites ]; then
         rm -rf build/TransTools.app/Contents/Resources/MascotSprites
         cp -R Resources/MascotSprites build/TransTools.app/Contents/Resources/MascotSprites

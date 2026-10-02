@@ -66,7 +66,9 @@ struct CaptionRecord: Identifiable, Codable, Equatable {
 // MARK: - Chip Chip Mascot Idle Activities
 
 public enum MascotIdleActivity: String, CaseIterable, Identifiable {
-    case auto = "auto"                     // Tự động xoay vòng khi rảnh
+    case writing = "writing"
+    case thinking = "thinking"
+    case auto = "auto"                     // Tự chọn hoạt cảnh theo ngữ cảnh khi rảnh
     case fishing = "fishing"               // Ngồi câu cá thảnh thơi 🎣
     case sleeping = "sleeping"             // Nằm ngủ khò khò
     case strolling = "strolling"           // Đi dạo ngó nghiêng
@@ -79,19 +81,23 @@ public enum MascotIdleActivity: String, CaseIterable, Identifiable {
 
     public var title: String {
         switch self {
-        case .auto: return "Tự động xoay vòng ✨"
+        case .writing: return "Ghi chép vào sổ 📓"
+        case .thinking: return "Đang suy nghĩ 💭"
+        case .auto: return "Tự động thông minh ✨"
         case .fishing: return "Ngồi câu cá thảnh thơi 🎣"
         case .sleeping: return "Nằm ngủ khò khò 💤"
         case .strolling: return "Đi dạo ngắm nhìn 🚶‍♂️"
         case .catchingButterfly: return "Bắt bướm dập dờn 🦋"
         case .pickingFlowers: return "Hái hoa ngát hương 🌸"
         case .listeningMusic: return "Chill nhạc bồng bềnh 🎵"
-        case .sippingTea: return "Nhâm nhi tách trà ấm ☕️"
+        case .sippingTea: return "Nhâm nhi cà phê ☕️"
         }
     }
 
     public var shortTitle: String {
         switch self {
+        case .writing: return "Ghi chép"
+        case .thinking: return "Suy nghĩ"
         case .auto: return "Tự động"
         case .fishing: return "Câu cá"
         case .sleeping: return "Nằm ngủ"
@@ -99,12 +105,14 @@ public enum MascotIdleActivity: String, CaseIterable, Identifiable {
         case .catchingButterfly: return "Bắt bướm"
         case .pickingFlowers: return "Hái hoa"
         case .listeningMusic: return "Nghe nhạc"
-        case .sippingTea: return "Uống trà"
+        case .sippingTea: return "Cà phê"
         }
     }
 
     public var icon: String {
         switch self {
+        case .writing: return "book.closed"
+        case .thinking: return "thought.bubble"
         case .auto: return "sparkles"
         case .fishing: return "water.waves"
         case .sleeping: return "moon.zzz.fill"
@@ -186,7 +194,12 @@ enum AppPermissionType {
             UserDefaults.standard.set(showMascot, forKey: "ShowMascot")
         }
     }
-    @Published var mascotStyle: String = UserDefaults.standard.string(forKey: "MascotStyle") ?? "3d" {
+    @Published var mascotStyle: String = {
+        let defaults = UserDefaults.standard
+        let selected = defaults.string(forKey: "MascotStyle") == "pixel" ? "pixel" : "sprite"
+        defaults.set(selected, forKey: "MascotStyle")
+        return selected
+    }() {
         didSet {
             UserDefaults.standard.set(mascotStyle, forKey: "MascotStyle")
         }
@@ -235,6 +248,8 @@ enum AppPermissionType {
 
     private var translatedOriginal: [UUID: String] = [:]
     private var sessionFinalizedWordsCount: Int = 0
+    private var sessionFinalizedPrefix: String = ""
+    private var immediateTranslationRequested: Bool = false
     private var lastRawRecognizedText: String = ""
     private var recognitionSessionStarted: Date = Date()
 
@@ -247,6 +262,8 @@ enum AppPermissionType {
             UserDefaults.standard.set(sourceLanguage.rawValue, forKey: "SourceLanguage")
             translatedOriginal.removeAll()
             sessionFinalizedWordsCount = 0
+            sessionFinalizedPrefix = ""
+            immediateTranslationRequested = false
             lastRawRecognizedText = ""
         }
     }
@@ -487,13 +504,6 @@ enum AppPermissionType {
         do {
             let apps = try await capture.applications()
             self.applications = apps
-            if source.isEmpty {
-                if let teams = apps.first(where: { $0.bundleIdentifier.localizedCaseInsensitiveContains("teams") }) {
-                    source = teams.bundleIdentifier
-                } else {
-                    source = "system"
-                }
-            }
             if warning.localizedCaseInsensitiveContains("TCC") || warning.localizedCaseInsensitiveContains("màn hình") {
                 warning = ""
             }
@@ -506,9 +516,6 @@ enum AppPermissionType {
                 }
             } else {
                 warning = "Không lấy được danh sách ứng dụng: \(msg)"
-            }
-            if source.isEmpty {
-                source = "system"
             }
         }
     }
@@ -634,6 +641,11 @@ enum AppPermissionType {
 
     func start() async {
         guard !busy, !running else { return }
+        guard !source.isEmpty else {
+            warning = "Hãy chọn nguồn âm thanh trước khi bắt đầu."
+            showMainWindow()
+            return
+        }
         busy = true; warning = ""; defer { busy = false }
         if SFSpeechRecognizer.authorizationStatus() != .authorized {
             let authorized = await withCheckedContinuation { continuation in
@@ -670,6 +682,8 @@ enum AppPermissionType {
             started = Date(); captions = []; translatedOriginal = [:]; currentID = UUID(); lastAudio = nil; session = UUID()
             lastRawRecognizedText = ""
             sessionFinalizedWordsCount = 0
+            sessionFinalizedPrefix = ""
+            immediateTranslationRequested = false
             recognitionSessionStarted = Date()
             running = true
             status = "Đang kết nối luồng âm thanh..."
@@ -677,16 +691,25 @@ enum AppPermissionType {
             rotationTask?.cancel()
             rotationTask = Task { [weak self] in
                 while !Task.isCancelled {
-                    try? await Task.sleep(nanoseconds: 42_000_000_000)
+                    try? await Task.sleep(nanoseconds: 6_000_000_000)
                     guard let self, self.running else { break }
                     await MainActor.run {
                         self.rotateSpeechSessionIfNeeded()
                     }
                 }
             }
-            if source == "microphone" { try capture.startMicrophone() }
-            else if source == "system" { try await capture.startSystemAudio() }
-            else { try await capture.start(applicationID: source) }
+            if source == "microphone" {
+                try capture.startMicrophone()
+            } else if source == "system" {
+                try await capture.startSystemAudio()
+            } else {
+                do {
+                    try await capture.start(applicationID: source)
+                } catch {
+                    print("[MeetingModel] Warning: start(applicationID: \(source)) failed with \(error), falling back to system audio capture")
+                    try await capture.startSystemAudio()
+                }
+            }
             status = (provider == .free || activeKey.isEmpty) ? "Đang nghe \(sourceLanguage.displayName) và dịch sang \(targetLanguage.displayName) (Google Dịch Miễn phí)" : "Đang nghe \(sourceLanguage.displayName) và dịch sang \(targetLanguage.displayName) (\(provider.shortName) • \(modelName))"
         } catch { await fail(error) }
     }
@@ -694,6 +717,8 @@ enum AppPermissionType {
     func stop() async {
         running = false; session = UUID()
         sessionFinalizedWordsCount = 0
+        sessionFinalizedPrefix = ""
+        immediateTranslationRequested = false
         lastRawRecognizedText = ""
         rotationTask?.cancel(); rotationTask = nil
         translationTask?.cancel(); translationTask = nil
@@ -722,6 +747,7 @@ enum AppPermissionType {
     private func handleSpeechSessionEndedOrTimeout() {
         guard running else { return }
         finalizeCurrentCaption(immediateTranslation: true)
+        sessionFinalizedPrefix = ""
         sessionFinalizedWordsCount = 0
         currentID = UUID()
         recognitionSessionStarted = Date()
@@ -735,8 +761,19 @@ enum AppPermissionType {
     private func rotateSpeechSessionIfNeeded() {
         guard running else { return }
         let elapsed = Date().timeIntervalSince(recognitionSessionStarted)
-        guard elapsed >= 40 else { return }
+        // Rotate only when approaching the Apple 60s speech limit
+        guard elapsed >= 50 else { return }
+
+        // NEVER cut sentences off while the user is actively speaking!
+        // Rotate only during a natural pause in speech (silence gap >= 1.5s or empty active card)
+        let silenceGap = Date().timeIntervalSince(lastAudioUpdateTime)
+        let hasActiveSpeech = silenceGap < 1.5 && (captions.last?.id == currentID && !(captions.last?.original.isEmpty ?? true))
+        if hasActiveSpeech && elapsed < 58 {
+            return
+        }
+
         finalizeCurrentCaption(immediateTranslation: true)
+        sessionFinalizedPrefix = ""
         sessionFinalizedWordsCount = 0
         currentID = UUID()
         recognitionSessionStarted = Date()
@@ -755,37 +792,53 @@ enum AppPermissionType {
 
         let allWords = trimmedRaw.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
 
-        // 1. Detect if speech recognizer reset/flushed its internal buffer:
-        if allWords.count < sessionFinalizedWordsCount {
-            sessionFinalizedWordsCount = 0
+        // Extract active text that hasn't been finalized yet:
+        var currentText = ""
+        if !sessionFinalizedPrefix.isEmpty {
+            let prefixWords = sessionFinalizedPrefix.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+            if allWords.count >= prefixWords.count {
+                let remainingWords = Array(allWords.dropFirst(prefixWords.count))
+                currentText = remainingWords.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+            } else {
+                // Speech engine reset its buffer for a fresh utterance
+                sessionFinalizedPrefix = ""
+                sessionFinalizedWordsCount = 0
+                currentText = trimmedRaw
+            }
+        } else if sessionFinalizedWordsCount > 0 {
+            if allWords.count >= sessionFinalizedWordsCount {
+                let remainingWords = Array(allWords.dropFirst(sessionFinalizedWordsCount))
+                currentText = remainingWords.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+            } else {
+                sessionFinalizedWordsCount = 0
+                currentText = trimmedRaw
+            }
+        } else {
+            currentText = trimmedRaw
         }
 
-        // 2. Extract only the unfinalized words from the current cumulative stream:
-        let activeWords = Array(allWords.dropFirst(min(sessionFinalizedWordsCount, allWords.count)))
-        let currentText = activeWords.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
         guard !currentText.isEmpty else { return }
-
         lastRawRecognizedText = trimmedRaw
 
-        // 3. Update or append the current live caption
+        // Update or append current live caption
         if let index = captions.firstIndex(where: { $0.id == currentID }) {
             captions[index].original = currentText
             captions[index].end = elapsed
         } else {
-            // Guard against duplicate card: never append if previous caption already has the same text
             if let last = captions.last, last.original == currentText {
                 return
             }
             captions.append(Caption(id: currentID, start: elapsed, end: elapsed, original: currentText))
         }
 
-        // 4. Smart Sentence Splitting & Chunking:
+        let activeWords = currentText.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
         let hasSentencePunctuation = currentText.hasSuffix(".") || currentText.hasSuffix("?") || currentText.hasSuffix("!") || currentText.hasSuffix("...")
-        let isLongChunk = activeWords.count >= 20
+        let isLongChunk = activeWords.count >= 22
 
         if final {
             // Utterance finalized by speech recognizer
             finalizeCurrentCaption(immediateTranslation: true)
+            sessionFinalizedPrefix = ""
             sessionFinalizedWordsCount = 0
             currentID = UUID()
             recognitionSessionStarted = Date()
@@ -796,16 +849,16 @@ enum AppPermissionType {
                     Task { await fail(error) }
                 }
             }
-        } else if hasSentencePunctuation && activeWords.count >= 5 {
+        } else if hasSentencePunctuation && activeWords.count >= 4 {
             // Natural sentence boundary reached
-            sessionFinalizedWordsCount += activeWords.count
+            sessionFinalizedPrefix = trimmedRaw
+            sessionFinalizedWordsCount = allWords.count
             finalizeCurrentCaption(immediateTranslation: true)
             currentID = UUID()
         } else if isLongChunk {
-            // Subtitle reached maximum comfortable reading length (~18-20 words).
-            // Search backward for natural comma/pause to make the cut clean and grammatically sound.
+            // Natural comma boundary splitting for long speech chunks
             var splitIndex = 18
-            for i in stride(from: min(activeWords.count - 2, 20), through: 12, by: -1) {
+            for i in stride(from: min(activeWords.count - 2, 20), through: 13, by: -1) {
                 let word = activeWords[i]
                 if word.hasSuffix(",") || word.hasSuffix(";") || word.hasSuffix(":") {
                     splitIndex = i + 1
@@ -816,11 +869,12 @@ enum AppPermissionType {
             if let index = captions.firstIndex(where: { $0.id == currentID }) {
                 captions[index].original = chunkToFinalize
             }
-            sessionFinalizedWordsCount += splitIndex
+            let wordsBeforeSplit = (allWords.count - activeWords.count) + splitIndex
+            sessionFinalizedWordsCount = wordsBeforeSplit
+            sessionFinalizedPrefix = allWords.prefix(wordsBeforeSplit).joined(separator: " ")
             finalizeCurrentCaption(immediateTranslation: true)
             currentID = UUID()
 
-            // Carry remaining words into the new live caption card immediately
             let remainingWords = Array(activeWords.dropFirst(splitIndex))
             if !remainingWords.isEmpty {
                 let remText = remainingWords.joined(separator: " ")
@@ -835,6 +889,7 @@ enum AppPermissionType {
 
     private func finalizeCurrentCaption(immediateTranslation: Bool) {
         guard let row = captions.first(where: { $0.id == currentID }), !row.original.isEmpty else { return }
+        immediateTranslationRequested = immediateTranslation
         scheduleTranslation(id: row.id, text: row.original, immediate: immediateTranslation)
         generateSuggestions(for: row.original)
         if subtitleMode == .originalOnly {
@@ -887,8 +942,7 @@ enum AppPermissionType {
     private func scheduleTranslation(id: UUID, text: String, immediate: Bool = false) {
         guard subtitleMode != .originalOnly else { return }
         if immediate {
-            translationTask?.cancel()
-            translationTask = nil
+            immediateTranslationRequested = true
         }
         guard translationTask == nil else { return }
         let token = session
@@ -903,11 +957,13 @@ enum AppPermissionType {
                 guard let row = self.captions.first(where: { self.translatedOriginal[$0.id] != $0.original && !$0.original.isEmpty }) else { break }
 
                 let isCurrentLiveRow = (row.id == self.currentID)
-                if isCurrentLiveRow && !immediate {
+                let shouldDebounce = isCurrentLiveRow && !self.immediateTranslationRequested
+                if shouldDebounce {
                     let debounceMs = (currentProvider == .apple) ? 180 : ((currentProvider == .free || currentKey.isEmpty) ? 320 : 450)
                     try? await Task.sleep(for: .milliseconds(debounceMs))
                     guard !Task.isCancelled, self.session == token else { return }
                 }
+                self.immediateTranslationRequested = false
 
                 do {
                     let textToTranslate = row.original
@@ -1149,7 +1205,7 @@ enum AppPermissionType {
         switch source {
         case "system": return "Âm thanh hệ thống"
         case "microphone": return "Microphone"
-        case "": return "Hệ thống"
+        case "": return "Chưa chọn nguồn âm thanh"
         default:
             return applications.first(where: { $0.bundleIdentifier == source })?.applicationName ?? source
         }
@@ -1329,6 +1385,7 @@ enum AppPermissionType {
 
     // MARK: - Floating Mascot Window Management
     @Published var isFloatingMascotVisible: Bool = false
+    private let dockGarden = DockGardenController()
     var mascotWindow: NSWindow?
 
     // Chip Chip Speech Bubble Management
@@ -1350,15 +1407,19 @@ enum AppPermissionType {
         didSet {
             UserDefaults.standard.set(isDockWalkEnabled, forKey: "MascotDockWalkEnabled")
             if isDockWalkEnabled {
+                mascotIdleActivity = .auto
                 startDockWalking()
             } else {
                 stopDockWalking()
             }
         }
     }
+    var dockWalkDistance: CGFloat = 0
+    var dockWalkLastTick: Date?
     var dockWalkTimer: Timer?
     var dockWalkDirection: CGFloat = 1.0 // 1: đi sang phải, -1: đi sang trái
     var dockWalkPauseUntil: Date? = nil
+    var dockWalkCurrentX: CGFloat? = nil
 
     func convenientMascotRect() -> NSRect {
         let mascotWidth: CGFloat = 164
@@ -1528,30 +1589,59 @@ enum AppPermissionType {
     }
 
     // MARK: - Dock Bar Patrol Movement Engine
+    private func getDockScreen(for window: NSWindow?) -> NSScreen {
+        if let win = window, let winScreen = win.screen {
+            return winScreen
+        }
+        if let win = window {
+            let center = NSPoint(x: win.frame.midX, y: win.frame.midY)
+            if let screenWithWin = NSScreen.screens.first(where: { NSMouseInRect(center, $0.frame, false) }) {
+                return screenWithWin
+            }
+        }
+        let mouseLoc = NSEvent.mouseLocation
+        if let screenWithMouse = NSScreen.screens.first(where: { NSMouseInRect(mouseLoc, $0.frame, false) }) {
+            return screenWithMouse
+        }
+        if let dockScreen = NSScreen.screens.first(where: { $0.visibleFrame.minY > $0.frame.minY }) {
+            return dockScreen
+        }
+        return NSScreen.main ?? NSScreen.screens.first ?? NSScreen()
+    }
+
     func startDockWalking() {
         stopDockWalking()
         guard isFloatingMascotVisible, let window = mascotWindow else { return }
 
-        // Đảm bảo đưa Y xuống sát mép thanh Dock / đáy màn hình
-        let screen: NSScreen = {
-            if let s = window.screen { return s }
-            let mouseLoc = NSEvent.mouseLocation
-            for s in NSScreen.screens {
-                if NSMouseInRect(mouseLoc, s.frame, false) { return s }
-            }
-            return NSScreen.main ?? NSScreen.screens.first ?? NSScreen()
-        }()
+        let screen = getDockScreen(for: window)
         let visible = screen.visibleFrame
         var currentFrame = window.frame
-        let targetDockY = visible.minY + 2
-        if abs(currentFrame.origin.y - targetDockY) > 8 {
-            currentFrame.origin.y = targetDockY
-            window.setFrameOrigin(currentFrame.origin)
-            updateBubblePosition()
+        let targetDockY = max(visible.minY, screen.frame.minY) + 2
+
+        let minX = visible.minX + 16
+        let maxX = visible.maxX - window.frame.width - 16
+        guard maxX > minX else { return }
+
+        var targetX = currentFrame.origin.x
+        if targetX < minX || targetX > maxX {
+            targetX = max(minX, min(maxX, targetX))
         }
 
-        let timer = Timer(timeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
+        // Nếu bắt đầu ở nửa bên phải màn hình: ưu tiên đi dạo sang trái trước
+        // Nếu bắt đầu ở nửa bên trái: ưu tiên đi dạo sang phải trước
+        let midX = (minX + maxX) / 2.0
+        dockWalkDirection = (targetX > midX) ? -1.0 : 1.0
+
+        dockWalkCurrentX = targetX
+        currentFrame.origin = NSPoint(x: targetX, y: targetDockY)
+        window.setFrameOrigin(currentFrame.origin)
+        updateBubblePosition()
+
+        dockWalkLastTick = Date()
+        dockWalkPauseUntil = nil
+
+        let timer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
                 self?.stepDockWalk()
             }
         }
@@ -1560,8 +1650,12 @@ enum AppPermissionType {
     }
 
     func stopDockWalking() {
+        dockGarden.hide()
+        dockWalkLastTick = nil
         dockWalkTimer?.invalidate()
         dockWalkTimer = nil
+        dockWalkPauseUntil = nil
+        dockWalkCurrentX = nil
         // Khi tắt: Dừng ngay tại vị trí hiện tại và lưu tọa độ
         if let origin = mascotWindow?.frame.origin {
             UserDefaults.standard.set(Double(origin.x), forKey: "FloatingMascotX")
@@ -1570,53 +1664,70 @@ enum AppPermissionType {
     }
 
     private func stepDockWalk() {
-        // Chỉ đi dạo khi rảnh rỗi (không họp/dịch), chuột không hover vào mascot và người dùng không đang bấm giữ chuột kéo cửa sổ
-        guard !running, !isMascotHovered, !isBubbleHovered, NSEvent.pressedMouseButtons == 0, let window = mascotWindow else { return }
+        let now = Date()
+        let delta = min(0.04, max(0.001, now.timeIntervalSince(dockWalkLastTick ?? now)))
+        dockWalkLastTick = now
 
-        // Nếu đang tạm dừng nghỉ chân ở 2 mép màn hình
+        let shouldShowGarden = isFloatingMascotVisible && isDockWalkEnabled && mascotStyle == "sprite" &&
+            !running && !busy && !isMascotHovered && !isBubbleHovered && !isBubbleVisible &&
+            MascotIdlePolicy.systemIdleSeconds >= MascotIdlePolicy.idleThreshold && NSEvent.pressedMouseButtons == 0
+        if let window = mascotWindow {
+            dockGarden.update(screen: getDockScreen(for: window), mascot: window, visible: shouldShowGarden)
+        } else { dockGarden.hide() }
+        // Walk and scenery pause as soon as the user resumes interaction.
+        guard !running, !busy, !isMascotHovered, !isBubbleHovered, !isBubbleVisible,
+              MascotIdlePolicy.systemIdleSeconds >= MascotIdlePolicy.idleThreshold,
+              NSEvent.pressedMouseButtons == 0, let window = mascotWindow else { return }
+
+        // Nếu đang tạm dừng nghỉ chân quay người ở 2 mép màn hình
         if let pauseUntil = dockWalkPauseUntil {
-            if Date() < pauseUntil {
+            if now < pauseUntil {
                 return
             } else {
                 dockWalkPauseUntil = nil
             }
         }
 
-        let screen: NSScreen = {
-            if let s = window.screen { return s }
-            let mouseLoc = NSEvent.mouseLocation
-            for s in NSScreen.screens {
-                if NSMouseInRect(mouseLoc, s.frame, false) { return s }
-            }
-            return NSScreen.main ?? NSScreen.screens.first ?? NSScreen()
-        }()
+        let screen = getDockScreen(for: window)
         let visible = screen.visibleFrame
         guard visible.width > 200 else { return }
 
-        let minX = visible.minX + 8
-        let maxX = visible.maxX - window.frame.width - 8
+        let minX = visible.minX + 16
+        let maxX = visible.maxX - window.frame.width - 16
+        guard maxX > minX else { return }
 
-        var currentX = window.frame.origin.x
-        let stepSpeed: CGFloat = 1.8 // ~54pt/giây, nhịp bước chân ăn khớp chuẩn xác với chu kỳ 10 frame/s
+        // Nếu người dùng vừa kéo thả cửa sổ di chuyển đi nơi khác, đồng bộ lại tọa độ
+        var currentX = dockWalkCurrentX ?? window.frame.origin.x
+        if abs(currentX - window.frame.origin.x) > 24.0 {
+            currentX = window.frame.origin.x
+        }
+
+        // Tốc độ bước chân tự nhiên: 42 pt/s, giảm tốc êm ái khi sát mép
+        let edgeDistance = max(0, min(currentX - minX, maxX - currentX))
+        let ramp = min(1.0, max(0.65, edgeDistance / 30.0))
+        let stepSpeed = CGFloat(delta) * (42.0 * ramp)
 
         currentX += dockWalkDirection * stepSpeed
 
-        // Kiểm tra chạm mép phải
-        if currentX >= maxX {
+        // Kiểm tra chạm mép phải (chỉ khi đang đi sang phải)
+        if currentX >= maxX && dockWalkDirection > 0 {
             currentX = maxX
             dockWalkDirection = -1.0
-            dockWalkPauseUntil = Date().addingTimeInterval(1.8) // Dừng 1.8s ngắm nghía trước khi quay đầu
+            dockWalkPauseUntil = Date().addingTimeInterval(1.2) // Dừng 1.2s ngắm nhìn chào trước khi quay lại
         }
-        // Kiểm tra chạm mép trái
-        else if currentX <= minX {
+        // Kiểm tra chạm mép trái (chỉ khi đang đi sang trái)
+        else if currentX <= minX && dockWalkDirection < 0 {
             currentX = minX
             dockWalkDirection = 1.0
-            dockWalkPauseUntil = Date().addingTimeInterval(1.8) // Dừng 1.8s ngắm nghía trước khi quay đầu
+            dockWalkPauseUntil = Date().addingTimeInterval(1.2) // Dừng 1.2s ngắm nhìn chào trước khi quay lại
         }
 
+        dockWalkDistance += abs(currentX - (dockWalkCurrentX ?? currentX))
+        dockWalkCurrentX = currentX
+
         var origin = window.frame.origin
-        origin.x = currentX
-        origin.y = visible.minY + 2 // Neo sát viền Dock
+        origin.x = round(currentX)
+        origin.y = max(visible.minY, screen.frame.minY) + 2 // Neo sát viền Dock
         window.setFrameOrigin(origin)
 
         if isBubbleVisible {
@@ -2107,8 +2218,8 @@ private struct AppleTranslationContainer<Content: View>: View {
             .onAppear {
                 updateConfig()
             }
-            .onChange(of: source) { _ in updateConfig() }
-            .onChange(of: target) { _ in updateConfig() }
+            .onChange(of: source) { _, _ in updateConfig() }
+            .onChange(of: target) { _, _ in updateConfig() }
     }
 
     private func updateConfig() {
@@ -2454,31 +2565,33 @@ struct OverlayView: View {
                     ScrollViewReader { proxy in
                         ScrollView(.vertical, showsIndicators: false) {
                             VStack(alignment: .leading, spacing: 5) {
-                                // Previous sentence preview for reading continuity (dimmed)
-                                if model.captions.count >= 2 {
-                                    let prev = model.captions[model.captions.count - 2]
-                                    VStack(alignment: .leading, spacing: 1) {
+                                // Active sentence: in-flight spoken sentence or most recent sentence
+                                let activeRow = (model.running ? model.captions.first(where: { $0.id == model.currentID }) : nil) ?? model.captions.last
+                                // Recent completed sentences strictly excluding activeRow to eliminate duplicate rendering & text jump
+                                let completedCaptions = Array(model.captions.filter { $0.id != activeRow?.id }.suffix(2))
+                                ForEach(completedCaptions) { prev in
+                                    VStack(alignment: .leading, spacing: 2) {
                                         if model.subtitleMode != .translationOnly && !prev.original.isEmpty {
                                             Text(prev.original)
                                                 .font(.system(size: max(10, fontSize - 4), weight: .regular))
-                                                .foregroundStyle(isDark ? Color.white.opacity(0.38) : Color.black.opacity(0.38))
+                                                .foregroundStyle(isDark ? Color.white.opacity(0.45) : Color.black.opacity(0.40))
                                                 .fixedSize(horizontal: false, vertical: true)
                                         }
                                         if model.subtitleMode != .originalOnly && (!prev.vietnamese.isEmpty || !prev.original.isEmpty) {
                                             Text(prev.vietnamese.isEmpty ? prev.original : prev.vietnamese)
                                                 .font(.system(size: max(11, fontSize - 3), weight: .medium, design: .rounded))
-                                                .foregroundStyle(isDark ? Color.white.opacity(0.52) : Color.black.opacity(0.50))
+                                                .foregroundStyle(isDark ? Color.white.opacity(0.65) : Color.black.opacity(0.60))
                                                 .fixedSize(horizontal: false, vertical: true)
                                         }
                                     }
-                                    .padding(.bottom, 1)
+                                    .padding(.bottom, 2)
 
                                     Divider()
                                         .opacity(isDark ? 0.15 : 0.12)
                                 }
 
                                 // Active sentence: full multi-line wrapping without cutoffs
-                                if let row = model.captions.last {
+                                if let row = activeRow {
                                     VStack(alignment: .leading, spacing: 3) {
                                         if model.subtitleMode == .originalOnly {
                                             // Real-time Closed Caption (CC - 0ms): Prominent font & primary gradient
@@ -2508,28 +2621,41 @@ struct OverlayView: View {
                                             }
                                         } else if model.subtitleMode == .translationOnly {
                                             // Translation only
-                                            Text(row.vietnamese.isEmpty ? "Đang dịch…" : row.vietnamese)
-                                                .font(.system(size: fontSize, weight: .bold, design: .rounded))
-                                                .foregroundStyle(
-                                                    isDark
-                                                        ? LinearGradient(
-                                                            colors: [
-                                                                Color(red: 0.35, green: 0.96, blue: 0.85),
-                                                                Color(red: 0.20, green: 0.88, blue: 0.98)
-                                                            ],
-                                                            startPoint: .topLeading,
-                                                            endPoint: .bottomTrailing
-                                                        )
-                                                        : LinearGradient(
-                                                            colors: [
-                                                                Color(red: 0.03, green: 0.50, blue: 0.45),
-                                                                Color(red: 0.02, green: 0.40, blue: 0.68)
-                                                            ],
-                                                            startPoint: .topLeading,
-                                                            endPoint: .bottomTrailing
-                                                        )
-                                                )
-                                                .fixedSize(horizontal: false, vertical: true)
+                                            if !row.vietnamese.isEmpty {
+                                                Text(row.vietnamese)
+                                                    .font(.system(size: fontSize, weight: .bold, design: .rounded))
+                                                    .foregroundStyle(
+                                                        isDark
+                                                            ? LinearGradient(
+                                                                colors: [
+                                                                    Color(red: 0.35, green: 0.96, blue: 0.85),
+                                                                    Color(red: 0.20, green: 0.88, blue: 0.98)
+                                                                ],
+                                                                startPoint: .topLeading,
+                                                                endPoint: .bottomTrailing
+                                                            )
+                                                            : LinearGradient(
+                                                                colors: [
+                                                                    Color(red: 0.03, green: 0.50, blue: 0.45),
+                                                                    Color(red: 0.02, green: 0.40, blue: 0.68)
+                                                                ],
+                                                                startPoint: .topLeading,
+                                                                endPoint: .bottomTrailing
+                                                            )
+                                                    )
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                            } else if !row.original.isEmpty {
+                                                HStack(spacing: 5) {
+                                                    Text(row.original)
+                                                        .font(.system(size: max(11, fontSize - 2), weight: .medium, design: .rounded))
+                                                        .italic()
+                                                        .foregroundStyle(isDark ? Color.white.opacity(0.65) : Color.black.opacity(0.60))
+                                                        .fixedSize(horizontal: false, vertical: true)
+                                                    Circle()
+                                                        .fill(Color.teal)
+                                                        .frame(width: 4, height: 4)
+                                                }
+                                            }
                                         } else {
                                             // Bilingual: Original (dimmed) + Translation (crystal gradient)
                                             if !row.original.isEmpty {
@@ -2539,28 +2665,40 @@ struct OverlayView: View {
                                                     .fixedSize(horizontal: false, vertical: true)
                                             }
 
-                                            Text(row.vietnamese.isEmpty ? "Đang dịch…" : row.vietnamese)
-                                                .font(.system(size: fontSize, weight: .bold, design: .rounded))
-                                                .foregroundStyle(
-                                                    isDark
-                                                        ? LinearGradient(
-                                                            colors: [
-                                                                Color(red: 0.35, green: 0.96, blue: 0.85),
-                                                                Color(red: 0.20, green: 0.88, blue: 0.98)
-                                                            ],
-                                                            startPoint: .topLeading,
-                                                            endPoint: .bottomTrailing
-                                                        )
-                                                        : LinearGradient(
-                                                            colors: [
-                                                                Color(red: 0.03, green: 0.50, blue: 0.45),
-                                                                Color(red: 0.02, green: 0.40, blue: 0.68)
-                                                            ],
-                                                            startPoint: .topLeading,
-                                                            endPoint: .bottomTrailing
-                                                        )
-                                                )
-                                                .fixedSize(horizontal: false, vertical: true)
+                                            if !row.vietnamese.isEmpty {
+                                                Text(row.vietnamese)
+                                                    .font(.system(size: fontSize, weight: .bold, design: .rounded))
+                                                    .foregroundStyle(
+                                                        isDark
+                                                            ? LinearGradient(
+                                                                colors: [
+                                                                    Color(red: 0.35, green: 0.96, blue: 0.85),
+                                                                    Color(red: 0.20, green: 0.88, blue: 0.98)
+                                                                ],
+                                                                startPoint: .topLeading,
+                                                                endPoint: .bottomTrailing
+                                                            )
+                                                            : LinearGradient(
+                                                                colors: [
+                                                                    Color(red: 0.03, green: 0.50, blue: 0.45),
+                                                                    Color(red: 0.02, green: 0.40, blue: 0.68)
+                                                                ],
+                                                                startPoint: .topLeading,
+                                                                endPoint: .bottomTrailing
+                                                            )
+                                                    )
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                            } else if !row.original.isEmpty {
+                                                HStack(spacing: 5) {
+                                                    Circle()
+                                                        .fill(Color.teal.opacity(0.8))
+                                                        .frame(width: 4, height: 4)
+                                                    Text("Đang dịch câu mới…")
+                                                        .font(.system(size: max(10, fontSize - 4), weight: .medium, design: .rounded))
+                                                        .foregroundStyle(isDark ? Color.white.opacity(0.40) : Color.black.opacity(0.35))
+                                                }
+                                                .padding(.top, 1)
+                                            }
                                         }
                                     }
                                     .padding(.vertical, 2)
@@ -2691,12 +2829,12 @@ struct OverlayView: View {
                             }
                             .padding(.horizontal, 1)
                         }
-                        .onChange(of: model.captions.count) { _ in
+                        .onChange(of: model.captions.count) { _, _ in
                             withAnimation(.easeOut(duration: 0.2)) {
                                 proxy.scrollTo("BOTTOM", anchor: .bottom)
                             }
                         }
-                        .onChange(of: model.captions.last?.vietnamese) { _ in
+                        .onChange(of: model.captions.last?.vietnamese) { _, _ in
                             proxy.scrollTo("BOTTOM", anchor: .bottom)
                         }
                     }
@@ -2980,13 +3118,14 @@ private struct EyeContainer<Content: View>: View {
 struct MascotFacialExpressionOverlay: View {
     let size: CGFloat
     let expression: MascotExpression
+    var gazeOffset: CGSize = .zero
 
     var body: some View {
         let w = size * (621.0 / 783.0)
         let h = size
         let eyeD = h * 0.165
-        let leftEyeCenter = CGPoint(x: w * 0.362, y: h * 0.408)
-        let rightEyeCenter = CGPoint(x: w * 0.638, y: h * 0.408)
+        let leftEyeCenter = CGPoint(x: w * 0.362 + gazeOffset.width, y: h * 0.408 + gazeOffset.height)
+        let rightEyeCenter = CGPoint(x: w * 0.638 + gazeOffset.width, y: h * 0.408 + gazeOffset.height)
         let leftCheekCenter = CGPoint(x: w * 0.245, y: h * 0.495)
         let rightCheekCenter = CGPoint(x: w * 0.755, y: h * 0.495)
         let cheekW = h * 0.13
@@ -3123,33 +3262,28 @@ struct MiniAvatarView: View {
     let size: CGFloat
     var style: String? = nil
     var isWorking: Bool = false
-    var expression: MascotExpression? = nil
     var isHovered: Bool? = nil
+    var hoverPoint: CGPoint? = nil
     var isBackView: Bool = false
     var isSleeping: Bool = false
     var isWalking: Bool = false
+    var activity: MascotIdleActivity = .auto
     var walkingTowardRight: Bool = true
+    var walkingDistance: CGFloat? = nil
     var facing: MascotFacing? = nil
     var legSwing: Double = 0.0
+    var time: Double? = nil
 
     @State private var internalHovered = false
-    @State private var internalExpression: MascotExpression = .winkLeft
-    @AppStorage("MascotStyle") private var savedStyle: String = "3d"
+    @Environment(\.accessibilityReduceMotion) private var reduceMascotMotion
+    @AppStorage("MascotStyle") private var savedStyle: String = "sprite"
 
     private var activeStyle: String {
-        style ?? savedStyle
+        (style ?? savedStyle) == "pixel" ? "pixel" : "sprite"
     }
 
     private var activeHovered: Bool {
         isHovered ?? internalHovered
-    }
-
-    private var activeExpression: MascotExpression {
-        expression ?? internalExpression
-    }
-
-    private var showOverlay: Bool {
-        (!isWorking && !isBackView && !isSleeping && !isWalking && facing == nil && activeStyle != "pixel") && (activeHovered || expression != nil)
     }
 
     var body: some View {
@@ -3167,6 +3301,8 @@ struct MiniAvatarView: View {
                 } else {
                     AppLogoView(size: size)
                 }
+            } else if activeStyle == "sprite", let image = MascotActivityImages.image(activity: activity, working: isWorking, sleeping: isSleeping, time: time, reduceMotion: reduceMascotMotion) {
+                Image(nsImage: image).resizable().scaledToFit().frame(height: size)
             } else if isSleeping {
                 if let path = Bundle.main.path(forResource: "MascotSleeping", ofType: "png") ?? Bundle.main.path(forResource: "Mascot3D", ofType: "png"),
                    let nsImage = NSImage(contentsOfFile: path) {
@@ -3179,23 +3315,11 @@ struct MiniAvatarView: View {
                     AppLogoView(size: size)
                 }
             } else if isBackView {
-                if let path = Bundle.main.path(forResource: "MascotBack", ofType: "png") ?? Bundle.main.path(forResource: "Mascot3D", ofType: "png"),
-                   let nsImage = NSImage(contentsOfFile: path) {
-                    Image(nsImage: nsImage)
-                        .interpolation(.high)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: size)
-                } else {
-                    AppLogoView(size: size)
-                }
+                MascotAngleView(facing: .back, size: size)
             } else if isWalking {
-                MascotWalkSpriteView(size: size, towardRight: walkingTowardRight)
+                MascotWalkSpriteView(size: size, towardRight: walkingTowardRight, distance: walkingDistance, time: time)
             } else if let facing {
                 MascotAngleView(facing: facing, size: size)
-                    .id(facing)
-                    .transition(.opacity)
-                    .animation(.easeInOut(duration: 0.12), value: facing)
             } else if isWorking {
                 if let path = Bundle.main.path(forResource: "MascotWriting", ofType: "png") ?? Bundle.main.path(forResource: "Mascot3D", ofType: "png"),
                    let nsImage = NSImage(contentsOfFile: path) {
@@ -3205,17 +3329,10 @@ struct MiniAvatarView: View {
                         .scaledToFit()
                         .frame(height: size)
                 } else {
-                    AppLogoView(size: size)
+                    MascotAngleView(facing: .front, size: size)
                 }
             } else {
-                // 3D Companion Avatar with Lifelike Moving Legs
-                AnimatedMascot3DView(size: size, legSwing: legSwing)
-            }
-
-            // Eye winking overlay khi rê chuột tương tác (không hiển thị khi quay lưng)
-            if showOverlay {
-                MascotFacialExpressionOverlay(size: size, expression: activeExpression)
-                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                MascotAngleView(facing: .front, size: size)
             }
         }
         .scaleEffect(activeHovered ? 1.05 : 1.0)
@@ -3223,16 +3340,6 @@ struct MiniAvatarView: View {
         .onHover { hovering in
             if isHovered == nil {
                 internalHovered = hovering
-                if hovering && !isWorking {
-                    let candidates: [MascotExpression] = [.winkLeft, .winkRight, .happySmile, .happySquint]
-                    internalExpression = candidates.filter { $0 != internalExpression }.randomElement() ?? .winkLeft
-                }
-            }
-        }
-        .onChange(of: activeHovered) { isHov in
-            if isHov && !isWorking {
-                let candidates: [MascotExpression] = [.winkLeft, .winkRight, .happySmile, .happySquint]
-                internalExpression = candidates.filter { $0 != internalExpression }.randomElement() ?? .winkLeft
             }
         }
     }
@@ -3542,6 +3649,129 @@ struct MascotFlowerPlant: View {
     }
 }
 
+/// Small garden island beneath the default PNG pose.
+struct MascotDefaultGround: View {
+    private func flower(_ color: Color, height: CGFloat) -> some View {
+        ZStack {
+            Capsule().fill(Color(red: 0.31, green: 0.62, blue: 0.39))
+                .frame(width: 1.3, height: height).offset(y: height / 2)
+            Ellipse().fill(Color(red: 0.42, green: 0.73, blue: 0.45))
+                .frame(width: 5, height: 2.5).rotationEffect(.degrees(-30))
+                .offset(x: -2.3, y: height * 0.55)
+            ForEach(0..<5) { petal in
+                Circle().fill(color).frame(width: 4.2, height: 4.2)
+                    .offset(y: -2.7).rotationEffect(.degrees(Double(petal) * 72))
+            }
+            Circle().fill(Color(red: 1, green: 0.78, blue: 0.30))
+                .frame(width: 3, height: 3)
+        }
+        .frame(width: 11, height: 11)
+    }
+
+    var body: some View {
+        ZStack {
+            Ellipse()
+                .fill(Color.black.opacity(0.10))
+                .frame(width: 72, height: 10)
+                .blur(radius: 3)
+                .offset(y: 4)
+            Ellipse()
+                .fill(LinearGradient(
+                    colors: [Color(red: 0.83, green: 0.96, blue: 0.92).opacity(0.88),
+                             Color(red: 0.56, green: 0.81, blue: 0.75).opacity(0.50)],
+                    startPoint: .top, endPoint: .bottom))
+                .overlay(Ellipse().stroke(Color.white.opacity(0.55), lineWidth: 0.6))
+                .frame(width: 80, height: 12)
+            // Keep plants at the edges so the mascot's feet remain visible.
+            ForEach(0..<2) { side in
+                let x: CGFloat = side == 0 ? -24 : 25
+                ZStack {
+                    ForEach(0..<3) { blade in
+                        Capsule().fill(Color(red: 0.35, green: 0.65, blue: 0.43).opacity(0.85))
+                            .frame(width: 1.3, height: CGFloat(5 + blade * 2))
+                            .rotationEffect(.degrees(Double(blade - 1) * 23), anchor: .bottom)
+                            .offset(x: CGFloat(blade - 1) * 2, y: -2)
+                    }
+                }
+                .offset(x: x, y: -1)
+            }
+            flower(Color(red: 1, green: 0.68, blue: 0.78), height: 10)
+                .offset(x: -34, y: -9)
+            flower(Color(red: 0.97, green: 0.98, blue: 1), height: 7)
+                .scaleEffect(0.85).offset(x: 34, y: -6)
+        }
+        .frame(width: 80, height: 12)
+        .offset(y: 3)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+struct MascotOutdoorSky: View {
+    let time: Double
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private func cloud(width: CGFloat) -> some View {
+        ZStack(alignment: .bottom) {
+            Capsule().frame(width: width, height: width * 0.28)
+            Circle().frame(width: width * 0.43, height: width * 0.43).offset(x: -width * 0.14, y: -width * 0.06)
+            Circle().frame(width: width * 0.34, height: width * 0.34).offset(x: width * 0.17, y: -width * 0.04)
+        }
+        .foregroundStyle(Color.white.opacity(0.82))
+        .shadow(color: Color.cyan.opacity(0.12), radius: 2, y: 1)
+    }
+
+    var body: some View {
+        // Keep the clock live even when Reduce Motion freezes cloud animation.
+        TimelineView(.periodic(from: .now, by: 60)) { tick in
+            let hour = Double(Calendar.current.component(.hour, from: tick.date))
+                + Double(Calendar.current.component(.minute, from: tick.date)) / 60
+            let daylight = hour >= 6 && hour < 18
+            let warm = hour < 8 || hour >= 16
+            let drift = reduceMotion ? 0 : sin(time * 0.18) * 3
+            let sky = daylight
+                ? (warm ? Color(red: 1, green: 0.73, blue: 0.55) : Color(red: 0.52, green: 0.80, blue: 0.98))
+                : Color(red: 0.34, green: 0.38, blue: 0.72)
+            ZStack {
+                Ellipse()
+                    .fill(LinearGradient(colors: [sky.opacity(0.30), sky.opacity(0.14), .clear],
+                                         startPoint: .top, endPoint: .bottom))
+                    .blur(radius: 4)
+                if daylight {
+                    let progress = (hour - 6) / 12
+                    ZStack {
+                        Image(systemName: "sun.max.fill")
+                            .font(.system(size: 27)).foregroundStyle(warm ? .orange.opacity(0.75) : .yellow.opacity(0.85))
+                        Circle().fill(Color(red: 1, green: 0.88, blue: 0.46)).frame(width: 17, height: 17)
+                        HStack(spacing: 4) {
+                            Circle().frame(width: 1.5, height: 1.5)
+                            Circle().frame(width: 1.5, height: 1.5)
+                        }.foregroundStyle(Color.brown.opacity(0.7)).offset(y: -1)
+                        Path { path in
+                            path.move(to: CGPoint(x: 10, y: 15))
+                            path.addQuadCurve(to: CGPoint(x: 16, y: 15), control: CGPoint(x: 13, y: 19))
+                        }.stroke(Color.brown.opacity(0.7), style: StrokeStyle(lineWidth: 0.8, lineCap: .round))
+                    }
+                    .frame(width: 27, height: 27)
+                    .shadow(color: .orange.opacity(0.2), radius: 5)
+                    .offset(x: -42 + progress * 84, y: -9 - sin(progress * .pi) * 14)
+                } else {
+                    Image(systemName: "moon.stars.fill")
+                        .font(.system(size: 19)).foregroundStyle(Color(red: 1, green: 0.94, blue: 0.72).opacity(0.85))
+                        .offset(x: 20, y: -20)
+                }
+                cloud(width: 29).opacity(daylight ? 1 : 0.45).offset(x: -32 + drift, y: -4)
+                cloud(width: 22).opacity(daylight ? 0.75 : 0.35).offset(x: 33 - drift * 0.7, y: -8)
+            }
+            .frame(width: 126, height: 64)
+        }
+        .frame(width: 126, height: 64)
+        .offset(y: -55)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
 struct MascotFlowerEffects: View {
     let time: Double
 
@@ -3620,32 +3850,18 @@ struct MascotTeaEffects: View {
 
     var body: some View {
         ZStack {
-            // Tea / Coffee mug held by Chip Chip
-            ZStack {
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(LinearGradient(colors: [Color.orange.opacity(0.9), Color.brown.opacity(0.85)], startPoint: .top, endPoint: .bottom))
-                    .frame(width: 14, height: 11)
-                    .overlay(RoundedRectangle(cornerRadius: 3).stroke(Color.white.opacity(0.6), lineWidth: 0.6))
-
-                Circle()
-                    .stroke(Color.orange, lineWidth: 1.2)
-                    .frame(width: 5, height: 5)
-                    .offset(x: 8)
-
-                // Rising steam swirls
-                ForEach(0..<2) { i in
-                    let sPhase = fmod(time * 0.8 + Double(i) * 0.5, 1.0)
-                    Path { path in
-                        path.move(to: CGPoint(x: 0, y: 12))
-                        path.addCurve(to: CGPoint(x: 2, y: 0), control1: CGPoint(x: -3, y: 8), control2: CGPoint(x: 3, y: 4))
-                    }
-                    .stroke(Color.white.opacity(0.7), style: StrokeStyle(lineWidth: 1.2, lineCap: .round))
-                    .frame(width: 6, height: 14)
-                    .offset(x: CGFloat((i == 0 ? -2 : 3) + sin(sPhase * 4.0) * 1.5), y: CGFloat(-12 - sPhase * 10))
-                    .opacity(sin(sPhase * .pi) * 0.8)
+            // Rising fragrant coffee steam curls above the coffee mug held by Chip Chip
+            ForEach(0..<2) { i in
+                let sPhase = fmod(time * 0.8 + Double(i) * 0.5, 1.0)
+                Path { path in
+                    path.move(to: CGPoint(x: 0, y: 12))
+                    path.addCurve(to: CGPoint(x: 2, y: 0), control1: CGPoint(x: -3, y: 8), control2: CGPoint(x: 3, y: 4))
                 }
+                .stroke(Color.white.opacity(0.65), style: StrokeStyle(lineWidth: 1.2, lineCap: .round))
+                .frame(width: 6, height: 14)
+                .offset(x: CGFloat((i == 0 ? -2.5 : 2.5) + sin(sPhase * 4.0) * 1.5), y: CGFloat(-32 - sPhase * 11))
+                .opacity(sin(sPhase * .pi) * 0.75)
             }
-            .offset(x: 0, y: -6)
         }
     }
 }
@@ -3799,47 +4015,60 @@ struct MascotFishingBase: View {
 
 struct MascotFishingOverlay: View {
     let time: Double
+    var walkX: CGFloat = -13.0
+    var bobY: CGFloat = 4.0
+    var tilt: Double = 3.0
 
     var body: some View {
         let bobberY = sin(time * 3.0) * 1.8
         let isNibbling = sin(time * 0.9) > 0.65
         let extraNibbleDip: CGFloat = isNibbling ? CGFloat(abs(sin(time * 12.0)) * 2.5) : 0
 
-        let rodTipX: CGFloat = 28
-        let rodTipY: CGFloat = -26 + CGFloat(sin(time * 3.0) * 1.0) - extraNibbleDip
-        let lineTargetX: CGFloat = 34
-        let lineTargetY: CGFloat = 0 + bobberY + extraNibbleDip
+        // Chip Chip sits on the dock (walkX = -13, bobY = 4).
+        // From this rear angle, the rod is held in front of Chip Chip's lap and emerges naturally from the right flank toward the pond.
+        let rodBaseX: CGFloat = walkX + 13.5 // ~ 0.5 pt (right side of waist, in front of body)
+        let rodBaseY: CGFloat = bobY - 12.0  // ~ -8.0 pt (waist/lap level, well below head/ears)
+
+        // Rod tip flexing gracefully over the pond
+        let rodTipX: CGFloat = 27.5 + CGFloat(sin(time * 2.5) * 0.8)
+        let rodTipY: CGFloat = -22.5 + CGFloat(sin(time * 2.5) * 1.0) - extraNibbleDip
+
+        let rodW = max(2.0, rodTipX - rodBaseX)
+        let rodH = max(2.0, rodBaseY - rodTipY)
+        let rodCenterX = (rodBaseX + rodTipX) / 2.0
+        let rodCenterY = (rodBaseY + rodTipY) / 2.0
+
+        let lineTargetX: CGFloat = 34.0
+        let lineTargetY: CGFloat = 1.0 + bobberY + extraNibbleDip
+
+        let lineW = max(1.0, lineTargetX - rodTipX)
+        let lineH = max(2.0, lineTargetY - rodTipY)
+        let lineCenterX = (rodTipX + lineTargetX) / 2.0
+        let lineCenterY = (rodTipY + lineTargetY) / 2.0
 
         ZStack {
-            // Flexible bamboo fishing rod held right in Chip Chip's hand with bounded frame
+            // Flexible bamboo fishing rod extending naturally from in front of Chip Chip's lap out over the pond
             MascotBambooRodShape()
                 .stroke(
                     LinearGradient(
                         colors: [
-                            Color(red: 0.88, green: 0.68, blue: 0.38),
-                            Color(red: 1.0, green: 0.88, blue: 0.55)
+                            Color(red: 0.70, green: 0.48, blue: 0.25), // Bamboo handle
+                            Color(red: 0.88, green: 0.68, blue: 0.38), // Golden bamboo shaft
+                            Color(red: 1.00, green: 0.90, blue: 0.58)  // Light flexible tip
                         ],
                         startPoint: .bottomLeading,
                         endPoint: .topTrailing
                     ),
-                    style: StrokeStyle(lineWidth: 1.8, lineCap: .round)
+                    style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round)
                 )
-                .frame(width: 31, height: 20)
-                .offset(x: 12.5, y: -16)
-
-            // Fishing reel handle near Chip Chip's hand
-            Circle()
-                .stroke(Color.gray.opacity(0.85), lineWidth: 1.0)
-                .frame(width: 4, height: 4)
-                .offset(x: -3, y: -6)
+                .frame(width: rodW, height: rodH)
+                .offset(x: rodCenterX, y: rodCenterY)
 
             // Fishing line from rod tip down to the bobber with bounded frame
-            let lineH = max(4.0, lineTargetY - rodTipY)
-            let lineW = max(1.0, lineTargetX - rodTipX)
             MascotFishingLineShape()
-                .stroke(Color.white.opacity(0.85), style: StrokeStyle(lineWidth: 0.8, lineCap: .round))
+                .stroke(Color.white.opacity(0.85), style: StrokeStyle(lineWidth: 0.75, lineCap: .round))
                 .frame(width: lineW, height: lineH)
-                .offset(x: (rodTipX + lineTargetX) / 2.0, y: (rodTipY + lineTargetY) / 2.0)
+                .offset(x: lineCenterX, y: lineCenterY)
 
             // Two-tone Red & White Fishing Bobber (Phao câu)
             ZStack {
@@ -3983,16 +4212,8 @@ struct FloatingMascotView: View {
     @State private var isHovered = false
     @State private var showQuickMenu = false
     @State private var lastActiveDate = Date()
-
-    private let activitiesList: [MascotIdleActivity] = [
-        .fishing,
-        .sleeping,
-        .strolling,
-        .catchingButterfly,
-        .pickingFlowers,
-        .listeningMusic,
-        .sippingTea
-    ]
+    @State private var spinStartTime: Date? = nil
+    @State private var hoverPoint: CGPoint? = nil
 
     private struct MascotMotionState {
         var bobY: CGFloat = 0
@@ -4012,8 +4233,20 @@ struct FloatingMascotView: View {
         var turnY: Double = 0.0
     }
 
-    private func computeMotion(time: Double, speed: Double, isIdle: Bool, activeActivity: MascotIdleActivity) -> MascotMotionState {
+    private func computeMotion(time: Double, speed: Double, isIdle: Bool, activeActivity: MascotIdleActivity, isSpinning: Bool, spinElapsed: TimeInterval) -> MascotMotionState {
         var m = MascotMotionState()
+        if isSpinning {
+            let spinDuration: Double = 0.72
+            let p = min(1.0, max(0.0, spinElapsed / spinDuration))
+            m.bobY = -CGFloat(sin(p * .pi) * 8.0)
+            m.tilt = sin(p * .pi * 2.0) * 3.5
+            m.scaleX = 1.0
+            m.expression = .happySmile
+            m.shadowRad = 4.2
+            m.shadowOffsetY = 3.5
+            m.shadowAlpha = 0.16
+            return m
+        }
         if model.running {
             m.strokeX = CGFloat(sin(time * 10.0 * speed) * 3.5)
             m.strokeY = CGFloat(cos(time * 10.0 * speed) * 1.8)
@@ -4028,20 +4261,38 @@ struct FloatingMascotView: View {
             return m
         }
         if isHovered {
-            let hopProgress = CGFloat(abs(sin(time * 6.0)))
-            m.bobY = -hopProgress * 8.0
-            m.tilt = sin(time * 6.0) * 2.8
-            m.squashX = 1.0 + (1.0 - hopProgress) * 0.05 - hopProgress * 0.02
-            m.squashY = 1.0 - (1.0 - hopProgress) * 0.05 + hopProgress * 0.03
-            m.shadowRad = 3.5 + hopProgress * 3.5
-            m.shadowOffsetY = 2.5 + hopProgress * 4.0
-            m.shadowAlpha = 0.30 - Double(hopProgress) * 0.10
-            m.legSwing = Double(hopProgress * 10.0)
+            if let pt = hoverPoint {
+                let dx = pt.x - 80.0
+                let dy = pt.y - 78.0
+                // Nghiêng nhẹ đầu theo hướng chuột (-5.5° đến +5.5°)
+                m.tilt = max(-5.5, min(5.5, Double(dx / 70.0) * 4.5))
+                // Ngước nhìn lên khi chuột ở phía trên đầu, cúi nhìn khi chuột ở phía dưới
+                if dy < -16 {
+                    m.bobY = -2.5 - CGFloat(min(1.0, abs(dy) / 60.0)) * 2.0
+                    m.squashY = 1.025
+                    m.squashX = 0.98
+                } else if dy > 24 {
+                    m.bobY = 1.6
+                    m.squashY = 0.985
+                    m.squashX = 1.015
+                } else {
+                    m.bobY = -1.5
+                }
+            } else {
+                m.bobY = -2.0
+                m.tilt = 0.0
+            }
+            m.scaleX = 1.0
+            m.shadowRad = 3.6
+            m.shadowOffsetY = 2.5
+            m.shadowAlpha = 0.24
+            m.legSwing = 0.0
+            m.expression = nil
             m.turnY = 0.0
             return m
         }
         // Khi bật chế độ đi dạo Dock Bar và máy đang rảnh
-        if model.isDockWalkEnabled && !model.running {
+        if model.isDockWalkEnabled && !model.running && isIdle {
             let isPaused = model.dockWalkPauseUntil != nil
             if isPaused {
                 // Đang tạm dừng quay người chuyển hướng ở mép màn hình: giữ dáng đứng thẳng tự nhiên
@@ -4051,27 +4302,28 @@ struct FloatingMascotView: View {
                 m.scaleX = model.mascotStyle == "pixel" && model.dockWalkDirection < 0 ? -1.0 : 1.0
                 m.squashX = 1.0
                 m.squashY = 1.0
-                m.expression = .happySmile
+                m.expression = nil
                 m.legSwing = 0.0
             } else {
-                // Đang bước đi dọc thanh Dock:
-                // Bộ chuyển động MascotSprites 8-frame đã có sẵn trọng tâm, bước chân và góc nghiêng 3D tự nhiên
                 if model.mascotStyle == "pixel" {
                     let stepBounce = abs(sin(time * 5.2))
                     m.bobY = -CGFloat(stepBounce * 3.8)
                     m.scaleX = model.dockWalkDirection < 0 ? -1.0 : 1.0
                     m.tilt = (model.dockWalkDirection >= 0 ? 3.5 : -3.5)
                 } else {
-                    // Dùng bộ sprite mượt mà: không xoay lệch 2D, không giật méo hình, chân chạm đất vững vàng
-                    m.bobY = 0.0
+                    // Dáng bước đi nhấp nhô trọng tâm tự nhiên đồng bộ với 32-frame walk cycle
+                    let strideLength: Double = 26.0
+                    let stepPhase = fmod(Double(model.dockWalkDistance / strideLength), 1.0)
+                    let bob = sin(stepPhase * .pi * 2.0)
+                    m.bobY = -CGFloat(abs(bob) * 1.8) // Nhấp nhô nhẹ 1.8pt theo từng bước chân
+                    m.tilt = bob * (model.dockWalkDirection >= 0 ? 1.4 : -1.4) // Nghiêng người tự nhiên
                     m.scaleX = 1.0
-                    m.tilt = 0.0
                     m.turnY = 0.0
                     m.squashX = 1.0
                     m.squashY = 1.0
                     m.legSwing = 0.0
                 }
-                m.expression = .happySmile
+                m.expression = nil
             }
             m.shadowRad = 3.5
             m.shadowOffsetY = 2.0
@@ -4103,23 +4355,31 @@ struct FloatingMascotView: View {
                 m.shadowAlpha = 0.20
                 m.legSwing = 0.0
             case .strolling:
-                m.walkX = CGFloat(sin(time * 1.3) * 14.0)
-                let stepBounce = abs(sin(time * 5.2))
-                m.bobY = -CGFloat(stepBounce * 4.0)
-                m.tilt = sin(time * 2.6) * 4.0
-                m.scaleX = cos(time * 1.3) >= 0 ? 1.0 : -1.0
-                m.expression = .happySmile
+                let strollCycle = sin(time * 0.75) // Nhịp dạo bước êm ái, chu kỳ ~8.4s
+                m.walkX = CGFloat(strollCycle * 24.0) // Biên độ bước 48pt
+                let strollSpeed = cos(time * 0.75)
+                if abs(strollSpeed) > 0.25 {
+                    let stepBounce = abs(sin(time * 3.5))
+                    m.bobY = -CGFloat(stepBounce * 1.8)
+                    m.tilt = sin(time * 3.5) * (strollSpeed > 0 ? 1.5 : -1.5)
+                } else {
+                    m.bobY = 0.0
+                    m.tilt = 0.0
+                }
+                m.scaleX = 1.0
+                m.squashX = 1.0
+                m.squashY = 1.0
+                m.legSwing = 0.0
+                m.expression = nil
                 m.shadowRad = 3.2
                 m.shadowOffsetY = 2.5
                 m.shadowAlpha = 0.22
-                // Dynamic Lifelike Walking Legs (Hai chân sải bước luân phiên)
-                m.legSwing = sin(time * 5.2) * 22.0
             case .catchingButterfly:
                 let bx = sin(time * 1.6) * 26.0
                 m.tilt = (bx / 26.0) * 8.0
                 let reachHop = max(0, sin(time * 3.2))
                 m.bobY = -CGFloat(reachHop * 3.5)
-                m.expression = (sin(time * 2.8) > 0.3) ? .loveHeart : .happySquint
+                m.expression = nil
                 m.shadowRad = 3.2
                 m.shadowOffsetY = 2.6
                 m.shadowAlpha = 0.22
@@ -4128,7 +4388,7 @@ struct FloatingMascotView: View {
                 let flowerCycle = sin(time * 1.8)
                 m.tilt = 10.0 + flowerCycle * 2.0
                 m.bobY = 3.5 + CGFloat(flowerCycle * 1.5)
-                m.expression = .happySmile
+                m.expression = nil
                 m.shadowRad = 3.0
                 m.shadowOffsetY = 2.2
                 m.shadowAlpha = 0.20
@@ -4139,17 +4399,21 @@ struct FloatingMascotView: View {
                 m.tilt = sin(time * 3.25) * 4.5
                 m.squashX = CGFloat(1.0 + groovePulse * 0.03)
                 m.squashY = CGFloat(1.0 - groovePulse * 0.04)
-                m.expression = (sin(time * 4.0) > 0) ? .happySmile : .happySquint
+                m.expression = nil
                 m.shadowRad = 3.5
                 m.shadowOffsetY = 2.8
                 m.shadowAlpha = 0.25
                 // Foot tapping to music beat
                 m.legSwing = max(0, sin(time * 6.5)) * 14.0
+            case .writing, .thinking:
+                m.expression = nil
+                m.bobY = 0
+                m.tilt = 0
             case .sippingTea:
                 let sipCycle = sin(time * 1.6)
                 m.bobY = 1.0 + CGFloat(sipCycle * 1.2)
                 m.tilt = sin(time * 0.8) * 1.5
-                m.expression = .happySmile
+                m.expression = nil
                 m.shadowRad = 3.0
                 m.shadowOffsetY = 2.3
                 m.shadowAlpha = 0.20
@@ -4176,187 +4440,306 @@ struct FloatingMascotView: View {
         return m
     }
 
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
-            let now = context.date
-            let time = now.timeIntervalSinceReferenceDate
-            let isHearingSpeech = (Date().timeIntervalSince(model.lastAudio ?? .distantPast) < 1.8)
-            let speed: Double = isHearingSpeech ? 1.4 : 1.0
+    private struct MascotRenderContext {
+        let motion: MascotMotionState
+        let activeActivity: MascotIdleActivity
+        let isIdle: Bool
+        let isBackView: Bool
+        let isSleeping: Bool
+        let isWalking: Bool
+        let walkingTowardRight: Bool
+        let walkingDistance: CGFloat?
+        let facing: MascotFacing?
+        let sparkPhase1: Double
+        let sparkPhase2: Double
+    }
 
-            let idleDuration = now.timeIntervalSince(lastActiveDate)
-            let isUserChosenActivity = (model.mascotIdleActivity != .auto)
-            let isIdle = !model.running && !isHovered && (isUserChosenActivity || idleDuration >= 6.0)
+    private func makeRenderContext(now: Date) -> MascotRenderContext {
+        let time = now.timeIntervalSinceReferenceDate
+        let isHearingSpeech = (Date().timeIntervalSince(model.lastAudio ?? .distantPast) < 1.8)
+        let speed: Double = isHearingSpeech ? 1.4 : 1.0
 
-            let activeActivity: MascotIdleActivity = {
-                if model.isDockWalkEnabled {
-                    return .auto
-                } else if !isIdle {
-                    return .auto
-                } else if model.mascotIdleActivity != .auto {
-                    return model.mascotIdleActivity
+        let idleDuration = min(MascotIdlePolicy.systemIdleSeconds, max(0, now.timeIntervalSince(lastActiveDate)))
+        let isIdle = !model.running && !model.busy && !isHovered && !showQuickMenu &&
+            !model.isBubbleVisible && !model.isBubbleHovered && idleDuration >= MascotIdlePolicy.idleThreshold
+
+        let activeActivity: MascotIdleActivity = {
+            if model.isDockWalkEnabled {
+                return .auto
+            } else if !isIdle {
+                return .auto
+            } else if model.mascotIdleActivity != .auto {
+                return model.mascotIdleActivity
+            } else {
+                return MascotIdlePolicy.activity(
+                    idleSeconds: idleDuration,
+                    hour: Calendar.current.component(.hour, from: now),
+                    foregroundBundle: NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "",
+                    conservingEnergy: ProcessInfo.processInfo.isLowPowerModeEnabled ||
+                        ProcessInfo.processInfo.thermalState == .serious || ProcessInfo.processInfo.thermalState == .critical,
+                    heardAudioRecently: now.timeIntervalSince(model.lastAudio ?? .distantPast) < 120)
+
+            }
+        }()
+
+        let spinDuration: TimeInterval = 0.72
+        let spinElapsed = spinStartTime.map { now.timeIntervalSince($0) } ?? 0.0
+        let isSpinning = spinStartTime != nil && spinElapsed >= 0 && spinElapsed < spinDuration
+
+        var m = computeMotion(time: time, speed: speed, isIdle: isIdle, activeActivity: activeActivity, isSpinning: isSpinning, spinElapsed: spinElapsed)
+
+        let isBackView = !model.isDockWalkEnabled && isIdle && activeActivity == .fishing
+        let isSleeping = !model.isDockWalkEnabled && isIdle && activeActivity == .sleeping
+
+        var isWalking = false
+        var walkingTowardRight = true
+        var walkingDistance: CGFloat? = nil
+        var facingToUse: MascotFacing? = nil
+
+        if isSpinning {
+            facingToUse = MascotFacing.spin(elapsed: spinElapsed, duration: spinDuration)
+        } else if isHovered {
+            if let pt = hoverPoint {
+                let dx = pt.x - 80.0
+                if dx < -38 {
+                    facingToUse = .left
+                } else if dx < -12 {
+                    facingToUse = .frontLeft
+                } else if dx <= 12 {
+                    facingToUse = .front
+                } else if dx <= 38 {
+                    facingToUse = .frontRight
                 } else {
-                    let cycleTime = max(0, idleDuration - 6.0)
-                    let idx = Int(cycleTime / 18.0) % activitiesList.count
-                    return activitiesList[idx]
+                    facingToUse = .right
                 }
-            }()
-
-            let m = computeMotion(time: time, speed: speed, isIdle: isIdle, activeActivity: activeActivity)
-
-            let strokeX = m.strokeX
-            let strokeY = m.strokeY
-            let penAngle = m.penAngle
-            let totalBobY = m.bobY
-            let totalTilt = m.tilt
-            let totalSquashX = m.squashX
-            let totalSquashY = m.squashY
-            let actScaleX = m.scaleX
-            let walkOffsetX = m.walkX
-            let expressionToUse = m.expression
-            let shadowRad = m.shadowRad
-            let shadowOffsetY = m.shadowOffsetY
-            let shadowAlpha = m.shadowAlpha
-
-            let sparkPhase1 = fmod(time * 1.3, 1.0)
-            let sparkPhase2 = fmod((time * 1.3) + 0.5, 1.0)
-
-            let legSwing = m.legSwing
-
-            ZStack(alignment: .bottom) {
-                // Background Dioramas (Tiểu cảnh trọn vẹn bo tròn) - chỉ hiện khi không bật đi dạo Dock:
-                if !model.isDockWalkEnabled && isIdle && activeActivity == .fishing {
-                    MascotFishingBase(time: time)
-                }
-
-                if !model.isDockWalkEnabled && isIdle && activeActivity == .sleeping {
-                    MascotSleepingDeskBase()
-                }
-
-                if !model.isDockWalkEnabled && isIdle && activeActivity == .strolling {
-                    MascotStrollingEffects(time: time, walkX: walkOffsetX)
-                }
-
-                if !model.isDockWalkEnabled && isIdle && activeActivity == .pickingFlowers {
-                    MascotFlowerEffects(time: time)
-                }
-
-                // Mimo Companion Avatar
-                MiniAvatarView(
-                    size: model.mascotStyle == "pixel" ? 64 : 80,
-                    style: model.mascotStyle,
-                    isWorking: model.running,
-                    expression: expressionToUse,
-                    isHovered: isHovered,
-                    isBackView: !model.isDockWalkEnabled && isIdle && activeActivity == .fishing,
-                    isSleeping: !model.isDockWalkEnabled && isIdle && activeActivity == .sleeping,
-                    isWalking: model.isDockWalkEnabled && !model.running && !isHovered && model.dockWalkPauseUntil == nil,
-                    walkingTowardRight: model.dockWalkDirection >= 0,
-                    facing: model.isDockWalkEnabled && !model.running && !isHovered ? model.dockWalkPauseUntil.map {
-                        MascotFacing.turning(elapsed: 1.8 - $0.timeIntervalSince(now), towardRight: model.dockWalkDirection >= 0)
-                    } : nil,
-                    legSwing: legSwing
-                )
-                .scaleEffect(x: (isHovered ? 1.06 : 1.0) * totalSquashX * actScaleX, y: (isHovered ? 1.06 : 1.0) * totalSquashY, anchor: .bottom)
-                .offset(x: walkOffsetX, y: totalBobY)
-                .rotationEffect(.degrees(totalTilt), anchor: .bottom)
-                .shadow(
-                    color: Color.black.opacity(shadowAlpha),
-                    radius: shadowRad,
-                    y: shadowOffsetY
-                )
-                .animation(.spring(response: 0.35, dampingFraction: 0.70), value: actScaleX)
-                .animation(.spring(response: 0.35, dampingFraction: 0.65), value: isHovered)
-                .animation(.spring(response: 0.35, dampingFraction: 0.75), value: model.running)
-
-                // Foreground Activity Overlays - chỉ hiện khi không bật đi dạo Dock:
-                if !model.isDockWalkEnabled && isIdle && activeActivity == .fishing {
-                    MascotFishingOverlay(time: time)
-                        .offset(y: totalBobY)
-                }
-
-                if !model.isDockWalkEnabled && isIdle && activeActivity == .sleeping {
-                    MascotSleepingEffects(time: time)
-                        .offset(x: walkOffsetX, y: totalBobY)
-                }
-
-                if !model.isDockWalkEnabled && isIdle && activeActivity == .listeningMusic {
-                    MascotMusicEffects(time: time)
-                        .offset(x: walkOffsetX, y: totalBobY)
-                }
-
-                if !model.isDockWalkEnabled && isIdle && activeActivity == .catchingButterfly {
-                    MascotButterflyEffects(time: time)
-                }
-
-                if !model.isDockWalkEnabled && isIdle && activeActivity == .sippingTea {
-                    MascotTeaEffects(time: time)
-                        .offset(x: walkOffsetX, y: totalBobY)
-                }
-
-                // Lively Writing Pencil & Scribble Note Effects (Precisely on the spiral notebook Chip Chip holds)
-                if model.running {
-                    Group {
-                        // Scribble lines on the open notebook page
-                        VStack(alignment: .leading, spacing: 2.0) {
-                            Capsule()
-                                .fill(Color(red: 0.12, green: 0.52, blue: 0.92).opacity(0.85))
-                                .frame(width: max(3.5, min(10.5, 6.5 + strokeX * 0.9)), height: 1.5)
-                            Capsule()
-                                .fill(Color(red: 0.12, green: 0.52, blue: 0.92).opacity(0.65))
-                                .frame(width: max(2.5, min(9.0, 7.5 - strokeX * 0.7)), height: 1.5)
-                        }
-                        .rotationEffect(.degrees(-10))
-                        .offset(x: 10 + walkOffsetX, y: -20 + totalBobY)
-
-                        // Golden Stylus/Pencil actively writing on the notebook
-                        Image(systemName: "pencil")
-                            .font(.system(size: 11, weight: .black))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [
-                                        Color(red: 1.0, green: 0.82, blue: 0.25),
-                                        Color(red: 1.0, green: 0.45, blue: 0.15)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .rotationEffect(.degrees(-35 + penAngle), anchor: .bottomLeading)
-                            .offset(x: 10 + strokeX + walkOffsetX, y: -21 + strokeY + totalBobY)
-                            .shadow(color: Color.orange.opacity(0.55), radius: 2, y: 1)
-
-                        // Writing sparkles directly from the notebook
-                        Image(systemName: "sparkle")
-                            .font(.system(size: 7, weight: .bold))
-                            .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.98))
-                            .offset(x: 15 + CGFloat(sparkPhase1 * 6) + walkOffsetX, y: -26 - CGFloat(sparkPhase1 * 12) + totalBobY)
-                            .opacity(sin(sparkPhase1 * .pi) * 0.85)
-                            .scaleEffect(CGFloat(0.6 + sparkPhase1 * 0.4))
-
-                        Circle()
-                            .fill(Color(red: 1.0, green: 0.75, blue: 0.2))
-                            .frame(width: 3, height: 3)
-                            .offset(x: 7 - CGFloat(sparkPhase2 * 6) + walkOffsetX, y: -23 - CGFloat(sparkPhase2 * 10) + totalBobY)
-                            .opacity(sin(sparkPhase2 * .pi) * 0.75)
+            } else {
+                facingToUse = .front
+            }
+        } else if model.isDockWalkEnabled && !model.running && isIdle {
+            if let pauseUntil = model.dockWalkPauseUntil {
+                let pauseElapsed = max(0, 1.2 - pauseUntil.timeIntervalSince(now))
+                facingToUse = MascotFacing.turning(elapsed: pauseElapsed, towardRight: model.dockWalkDirection >= 0)
+            } else {
+                isWalking = true
+                walkingTowardRight = model.dockWalkDirection >= 0
+                walkingDistance = model.dockWalkDistance
+            }
+        } else if isIdle && activeActivity == .strolling {
+            if model.mascotStyle == "pixel" {
+                // Pixel mode handled by 2D sprite
+            } else {
+                let strollCos = cos(time * 0.75)
+                if strollCos > 0.25 {
+                    isWalking = true
+                    walkingTowardRight = true
+                    walkingDistance = CGFloat((sin(time * 0.75) + 1.0) * 24.0)
+                } else if strollCos < -0.25 {
+                    isWalking = true
+                    walkingTowardRight = false
+                    walkingDistance = CGFloat((1.0 - sin(time * 0.75)) * 24.0)
+                } else {
+                    // Nhịp quay đầu mượt qua các góc nhìn trước
+                    let strollSin = sin(time * 0.75)
+                    if strollCos >= 0 {
+                        if strollSin > 0.12 { facingToUse = .frontRight }
+                        else if strollSin < -0.12 { facingToUse = .frontLeft }
+                        else { facingToUse = .front }
+                    } else {
+                        if strollSin > 0.12 { facingToUse = .frontLeft }
+                        else if strollSin < -0.12 { facingToUse = .frontRight }
+                        else { facingToUse = .front }
                     }
                 }
             }
-            .frame(width: 140, height: 120, alignment: .bottom)
-            .padding(.top, 14)
-            .padding(.bottom, 12)
-            .frame(width: 160, height: 148, alignment: .bottom)
-            .contentShape(Rectangle())
-            .onHover { hovering in
-                isHovered = hovering
-                model.isMascotHovered = hovering
-                if hovering {
-                    lastActiveDate = Date()
+        } else if !model.running && !isBackView && !isSleeping {
+            facingToUse = MascotFacing.idleLookAround(time: time) ?? .front
+        }
+
+        if model.mascotStyle == "sprite",
+           (model.running && MascotActivityImages.hasAnimation(.writing)) ||
+           (isIdle && MascotActivityImages.hasAnimation(activeActivity)) {
+            m.tilt = 0
+            m.bobY = 0
+            m.squashX = 1
+            m.squashY = 1
+            m.legSwing = 0
+        }
+
+        return MascotRenderContext(
+            motion: m,
+            activeActivity: activeActivity,
+            isIdle: isIdle,
+            isBackView: isBackView,
+            isSleeping: isSleeping,
+            isWalking: isWalking,
+            walkingTowardRight: walkingTowardRight,
+            walkingDistance: walkingDistance,
+            facing: facingToUse,
+            sparkPhase1: fmod(time * 1.3, 1.0),
+            sparkPhase2: fmod((time * 1.3) + 0.5, 1.0)
+        )
+    }
+
+    @ViewBuilder
+    private func mascotContent(rc: MascotRenderContext, time: Double) -> some View {
+        let m = rc.motion
+        ZStack(alignment: .bottom) {
+            if model.mascotStyle == "sprite", !model.running, !rc.isWalking,
+               (!model.isDockWalkEnabled || !rc.isIdle), rc.activeActivity == .auto {
+                MascotDefaultGround()
+            }
+            if model.mascotStyle == "sprite", !model.isDockWalkEnabled, rc.isIdle,
+               [.pickingFlowers, .catchingButterfly, .strolling, .fishing].contains(rc.activeActivity) {
+                MascotOutdoorSky(time: time)
+            }
+            // Background Dioramas (Tiểu cảnh trọn vẹn bo tròn) - chỉ hiện khi không bật đi dạo Dock:
+            if !model.isDockWalkEnabled && rc.isIdle && rc.activeActivity == .fishing {
+                MascotFishingBase(time: time)
+            }
+
+            if !model.isDockWalkEnabled && rc.isIdle && rc.activeActivity == .sleeping && model.mascotStyle != "sprite" {
+                MascotSleepingDeskBase()
+            }
+
+            if !model.isDockWalkEnabled && rc.isIdle && rc.activeActivity == .strolling {
+                MascotStrollingEffects(time: time, walkX: m.walkX)
+            }
+
+            if !model.isDockWalkEnabled && rc.isIdle && rc.activeActivity == .pickingFlowers {
+                MascotFlowerEffects(time: time)
+            }
+
+            // Mimo Companion Avatar
+            MiniAvatarView(
+                size: model.mascotStyle == "pixel" ? 64 : 80,
+                style: model.mascotStyle,
+                isWorking: model.running,
+                isHovered: isHovered,
+                hoverPoint: hoverPoint,
+                isBackView: rc.isBackView,
+                isSleeping: rc.isSleeping,
+                isWalking: rc.isWalking,
+                activity: rc.isIdle ? rc.activeActivity : .auto,
+                walkingTowardRight: rc.walkingTowardRight,
+                walkingDistance: rc.walkingDistance,
+                facing: rc.facing,
+                legSwing: m.legSwing,
+                time: time
+            )
+            .scaleEffect(x: (isHovered ? 1.06 : 1.0) * m.squashX * m.scaleX, y: (isHovered ? 1.06 : 1.0) * m.squashY, anchor: .bottom)
+            .offset(x: m.walkX, y: m.bobY)
+            .rotationEffect(.degrees(m.tilt), anchor: .bottom)
+            .shadow(
+                color: Color.black.opacity(m.shadowAlpha),
+                radius: m.shadowRad,
+                y: m.shadowOffsetY
+            )
+            .animation(.spring(response: 0.35, dampingFraction: 0.70), value: m.scaleX)
+            .animation(.spring(response: 0.35, dampingFraction: 0.65), value: isHovered)
+            .animation(.spring(response: 0.35, dampingFraction: 0.75), value: model.running)
+
+            // Foreground Activity Overlays - chỉ hiện khi không bật đi dạo Dock:
+            if !model.isDockWalkEnabled && rc.isIdle && rc.activeActivity == .fishing {
+                MascotFishingOverlay(time: time, walkX: m.walkX, bobY: m.bobY, tilt: m.tilt)
+            }
+
+            if !model.isDockWalkEnabled && rc.isIdle && rc.activeActivity == .sleeping {
+                MascotSleepingEffects(time: time)
+                    .offset(x: m.walkX, y: m.bobY)
+            }
+
+            if !model.isDockWalkEnabled && rc.isIdle && rc.activeActivity == .listeningMusic {
+                MascotMusicEffects(time: time)
+                    .offset(x: m.walkX, y: m.bobY)
+            }
+
+            if !model.isDockWalkEnabled && rc.isIdle && rc.activeActivity == .catchingButterfly && !(model.mascotStyle == "sprite" && MascotActivityImages.hasAnimation(.catchingButterfly)) {
+                MascotButterflyEffects(time: time)
+            }
+
+            if !model.isDockWalkEnabled && rc.isIdle && rc.activeActivity == .sippingTea {
+                MascotTeaEffects(time: time)
+                    .offset(x: m.walkX, y: m.bobY)
+            }
+
+            // PNG writing clips already contain the pencil and marks on the page.
+            if model.running && !(model.mascotStyle == "sprite" && MascotActivityImages.hasAnimation(.writing)) {
+                Group {
+                    VStack(alignment: .leading, spacing: 2.0) {
+                        Capsule()
+                            .fill(Color(red: 0.12, green: 0.52, blue: 0.92).opacity(0.85))
+                            .frame(width: max(3.5, min(10.5, 6.5 + m.strokeX * 0.9)), height: 1.5)
+                        Capsule()
+                            .fill(Color(red: 0.12, green: 0.52, blue: 0.92).opacity(0.65))
+                            .frame(width: max(2.5, min(9.0, 7.5 - m.strokeX * 0.7)), height: 1.5)
+                    }
+                    .rotationEffect(.degrees(-10))
+                    .offset(x: 10 + m.walkX, y: -20 + m.bobY)
+
+                    Image(systemName: "pencil")
+                        .font(.system(size: 11, weight: .black))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 1.0, green: 0.82, blue: 0.25),
+                                    Color(red: 1.0, green: 0.45, blue: 0.15)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .rotationEffect(.degrees(-35 + m.penAngle), anchor: .bottomLeading)
+                        .offset(x: 10 + m.strokeX + m.walkX, y: -21 + m.strokeY + m.bobY)
+                        .shadow(color: Color.orange.opacity(0.55), radius: 2, y: 1)
+
+                    Image(systemName: "sparkle")
+                        .font(.system(size: 7, weight: .bold))
+                        .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.98))
+                        .offset(x: 15 + CGFloat(rc.sparkPhase1 * 6) + m.walkX, y: -26 - CGFloat(rc.sparkPhase1 * 12) + m.bobY)
+                        .opacity(sin(rc.sparkPhase1 * .pi) * 0.85)
+                        .scaleEffect(CGFloat(0.6 + rc.sparkPhase1 * 0.4))
+
+                    Circle()
+                        .fill(Color(red: 1.0, green: 0.75, blue: 0.2))
+                        .frame(width: 3, height: 3)
+                        .offset(x: 7 - CGFloat(rc.sparkPhase2 * 6) + m.walkX, y: -23 - CGFloat(rc.sparkPhase2 * 10) + m.bobY)
+                        .opacity(sin(rc.sparkPhase2 * .pi) * 0.75)
                 }
             }
-            .onTapGesture {
+        }
+    }
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { context in
+            mascotContent(rc: makeRenderContext(now: context.date), time: context.date.timeIntervalSinceReferenceDate)
+        }
+        .frame(width: 140, height: 120, alignment: .bottom)
+        .padding(.top, 14)
+        .padding(.bottom, 12)
+        .frame(width: 160, height: 148, alignment: .bottom)
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            isHovered = hovering
+            model.isMascotHovered = hovering
+            if hovering {
                 lastActiveDate = Date()
-                showQuickMenu.toggle()
+            } else {
+                hoverPoint = nil
             }
+        }
+        .onContinuousHover { phase in
+            switch phase {
+            case .active(let location):
+                hoverPoint = location
+            case .ended:
+                hoverPoint = nil
+            }
+        }
+        .onTapGesture {
+            lastActiveDate = Date()
+            spinStartTime = Date()
+            showQuickMenu.toggle()
+        }
             .popover(isPresented: $showQuickMenu, arrowEdge: .leading) {
                 MascotQuickActionsPopover(model: model, isPresented: $showQuickMenu)
             }
@@ -4409,10 +4792,26 @@ struct FloatingMascotView: View {
                     Label("Mở TransTools", systemImage: "macwindow")
                 }
 
-                Button {
-                    model.snapMascotToConvenientPosition()
+                Menu {
+                    Menu("Dịch & chỉnh câu") {
+                        Button("Dịch từ bôi đen · Option + D") {
+                            Task { await GlobalHotkeyManager.shared.triggerSelectionTranslation() }
+                        }
+                        Button("Sửa ngữ pháp & làm mượt · Option + F") {
+                            Task { await GlobalHotkeyManager.shared.triggerGrammarFixAndPolish() }
+                        }
+                    }
+                    Button("Sổ từ vựng & Flashcards") {
+                        model.showMainWindow()
+                        model.selectedDashboardTab = 1
+                        model.selectedNotebookTab = 1
+                    }
+                    Divider()
+                    Button("Đưa Chip Chip về góc thuận tiện") {
+                        model.snapMascotToConvenientPosition()
+                    }
                 } label: {
-                    Label("Đưa Chip Chip về góc màn hình", systemImage: "arrow.down.forward.and.arrow.up.backward")
+                    Label("Tiện ích Chip Chip", systemImage: "square.grid.2x2")
                 }
 
                 Button {
@@ -4427,11 +4826,10 @@ struct FloatingMascotView: View {
                 Button {
                     model.hideFloatingMascot()
                 } label: {
-                    Label("Tạm biệt Chip Chip (Ẩn)", systemImage: "xmark")
+                    Label("Tạm biệt Chip Chip", systemImage: "xmark")
                 }
             }
-            .help("Chip Chip: \(model.isDockWalkEnabled ? "Đang đi dạo thư giãn dọc Dock Bar" : (isIdle ? activeActivity.title : (model.running ? "Đang ghi chép cuộc họp" : "Sẵn sàng hỗ trợ bạn")))")
-        }
+            .help("Chip Chip: \(model.isDockWalkEnabled ? "Đang đi dạo thư giãn dọc Dock Bar" : (model.running ? "Đang ghi chép cuộc họp" : "Sẵn sàng hỗ trợ bạn"))")
     }
 }
 
@@ -4439,6 +4837,7 @@ struct MascotQuickActionsPopover: View {
     @ObservedObject var model: MeetingModel
     @ObservedObject private var tts = TTSService.shared
     @Binding var isPresented: Bool
+    @Environment(\.dismiss) private var dismiss
     @State private var tipIndex = 0
     @State private var quickViText = ""
     @State private var quickEnResult = ""
@@ -4466,6 +4865,8 @@ struct MascotQuickActionsPopover: View {
             return "Chip Chip đang đi dạo thảnh thơi dọc thanh Dock Bar nè! Bạn làm việc vui vẻ nha 🚶‍♂️✨"
         }
         switch model.mascotIdleActivity {
+        case .writing: return "Chip Chip đang ghi lại ý tưởng vào sổ 📓"
+        case .thinking: return "Để Chip Chip suy nghĩ một chút nhé 💭"
         case .fishing:
             return "Ngồi buông cần câu cá thảnh thơi bên hồ nước trong xanh... Yên bình ghê! 🎣🐟"
         case .sleeping:
@@ -4554,7 +4955,7 @@ struct MascotQuickActionsPopover: View {
                     HStack(spacing: 5) {
                         Text("Chip Chip")
                             .font(.system(size: 13.5, weight: .bold, design: .rounded))
-                        Text(model.mascotStyle == "pixel" ? "Pixel" : "3D AI")
+                        Text(model.mascotStyle == "pixel" ? "Pixel" : "Mascot ảnh")
                             .font(.system(size: 9.5, weight: .semibold))
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1.5)
@@ -4577,10 +4978,10 @@ struct MascotQuickActionsPopover: View {
 
                 Button {
                     withAnimation(.spring(response: 0.35)) {
-                        model.mascotStyle = (model.mascotStyle == "3d") ? "pixel" : "3d"
+                        model.mascotStyle = model.mascotStyle == "sprite" ? "pixel" : "sprite"
                     }
                 } label: {
-                    Image(systemName: model.mascotStyle == "3d" ? "cube.transparent" : "checkerboard.rectangle")
+                    Image(systemName: model.mascotStyle == "sprite" ? "photo" : "checkerboard.rectangle")
                         .font(.system(size: 12, weight: .medium))
                         .padding(6)
                         .background(Color(nsColor: .controlBackgroundColor))
@@ -4589,10 +4990,11 @@ struct MascotQuickActionsPopover: View {
                         .overlay(Circle().stroke(Color.primary.opacity(0.08), lineWidth: 0.8))
                 }
                 .buttonStyle(.plain)
-                .help(model.mascotStyle == "3d" ? "Đổi sang kiểu Pixel Art" : "Đổi sang kiểu 3D Chibi")
+                .help("Đổi tạo hình: Mascot ảnh ↔ Pixel Art")
 
                 Button {
                     isPresented = false
+                    dismiss()
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 10, weight: .bold))
@@ -4603,6 +5005,8 @@ struct MascotQuickActionsPopover: View {
                         .overlay(Circle().stroke(Color.primary.opacity(0.08), lineWidth: 0.8))
                 }
                 .buttonStyle(.plain)
+                .help("Đóng (Esc)")
+                .keyboardShortcut(.cancelAction)
             }
 
             // Mini Speech Bubble (Bong bóng lời thoại trò chuyện tươi sáng)
@@ -4689,6 +5093,9 @@ struct MascotQuickActionsPopover: View {
                 // Nút bật/tắt Đi dạo dọc Dock Bar
                 Button {
                     model.isDockWalkEnabled.toggle()
+                    if model.isDockWalkEnabled {
+                        isPresented = false
+                    }
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: model.isDockWalkEnabled ? "figure.walk.circle.fill" : "figure.walk")
@@ -4808,7 +5215,7 @@ struct MascotQuickActionsPopover: View {
                         .onSubmit {
                             translateAndCopyQuickText()
                         }
-                        .onChange(of: quickViText) { newValue in
+                        .onChange(of: quickViText) { _, newValue in
                             if newValue.hasSuffix("\n") && !isTranslatingQuick {
                                 quickViText = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
                                 translateAndCopyQuickText()
@@ -5125,137 +5532,39 @@ struct MascotQuickActionsPopover: View {
             }
             .buttonStyle(.plain)
 
-            // Translate Selected Text Action
-            Button {
-                isPresented = false
-                Task {
-                    await GlobalHotkeyManager.shared.triggerSelectionTranslation()
+            Menu {
+                Menu("Dịch & chỉnh câu") {
+                    Button("Dịch từ bôi đen · Option + D") {
+                        isPresented = false
+                        Task { await GlobalHotkeyManager.shared.triggerSelectionTranslation() }
+                    }
+                    Button("Sửa ngữ pháp & làm mượt · Option + F") {
+                        isPresented = false
+                        Task { await GlobalHotkeyManager.shared.triggerGrammarFixAndPolish() }
+                    }
+                }
+                Button {
+                    isPresented = false
+                    model.showMainWindow()
+                    model.selectedDashboardTab = 1
+                    model.selectedNotebookTab = 1
+                } label: {
+                    Label("Sổ từ vựng & Flashcards", systemImage: "character.book.closed.fill")
+                }
+                Divider()
+                Button {
+                    isPresented = false
+                    model.snapMascotToConvenientPosition()
+                } label: {
+                    Label("Đưa Chip Chip về góc thuận tiện", systemImage: "arrow.down.forward.and.arrow.up.backward")
                 }
             } label: {
-                HStack(spacing: 9) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(Color.teal)
-                            .frame(width: 24, height: 24)
-
-                        Image(systemName: "text.magnifyingglass")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(.white)
-                    }
-
-                    Text("Dịch từ bôi đen")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.primary)
-
-                    Spacer()
-
-                    Text("Option + D")
-                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.secondary.opacity(0.12))
-                        .foregroundStyle(.secondary)
-                        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(Color(nsColor: .controlBackgroundColor).opacity(0.85))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(Color.primary.opacity(0.07), lineWidth: 1)
-                )
+                Label("Tiện ích Chip Chip", systemImage: "square.grid.2x2")
+                    .font(.system(size: 12, weight: .medium))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(8)
             }
-            .buttonStyle(.plain)
-
-            // AI Fix Grammar & Polish Action (Option + F)
-            Button {
-                isPresented = false
-                Task {
-                    await GlobalHotkeyManager.shared.triggerGrammarFixAndPolish()
-                }
-            } label: {
-                HStack(spacing: 9) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(Color.purple)
-                            .frame(width: 24, height: 24)
-
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(.white)
-                    }
-
-                    Text("Sửa ngữ pháp & làm mượt")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.primary)
-
-                    Spacer()
-
-                    Text("Option + F")
-                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.secondary.opacity(0.12))
-                        .foregroundStyle(.secondary)
-                        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(Color(nsColor: .controlBackgroundColor).opacity(0.85))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(Color.primary.opacity(0.07), lineWidth: 1)
-                )
-            }
-            .buttonStyle(.plain)
-
-            // Vocabulary Notebook Action
-            Button {
-                isPresented = false
-                model.showMainWindow()
-                model.selectedDashboardTab = 1
-                model.selectedNotebookTab = 1
-            } label: {
-                HStack(spacing: 9) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(Color.indigo)
-                            .frame(width: 24, height: 24)
-
-                        Image(systemName: "character.book.closed.fill")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(.white)
-                    }
-
-                    Text("Sổ từ vựng & Flashcards")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.primary)
-
-                    Spacer()
-
-                    let count = VocabularyManager.shared.items.count
-                    if count > 0 {
-                        Text("\(count)")
-                            .font(.system(size: 9.5, weight: .bold))
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1.5)
-                            .background(Color.indigo.opacity(0.15))
-                            .foregroundStyle(Color.indigo)
-                            .clipShape(Capsule())
-                    }
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(Color(nsColor: .controlBackgroundColor).opacity(0.85))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(Color.primary.opacity(0.07), lineWidth: 1)
-                )
-            }
-            .buttonStyle(.plain)
+            .menuStyle(.borderlessButton)
 
             // 3. Open Main Window
             Button {
@@ -5290,39 +5599,6 @@ struct MascotQuickActionsPopover: View {
             }
             .buttonStyle(.plain)
 
-            // 4. Snap to convenient corner
-            Button {
-                isPresented = false
-                model.snapMascotToConvenientPosition()
-            } label: {
-                HStack(spacing: 9) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(Color(red: 0.15, green: 0.65, blue: 0.60))
-                            .frame(width: 24, height: 24)
-
-                        Image(systemName: "arrow.down.forward.and.arrow.up.backward")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(.white)
-                    }
-
-                    Text("Đưa Chip Chip về góc thuận tiện")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.primary)
-
-                    Spacer()
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(Color(nsColor: .controlBackgroundColor).opacity(0.85))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(Color.primary.opacity(0.07), lineWidth: 1)
-                )
-            }
-            .buttonStyle(.plain)
-
             Divider()
                 .opacity(0.5)
 
@@ -5334,7 +5610,7 @@ struct MascotQuickActionsPopover: View {
                 } label: {
                     HStack(spacing: 5) {
                         Image(systemName: "eye.slash")
-                        Text("Tạm biệt Chip Chip (Ẩn đi)")
+                        Text("Tạm biệt Chip Chip")
                     }
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
@@ -5375,6 +5651,7 @@ struct MascotQuickActionsPopover: View {
 
 struct MainDashboardView: View {
     @ObservedObject var model: MeetingModel
+    @ObservedObject private var updater = AppUpdater.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -5520,12 +5797,6 @@ struct MainDashboardView: View {
                     .popover(isPresented: $model.showSettingsSheet) {
                         SettingsPopoverView(model: model, isPresented: $model.showSettingsSheet)
                     }
-                    .sheet(isPresented: Binding(
-                        get: { AppUpdater.shared.showUpdateSheet },
-                        set: { AppUpdater.shared.showUpdateSheet = $0 }
-                    )) {
-                        UpdateSheetView()
-                    }
                 }
             }
             .padding(.horizontal, 20)
@@ -5550,6 +5821,9 @@ struct MainDashboardView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 860, minHeight: 640)
+        .sheet(isPresented: $updater.showUpdateSheet) {
+            UpdateSheetView(isPresented: $updater.showUpdateSheet)
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             Task {
                 await model.refresh()
@@ -7485,6 +7759,7 @@ struct QuickTranslateView: View {
 struct SettingsPopoverView: View {
     @ObservedObject var model: MeetingModel
     @Binding var isPresented: Bool
+    @Environment(\.dismiss) private var dismiss
     @State private var selectedTab = 0
     @State private var showCoPilotKey = false
     @State private var savedNotice = false
@@ -7505,12 +7780,15 @@ struct SettingsPopoverView: View {
 
                 Button {
                     isPresented = false
+                    dismiss()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 14))
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
+                .help("Đóng (Esc)")
+                .keyboardShortcut(.cancelAction)
             }
 
             // Tab Switcher
@@ -8129,7 +8407,7 @@ struct SettingsPopoverView: View {
                         .buttonStyle(.plain)
                     }
                 }
-            } else {
+            } else if selectedTab == 2 {
                 // Tab 2: Interface & Mascot
                 VStack(alignment: .leading, spacing: 12) {
                     Text("GIAO DIỆN & TRỢ LÝ CHIP CHIP")
@@ -8182,7 +8460,7 @@ struct SettingsPopoverView: View {
                             .foregroundStyle(.secondary)
 
                         Picker("Tạo hình Chip Chip", selection: $model.mascotStyle) {
-                            Text("🤖 3D Chibi (Viết chép)").tag("3d")
+                            Text("🖼 Mascot ảnh").tag("sprite")
                             Text("👾 Pixel Art").tag("pixel")
                         }
                         .pickerStyle(.segmented)

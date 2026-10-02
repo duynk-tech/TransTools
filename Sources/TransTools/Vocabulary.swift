@@ -341,7 +341,7 @@ public final class GlobalHotkeyManager: ObservableObject {
             // Prompt user
             MeetingModel.shared?.showSpeechBubble(
                 word: "Mẹo nhỏ",
-                meaning: "Hãy bôi đen một từ hoặc đoạn văn bản bất kỳ, sau đó bấm Option + D để Chip Chip dịch nhé!",
+                meaning: "Hãy bôi đen một từ hoặc đoạn văn bản bất kỳ, sau đó bấm Option + D hoặc Option + T để Chip Chip dịch nhé!",
                 context: "",
                 sourceApp: appName
             )
@@ -367,18 +367,7 @@ public final class GlobalHotkeyManager: ObservableObject {
                 ? VocabularyManager.fetchPhonetic(for: cleanWord)
                 : ""
 
-            var translated = ""
-            #if canImport(Translation)
-            if #available(macOS 15.0, *) {
-                if let appleRes = try? await AppleNativeTranslator.translate(cleanWord, from: sourceLang, to: targetLang), !appleRes.isEmpty {
-                    translated = appleRes
-                }
-            }
-            #endif
-
-            if translated.isEmpty {
-                translated = try await AITranslator.freeTranslate(cleanWord, from: sourceLang, to: targetLang)
-            }
+            let translated = try await AITranslator.freeTranslate(cleanWord, from: sourceLang, to: targetLang)
 
             let phonetic = await phoneticTask
 
@@ -801,6 +790,8 @@ public struct VocabularyFlashcardModal: View {
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
+                .help("Đóng (Esc)")
+                .keyboardShortcut(.cancelAction)
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)

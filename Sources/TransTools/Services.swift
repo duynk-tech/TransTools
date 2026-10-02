@@ -294,51 +294,21 @@ public enum SubtitleDisplayMode: String, CaseIterable, Identifiable, Codable {
 @available(macOS 15.0, *)
 @MainActor
 enum AppleNativeTranslator {
-    static var sessions: [String: TranslationSession] = [:]
-    static var session: TranslationSession? {
-        get { sessions.values.first }
-        set {
-            if let val = newValue {
-                sessions["default"] = val
-            }
-        }
-    }
+    static var sessions: [String: Any] = [:]
+    static var session: Any? = nil
 
     static func sessionKey(from source: AppLanguage, to target: AppLanguage) -> String {
         "\(source.appleLanguageCode)->\(target.appleLanguageCode)"
     }
 
-    static func register(_ session: TranslationSession, from source: AppLanguage, to target: AppLanguage) {
+    static func register(_ session: Any, from source: AppLanguage, to target: AppLanguage) {
         let key = sessionKey(from: source, to: target)
         sessions[key] = session
-    }
-
-    static func getSession(from source: AppLanguage, to target: AppLanguage) -> TranslationSession? {
-        let key = sessionKey(from: source, to: target)
-        if let s = sessions[key] { return s }
-        for (k, s) in sessions {
-            if k == "\(source.appleLanguageCode)->\(target.appleLanguageCode)" {
-                return s
-            }
-        }
-        return nil
     }
 
     static func translate(_ text: String, from source: AppLanguage = .english, to target: AppLanguage = .vietnamese) async throws -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return "" }
-
-        if let session = getSession(from: source, to: target) {
-            do {
-                let response = try await session.translate(trimmed)
-                let cleaned = response.targetText.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !cleaned.isEmpty && (source == target || cleaned.lowercased() != trimmed.lowercased()) {
-                    return cleaned
-                }
-            } catch {
-                // fall through to free fallback
-            }
-        }
         return try await AITranslator.freeTranslate(trimmed, from: source, to: target)
     }
 
@@ -1242,6 +1212,8 @@ final class LiveSpeech {
         self.recognizer = rec
 
         lock.lock()
+        // Invalidate generation immediately so any cancellation callbacks from the previous task are ignored
+        generation = UUID()
         // Gracefully end previous request without purging buffer queue
         request?.endAudio()
         task?.cancel()
@@ -1281,23 +1253,17 @@ final class LiveSpeech {
 
             if let result {
                 self.onResult?(result.bestTranscription.formattedString, result.isFinal)
-                if result.isFinal {
-                    self.onSessionEndedOrTimeout?()
-                }
             }
 
             if let error {
                 let nsErr = error as NSError
                 let desc = error.localizedDescription
 
-                // Transient / normal completion errors that should trigger seamless re-anchor, NOT terminate app:
-                // Code 203: Retry / silence timeout
-                // Code 216: Recognition request finished or cancelled during rotation
-                // Code 1110: No speech detected in slice
-                // Code 209: Apple 60-second recognition limit exceeded
-                // Code 301: Request cancelled
-                let isTransient = (nsErr.domain.contains("Assistant") || nsErr.domain.contains("Speech")) &&
-                    (nsErr.code == 203 || nsErr.code == 216 || nsErr.code == 1110 || nsErr.code == 209 || nsErr.code == 301)
+                // Cancellation codes (216: finished/cancelled, 301: request cancelled) happen when we rotate or stop
+                // and MUST NOT trigger recursive session restarts.
+                let isCancelled = (nsErr.code == 216 || nsErr.code == 301)
+                let isTransient = !isCancelled && (nsErr.domain.contains("Assistant") || nsErr.domain.contains("Speech")) &&
+                    (nsErr.code == 203 || nsErr.code == 1110 || nsErr.code == 209)
 
                 if isTransient {
                     self.onSessionEndedOrTimeout?()

@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "source": "scripts/build-mascot-model.py",
+  "blender": "4.5.0 official arm64; checksum verified",
+  "reference": "Resources/Mascot3D.png",
+  "coordinateConvention": "Source Blender +Z up, -Y forward; USD export converts to +Y up for RealityKit",
+  "rigged": false,
+  "sha256": "83040658f93751515d75644b13af892555ff76bdaab495cb24478a12e68be37c"
+}
