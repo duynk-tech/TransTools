@@ -1,4 +1,4 @@
-# TransTools — v1.3.0
+# TransTools — v1.3.1
 
 > **Bộ công cụ dịch thuật trực tiếp âm thanh cuộc họp, phụ đề nổi song ngữ & trợ lý AI thông minh trên macOS.**  
 > 🌐 **Website giới thiệu:** [duynk-tech.github.io/TransTools](https://duynk-tech.github.io/TransTools/)  
@@ -27,8 +27,8 @@
 - 📓 **Sổ tay cuộc họp (Meeting Notebook)**:
   - Tự động lưu toàn bộ nội dung phụ đề sau mỗi phiên làm việc.
   - Tìm kiếm, lọc, chỉnh sửa tiêu đề/ghi chú, và xuất báo cáo dưới dạng Text hoặc phụ đề chuẩn SRT.
-- 🔄 **Tự động cập nhật (Auto-Update from GitHub Releases)**:
-  - Tự động kiểm tra bản cập nhật mới từ kho lưu trữ GitHub `duynk-tech/TransTools`.
+- 🔄 **Tự động cập nhật (Auto-Update qua Vercel)**:
+  - Tự động kiểm tra bản cập nhật từ nguồn công khai trên Vercel, không cần đăng nhập GitHub.
   - Tải xuống và tự động cập nhật, khởi động lại chỉ với 1 click.
 
 ---
@@ -40,7 +40,7 @@
 - Chip Apple Silicon (M1/M2/M3/M4) hoặc Intel.
 
 ### 2. Tải về bản đóng gói sẵn
-Tải bản phát hành mới nhất (`TransTools.dmg` hoặc `TransTools.zip`) tại mục [GitHub Releases](https://github.com/duynk-tech/TransTools/releases), mở DMG và kéo TransTools vào Applications; hoặc giải nén ZIP và đưa app vào `/Applications`.
+Tải bản phát hành mới nhất (`TransTools.dmg` hoặc `TransTools.zip`) tại [trang tải TransTools](https://trans-tools.vercel.app/releases), mở DMG và kéo TransTools vào Applications; hoặc giải nén ZIP và đưa app vào `/Applications`.
 
 ### 3. Tự biên dịch từ mã nguồn
 ```bash
@@ -65,7 +65,7 @@ open build/TransTools.app
 ```
 Lệnh trên sẽ tự động build release, đóng gói cả `build/TransTools.zip` và `build/TransTools.dmg` (kéo thả vào Applications), cùng tệp SHA256 cho mỗi định dạng. App dùng chữ ký ad hoc của quy trình build hiện tại.
 
-Khi bạn push một git tag mới (ví dụ: `v1.3.0`), GitHub Actions trong file `.github/workflows/release.yml` sẽ tự động kích hoạt, build và tạo GitHub Release đính kèm `TransTools.zip`, `TransTools.dmg` và hai tệp SHA256. Auto-Update dùng ZIP; DMG dành cho cài đặt kéo thả.
+Khi bạn push một git tag mới (ví dụ: `v1.3.1`), GitHub Actions trong file `.github/workflows/release.yml` sẽ tự động kích hoạt, build và tạo GitHub Release đính kèm `TransTools.zip`, `TransTools.dmg` và hai tệp SHA256. Workflow đồng thời tải các tệp lên Vercel Blob và cập nhật nguồn công khai. Auto-Update dùng ZIP và kiểm tra SHA256; DMG dành cho cài đặt kéo thả. Xem `docs/vercel-updates.md` để cấu hình. Các bản app trước v1.3.1 cần cài bản mới một lần từ DMG.
 
 ---
 

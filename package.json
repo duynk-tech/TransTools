@@ -1,0 +1,10 @@
+{
+  "name": "transtools-release-service",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "publish:release": "node scripts/publish-vercel-release.mjs",
+    "test:updates": "node --test Tests/update-manifest.test.mjs"
+  },
+  "dependencies": { "@vercel/blob": "^2.0.0" }
+}

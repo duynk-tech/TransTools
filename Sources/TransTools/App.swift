@@ -22,7 +22,7 @@ var appVersionDisplay: String {
     if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String, !version.isEmpty {
         return "v\(version)"
     }
-    return "v1.3.0"
+    return "v1.3.1"
 }
 
 // MARK: - Meeting Session Notebook Records & Persistence
@@ -1416,6 +1416,7 @@ enum AppPermissionType {
     @Published var isBubbleVisible: Bool = false
     @Published var isBubbleHovered: Bool = false
     @Published var isMascotHovered: Bool = false
+    @Published var bubbleCanReplace = false
     @Published var bubbleMode: String = "translate" // "translate" hoặc "grammar"
 
     // Dock Bar Patrol Walk Mode (Chỉ đi dạo khi rảnh rỗi, dừng tại chỗ khi tắt)
@@ -1570,9 +1571,11 @@ enum AppPermissionType {
     }
 
     func showBubbleLoading(word: String, sourceApp: String, mode: String = "translate") {
+        bubbleDismissTask?.cancel()
         bubbleMode = mode
         bubbleWord = word
-        bubbleMeaning = (mode == "grammar") ? "Chip Chip đang sửa lỗi & làm mượt câu..." : "Chip Chip đang dịch..."
+        bubbleCanReplace = false
+        bubbleMeaning = (mode == "grammar") ? "Chip Chip đang sửa ngữ pháp..." : (mode == "viToEn" ? "Đang dịch VI → EN theo \(domainSpecialty.title)..." : "Chip Chip đang dịch...")
         bubblePhonetic = ""
         bubbleContext = ""
         bubbleSourceApp = sourceApp
@@ -1582,10 +1585,11 @@ enum AppPermissionType {
         presentBubbleWindow()
     }
 
-    func showSpeechBubble(word: String, meaning: String, phonetic: String = "", context: String = "", sourceApp: String = "", mode: String = "translate") {
+    func showSpeechBubble(word: String, meaning: String, phonetic: String = "", context: String = "", sourceApp: String = "", mode: String = "translate", canReplace: Bool = false) {
         bubbleMode = mode
         bubbleWord = word
         bubbleMeaning = meaning
+        bubbleCanReplace = canReplace
         bubblePhonetic = phonetic
         bubbleContext = context
         bubbleSourceApp = sourceApp
@@ -1595,6 +1599,7 @@ enum AppPermissionType {
         presentBubbleWindow()
 
         bubbleDismissTask?.cancel()
+        if mode == "grammar" || mode == "viToEn" { return }
         bubbleDismissTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 10_000_000_000)
             guard let self = self else { return }
@@ -4833,7 +4838,10 @@ struct FloatingMascotView: View {
                         Button("Dịch từ bôi đen · Option + D") {
                             Task { await GlobalHotkeyManager.shared.triggerSelectionTranslation() }
                         }
-                        Button("Sửa ngữ pháp & làm mượt · Option + F") {
+                        Button("Dịch VI → EN · Option + E") {
+                            Task { await GlobalHotkeyManager.shared.triggerVietnameseToEnglish() }
+                        }
+                        Button("Sửa ngữ pháp · Option + F") {
                             Task { await GlobalHotkeyManager.shared.triggerGrammarFixAndPolish() }
                         }
                     }
@@ -5137,7 +5145,7 @@ struct MascotQuickActionsPopover: View {
                         Image(systemName: model.isDockWalkEnabled ? "figure.walk.circle.fill" : "figure.walk")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundStyle(model.isDockWalkEnabled ? Color.green : Color.secondary)
-                        Text(model.isDockWalkEnabled ? "Đi dạo Dock: Bật" : "Đi dạo Dock")
+                        Text(model.isDockWalkEnabled ? "Đi dạo: Bật" : "Đi dạo")
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(model.isDockWalkEnabled ? Color.green : Color.secondary)
                     }
@@ -5568,40 +5576,6 @@ struct MascotQuickActionsPopover: View {
             }
             .buttonStyle(.plain)
 
-            Menu {
-                Menu("Dịch & chỉnh câu") {
-                    Button("Dịch từ bôi đen · Option + D") {
-                        isPresented = false
-                        Task { await GlobalHotkeyManager.shared.triggerSelectionTranslation() }
-                    }
-                    Button("Sửa ngữ pháp & làm mượt · Option + F") {
-                        isPresented = false
-                        Task { await GlobalHotkeyManager.shared.triggerGrammarFixAndPolish() }
-                    }
-                }
-                Button {
-                    isPresented = false
-                    model.showMainWindow()
-                    model.selectedDashboardTab = 1
-                    model.selectedNotebookTab = 1
-                } label: {
-                    Label("Sổ từ vựng & Flashcards", systemImage: "character.book.closed.fill")
-                }
-                Divider()
-                Button {
-                    isPresented = false
-                    model.snapMascotToConvenientPosition()
-                } label: {
-                    Label("Đưa Chip Chip về góc thuận tiện", systemImage: "arrow.down.forward.and.arrow.up.backward")
-                }
-            } label: {
-                Label("Tiện ích Chip Chip", systemImage: "square.grid.2x2")
-                    .font(.system(size: 12, weight: .medium))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(8)
-            }
-            .menuStyle(.borderlessButton)
-
             // 3. Open Main Window
             Button {
                 isPresented = false
@@ -5634,6 +5608,44 @@ struct MascotQuickActionsPopover: View {
                 )
             }
             .buttonStyle(.plain)
+
+            Menu {
+                Menu("Dịch & chỉnh câu") {
+                    Button("Dịch từ bôi đen · Option + D") {
+                        isPresented = false
+                        Task { await GlobalHotkeyManager.shared.triggerSelectionTranslation() }
+                    }
+                    Button("Dịch VI → EN · Option + E") {
+                        isPresented = false
+                        Task { await GlobalHotkeyManager.shared.triggerVietnameseToEnglish() }
+                    }
+                    Button("Sửa ngữ pháp · Option + F") {
+                        isPresented = false
+                        Task { await GlobalHotkeyManager.shared.triggerGrammarFixAndPolish() }
+                    }
+                }
+                Button {
+                    isPresented = false
+                    model.showMainWindow()
+                    model.selectedDashboardTab = 1
+                    model.selectedNotebookTab = 1
+                } label: {
+                    Label("Sổ từ vựng & Flashcards", systemImage: "character.book.closed.fill")
+                }
+                Divider()
+                Button {
+                    isPresented = false
+                    model.snapMascotToConvenientPosition()
+                } label: {
+                    Label("Đưa Chip Chip về góc thuận tiện", systemImage: "arrow.down.forward.and.arrow.up.backward")
+                }
+            } label: {
+                Label("Tiện ích Chip Chip", systemImage: "square.grid.2x2")
+                    .font(.system(size: 12, weight: .medium))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(8)
+            }
+            .menuStyle(.borderlessButton)
 
             Divider()
                 .opacity(0.5)
@@ -7426,7 +7438,7 @@ struct QuickTranslateView: View {
                                 Image(systemName: "sparkles")
                                     .font(.system(size: 11, weight: .semibold))
                             }
-                            Text("Sửa lỗi (\(model.sourceLanguage.shortName))")
+                            Text("Sửa ngữ pháp (\(model.sourceLanguage.shortName))")
                                 .font(.system(size: 12, weight: .semibold))
                         }
                         .padding(.leading, 10)
@@ -7439,12 +7451,12 @@ struct QuickTranslateView: View {
                         Button {
                             polishLanguageNow(lang: model.sourceLanguage)
                         } label: {
-                            Label("Sửa lỗi theo \(model.sourceLanguage.displayName) (Nguồn)", systemImage: "checkmark")
+                            Label("Sửa ngữ pháp theo \(model.sourceLanguage.displayName) (Nguồn)", systemImage: "checkmark")
                         }
                         Button {
                             polishLanguageNow(lang: model.targetLanguage)
                         } label: {
-                            Text("Sửa lỗi theo \(model.targetLanguage.displayName) (Đích)")
+                            Text("Sửa ngữ pháp theo \(model.targetLanguage.displayName) (Đích)")
                         }
                         Divider()
                         ForEach(AppLanguage.allCases.filter { $0 != model.sourceLanguage && $0 != model.targetLanguage }) { lang in
@@ -7469,7 +7481,7 @@ struct QuickTranslateView: View {
                         .stroke(TransToolsTheme.navy.opacity(0.28), lineWidth: 1)
                 )
                 .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || polishing || translating)
-                .help("Sửa lỗi ngữ pháp, chính tả & hoàn thiện câu theo \(model.sourceLanguage.displayName) (hoặc chọn ngôn ngữ khác)")
+                .help("Sửa ngữ pháp và chính tả theo \(model.sourceLanguage.displayName) (hoặc chọn ngôn ngữ khác)")
 
                 // Nút Dịch ngay
                 Button {
@@ -7595,7 +7607,7 @@ struct QuickTranslateView: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "sparkles")
                                     .foregroundStyle(.purple)
-                                Text("ĐÃ SỬA LỖI & LÀM MƯỢT (\(polishedLanguage.shortName.uppercased()))")
+                                Text("ĐÃ SỬA NGỮ PHÁP (\(polishedLanguage.shortName.uppercased()))")
                                     .font(.system(size: 11, weight: .bold))
                                     .foregroundStyle(.purple)
                             }
@@ -7656,7 +7668,7 @@ struct QuickTranslateView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 12) {
                             if output.isEmpty {
-                                Text(translating ? "Đang dịch câu của bạn theo chuyên ngành \(model.domainSpecialty.title)…" : (polishing ? "Đang kiểm tra ngữ pháp và làm mượt câu theo \(polishedLanguage.displayName)…" : "Kết quả bản dịch (\(model.targetLanguage.displayName)) hoặc sửa lỗi sẽ xuất hiện tại đây."))
+                                Text(translating ? "Đang dịch câu của bạn theo chuyên ngành \(model.domainSpecialty.title)…" : (polishing ? "Đang sửa ngữ pháp theo \(polishedLanguage.displayName)…" : "Kết quả bản dịch (\(model.targetLanguage.displayName)) hoặc sửa lỗi sẽ xuất hiện tại đây."))
                                     .font(.system(size: 14))
                                     .foregroundStyle(.tertiary)
                                     .padding(12)
@@ -8909,7 +8921,20 @@ struct AboutAppPopoverView: View {
         }
         .defaultSize(width: 980, height: 720)
         .windowStyle(.hiddenTitleBar)
-        .commands { MascotSpriteCommands() }
+        .commands {
+            MascotSpriteCommands()
+            CommandMenu("Dịch & chỉnh câu") {
+                Button("Dịch từ bôi đen · Option + D") {
+                    Task { await GlobalHotkeyManager.shared.triggerSelectionTranslation() }
+                }
+                Button("Sửa ngữ pháp · Option + F") {
+                    Task { await GlobalHotkeyManager.shared.triggerGrammarFixAndPolish() }
+                }
+                Button("Dịch VI → EN · Option + E") {
+                    Task { await GlobalHotkeyManager.shared.triggerVietnameseToEnglish() }
+                }
+            }
+        }
         Window("Bộ chuyển động mascot", id: "mascot-sprites") {
             MascotSpritePreviewView()
         }

@@ -195,6 +195,7 @@ public final class VocabularyManager: ObservableObject {
 private var gGlobalHotKeyRef: EventHotKeyRef?
 private var gGlobalHotKeyAltRef: EventHotKeyRef?
 private var gGlobalHotKeyGrammarRef: EventHotKeyRef?
+private var gGlobalHotKeyVIToENRef: EventHotKeyRef?
 private var gEventHandlerRef: EventHandlerRef?
 
 private func carbonHotKeyCallback(
@@ -215,7 +216,9 @@ private func carbonHotKeyCallback(
     let hotKeyNumber = (status == noErr) ? hotKeyID.id : 1
 
     Task { @MainActor in
-        if hotKeyNumber == 3 {
+        if hotKeyNumber == 4 {
+            await GlobalHotkeyManager.shared.triggerVietnameseToEnglish()
+        } else if hotKeyNumber == 3 {
             GlobalHotkeyManager.shared.handleGrammarHotKeyTriggered()
         } else {
             GlobalHotkeyManager.shared.handleHotKeyTriggered()
@@ -233,6 +236,8 @@ public final class GlobalHotkeyManager: ObservableObject {
     @Published public var lastCapturedMeaning: String = ""
     @Published public var lastCapturedContext: String = ""
     @Published public var lastSourceApp: String = ""
+
+    private var replacementApp: NSRunningApplication?
 
     private init() {}
 
@@ -287,6 +292,9 @@ public final class GlobalHotkeyManager: ObservableObject {
                 &gGlobalHotKeyGrammarRef
             )
 
+            RegisterEventHotKey(UInt32(kVK_ANSI_E), UInt32(optionKey),
+                EventHotKeyID(signature: OSType(0x5452414E), id: 4),
+                GetApplicationEventTarget(), 0, &gGlobalHotKeyVIToENRef)
             isRegistered = true
         }
     }
@@ -303,6 +311,10 @@ public final class GlobalHotkeyManager: ObservableObject {
         if let ref = gGlobalHotKeyGrammarRef {
             UnregisterEventHotKey(ref)
             gGlobalHotKeyGrammarRef = nil
+        }
+        if let ref = gGlobalHotKeyVIToENRef {
+            UnregisterEventHotKey(ref)
+            gGlobalHotKeyVIToENRef = nil
         }
         if let handler = gEventHandlerRef {
             RemoveEventHandler(handler)
@@ -351,7 +363,7 @@ public final class GlobalHotkeyManager: ObservableObject {
         }
 
         guard let copiedText = pasteboard.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !copiedText.isEmpty else {
+              pasteboard.changeCount != initialChangeCount, !copiedText.isEmpty else {
             // Prompt user
             MeetingModel.shared?.showSpeechBubble(
                 word: "Mẹo nhỏ",
@@ -363,6 +375,7 @@ public final class GlobalHotkeyManager: ObservableObject {
         }
 
         let cleanWord = copiedText
+        replacementApp = activeApp
         self.lastCapturedWord = cleanWord
         self.lastSourceApp = appName
 
@@ -441,10 +454,10 @@ public final class GlobalHotkeyManager: ObservableObject {
         }
 
         guard let copiedText = pasteboard.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !copiedText.isEmpty else {
+              pasteboard.changeCount != initialChangeCount, !copiedText.isEmpty else {
             MeetingModel.shared?.showSpeechBubble(
                 word: "Sửa lỗi tiếng Anh",
-                meaning: "Hãy bôi đen câu tiếng Anh vừa nhập, sau đó bấm Option + F để Chip Chip sửa ngữ pháp & làm mượt nhé!",
+                meaning: "Hãy bôi đen câu tiếng Anh rồi bấm Option + F để Chip Chip sửa ngữ pháp.",
                 context: "",
                 sourceApp: appName,
                 mode: "grammar"
@@ -453,6 +466,7 @@ public final class GlobalHotkeyManager: ObservableObject {
         }
 
         let cleanWord = copiedText
+        replacementApp = activeApp
         self.lastCapturedWord = cleanWord
         self.lastSourceApp = appName
 
@@ -475,6 +489,7 @@ public final class GlobalHotkeyManager: ObservableObject {
                 key: currentKey
             )
 
+            replacementApp = activeApp
             self.lastCapturedMeaning = polished
             MeetingModel.shared?.showSpeechBubble(
                 word: cleanWord,
@@ -482,7 +497,7 @@ public final class GlobalHotkeyManager: ObservableObject {
                 phonetic: "",
                 context: "AI Polished",
                 sourceApp: appName,
-                mode: "grammar"
+                mode: "grammar", canReplace: true
             )
         } catch {
             MeetingModel.shared?.showSpeechBubble(
@@ -495,17 +510,66 @@ public final class GlobalHotkeyManager: ObservableObject {
         }
     }
 
+    public func triggerVietnameseToEnglish() async {
+        guard let model = MeetingModel.shared else { return }
+        let activeApp = NSWorkspace.shared.frontmostApplication
+        let appName = activeApp?.localizedName ?? ""
+        let pasteboard = NSPasteboard.general
+        let initialChangeCount = pasteboard.changeCount
+        let source = CGEventSource(stateID: .hidSystemState)
+        for down in [true, false] {
+            let event = CGEvent(keyboardEventSource: source, virtualKey: 0x08, keyDown: down)
+            event?.flags = .maskCommand
+            event?.post(tap: .cghidEventTap)
+        }
+        for _ in 0..<9 {
+            try? await Task.sleep(nanoseconds: 25_000_000)
+            if pasteboard.changeCount != initialChangeCount { break }
+        }
+        guard pasteboard.changeCount != initialChangeCount,
+              let text = pasteboard.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !text.isEmpty else {
+            model.showSpeechBubble(word: "Dịch VI → EN",
+                meaning: "Bôi đen câu tiếng Việt rồi bấm Option + E để dịch sang tiếng Anh.",
+                sourceApp: appName, mode: "viToEn")
+            return
+        }
+        replacementApp = activeApp
+        let domain = model.domainSpecialty
+        let provider = model.provider
+        let key = CredentialStore.read(for: provider)
+        let modelName = model.modelName
+        model.showBubbleLoading(word: text, sourceApp: appName, mode: "viToEn")
+        do {
+            let result = try await AITranslator.quickTranslateDetailed(text,
+                from: .vietnamese, to: .english, domain: domain,
+                provider: provider, model: modelName, key: key)
+            let english = result.primary.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !english.isEmpty else { throw URLError(.cannotParseResponse) }
+            replacementApp = activeApp
+            model.showSpeechBubble(word: text, meaning: english,
+                context: domain.title, sourceApp: appName, mode: "viToEn", canReplace: true)
+        } catch {
+            model.showSpeechBubble(word: text,
+                meaning: "Không thể dịch. Kiểm tra mạng hoặc API key rồi thử lại.",
+                sourceApp: appName, mode: "viToEn")
+        }
+    }
+
     // MARK: - Simulate ⌘V để paste kết quả đè lại vào ô chat của ứng dụng trước đó
     public func pasteReplacementText(_ text: String) {
+        guard MeetingModel.shared?.bubbleCanReplace == true,
+              let targetApp = replacementApp, !targetApp.isTerminated else { return }
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
 
-        // Ẩn bóng thoại ngay để focus trả lại cho ứng dụng chat
+        guard targetApp.activate(options: []) else { return }
         MeetingModel.shared?.hideSpeechBubble()
 
-        // Gửi phím ⌘V sau 60ms để ứng dụng chat tiếp nhận focus
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+        // Gửi phím ⌘V sau khi ứng dụng gốc nhận focus để ứng dụng chat tiếp nhận focus
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            guard NSWorkspace.shared.frontmostApplication?.processIdentifier == targetApp.processIdentifier else { return }
             let source = CGEventSource(stateID: .hidSystemState)
             let vKeyCode: CGKeyCode = 0x09 // 'V' key
             if let vDown = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: true),
@@ -538,7 +602,7 @@ public struct MascotBubbleView: View {
                     if !model.isBubbleLoading {
                         Button {
                             // Phát âm câu kết quả (nếu grammar mode thì phát âm câu đã sửa)
-                            let textToSpeak = (model.bubbleMode == "grammar" && !model.bubbleMeaning.isEmpty) ? model.bubbleMeaning : model.bubbleWord
+                            let textToSpeak = ((model.bubbleMode == "grammar" || model.bubbleMode == "viToEn") && !model.bubbleMeaning.isEmpty) ? model.bubbleMeaning : model.bubbleWord
                             vocabManager.speak(textToSpeak)
                         } label: {
                             Image(systemName: "speaker.wave.2.fill")
@@ -554,8 +618,8 @@ public struct MascotBubbleView: View {
 
                     VStack(alignment: .leading, spacing: 1) {
                         HStack(spacing: 5) {
-                            if model.bubbleMode == "grammar" {
-                                Label("AI Sửa ngữ pháp", systemImage: "sparkles")
+                            if (model.bubbleMode == "grammar" || model.bubbleMode == "viToEn") {
+                                Label(model.bubbleMode == "viToEn" ? "Dịch VI → EN" : "Sửa ngữ pháp", systemImage: "sparkles")
                                     .font(.system(size: 11, weight: .bold, design: .rounded))
                                     .foregroundStyle(TransToolsTheme.navy)
                             } else {
@@ -611,7 +675,7 @@ public struct MascotBubbleView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 3)
                 } else {
-                    if model.bubbleMode == "grammar" {
+                    if (model.bubbleMode == "grammar" || model.bubbleMode == "viToEn") {
                         VStack(alignment: .leading, spacing: 5) {
                             Text(model.bubbleMeaning)
                                 .font(.system(size: 12.5, weight: .bold, design: .rounded))
@@ -636,7 +700,7 @@ public struct MascotBubbleView: View {
 
                     // Footer actions
                     HStack(spacing: 7) {
-                        if model.bubbleMode == "grammar" {
+                        if (model.bubbleMode == "grammar" || model.bubbleMode == "viToEn") {
                             // Nút Thay thế vào ô Chat (⌘V)
                             Button {
                                 GlobalHotkeyManager.shared.pasteReplacementText(model.bubbleMeaning)
@@ -654,7 +718,8 @@ public struct MascotBubbleView: View {
                                 .clipShape(Capsule())
                             }
                             .buttonStyle(.plain)
-                            .help("Tự động paste câu tiếng Anh chuẩn vào ô chat")
+                            .disabled(!model.bubbleCanReplace)
+                            .help("Thay câu bôi đen bằng kết quả tiếng Anh")
 
                             // Copy button
                             Button {
@@ -851,7 +916,7 @@ public struct VocabularyFlashcardModal: View {
                                 .padding(.horizontal, 20)
 
                             if !currentItem.phonetic.isEmpty {
-                                Text(currentItem.phonetic)
+                                Text(DictionaryService.primaryPhonetic(currentItem.phonetic))
                                     .font(.system(size: 14, weight: .medium, design: .monospaced))
                                     .foregroundStyle(TransToolsTheme.navy)
                             }
@@ -884,7 +949,7 @@ public struct VocabularyFlashcardModal: View {
                             Spacer()
                             Text(currentItem.word).font(.system(size: 16, weight: .semibold, design: .rounded))
                             if !currentItem.phonetic.isEmpty {
-                                Text(currentItem.phonetic).font(.system(size: 14, design: .monospaced)).foregroundStyle(TransToolsTheme.navy)
+                                Text(DictionaryService.primaryPhonetic(currentItem.phonetic)).font(.system(size: 14, design: .monospaced)).foregroundStyle(TransToolsTheme.navy)
                             }
                             Text(currentItem.meaning)
                                 .font(.system(size: 20, weight: .bold))
@@ -1168,7 +1233,7 @@ private struct VocabularyRowCard: View {
                         .foregroundStyle(.primary)
 
                     if !item.phonetic.isEmpty {
-                        Text(item.phonetic)
+                        Text(DictionaryService.primaryPhonetic(item.phonetic))
                             .font(.system(size: 11, weight: .medium, design: .monospaced))
                             .foregroundStyle(TransToolsTheme.navy)
                     }

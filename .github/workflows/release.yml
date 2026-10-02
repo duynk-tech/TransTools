@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: transtools-release
+  cancel-in-progress: false
+
 jobs:
   build-and-release:
     name: Build & Package TransTools
@@ -39,3 +43,25 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
+
+      - name: Set up Node for public downloads
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install release service dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Validate update manifest
+        run: |
+          npm run test:updates
+          zsh scripts/test-update-manifest.sh
+
+      - name: Publish ZIP, DMG and latest manifest to Vercel Blob
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          RELEASE_VERSION: ${{ github.ref_name }}
+          RELEASE_NOTES_FILE: docs/release-${{ github.ref_name }}.md
+        run: npm run publish:release

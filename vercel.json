@@ -1,4 +1,14 @@
 {
   "outputDirectory": "docs",
-  "cleanUrls": true
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/updates/latest.json",
+      "destination": "/api/updates"
+    },
+    {
+      "source": "/download",
+      "destination": "/api/download"
+    }
+  ]
 }

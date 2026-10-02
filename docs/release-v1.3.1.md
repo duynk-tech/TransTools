@@ -1,0 +1,5 @@
+- Cập nhật qua Vercel và public Blob, giữ repository GitHub private.
+- Xác minh SHA256 của ZIP trước khi cài; báo rõ khi nguồn cập nhật lỗi.
+- Sổ từ vựng và Flashcard hiển thị một phiên âm chính.
+- Rút gọn nhãn Sửa ngữ pháp, thêm Dịch VI → EN theo chuyên ngành và thay thế câu bôi đen.
+- Đưa Tiện ích Chip Chip xuống sau Mở bảng điều khiển; đổi Đi dạo Dock thành Đi dạo.

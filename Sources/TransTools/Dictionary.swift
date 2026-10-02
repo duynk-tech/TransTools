@@ -33,7 +33,14 @@ enum DictionaryService {
         let parts = text.components(separatedBy: "|")
         guard parts.count >= 3 else { return "" }
         let value = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
-        return value.isEmpty ? "" : "/" + value + "/"
+        return primaryPhonetic(value)
+    }
+    /// Show one pronunciation instead of repeating regional variants in compact cards.
+    static func primaryPhonetic(_ value: String) -> String {
+        let clean = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/[]"))
+        let first = clean.components(separatedBy: ",").first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return first.isEmpty ? "" : "/" + first.trimmingCharacters(in: CharacterSet(charactersIn: "/[]")) + "/"
     }
     static func entry(_ word: String) async throws -> DictionaryEntry {
         let url = URL(string: "https://api.dictionaryapi.dev/api/v2/entries/en/")!.appendingPathComponent(word)

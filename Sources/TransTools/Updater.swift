@@ -2,38 +2,7 @@ import SwiftUI
 import AppKit
 import Foundation
 import Combine
-
-// MARK: - GitHub Release API Models
-
-struct GitHubRelease: Codable {
-    let tagName: String
-    let name: String?
-    let body: String?
-    let htmlUrl: String
-    let assets: [GitHubAsset]
-    let publishedAt: String?
-
-    enum CodingKeys: String, CodingKey {
-        case tagName = "tag_name"
-        case name
-        case body
-        case htmlUrl = "html_url"
-        case assets
-        case publishedAt = "published_at"
-    }
-}
-
-struct GitHubAsset: Codable {
-    let name: String
-    let browserDownloadUrl: String
-    let size: Int?
-
-    enum CodingKeys: String, CodingKey {
-        case name
-        case browserDownloadUrl = "browser_download_url"
-        case size
-    }
-}
+import CryptoKit
 
 // MARK: - App Updater State & Manager
 
@@ -44,8 +13,11 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
     static let repoOwner = "duynk-tech"
     static let repoName = "TransTools"
     static let repoURLString = "https://github.com/duynk-tech/TransTools"
-    static let releasesAPIURL = URL(string: "https://api.github.com/repos/\(repoOwner)/\(repoName)/releases/latest")!
+    static let releasesAPIURL = URL(string: "https://trans-tools.vercel.app/updates/latest.json")!
+    static let releasesURLString = "https://trans-tools.vercel.app/releases"
 
+    @Published var didCheckSuccessfully = false
+    private var expectedZipSHA256 = ""
     @Published var isChecking: Bool = false
     @Published var updateAvailable: Bool = false
     @Published var latestVersion: String = ""
@@ -69,7 +41,7 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
     private var downloadContinuation: CheckedContinuation<URL, Error>?
 
     var currentVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.3.0"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.3.1"
     }
 
     var currentVersionDisplay: String {
@@ -104,20 +76,23 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
     // MARK: - Check For Updates
 
     func checkForUpdates(userInitiated: Bool = false) {
-        guard !isChecking else { return }
+        guard !isChecking && !isDownloading else { return }
         isChecking = true
+        didCheckSuccessfully = false
+        updateAvailable = false
+        downloadURL = nil
         hasError = false
         errorMessage = ""
 
         if userInitiated {
-            installStatusMessage = "Đang kiểm tra bản cập nhật mới từ GitHub..."
+            installStatusMessage = "Đang kiểm tra bản cập nhật mới từ TransTools..."
         }
 
         Task {
             do {
-                var request = URLRequest(url: Self.releasesAPIURL)
+                var request = URLRequest(url: Self.releasesAPIURL, cachePolicy: .reloadIgnoringLocalCacheData)
                 request.timeoutInterval = 15
-                request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
+                request.setValue("application/json", forHTTPHeaderField: "Accept")
                 request.setValue("TransTools-AppUpdater/\(currentVersion)", forHTTPHeaderField: "User-Agent")
 
                 let (data, response) = try await URLSession.shared.data(for: request)
@@ -127,40 +102,28 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
                 }
 
                 if httpResponse.statusCode == 404 {
-                    // No release created yet on github
-                    self.isChecking = false
-                    self.updateAvailable = false
-                    self.lastCheckedDate = Date()
-                    if userInitiated {
-                        self.installStatusMessage = "Hiện chưa có bản phát hành nào trên GitHub (\(Self.repoURLString)). Bạn đang ở bản mới nhất!"
-                    }
-                    return
+                    throw NSError(domain: "AppUpdater", code: 404, userInfo: [NSLocalizedDescriptionKey:
+                        "Nguồn cập nhật chưa có bản phát hành. Vui lòng thử lại sau."])
                 }
 
                 guard httpResponse.statusCode == 200 else {
                     throw NSError(domain: "AppUpdater", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Máy chủ trả về mã lỗi HTTP \(httpResponse.statusCode)."])
                 }
 
-                let release = try JSONDecoder().decode(GitHubRelease.self, from: data)
-                let tagClean = release.tagName.trimmingCharacters(in: CharacterSet(charactersIn: "vV \t\n\r"))
+                let release = try JSONDecoder().decode(UpdateManifest.self, from: data)
+                try release.validate()
+                let tagClean = release.version
                 self.lastCheckedDate = Date()
+                self.didCheckSuccessfully = true
+                self.latestVersion = tagClean
+                self.releaseTitle = release.title
+                self.releaseNotes = release.notes
+                self.htmlURL = release.releaseURL
+                self.expectedZipSHA256 = release.zip.sha256.lowercased()
 
                 if Self.isVersion(tagClean, greaterThan: self.currentVersion) {
                     self.updateAvailable = true
-                    self.latestVersion = tagClean
-                    self.releaseTitle = release.name ?? "TransTools v\(tagClean)"
-                    self.releaseNotes = release.body ?? "Đã có phiên bản mới với nhiều cải tiến và sửa lỗi."
-                    self.htmlURL = URL(string: release.htmlUrl)
-
-                    // Find zip asset for macOS
-                    if let zipAsset = release.assets.first(where: {
-                        let name = $0.name.lowercased()
-                        return name.hasSuffix(".zip") && name.contains("transtools")
-                    }) {
-                        self.downloadURL = URL(string: zipAsset.browserDownloadUrl)
-                    } else {
-                        self.downloadURL = nil
-                    }
+                    self.downloadURL = release.zip.url
 
                     self.installStatusMessage = "Đã có bản cập nhật mới v\(tagClean)!"
                     if userInitiated {
@@ -174,11 +137,9 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
                 self.isChecking = false
             } catch {
                 self.isChecking = false
-                if userInitiated {
-                    self.hasError = true
-                    self.errorMessage = "Không thể kiểm tra cập nhật: \(error.localizedDescription)"
-                    self.installStatusMessage = self.errorMessage
-                }
+                self.hasError = true
+                self.errorMessage = "Không thể kiểm tra cập nhật: \(error.localizedDescription)"
+                self.installStatusMessage = self.errorMessage
             }
         }
     }
@@ -188,7 +149,7 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
     func downloadAndInstallUpdate() {
         guard let downloadURL = downloadURL else {
             // Fallback to browser
-            if let htmlURL = htmlURL ?? URL(string: "\(Self.repoURLString)/releases") {
+            if let htmlURL = htmlURL ?? URL(string: Self.releasesURLString) {
                 NSWorkspace.shared.open(htmlURL)
             }
             return
@@ -212,6 +173,12 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
                 let downloadedURL = try await startDownloadWithProgress(from: downloadURL)
                 try FileManager.default.moveItem(at: downloadedURL, to: destinationZip)
 
+                let digest = SHA256.hash(data: try Data(contentsOf: destinationZip))
+                    .map { String(format: "%02x", $0) }.joined()
+                guard digest == self.expectedZipSHA256 else {
+                    throw NSError(domain: "AppUpdater", code: -2, userInfo: [NSLocalizedDescriptionKey:
+                        "Bộ cài không khớp SHA256. Đã dừng cập nhật; hãy tải lại."])
+                }
                 self.installStatusMessage = "Đang giải nén và chuẩn bị cài đặt..."
                 self.downloadProgress = 1.0
 
@@ -304,11 +271,20 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
     }
 
     nonisolated func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+        let result: Result<URL, Error>
+        do {
+            guard let response = downloadTask.response as? HTTPURLResponse, response.statusCode == 200 else {
+                throw URLError(.badServerResponse)
+            }
+            let retained = FileManager.default.temporaryDirectory.appendingPathComponent("TransToolsDownload-\(UUID().uuidString).zip")
+            try FileManager.default.moveItem(at: location, to: retained)
+            result = .success(retained)
+        } catch { result = .failure(error) }
         Task { @MainActor in
             if let continuation = self.downloadContinuation {
                 self.downloadContinuation = nil
-                continuation.resume(returning: location)
-            }
+                continuation.resume(with: result)
+            } else if case .success(let url) = result { try? FileManager.default.removeItem(at: url) }
         }
     }
 
@@ -556,12 +532,12 @@ struct UpdateSheetView: View {
             } else {
                 VStack(spacing: 12) {
                     HStack(spacing: 8) {
-                        Image(systemName: "checkmark.seal.fill")
+                        Image(systemName: updater.hasError ? "exclamationmark.triangle.fill" : (updater.didCheckSuccessfully ? "checkmark.seal.fill" : "arrow.clockwise"))
                             .font(.system(size: 24))
-                            .foregroundStyle(.green)
+                            .foregroundStyle(updater.hasError ? Color.red : Color.secondary)
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Bạn đang dùng phiên bản mới nhất")
+                            Text(updater.hasError ? "Chưa kiểm tra được bản cập nhật" : (updater.didCheckSuccessfully ? "Bạn đang dùng phiên bản mới nhất" : "Đang kiểm tra bản cập nhật"))
                                 .font(.system(size: 13, weight: .semibold))
                             Text("Phiên bản hiện tại \(updater.currentVersionDisplay)")
                                 .font(.system(size: 11))
@@ -611,7 +587,7 @@ struct UpdateSheetView: View {
                         .buttonStyle(.plain)
                         .keyboardShortcut(.defaultAction)
 
-                        if let htmlURL = URL(string: "\(AppUpdater.repoURLString)/releases") {
+                        if let htmlURL = URL(string: AppUpdater.releasesURLString) {
                             Button {
                                 NSWorkspace.shared.open(htmlURL)
                             } label: {
@@ -690,7 +666,7 @@ struct SettingsUpdateTabView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text(lastChecked).font(.system(size: 12)).foregroundStyle(.secondary)
                 Toggle("Tự động kiểm tra bản cập nhật", isOn: $autoCheckUpdates)
-                    .help("Kiểm tra bản phát hành trên GitHub khi mở TransTools.")
+                    .help("Kiểm tra bản phát hành TransTools khi mở app.")
                 Toggle("Tự động tải bản cập nhật và cài đặt khi thoát TransTools", isOn: .constant(false))
                     .disabled(true)
                     .help("Chưa bật chức năng tự động cài đặt khi thoát.")
@@ -699,7 +675,7 @@ struct SettingsUpdateTabView: View {
                         updater.checkForUpdates(userInitiated: true)
                     }.disabled(updater.isChecking || updater.isDownloading)
                     Button("Lịch sử phiên bản") {
-                        if let url = URL(string: "\(AppUpdater.repoURLString)/releases") { NSWorkspace.shared.open(url) }
+                        if let url = URL(string: AppUpdater.releasesURLString) { NSWorkspace.shared.open(url) }
                     }
                 }.buttonStyle(.bordered).controlSize(.small)
                 if updater.isDownloading {

@@ -9,3 +9,8 @@ xcuserdata/
 DerivedData/
 .vscode/
 work/
+.vercel
+
+.vercel/
+node_modules/
+.env*

@@ -1,0 +1,8 @@
+.git
+.build
+build
+work
+Sources
+Resources
+Tests
+.env*
