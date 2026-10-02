@@ -3495,6 +3495,13 @@ struct MascotMusicEffects: View {
 
     var body: some View {
         ZStack {
+            headphoneWaves
+            floatingNotes
+            beatSparkles
+        }
+    }
+
+    private var headphoneWaves: some View {
             // Sound wave pulses radiating directly from Chip Chip's built-in headphones
             ForEach(0..<2) { i in
                 let pulsePhase = fmod(time * 1.8 + Double(i) * 0.5, 1.0)
@@ -3524,12 +3531,17 @@ struct MascotMusicEffects: View {
                     .offset(x: 26, y: -22)
             }
 
+    }
+
+    private var floatingNotes: some View {
             // Dancing colorful musical notes floating around
             ForEach(0..<4) { i in
                 let phase = fmod(time * 0.65 + Double(i) * 0.25, 1.0)
                 let noteIcons = ["music.note", "music.quarternote.3", "music.note.list", "music.mic"]
                 let isLeft = (i % 2 == 0)
-                let nX = (isLeft ? -1.0 : 1.0) * CGFloat(16 + sin(phase * .pi * 2 + Double(i)) * 8 + Double(i) * 4)
+                let horizontalDrift: Double = sin(phase * Double.pi * 2.0 + Double(i)) * 8.0
+                let horizontalDistance: Double = 16.0 + horizontalDrift + Double(i) * 4.0
+                let nX: CGFloat = CGFloat(isLeft ? -horizontalDistance : horizontalDistance)
                 let nY = CGFloat(-38 - phase * 32)
                 let nScale = CGFloat(0.65 + phase * 0.45)
                 let nRot = sin(time * 3.5 + Double(i)) * 22.0
@@ -3553,6 +3565,9 @@ struct MascotMusicEffects: View {
                     .offset(x: nX, y: nY)
             }
 
+    }
+
+    private var beatSparkles: some View {
             // Sparkle beats on rhythm
             ForEach(0..<2) { i in
                 let spPhase = fmod(time * 1.4 + Double(i) * 0.5, 1.0)
@@ -3563,7 +3578,6 @@ struct MascotMusicEffects: View {
                     .opacity(sin(spPhase * .pi) * 0.8)
                     .scaleEffect(CGFloat(0.5 + spPhase * 0.5))
             }
-        }
     }
 }
 
@@ -7134,6 +7148,35 @@ struct QuickTranslateView: View {
 
     var body: some View {
         VStack(spacing: 14) {
+            specialtyBar
+
+            suggestionBar
+
+            languageActionBar
+
+            translationStudio
+
+            if model.key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && model.provider != .free && model.provider != .apple {
+                HStack(spacing: 8) {
+                    Image(systemName: "info.circle.fill")
+                        .foregroundStyle(.blue)
+                    Text("Đang dùng bộ dịch nhanh Google Free (miễn phí). Nhập \(model.provider.displayName) API Key trong Cài đặt nếu bạn muốn nhận đầy đủ gợi ý và phong cách dịch AI chuẩn.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(TransToolsTheme.accent.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+        }
+        .padding(20)
+        .enableAppleTranslationSession(source: model.sourceLanguage, target: model.targetLanguage)
+    }
+
+
+    private var specialtyBar: some View {
             // 1. Chuyên ngành dịch thuật Selector Bar (Dropdown Menu đồng bộ với Cài đặt)
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -7202,6 +7245,9 @@ struct QuickTranslateView: View {
                     .stroke(Color.primary.opacity(0.06), lineWidth: 1)
             )
 
+    }
+
+    private var suggestionBar: some View {
             // 2. Gợi ý mẫu câu nhanh theo chuyên ngành (Interactive Suggestion Chips)
             HStack(spacing: 8) {
                 HStack(spacing: 4) {
@@ -7245,6 +7291,9 @@ struct QuickTranslateView: View {
             }
             .padding(.horizontal, 4)
 
+    }
+
+    private var languageActionBar: some View {
             // 3. Language Selector Bar (Nút chuyển đổi ngôn ngữ nằm ở phía trên ngang hàng ngôn ngữ) & Action Buttons
             HStack(spacing: 10) {
                 // Ngôn ngữ nguồn
@@ -7457,8 +7506,18 @@ struct QuickTranslateView: View {
                 .help("Dịch sang \(model.targetLanguage.displayName) (⌘ + Enter)")
             }
 
+    }
+
+    private var translationStudio: some View {
             // 4. Two-Pane Translation & Polish Studio (Trái: Nhập liệu, Phải: Kết quả)
             HStack(spacing: 14) {
+                sourcePanel
+                resultPanel
+            }
+
+    }
+
+    private var sourcePanel: some View {
                 // Left Panel: Source Input
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
@@ -7518,6 +7577,9 @@ struct QuickTranslateView: View {
                     }
                 }
 
+    }
+
+    private var resultPanel: some View {
                 // Right Panel: Output & Polish Result
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
@@ -7687,25 +7749,6 @@ struct QuickTranslateView: View {
                         Spacer()
                     }
                 }
-            }
-
-            if model.key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && model.provider != .free && model.provider != .apple {
-                HStack(spacing: 8) {
-                    Image(systemName: "info.circle.fill")
-                        .foregroundStyle(.blue)
-                    Text("Đang dùng bộ dịch nhanh Google Free (miễn phí). Nhập \(model.provider.displayName) API Key trong Cài đặt nếu bạn muốn nhận đầy đủ gợi ý và phong cách dịch AI chuẩn.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(TransToolsTheme.accent.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            }
-        }
-        .padding(20)
-        .enableAppleTranslationSession(source: model.sourceLanguage, target: model.targetLanguage)
     }
 
     private func translateNow() {
