@@ -18,7 +18,7 @@ private struct NotebookWebTabItem: View {
                 HStack(spacing: 7) {
                     Image(systemName: icon)
                         .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                        .foregroundStyle(isSelected ? Color.accentColor : (isHovered ? .primary : .secondary))
+                        .foregroundStyle(isSelected ? TransToolsTheme.accent : (isHovered ? .primary : .secondary))
 
                     Text(title)
                         .font(.system(size: 13, weight: isSelected ? .bold : .medium))
@@ -30,10 +30,10 @@ private struct NotebookWebTabItem: View {
                         .padding(.vertical, 2)
                         .background(
                             isSelected
-                                ? Color.accentColor.opacity(0.14)
+                                ? TransToolsTheme.accent.opacity(0.14)
                                 : Color.secondary.opacity(0.1)
                         )
-                        .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                        .foregroundStyle(isSelected ? TransToolsTheme.accent : .secondary)
                         .clipShape(Capsule())
                 }
                 .padding(.horizontal, 14)
@@ -48,7 +48,7 @@ private struct NotebookWebTabItem: View {
 
                     if isSelected {
                         RoundedRectangle(cornerRadius: 1.5)
-                            .fill(Color.accentColor)
+                            .fill(TransToolsTheme.accent)
                             .frame(height: 2.5)
                     }
                 }
@@ -131,29 +131,6 @@ struct MeetingNotebookView: View {
                 HSplitView {
             // Left Pane: Session List & Search
             VStack(spacing: 0) {
-                // Header
-                HStack(spacing: 8) {
-                    Image(systemName: "book.closed.fill")
-                        .font(.system(size: 14))
-                        .foregroundStyle(.purple)
-
-                    Text("Sổ tay cuộc họp")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-
-                    Spacer()
-
-                    Text("\(model.sessions.count)")
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 2)
-                        .background(Color.purple.opacity(0.15))
-                        .foregroundStyle(.purple)
-                        .clipShape(Capsule())
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(Color(nsColor: .controlBackgroundColor).opacity(0.6))
-
                 // Search Bar
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
@@ -340,12 +317,12 @@ private struct SessionRowItem: View {
                 // Leading accent strip or icon
                 ZStack {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(isSelected ? Color.purple.opacity(0.2) : Color.secondary.opacity(0.1))
+                        .fill(isSelected ? TransToolsTheme.navy.opacity(0.2) : Color.secondary.opacity(0.1))
                         .frame(width: 32, height: 32)
 
                     Image(systemName: "waveform")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(isSelected ? Color.purple : Color.secondary)
+                        .foregroundStyle(isSelected ? TransToolsTheme.navy : Color.secondary)
                 }
 
                 // Title & Metadata
@@ -399,11 +376,11 @@ private struct SessionRowItem: View {
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(isSelected ? Color.purple.opacity(0.12) : (isHovered ? Color.secondary.opacity(0.06) : Color.clear))
+                    .fill(isSelected ? TransToolsTheme.navy.opacity(0.12) : (isHovered ? Color.secondary.opacity(0.06) : Color.clear))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(isSelected ? Color.purple.opacity(0.3) : Color.clear, lineWidth: 1)
+                    .stroke(isSelected ? TransToolsTheme.navy.opacity(0.3) : Color.clear, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -528,7 +505,7 @@ private struct SessionDetailView: View {
                         )
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        .shadow(color: Color.blue.opacity(0.25), radius: 4, y: 2)
+                        .shadow(color: TransToolsTheme.accent.opacity(0.25), radius: 4, y: 2)
                     }
                     .buttonStyle(.plain)
                     .help("Xuất toàn bộ biên bản cuộc họp và bảng hội thoại song ngữ sang file Microsoft Word (.docx)")
@@ -618,7 +595,7 @@ private struct SessionDetailView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        .stroke(Color.purple.opacity(0.2), lineWidth: 1)
+                                        .stroke(TransToolsTheme.navy.opacity(0.2), lineWidth: 1)
                                 )
                                 .onChange(of: notesText) { _, newValue in
                                     model.updateSessionNotes(id: session.id, notes: newValue)
@@ -626,11 +603,11 @@ private struct SessionDetailView: View {
                         }
                     }
                     .padding(12)
-                    .background(Color.purple.opacity(0.05))
+                    .background(TransToolsTheme.navy.opacity(0.05))
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(Color.purple.opacity(0.18), lineWidth: 1)
+                            .stroke(TransToolsTheme.navy.opacity(0.18), lineWidth: 1)
                     )
 
                     // Bilingual Dialogue Section Header & Search
@@ -775,10 +752,10 @@ private struct NotebookCaptionCard: View {
                             .font(.system(size: 9.5, weight: .bold))
                     }
                     .font(.system(size: 10))
-                    .foregroundStyle(Color.purple)
+                    .foregroundStyle(TransToolsTheme.navy)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2.5)
-                    .background(Color.purple.opacity(0.12))
+                    .background(TransToolsTheme.navy.opacity(0.12))
                     .clipShape(Capsule())
                 }
 
@@ -799,10 +776,10 @@ private struct NotebookCaptionCard: View {
                                 Text("Gốc")
                             }
                             .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(isSpeakingOrig ? Color.purple : .primary)
+                            .foregroundStyle(isSpeakingOrig ? TransToolsTheme.navy : .primary)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
-                            .background(isSpeakingOrig ? Color.purple.opacity(0.15) : Color.secondary.opacity(0.12))
+                            .background(isSpeakingOrig ? TransToolsTheme.navy.opacity(0.15) : Color.secondary.opacity(0.12))
                             .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                         }
                         .buttonStyle(.plain)
@@ -838,10 +815,10 @@ private struct NotebookCaptionCard: View {
                                     Text("Dịch")
                                 }
                                 .font(.system(size: 10, weight: .medium))
-                                .foregroundStyle(isSpeakingTrans ? Color.purple : .primary)
+                                .foregroundStyle(isSpeakingTrans ? TransToolsTheme.navy : .primary)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 3)
-                                .background(isSpeakingTrans ? Color.purple.opacity(0.15) : Color.secondary.opacity(0.12))
+                                .background(isSpeakingTrans ? TransToolsTheme.navy.opacity(0.15) : Color.secondary.opacity(0.12))
                                 .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                             }
                             .buttonStyle(.plain)
@@ -874,7 +851,7 @@ private struct NotebookCaptionCard: View {
                             .font(.system(size: 10, weight: .medium))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
-                            .background(Color.purple.opacity(0.15))
+                            .background(TransToolsTheme.navy.opacity(0.15))
                             .foregroundStyle(.purple)
                             .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                         }
@@ -905,7 +882,7 @@ private struct NotebookCaptionCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(isHovered ? Color.purple.opacity(0.3) : Color.primary.opacity(0.06), lineWidth: 1)
+                .stroke(isHovered ? TransToolsTheme.navy.opacity(0.3) : Color.primary.opacity(0.06), lineWidth: 1)
         )
         .onHover { isHovered = $0 }
     }

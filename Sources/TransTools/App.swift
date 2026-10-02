@@ -22,7 +22,7 @@ var appVersionDisplay: String {
     if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String, !version.isEmpty {
         return "v\(version)"
     }
-    return "v1.2.0"
+    return "v1.3.0"
 }
 
 // MARK: - Meeting Session Notebook Records & Persistence
@@ -328,6 +328,8 @@ enum AppPermissionType {
     private var session = UUID()
     private var activeKey = ""
     private var lastAudioUpdateTime: Date = .distantPast
+    private var speechRotationTail = ""
+    private var lastRecognitionUpdate = Date.distantPast
     private var overlay: NSWindow?
 
     @Published var selectedDashboardTab: Int = 0
@@ -681,6 +683,7 @@ enum AppPermissionType {
             activeKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
             started = Date(); captions = []; translatedOriginal = [:]; currentID = UUID(); lastAudio = nil; session = UUID()
             lastRawRecognizedText = ""
+            speechRotationTail = ""
             sessionFinalizedWordsCount = 0
             sessionFinalizedPrefix = ""
             immediateTranslationRequested = false
@@ -715,6 +718,7 @@ enum AppPermissionType {
     }
 
     func stop() async {
+        finalizeCurrentCaption(immediateTranslation: true)
         running = false; session = UUID()
         sessionFinalizedWordsCount = 0
         sessionFinalizedPrefix = ""
@@ -746,6 +750,7 @@ enum AppPermissionType {
 
     private func handleSpeechSessionEndedOrTimeout() {
         guard running else { return }
+        speechRotationTail = lastRawRecognizedText
         finalizeCurrentCaption(immediateTranslation: true)
         sessionFinalizedPrefix = ""
         sessionFinalizedWordsCount = 0
@@ -766,12 +771,13 @@ enum AppPermissionType {
 
         // NEVER cut sentences off while the user is actively speaking!
         // Rotate only during a natural pause in speech (silence gap >= 1.5s or empty active card)
-        let silenceGap = Date().timeIntervalSince(lastAudioUpdateTime)
+        let silenceGap = Date().timeIntervalSince(lastRecognitionUpdate)
         let hasActiveSpeech = silenceGap < 1.5 && (captions.last?.id == currentID && !(captions.last?.original.isEmpty ?? true))
         if hasActiveSpeech && elapsed < 58 {
             return
         }
 
+        speechRotationTail = lastRawRecognizedText
         finalizeCurrentCaption(immediateTranslation: true)
         sessionFinalizedPrefix = ""
         sessionFinalizedWordsCount = 0
@@ -786,42 +792,39 @@ enum AppPermissionType {
 
     private func receive(_ text: String, final: Bool) {
         guard running else { return }
-        let trimmedRaw = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedRaw.isEmpty else { return }
+        let raw = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedRaw = SpeechTextReconciler.removingOverlap(raw, after: speechRotationTail)
+        guard !trimmedRaw.isEmpty else {
+            if final { handleSpeechSessionEndedOrTimeout() }
+            return
+        }
+        lastRecognitionUpdate = Date()
         let elapsed = Date().timeIntervalSince(started)
 
         let allWords = trimmedRaw.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
 
-        // Extract active text that hasn't been finalized yet:
-        var currentText = ""
+        var currentText = trimmedRaw
         if !sessionFinalizedPrefix.isEmpty {
-            let prefixWords = sessionFinalizedPrefix.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
-            if allWords.count >= prefixWords.count {
-                let remainingWords = Array(allWords.dropFirst(prefixWords.count))
-                currentText = remainingWords.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+            if let remainder = SpeechTextReconciler.remainder(trimmedRaw, committed: sessionFinalizedPrefix) {
+                currentText = remainder
             } else {
-                // Speech engine reset its buffer for a fresh utterance
+                // A fresh hypothesis must not overwrite or truncate the previous live paragraph.
+                finalizeCurrentCaption(immediateTranslation: true)
+                currentID = UUID()
                 sessionFinalizedPrefix = ""
                 sessionFinalizedWordsCount = 0
-                currentText = trimmedRaw
             }
-        } else if sessionFinalizedWordsCount > 0 {
-            if allWords.count >= sessionFinalizedWordsCount {
-                let remainingWords = Array(allWords.dropFirst(sessionFinalizedWordsCount))
-                currentText = remainingWords.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
-            } else {
-                sessionFinalizedWordsCount = 0
-                currentText = trimmedRaw
-            }
-        } else {
-            currentText = trimmedRaw
         }
 
-        guard !currentText.isEmpty else { return }
+        guard !currentText.isEmpty else {
+            if final { handleSpeechSessionEndedOrTimeout() }
+            return
+        }
         lastRawRecognizedText = trimmedRaw
 
         // Update or append current live caption
         if let index = captions.firstIndex(where: { $0.id == currentID }) {
+            currentText = SpeechTextReconciler.keepLongerPartial(captions[index].original, incoming: currentText, final: final)
             captions[index].original = currentText
             captions[index].end = elapsed
         } else {
@@ -837,6 +840,7 @@ enum AppPermissionType {
 
         if final {
             // Utterance finalized by speech recognizer
+            speechRotationTail = lastRawRecognizedText
             finalizeCurrentCaption(immediateTranslation: true)
             sessionFinalizedPrefix = ""
             sessionFinalizedWordsCount = 0
@@ -1068,6 +1072,18 @@ enum AppPermissionType {
         overlay = panel
         panel.orderFrontRegardless()
         isOverlayVisible = true
+    }
+
+    func positionOverlay(atTop: Bool) {
+        showOverlay()
+        guard let overlay, let screen = overlay.screen ?? NSScreen.main else { return }
+        let area = screen.visibleFrame
+        var frame = overlay.frame
+        frame.size.width = min(frame.width, area.width - 32)
+        frame.origin.x = area.midX - frame.width / 2
+        frame.origin.y = atTop ? area.maxY - frame.height - 20 : area.minY + 20
+        overlay.setFrame(frame, display: true)
+        UserDefaults.standard.set(atTop ? "top" : "bottom", forKey: "OverlayPlacement")
     }
 
     func hideOverlay() {
@@ -2340,7 +2356,7 @@ struct OverlayView: View {
 
                         Text("• \(model.domainSpecialty.shortName)")
                             .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(TransToolsTheme.accent)
                     }
                     .padding(.horizontal, 7)
                     .padding(.vertical, 2.5)
@@ -2350,6 +2366,12 @@ struct OverlayView: View {
                     )
 
                     Spacer()
+
+                    Menu {
+                        Button("Phía trên (Top)") { model.positionOverlay(atTop: true) }
+                        Button("Phía dưới (Bottom)") { model.positionOverlay(atTop: false) }
+                    } label: { Image(systemName: "arrow.up.arrow.down") }
+                    .menuStyle(.borderlessButton).fixedSize().help("Vị trí phụ đề nổi")
 
                     // Center Drag Indicator Pill with native drag handler
                     ZStack {
@@ -2376,12 +2398,12 @@ struct OverlayView: View {
                                     .font(.system(size: 8, weight: .bold))
                             }
                         }
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(TransToolsTheme.accent)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
                         .background(
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                .fill(Color.accentColor.opacity(0.12))
+                                .fill(TransToolsTheme.accent.opacity(0.12))
                         )
                     }
                     .buttonStyle(.plain)
@@ -2432,12 +2454,12 @@ struct OverlayView: View {
                                     .frame(width: 4, height: 4)
                             }
                         }
-                        .foregroundStyle(tts.isAutoTTSEnabled ? Color.accentColor : (isDark ? Color.white.opacity(0.70) : Color.black.opacity(0.60)))
+                        .foregroundStyle(tts.isAutoTTSEnabled ? TransToolsTheme.accent : (isDark ? Color.white.opacity(0.70) : Color.black.opacity(0.60)))
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
                         .background(
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                .fill(tts.isAutoTTSEnabled ? Color.accentColor.opacity(0.15) : (isDark ? Color.white.opacity(0.08) : Color.black.opacity(0.06)))
+                                .fill(tts.isAutoTTSEnabled ? TransToolsTheme.accent.opacity(0.15) : (isDark ? Color.white.opacity(0.08) : Color.black.opacity(0.06)))
                         )
                     }
                     .buttonStyle(.plain)
@@ -2479,7 +2501,7 @@ struct OverlayView: View {
                         } label: {
                             Image(systemName: isSpeakingThis ? "speaker.wave.3.fill" : "speaker.wave.2")
                                 .font(.system(size: 10, weight: .semibold))
-                                .foregroundStyle(isSpeakingThis ? Color.accentColor : (isDark ? Color.white.opacity(0.7) : Color.black.opacity(0.65)))
+                                .foregroundStyle(isSpeakingThis ? TransToolsTheme.accent : (isDark ? Color.white.opacity(0.7) : Color.black.opacity(0.65)))
                         }
                         .buttonStyle(.plain)
                         .help(isSpeakingThis ? "Dừng đọc" : "Phát âm thanh câu này")
@@ -2755,7 +2777,7 @@ struct OverlayView: View {
                                                         Text("Gợi ý")
                                                     }
                                                     .font(.system(size: 8.5, weight: .bold))
-                                                    .foregroundStyle(Color.accentColor)
+                                                    .foregroundStyle(TransToolsTheme.accent)
                                                     .padding(.horizontal, 5)
                                                     .padding(.vertical, 2)
                                                     .background(isDark ? Color.black.opacity(0.8) : Color.white.opacity(0.9))
@@ -2778,7 +2800,7 @@ struct OverlayView: View {
                                         HStack(spacing: 4) {
                                             Image(systemName: "sparkles")
                                                 .font(.system(size: 8, weight: .bold))
-                                                .foregroundStyle(Color.accentColor)
+                                                .foregroundStyle(TransToolsTheme.accent)
                                             Text("GỢI Ý PHẢN HỒI (BẤM ĐỂ CHÉP):")
                                                 .font(.system(size: 8, weight: .bold))
                                                 .foregroundStyle(isDark ? Color.white.opacity(0.42) : Color.black.opacity(0.42))
@@ -2799,7 +2821,7 @@ struct OverlayView: View {
                                                         HStack(spacing: 4) {
                                                             Text(reply.tone)
                                                                 .font(.system(size: 8.5, weight: .bold))
-                                                                .foregroundStyle(Color.accentColor)
+                                                                .foregroundStyle(TransToolsTheme.accent)
 
                                                             Text(copiedReplyText == reply.english ? "✓ Đã chép!" : reply.english)
                                                                 .font(.system(size: 11, weight: .medium))
@@ -2881,7 +2903,7 @@ struct AppLogoView: View {
                 RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
                     .fill(
                         LinearGradient(
-                            colors: [Color.blue, Color.purple],
+                            colors: [TransToolsTheme.accent, TransToolsTheme.navy],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -3459,7 +3481,7 @@ struct MascotSleepingEffects: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .shadow(color: Color.purple.opacity(0.45), radius: 2)
+                    .shadow(color: TransToolsTheme.navy.opacity(0.45), radius: 2)
                     .scaleEffect(zScale)
                     .opacity(zAlpha)
                     .offset(x: zX, y: zY)
@@ -3482,7 +3504,7 @@ struct MascotMusicEffects: View {
                 // Left ear sound wave
                 Circle()
                     .stroke(
-                        LinearGradient(colors: [Color.cyan.opacity(0.85), Color.purple.opacity(0.4)], startPoint: .top, endPoint: .bottom),
+                        LinearGradient(colors: [Color.cyan.opacity(0.85), TransToolsTheme.navy.opacity(0.4)], startPoint: .top, endPoint: .bottom),
                         lineWidth: 1.5
                     )
                     .frame(width: 18, height: 18)
@@ -3493,7 +3515,7 @@ struct MascotMusicEffects: View {
                 // Right ear sound wave
                 Circle()
                     .stroke(
-                        LinearGradient(colors: [Color.purple.opacity(0.85), Color.pink.opacity(0.4)], startPoint: .top, endPoint: .bottom),
+                        LinearGradient(colors: [TransToolsTheme.navy.opacity(0.85), Color.pink.opacity(0.4)], startPoint: .top, endPoint: .bottom),
                         lineWidth: 1.5
                     )
                     .frame(width: 18, height: 18)
@@ -3574,7 +3596,7 @@ struct MascotButterflyEffects: View {
                     Image(systemName: "heart.fill")
                         .font(.system(size: 10))
                         .foregroundStyle(
-                            LinearGradient(colors: [Color.cyan, Color.purple], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            LinearGradient(colors: [Color.cyan, TransToolsTheme.navy], startPoint: .topLeading, endPoint: .bottomTrailing)
                         )
                         .rotationEffect(.degrees(-70))
                         .scaleEffect(x: CGFloat(0.3 + wingFlap * 0.7), y: 1.0, anchor: .trailing)
@@ -4941,7 +4963,7 @@ struct MascotQuickActionsPopover: View {
                     Circle()
                         .fill(
                             LinearGradient(
-                                colors: [Color.blue.opacity(0.18), Color.purple.opacity(0.10)],
+                                colors: [TransToolsTheme.accent.opacity(0.18), TransToolsTheme.navy.opacity(0.10)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -4966,7 +4988,7 @@ struct MascotQuickActionsPopover: View {
 
                     HStack(spacing: 4) {
                         Circle()
-                            .fill(model.running ? Color.green : Color.blue)
+                            .fill(model.running ? Color.green : TransToolsTheme.accent)
                             .frame(width: 6, height: 6)
                         Text(model.running ? "Đang lắng nghe • \(model.provider.shortName)" : "Sẵn sàng • Nghỉ ngơi")
                             .font(.system(size: 10, weight: .semibold))
@@ -4985,7 +5007,7 @@ struct MascotQuickActionsPopover: View {
                         .font(.system(size: 12, weight: .medium))
                         .padding(6)
                         .background(Color(nsColor: .controlBackgroundColor))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(TransToolsTheme.accent)
                         .clipShape(Circle())
                         .overlay(Circle().stroke(Color.primary.opacity(0.08), lineWidth: 0.8))
                 }
@@ -5019,7 +5041,7 @@ struct MascotQuickActionsPopover: View {
                     Image(systemName: "bubble.left.and.bubble.right.fill")
                         .font(.system(size: 12))
                         .foregroundStyle(
-                            LinearGradient(colors: [Color.blue, Color.cyan], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            LinearGradient(colors: [TransToolsTheme.accent, Color.cyan], startPoint: .topLeading, endPoint: .bottomTrailing)
                         )
                         .padding(.top, 1)
 
@@ -5035,7 +5057,7 @@ struct MascotQuickActionsPopover: View {
                 .background(
                     LinearGradient(
                         colors: [
-                            Color.blue.opacity(0.08),
+                            TransToolsTheme.accent.opacity(0.08),
                             Color.cyan.opacity(0.05)
                         ],
                         startPoint: .topLeading,
@@ -5045,7 +5067,7 @@ struct MascotQuickActionsPopover: View {
                 .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .stroke(Color.blue.opacity(0.18), lineWidth: 1)
+                        .stroke(TransToolsTheme.accent.opacity(0.18), lineWidth: 1)
                 )
             }
             .buttonStyle(.plain)
@@ -5055,7 +5077,7 @@ struct MascotQuickActionsPopover: View {
             HStack(spacing: 6) {
                 HStack(spacing: 4) {
                     Image(systemName: model.mascotIdleActivity.icon)
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(TransToolsTheme.accent)
                         .font(.system(size: 10))
                     Text("Hoạt cảnh:")
                         .font(.system(size: 10.5, weight: .semibold))
@@ -5235,7 +5257,7 @@ struct MascotQuickActionsPopover: View {
                                 .foregroundStyle(
                                     quickViText.trimmingCharacters(in: .whitespaces).isEmpty
                                         ? Color.secondary.opacity(0.35)
-                                        : Color.accentColor
+                                        : TransToolsTheme.accent
                                 )
                         }
                     }
@@ -5265,7 +5287,7 @@ struct MascotQuickActionsPopover: View {
                                 } label: {
                                     Image(systemName: isSpeakingQuick ? "speaker.wave.3.fill" : "speaker.wave.2")
                                         .font(.system(size: 10, weight: .bold))
-                                        .foregroundStyle(isSpeakingQuick ? Color.accentColor : Color.secondary)
+                                        .foregroundStyle(isSpeakingQuick ? TransToolsTheme.accent : Color.secondary)
                                         .padding(.horizontal, 6)
                                         .padding(.vertical, 4)
                                         .background(Color.secondary.opacity(0.12))
@@ -5288,7 +5310,7 @@ struct MascotQuickActionsPopover: View {
                                     .foregroundStyle(quickCopied ? Color.green : Color.white)
                                     .padding(.horizontal, 7)
                                     .padding(.vertical, 4)
-                                    .background(quickCopied ? Color.green.opacity(0.2) : Color.accentColor)
+                                    .background(quickCopied ? Color.green.opacity(0.2) : TransToolsTheme.accent)
                                     .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                                 }
                                 .buttonStyle(.plain)
@@ -5340,7 +5362,7 @@ struct MascotQuickActionsPopover: View {
                                         } label: {
                                             Image(systemName: isSpeakingAlt ? "speaker.wave.3.fill" : "speaker.wave.2")
                                                 .font(.system(size: 9))
-                                                .foregroundStyle(isSpeakingAlt ? Color.accentColor : .secondary)
+                                                .foregroundStyle(isSpeakingAlt ? TransToolsTheme.accent : .secondary)
                                         }
                                         .buttonStyle(.plain)
                                         .help("Nghe phát âm")
@@ -5350,11 +5372,11 @@ struct MascotQuickActionsPopover: View {
                         }
                     }
                     .padding(8)
-                    .background(Color.accentColor.opacity(0.08))
+                    .background(TransToolsTheme.accent.opacity(0.08))
                     .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .stroke(Color.accentColor.opacity(0.20), lineWidth: 0.8)
+                            .stroke(TransToolsTheme.accent.opacity(0.20), lineWidth: 0.8)
                     )
                 }
             }
@@ -5391,7 +5413,7 @@ struct MascotQuickActionsPopover: View {
                                         .font(.system(size: 8.5, weight: .bold))
                                         .padding(.horizontal, 5)
                                         .padding(.vertical, 1.5)
-                                        .background(Color.purple.opacity(0.15))
+                                        .background(TransToolsTheme.navy.opacity(0.15))
                                         .foregroundStyle(.purple)
                                         .clipShape(Capsule())
 
@@ -5425,7 +5447,7 @@ struct MascotQuickActionsPopover: View {
                             } label: {
                                 Image(systemName: isSpeakingRep ? "speaker.wave.3.fill" : "speaker.wave.2")
                                     .font(.system(size: 9.5))
-                                    .foregroundStyle(isSpeakingRep ? Color.purple : .secondary)
+                                    .foregroundStyle(isSpeakingRep ? TransToolsTheme.navy : .secondary)
                                     .padding(4)
                             }
                             .buttonStyle(.plain)
@@ -5493,7 +5515,7 @@ struct MascotQuickActionsPopover: View {
                 HStack(spacing: 9) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(model.isOverlayVisible ? Color.orange : Color.blue)
+                            .fill(model.isOverlayVisible ? Color.orange : TransToolsTheme.accent)
                             .frame(width: 24, height: 24)
 
                         Image(systemName: model.isOverlayVisible ? "pip.exit" : "pip.enter")
@@ -5574,7 +5596,7 @@ struct MascotQuickActionsPopover: View {
                 HStack(spacing: 9) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(Color.purple)
+                            .fill(TransToolsTheme.navy)
                             .frame(width: 24, height: 24)
 
                         Image(systemName: "macwindow")
@@ -5738,16 +5760,18 @@ struct MainDashboardView: View {
                         .font(.system(size: 12, weight: .medium))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(model.isFloatingMascotVisible ? Color.accentColor.opacity(0.15) : Color.secondary.opacity(0.1))
-                        .foregroundStyle(model.isFloatingMascotVisible ? Color.accentColor : Color.primary)
+                        .background(model.isFloatingMascotVisible ? TransToolsTheme.accent.opacity(0.15) : Color.secondary.opacity(0.1))
+                        .foregroundStyle(model.isFloatingMascotVisible ? TransToolsTheme.accent : Color.primary)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                     .buttonStyle(.plain)
                     .fixedSize(horizontal: true, vertical: false)
                     .help("Bật/Tắt trợ lý Chip Chip nổi trên màn hình để thao tác nhanh")
 
-                    Button {
-                        model.toggleOverlay()
+                    Menu {
+                        Button("Bật ở phía trên (Top)") { model.positionOverlay(atTop: true) }
+                        Button("Bật ở phía dưới (Bottom)") { model.positionOverlay(atTop: false) }
+                        Button(model.isOverlayVisible ? "Ẩn phụ đề nổi" : "Hiện vị trí đã lưu") { model.toggleOverlay() }
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: model.isOverlayVisible ? "pip.exit" : "pip.enter")
@@ -5758,8 +5782,8 @@ struct MainDashboardView: View {
                         .font(.system(size: 12, weight: .medium))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(model.isOverlayVisible ? Color.accentColor.opacity(0.15) : Color.secondary.opacity(0.1))
-                        .foregroundStyle(model.isOverlayVisible ? Color.accentColor : Color.primary)
+                        .background(model.isOverlayVisible ? TransToolsTheme.accent.opacity(0.15) : Color.secondary.opacity(0.1))
+                        .foregroundStyle(model.isOverlayVisible ? TransToolsTheme.accent : Color.primary)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                     .buttonStyle(.plain)
@@ -5772,8 +5796,8 @@ struct MainDashboardView: View {
                         Image(systemName: "info.circle")
                             .font(.system(size: 13))
                             .padding(7)
-                            .background(model.showAboutSheet ? Color.accentColor.opacity(0.15) : Color.secondary.opacity(0.1))
-                            .foregroundStyle(model.showAboutSheet ? Color.accentColor : Color.primary)
+                            .background(model.showAboutSheet ? TransToolsTheme.accent.opacity(0.15) : Color.secondary.opacity(0.1))
+                            .foregroundStyle(model.showAboutSheet ? TransToolsTheme.accent : Color.primary)
                             .clipShape(Circle())
                     }
                     .buttonStyle(.plain)
@@ -5821,6 +5845,8 @@ struct MainDashboardView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 860, minHeight: 640)
+        .background(TransToolsTheme.background)
+        .tint(TransToolsTheme.accent)
         .sheet(isPresented: $updater.showUpdateSheet) {
             UpdateSheetView(isPresented: $updater.showUpdateSheet)
         }
@@ -5877,7 +5903,7 @@ struct NavTabButton: View {
             .padding(.horizontal, 11)
             .padding(.vertical, 6)
             .background(isSelected ? Color(nsColor: .selectedControlColor).opacity(0.18) : Color.clear)
-            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+            .foregroundStyle(isSelected ? TransToolsTheme.accent : Color.secondary)
             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
         .buttonStyle(.plain)
@@ -6076,16 +6102,16 @@ struct LanguagePairSelectorMenu: View {
                 } label: {
                     ZStack {
                         RoundedRectangle(cornerRadius: 9, style: .continuous)
-                            .fill(Color.accentColor.opacity(0.12))
+                            .fill(TransToolsTheme.accent.opacity(0.12))
                             .frame(width: 32, height: 36)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                    .stroke(Color.accentColor.opacity(0.25), lineWidth: 1)
+                                    .stroke(TransToolsTheme.accent.opacity(0.25), lineWidth: 1)
                             )
 
                         Image(systemName: "arrow.left.arrow.right")
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(TransToolsTheme.accent)
                     }
                 }
                 .buttonStyle(.plain)
@@ -6193,7 +6219,7 @@ struct SubtitleModeSelectorMenu: View {
             HStack(spacing: 5) {
                 Image(systemName: model.subtitleMode.icon)
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(model.subtitleMode == .originalOnly ? Color.green : Color.accentColor)
+                    .foregroundStyle(model.subtitleMode == .originalOnly ? Color.green : TransToolsTheme.accent)
                 Text(model.subtitleMode.shortTitle)
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(.primary)
@@ -6356,7 +6382,7 @@ struct EarphoneTTSControlMenu: View {
                 ZStack {
                     Image(systemName: tts.isAutoTTSEnabled ? "headphones.circle.fill" : "headphones")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(tts.isAutoTTSEnabled ? Color.purple : Color.secondary)
+                        .foregroundStyle(tts.isAutoTTSEnabled ? TransToolsTheme.navy : Color.secondary)
 
                     if tts.isSpeaking {
                         Circle()
@@ -6368,7 +6394,7 @@ struct EarphoneTTSControlMenu: View {
 
                 Text(tts.isAutoTTSEnabled ? "Tai nghe: BẬT" : "Tai nghe")
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(tts.isAutoTTSEnabled ? Color.purple : Color.primary)
+                    .foregroundStyle(tts.isAutoTTSEnabled ? TransToolsTheme.navy : Color.primary)
                     .lineLimit(1)
 
                 Image(systemName: "chevron.down")
@@ -6383,7 +6409,7 @@ struct EarphoneTTSControlMenu: View {
             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .stroke(tts.isAutoTTSEnabled ? Color.purple.opacity(0.35) : Color.primary.opacity(0.08), lineWidth: 1)
+                    .stroke(tts.isAutoTTSEnabled ? TransToolsTheme.navy.opacity(0.35) : Color.primary.opacity(0.08), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -6498,11 +6524,11 @@ struct MeetingView: View {
                         .background(
                             model.running
                                 ? LinearGradient(colors: [Color.red, Color(red: 0.85, green: 0.2, blue: 0.2)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                                : LinearGradient(colors: [Color.blue, Color.purple], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                : LinearGradient(colors: [TransToolsTheme.accent, TransToolsTheme.navy], startPoint: .topLeading, endPoint: .bottomTrailing)
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                         .shadow(
-                            color: (model.running ? Color.red : Color.blue).opacity(0.25),
+                            color: (model.running ? Color.red : TransToolsTheme.accent).opacity(0.25),
                             radius: 6,
                             y: 2
                         )
@@ -6598,7 +6624,7 @@ struct MeetingView: View {
                                     .font(.system(size: 11, weight: .bold))
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 5)
-                                    .background(Color.blue)
+                                    .background(TransToolsTheme.accent)
                                     .foregroundStyle(.white)
                                     .clipShape(Capsule())
                                 }
@@ -6783,8 +6809,8 @@ struct MeetingView: View {
                         .font(.system(size: 12, weight: .semibold))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.purple.opacity(0.15))
-                        .foregroundStyle(Color.purple)
+                        .background(TransToolsTheme.navy.opacity(0.15))
+                        .foregroundStyle(TransToolsTheme.navy)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                     .buttonStyle(.plain)
@@ -6801,8 +6827,8 @@ struct MeetingView: View {
                         .font(.system(size: 12, weight: .medium))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.blue.opacity(0.15))
-                        .foregroundStyle(Color.blue)
+                        .background(TransToolsTheme.accent.opacity(0.15))
+                        .foregroundStyle(TransToolsTheme.accent)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                     .buttonStyle(.plain)
@@ -6899,10 +6925,10 @@ struct CaptionCardView: View {
                         Image(systemName: "waveform")
                     }
                     .font(.system(size: 9.5, weight: .bold))
-                    .foregroundStyle(Color.purple)
+                    .foregroundStyle(TransToolsTheme.navy)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2.5)
-                    .background(Color.purple.opacity(0.12))
+                    .background(TransToolsTheme.navy.opacity(0.12))
                     .clipShape(Capsule())
                 }
 
@@ -6923,10 +6949,10 @@ struct CaptionCardView: View {
                             Text("Đọc")
                         }
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(isSpeakingOrig ? Color.blue : .secondary)
+                        .foregroundStyle(isSpeakingOrig ? TransToolsTheme.accent : .secondary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
-                        .background(isSpeakingOrig ? Color.blue.opacity(0.15) : Color.secondary.opacity(0.08))
+                        .background(isSpeakingOrig ? TransToolsTheme.accent.opacity(0.15) : Color.secondary.opacity(0.08))
                         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                     }
                     .buttonStyle(.plain)
@@ -7013,7 +7039,7 @@ struct CaptionCardView: View {
                         .foregroundStyle(.blue.opacity(0.8))
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
-                        .background(Color.blue.opacity(0.12))
+                        .background(TransToolsTheme.accent.opacity(0.12))
                         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                         .padding(.top, 1)
 
@@ -7061,9 +7087,9 @@ struct CaptionCardView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(isLive ? Color.accentColor.opacity(0.35) : Color.primary.opacity(0.06), lineWidth: isLive ? 1.5 : 1)
+                .stroke(isLive ? TransToolsTheme.accent.opacity(0.35) : Color.primary.opacity(0.06), lineWidth: isLive ? 1.5 : 1)
         )
-        .shadow(color: isLive ? Color.accentColor.opacity(0.08) : Color.black.opacity(0.03), radius: isLive ? 8 : 4, y: isLive ? 2 : 1)
+        .shadow(color: isLive ? TransToolsTheme.accent.opacity(0.08) : Color.black.opacity(0.03), radius: isLive ? 8 : 4, y: isLive ? 2 : 1)
         .animation(.easeInOut(duration: 0.25), value: isLive)
     }
 }
@@ -7078,7 +7104,7 @@ struct FeatureBadge: View {
         HStack(spacing: 5) {
             Image(systemName: icon)
                 .font(.system(size: 11))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(TransToolsTheme.accent)
             Text(text)
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(.secondary)
@@ -7113,7 +7139,7 @@ struct QuickTranslateView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
                         Image(systemName: "character.book.closed.fill")
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(TransToolsTheme.accent)
                             .font(.system(size: 13))
                         Text("Chuyên ngành dịch thuật:")
                             .font(.system(size: 13, weight: .bold))
@@ -7143,7 +7169,7 @@ struct QuickTranslateView: View {
                     HStack(spacing: 8) {
                         Image(systemName: model.domainSpecialty.icon)
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(TransToolsTheme.accent)
                             .frame(width: 18)
 
                         Text(model.domainSpecialty.title)
@@ -7197,7 +7223,7 @@ struct QuickTranslateView: View {
                                 HStack(spacing: 4) {
                                     Image(systemName: "plus.circle.fill")
                                         .font(.system(size: 9))
-                                        .foregroundStyle(Color.accentColor)
+                                        .foregroundStyle(TransToolsTheme.accent)
                                     Text(phrase)
                                         .font(.system(size: 11))
                                         .lineLimit(1)
@@ -7282,12 +7308,12 @@ struct QuickTranslateView: View {
                             .frame(width: 32, height: 32)
                             .overlay(
                                 Circle()
-                                    .stroke(Color.accentColor.opacity(0.25), lineWidth: 1)
+                                    .stroke(TransToolsTheme.accent.opacity(0.25), lineWidth: 1)
                             )
 
                         Image(systemName: "arrow.left.arrow.right")
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(TransToolsTheme.accent)
                     }
                 }
                 .buttonStyle(.plain)
@@ -7314,7 +7340,7 @@ struct QuickTranslateView: View {
                             .font(.system(size: 10, weight: .bold))
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
-                            .background(Color.blue.opacity(0.15))
+                            .background(TransToolsTheme.accent.opacity(0.15))
                             .foregroundStyle(.blue)
                             .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
 
@@ -7387,11 +7413,11 @@ struct QuickTranslateView: View {
                     .menuStyle(.borderlessButton)
                 }
                 .foregroundStyle(.purple)
-                .background(Color.purple.opacity(0.12))
+                .background(TransToolsTheme.navy.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(Color.purple.opacity(0.28), lineWidth: 1)
+                        .stroke(TransToolsTheme.navy.opacity(0.28), lineWidth: 1)
                 )
                 .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || polishing || translating)
                 .help("Sửa lỗi ngữ pháp, chính tả & hoàn thiện câu theo \(model.sourceLanguage.displayName) (hoặc chọn ngôn ngữ khác)")
@@ -7417,7 +7443,7 @@ struct QuickTranslateView: View {
                     .foregroundStyle(.white)
                     .background(
                         LinearGradient(
-                            colors: [Color.blue, Color.purple],
+                            colors: [TransToolsTheme.accent, TransToolsTheme.navy],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -7525,7 +7551,7 @@ struct QuickTranslateView: View {
                                         .foregroundStyle(.purple)
                                         .padding(.horizontal, 9)
                                         .padding(.vertical, 4)
-                                        .background(Color.purple.opacity(0.12))
+                                        .background(TransToolsTheme.navy.opacity(0.12))
                                         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                                     }
                                     .buttonStyle(.plain)
@@ -7543,10 +7569,10 @@ struct QuickTranslateView: View {
                                         Text(copied ? "Đã sao chép!" : "Sao chép")
                                     }
                                     .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(copied ? .green : Color.accentColor)
+                                    .foregroundStyle(copied ? .green : TransToolsTheme.accent)
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 4)
-                                    .background(copied ? Color.green.opacity(0.12) : Color.accentColor.opacity(0.1))
+                                    .background(copied ? Color.green.opacity(0.12) : TransToolsTheme.accent.opacity(0.1))
                                     .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                                 }
                                 .buttonStyle(.plain)
@@ -7570,7 +7596,7 @@ struct QuickTranslateView: View {
                                     .textSelection(.enabled)
                                     .padding(12)
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(lastActionWasPolish ? Color.purple.opacity(0.06) : Color.accentColor.opacity(0.06))
+                                    .background(lastActionWasPolish ? TransToolsTheme.navy.opacity(0.06) : TransToolsTheme.accent.opacity(0.06))
                                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                                 // Alternatives / Gợi ý phương án diễn đạt khác (khi dịch)
@@ -7674,7 +7700,7 @@ struct QuickTranslateView: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .background(Color.blue.opacity(0.08))
+                .background(TransToolsTheme.accent.opacity(0.08))
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
         }
@@ -7771,7 +7797,7 @@ struct SettingsPopoverView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 16))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(TransToolsTheme.accent)
                     Text("Cấu hình TransTools")
                         .font(.system(size: 15, weight: .bold, design: .rounded))
                 }
@@ -7822,7 +7848,7 @@ struct SettingsPopoverView: View {
                                 HStack(spacing: 8) {
                                     Image(systemName: model.domainSpecialty.icon)
                                         .font(.system(size: 13))
-                                        .foregroundStyle(Color.accentColor)
+                                        .foregroundStyle(TransToolsTheme.accent)
                                         .frame(width: 16)
                                     Text(model.domainSpecialty.title)
                                         .font(.system(size: 12, weight: .medium))
@@ -7860,7 +7886,7 @@ struct SettingsPopoverView: View {
                                 HStack(spacing: 12) {
                                     Image(systemName: "apple.logo")
                                         .font(.system(size: 20))
-                                        .foregroundStyle(model.provider == .apple ? Color.accentColor : .primary)
+                                        .foregroundStyle(model.provider == .apple ? TransToolsTheme.accent : .primary)
                                         .frame(width: 22)
 
                                     VStack(alignment: .leading, spacing: 2) {
@@ -7881,12 +7907,12 @@ struct SettingsPopoverView: View {
                                     }
                                     Spacer()
                                     Image(systemName: model.provider == .apple ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(model.provider == .apple ? Color.accentColor : Color.secondary.opacity(0.4))
+                                        .foregroundStyle(model.provider == .apple ? TransToolsTheme.accent : Color.secondary.opacity(0.4))
                                 }
                                 .padding(9)
-                                .background(model.provider == .apple ? Color.accentColor.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
+                                .background(model.provider == .apple ? TransToolsTheme.accent.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
                                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(model.provider == .apple ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: 1.2))
+                                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(model.provider == .apple ? TransToolsTheme.accent : Color.primary.opacity(0.08), lineWidth: 1.2))
                             }
                             .buttonStyle(.plain)
 
@@ -7909,12 +7935,12 @@ struct SettingsPopoverView: View {
                                     }
                                     Spacer()
                                     Image(systemName: model.provider == .free ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(model.provider == .free ? Color.accentColor : Color.secondary.opacity(0.4))
+                                        .foregroundStyle(model.provider == .free ? TransToolsTheme.accent : Color.secondary.opacity(0.4))
                                 }
                                 .padding(9)
-                                .background(model.provider == .free ? Color.accentColor.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
+                                .background(model.provider == .free ? TransToolsTheme.accent.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
                                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(model.provider == .free ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: 1.2))
+                                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(model.provider == .free ? TransToolsTheme.accent : Color.primary.opacity(0.08), lineWidth: 1.2))
                             }
                             .buttonStyle(.plain)
                         }
@@ -7943,7 +7969,7 @@ struct SettingsPopoverView: View {
                                         HStack(spacing: 12) {
                                             Image(systemName: p.icon)
                                                 .font(.system(size: 17))
-                                                .foregroundStyle(isSelected ? Color.accentColor : (hasKey ? .primary : .secondary))
+                                                .foregroundStyle(isSelected ? TransToolsTheme.accent : (hasKey ? .primary : .secondary))
                                                 .frame(width: 22)
 
                                             VStack(alignment: .leading, spacing: 2) {
@@ -7980,21 +8006,21 @@ struct SettingsPopoverView: View {
 
                                             if hasKey {
                                                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                                                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary.opacity(0.4))
+                                                    .foregroundStyle(isSelected ? TransToolsTheme.accent : Color.secondary.opacity(0.4))
                                             } else {
                                                 Text("Cài Key")
                                                     .font(.system(size: 10, weight: .semibold))
-                                                    .foregroundStyle(Color.accentColor)
+                                                    .foregroundStyle(TransToolsTheme.accent)
                                                     .padding(.horizontal, 6)
                                                     .padding(.vertical, 2)
-                                                    .background(Color.accentColor.opacity(0.12))
+                                                    .background(TransToolsTheme.accent.opacity(0.12))
                                                     .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                                             }
                                         }
                                         .padding(9)
-                                        .background(isSelected ? Color.accentColor.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
+                                        .background(isSelected ? TransToolsTheme.accent.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
                                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(isSelected ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: 1.2))
+                                        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(isSelected ? TransToolsTheme.accent : Color.primary.opacity(0.08), lineWidth: 1.2))
                                     }
                                     .buttonStyle(.plain)
 
@@ -8057,10 +8083,10 @@ struct SettingsPopoverView: View {
                                                             }
                                                             .padding(.horizontal, 7)
                                                             .padding(.vertical, 3)
-                                                            .background(isCurModel ? Color.accentColor.opacity(0.18) : Color(nsColor: .controlBackgroundColor))
-                                                            .foregroundStyle(isCurModel ? Color.accentColor : Color.secondary)
+                                                            .background(isCurModel ? TransToolsTheme.accent.opacity(0.18) : Color(nsColor: .controlBackgroundColor))
+                                                            .foregroundStyle(isCurModel ? TransToolsTheme.accent : Color.secondary)
                                                             .clipShape(Capsule())
-                                                            .overlay(Capsule().stroke(isCurModel ? Color.accentColor.opacity(0.4) : Color.primary.opacity(0.08), lineWidth: 1))
+                                                            .overlay(Capsule().stroke(isCurModel ? TransToolsTheme.accent.opacity(0.4) : Color.primary.opacity(0.08), lineWidth: 1))
                                                         }
                                                         .buttonStyle(.plain)
                                                     }
@@ -8109,12 +8135,12 @@ struct SettingsPopoverView: View {
                                     }
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 32)
-                                    .background(model.coPilotProvider == p ? Color.accentColor.opacity(0.14) : Color(nsColor: .controlBackgroundColor))
-                                    .foregroundStyle(model.coPilotProvider == p ? Color.accentColor : Color.primary)
+                                    .background(model.coPilotProvider == p ? TransToolsTheme.accent.opacity(0.14) : Color(nsColor: .controlBackgroundColor))
+                                    .foregroundStyle(model.coPilotProvider == p ? TransToolsTheme.accent : Color.primary)
                                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .stroke(model.coPilotProvider == p ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: model.coPilotProvider == p ? 1.5 : 1)
+                                            .stroke(model.coPilotProvider == p ? TransToolsTheme.accent : Color.primary.opacity(0.08), lineWidth: model.coPilotProvider == p ? 1.5 : 1)
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -8190,11 +8216,11 @@ struct SettingsPopoverView: View {
                                     // Icon badge
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .fill(Color.accentColor.opacity(0.14))
+                                            .fill(TransToolsTheme.accent.opacity(0.14))
                                             .frame(width: 32, height: 32)
                                         Image(systemName: model.coPilotProvider.icon)
                                             .font(.system(size: 14, weight: .semibold))
-                                            .foregroundStyle(Color.accentColor)
+                                            .foregroundStyle(TransToolsTheme.accent)
                                     }
 
                                     // Title and description
@@ -8262,7 +8288,7 @@ struct SettingsPopoverView: View {
                                         VStack(spacing: 2) {
                                             Image(systemName: "arrow.clockwise")
                                                 .font(.system(size: 12, weight: .semibold))
-                                                .foregroundStyle(Color.accentColor)
+                                                .foregroundStyle(TransToolsTheme.accent)
                                             Text("Cập nhật")
                                                 .font(.system(size: 7, weight: .bold))
                                                 .foregroundStyle(.secondary)
@@ -8299,12 +8325,12 @@ struct SettingsPopoverView: View {
                                                 }
                                                 .padding(.horizontal, 8)
                                                 .padding(.vertical, 4)
-                                                .background(isSel ? Color.accentColor.opacity(0.18) : Color(nsColor: .controlBackgroundColor))
-                                                .foregroundStyle(isSel ? Color.accentColor : Color.secondary)
+                                                .background(isSel ? TransToolsTheme.accent.opacity(0.18) : Color(nsColor: .controlBackgroundColor))
+                                                .foregroundStyle(isSel ? TransToolsTheme.accent : Color.secondary)
                                                 .clipShape(Capsule())
                                                 .overlay(
                                                     Capsule()
-                                                        .stroke(isSel ? Color.accentColor.opacity(0.4) : Color.primary.opacity(0.1), lineWidth: 1)
+                                                        .stroke(isSel ? TransToolsTheme.accent.opacity(0.4) : Color.primary.opacity(0.1), lineWidth: 1)
                                                 )
                                             }
                                             .buttonStyle(.plain)
@@ -8344,7 +8370,7 @@ struct SettingsPopoverView: View {
                             if let url = URL(string: model.coPilotProvider.apiKeyURL), !model.coPilotProvider.apiKeyURL.isEmpty {
                                 Link("Lấy API Key ↗", destination: url)
                                     .font(.system(size: 10, weight: .medium))
-                                    .foregroundStyle(Color.accentColor)
+                                    .foregroundStyle(TransToolsTheme.accent)
                             }
                         }
 
@@ -8398,11 +8424,11 @@ struct SettingsPopoverView: View {
                             .background(
                                 savedNotice
                                     ? LinearGradient(colors: [Color.green, Color(red: 0.1, green: 0.7, blue: 0.3)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                                    : LinearGradient(colors: [Color.accentColor, Color.purple], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                    : LinearGradient(colors: [TransToolsTheme.accent, TransToolsTheme.navy], startPoint: .topLeading, endPoint: .bottomTrailing)
                             )
                             .foregroundStyle(.white)
                             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                            .shadow(color: Color.accentColor.opacity(0.25), radius: 5, y: 2)
+                            .shadow(color: TransToolsTheme.accent.opacity(0.25), radius: 5, y: 2)
                         }
                         .buttonStyle(.plain)
                     }
@@ -8421,7 +8447,7 @@ struct SettingsPopoverView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "sparkles.tv.fill")
                                 .font(.system(size: 13))
-                                .foregroundStyle(Color.accentColor)
+                                .foregroundStyle(TransToolsTheme.accent)
                             Text("Trợ lý Chip Chip nổi trên màn hình (Thao tác & Quick Chat)")
                                 .font(.system(size: 12))
                         }
@@ -8477,11 +8503,11 @@ struct SettingsPopoverView: View {
                         HStack(spacing: 10) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .fill(Color.accentColor.opacity(0.12))
+                                    .fill(TransToolsTheme.accent.opacity(0.12))
                                     .frame(width: 32, height: 32)
                                 Image(systemName: "command.circle.fill")
                                     .font(.system(size: 16))
-                                    .foregroundStyle(Color.accentColor)
+                                    .foregroundStyle(TransToolsTheme.accent)
                             }
 
                             VStack(alignment: .leading, spacing: 2) {
@@ -8492,8 +8518,8 @@ struct SettingsPopoverView: View {
                                         .font(.system(size: 10, weight: .bold, design: .rounded))
                                         .padding(.horizontal, 6)
                                         .padding(.vertical, 2)
-                                        .background(Color.accentColor.opacity(0.15))
-                                        .foregroundStyle(Color.accentColor)
+                                        .background(TransToolsTheme.accent.opacity(0.15))
+                                        .foregroundStyle(TransToolsTheme.accent)
                                         .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
                                     Text("hoặc")
                                         .font(.system(size: 10))
@@ -8587,13 +8613,13 @@ struct AboutAppPopoverView: View {
             HStack(spacing: 14) {
                 ZStack {
                     LinearGradient(
-                        colors: [Color.accentColor, Color.accentColor.opacity(0.8), Color.blue],
+                        colors: [TransToolsTheme.accent, TransToolsTheme.accent.opacity(0.8), TransToolsTheme.accent],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                     .frame(width: 50, height: 50)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .shadow(color: Color.accentColor.opacity(0.35), radius: 6, y: 2)
+                    .shadow(color: TransToolsTheme.accent.opacity(0.35), radius: 6, y: 2)
 
                     MiniAvatarView(size: 40)
                 }
@@ -8606,8 +8632,8 @@ struct AboutAppPopoverView: View {
                             .font(.system(size: 10, weight: .semibold, design: .monospaced))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Color.accentColor.opacity(0.15))
-                            .foregroundStyle(Color.accentColor)
+                            .background(TransToolsTheme.accent.opacity(0.15))
+                            .foregroundStyle(TransToolsTheme.accent)
                             .clipShape(Capsule())
                     }
 
@@ -8632,7 +8658,7 @@ struct AboutAppPopoverView: View {
                 HStack(spacing: 10) {
                     Image(systemName: "person.crop.circle.fill")
                         .font(.system(size: 14))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(TransToolsTheme.accent)
                         .frame(width: 20)
 
                     Text("Tác giả:")
@@ -8716,7 +8742,7 @@ struct AboutAppPopoverView: View {
                             Image(systemName: "arrow.up.right.square")
                                 .font(.system(size: 10))
                         }
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(TransToolsTheme.accent)
                     }
                     .buttonStyle(.plain)
                     .help("Mở trang GitHub repository trong trình duyệt")
@@ -8728,7 +8754,7 @@ struct AboutAppPopoverView: View {
                 HStack {
                     Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
                         .font(.system(size: 13))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(TransToolsTheme.accent)
                         .frame(width: 20)
 
                     Text("Cập nhật:")
@@ -8747,8 +8773,8 @@ struct AboutAppPopoverView: View {
                         .font(.system(size: 11, weight: .medium))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
-                        .background(Color.accentColor.opacity(0.12))
-                        .foregroundStyle(Color.accentColor)
+                        .background(TransToolsTheme.accent.opacity(0.12))
+                        .foregroundStyle(TransToolsTheme.accent)
                         .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
@@ -8803,6 +8829,7 @@ struct AboutAppPopoverView: View {
                 MascotSpritePreviewView()
             } else {
             MainDashboardView(model: model)
+                .tint(TransToolsTheme.accent)
                 .background(WindowAccessor { window in
                     model.attachMainWindow(window)
                 })

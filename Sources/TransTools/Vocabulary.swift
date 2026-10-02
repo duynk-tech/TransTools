@@ -117,20 +117,32 @@ public final class VocabularyManager: ObservableObject {
         synthesizer.speak(utterance)
     }
 
+    public func fillMissingPhonetics() async {
+        let missing = items.filter { $0.phonetic.isEmpty && $0.word.range(of: "^[A-Za-z'-]+$", options: .regularExpression) != nil }
+        for item in missing {
+            guard !Task.isCancelled else { return }
+            let ipa = await Self.fetchPhonetic(for: item.word)
+            if let index = items.firstIndex(where: { $0.id == item.id }), !ipa.isEmpty {
+                items[index].phonetic = ipa; saveItems()
+            }
+        }
+    }
+
     public func exportToCSV() -> URL? {
-        var csv = "Word,Meaning,Context,Source App,Date,Mastered\n"
+        var csv = "Word,Phonetic,Meaning,Context,Source App,Date,Mastered\n"
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd HH:mm:ss"
 
         for item in items {
             let safeWord = item.word.replacingOccurrences(of: "\"", with: "\"\"")
+            let safePhonetic = item.phonetic.replacingOccurrences(of: "\"", with: "\"\"")
             let safeMeaning = item.meaning.replacingOccurrences(of: "\"", with: "\"\"")
             let safeContext = item.context.replacingOccurrences(of: "\"", with: "\"\"")
             let safeSource = item.sourceApp.replacingOccurrences(of: "\"", with: "\"\"")
             let dateStr = df.string(from: item.createdAt)
             let mastered = item.isMastered ? "Yes" : "No"
 
-            csv += "\"\(safeWord)\",\"\(safeMeaning)\",\"\(safeContext)\",\"\(safeSource)\",\"\(dateStr)\",\"\(mastered)\"\n"
+            csv += "\"\(safeWord)\",\"\(safePhonetic)\",\"\(safeMeaning)\",\"\(safeContext)\",\"\(safeSource)\",\"\(dateStr)\",\"\(mastered)\"\n"
         }
 
         let tempDir = FileManager.default.temporaryDirectory
@@ -145,6 +157,8 @@ public final class VocabularyManager: ObservableObject {
 
     public static func fetchPhonetic(for text: String) async -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let local = DictionaryService.localPhonetic(trimmed)
+        if !local.isEmpty { return local }
         guard trimmed.components(separatedBy: .whitespaces).count <= 2,
               let cleanWord = trimmed.components(separatedBy: .whitespaces).first,
               let encoded = cleanWord.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
@@ -529,9 +543,9 @@ public struct MascotBubbleView: View {
                         } label: {
                             Image(systemName: "speaker.wave.2.fill")
                                 .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(Color.accentColor)
+                                .foregroundStyle(TransToolsTheme.accent)
                                 .frame(width: 20, height: 20)
-                                .background(Color.accentColor.opacity(0.12))
+                                .background(TransToolsTheme.accent.opacity(0.12))
                                 .clipShape(Circle())
                         }
                         .buttonStyle(.plain)
@@ -543,7 +557,7 @@ public struct MascotBubbleView: View {
                             if model.bubbleMode == "grammar" {
                                 Label("AI Sửa ngữ pháp", systemImage: "sparkles")
                                     .font(.system(size: 11, weight: .bold, design: .rounded))
-                                    .foregroundStyle(Color.purple)
+                                    .foregroundStyle(TransToolsTheme.navy)
                             } else {
                                 Text(model.bubbleWord)
                                     .font(.system(size: 13, weight: .bold, design: .rounded))
@@ -553,7 +567,7 @@ public struct MascotBubbleView: View {
                                 if !model.bubblePhonetic.isEmpty {
                                     Text(model.bubblePhonetic)
                                         .font(.system(size: 10, weight: .medium, design: .monospaced))
-                                        .foregroundStyle(Color.purple)
+                                        .foregroundStyle(TransToolsTheme.navy)
                                 }
                             }
                         }
@@ -635,8 +649,8 @@ public struct MascotBubbleView: View {
                                 }
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 3.5)
-                                .background(Color.purple.opacity(0.18))
-                                .foregroundStyle(Color.purple)
+                                .background(TransToolsTheme.navy.opacity(0.18))
+                                .foregroundStyle(TransToolsTheme.navy)
                                 .clipShape(Capsule())
                             }
                             .buttonStyle(.plain)
@@ -687,8 +701,8 @@ public struct MascotBubbleView: View {
                                 }
                                 .padding(.horizontal, 7)
                                 .padding(.vertical, 3.5)
-                                .background(isSaved ? Color.green.opacity(0.18) : Color.accentColor.opacity(0.12))
-                                .foregroundStyle(isSaved ? Color.green : Color.accentColor)
+                                .background(isSaved ? Color.green.opacity(0.18) : TransToolsTheme.accent.opacity(0.12))
+                                .foregroundStyle(isSaved ? Color.green : TransToolsTheme.accent)
                                 .clipShape(Capsule())
                             }
                             .buttonStyle(.plain)
@@ -839,7 +853,7 @@ public struct VocabularyFlashcardModal: View {
                             if !currentItem.phonetic.isEmpty {
                                 Text(currentItem.phonetic)
                                     .font(.system(size: 14, weight: .medium, design: .monospaced))
-                                    .foregroundStyle(Color.purple)
+                                    .foregroundStyle(TransToolsTheme.navy)
                             }
 
                             Button {
@@ -853,8 +867,8 @@ public struct VocabularyFlashcardModal: View {
                                 }
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 4)
-                                .background(Color.accentColor.opacity(0.12))
-                                .foregroundStyle(Color.accentColor)
+                                .background(TransToolsTheme.accent.opacity(0.12))
+                                .foregroundStyle(TransToolsTheme.accent)
                                 .clipShape(Capsule())
                             }
                             .buttonStyle(.plain)
@@ -866,11 +880,15 @@ public struct VocabularyFlashcardModal: View {
                                 .foregroundStyle(.secondary.opacity(0.7))
                                 .padding(.bottom, 12)
                         } else {
-                            // Back of card (Vietnamese Meaning & Context)
+                            // Keep pronunciation visible on both sides of the card.
                             Spacer()
+                            Text(currentItem.word).font(.system(size: 16, weight: .semibold, design: .rounded))
+                            if !currentItem.phonetic.isEmpty {
+                                Text(currentItem.phonetic).font(.system(size: 14, design: .monospaced)).foregroundStyle(TransToolsTheme.navy)
+                            }
                             Text(currentItem.meaning)
                                 .font(.system(size: 20, weight: .bold))
-                                .foregroundStyle(Color.accentColor)
+                                .foregroundStyle(TransToolsTheme.accent)
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 20)
 
@@ -941,7 +959,7 @@ public struct VocabularyFlashcardModal: View {
                         Image(systemName: "chevron.right")
                             .font(.system(size: 12, weight: .bold))
                             .frame(width: 32, height: 32)
-                            .background(Color.accentColor)
+                            .background(TransToolsTheme.accent)
                             .foregroundStyle(.white)
                             .clipShape(Circle())
                     }
@@ -953,6 +971,7 @@ public struct VocabularyFlashcardModal: View {
             }
         }
         .frame(width: 440)
+        .task { await vocabManager.fillMissingPhonetics() }
     }
 }
 
@@ -963,6 +982,7 @@ public struct VocabularyNotebookSectionView: View {
     @State private var searchText = ""
     @State private var selectedFilter: Int = 0 // 0: All, 1: Learning, 2: Mastered
     @State private var showFlashcards = false
+    @State private var showDictionary = false
 
     var filteredItems: [VocabularyItem] {
         var list = vocabManager.items
@@ -1019,6 +1039,9 @@ public struct VocabularyNotebookSectionView: View {
 
                 Spacer()
 
+                Button("Siêu từ điển") { showDictionary = true }
+                    .buttonStyle(.bordered).controlSize(.small)
+
                 // Practice Flashcards Button
                 Button {
                     showFlashcards = true
@@ -1031,7 +1054,7 @@ public struct VocabularyNotebookSectionView: View {
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-                    .background(Color.accentColor)
+                    .background(TransToolsTheme.accent)
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
@@ -1108,6 +1131,8 @@ public struct VocabularyNotebookSectionView: View {
                 }
             }
         }
+        .sheet(isPresented: $showDictionary) { DictionaryView() }
+        .task { await vocabManager.fillMissingPhonetics() }
         .sheet(isPresented: $showFlashcards) {
             VocabularyFlashcardModal(vocabManager: vocabManager)
         }
@@ -1145,7 +1170,7 @@ private struct VocabularyRowCard: View {
                     if !item.phonetic.isEmpty {
                         Text(item.phonetic)
                             .font(.system(size: 11, weight: .medium, design: .monospaced))
-                            .foregroundStyle(Color.purple)
+                            .foregroundStyle(TransToolsTheme.navy)
                     }
 
                     Button {
@@ -1153,9 +1178,9 @@ private struct VocabularyRowCard: View {
                     } label: {
                         Image(systemName: "speaker.wave.2.fill")
                             .font(.system(size: 10))
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(TransToolsTheme.accent)
                             .frame(width: 18, height: 18)
-                            .background(Color.accentColor.opacity(0.1))
+                            .background(TransToolsTheme.accent.opacity(0.1))
                             .clipShape(Circle())
                     }
                     .buttonStyle(.plain)
@@ -1358,10 +1383,10 @@ public struct KeyboardShortcutGuideCard: View {
             HStack(spacing: 5) {
                 Image(systemName: "keyboard.fill")
                     .font(.system(size: 11))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(TransToolsTheme.accent)
                 Text("PHÍM NÓNG TIỆN ÍCH")
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(TransToolsTheme.accent)
             }
 
             Divider().frame(height: 12).opacity(0.3)
@@ -1372,8 +1397,8 @@ public struct KeyboardShortcutGuideCard: View {
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color.accentColor.opacity(0.12))
-                    .foregroundStyle(Color.accentColor)
+                    .background(TransToolsTheme.accent.opacity(0.12))
+                    .foregroundStyle(TransToolsTheme.accent)
                     .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
 
                 Text("Bôi đen chữ bất kỳ để Chip Chip dịch & lưu từ")
@@ -1387,8 +1412,8 @@ public struct KeyboardShortcutGuideCard: View {
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color.purple.opacity(0.12))
-                    .foregroundStyle(Color.purple)
+                    .background(TransToolsTheme.navy.opacity(0.12))
+                    .foregroundStyle(TransToolsTheme.navy)
                     .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
 
                 Text("Dịch nhanh song ngữ")
@@ -1434,7 +1459,7 @@ public struct DeveloperPhrasesCompactList: View {
                             .font(.system(size: 10, weight: selectedCategory == cat ? .bold : .medium))
                             .padding(.horizontal, 8)
                             .padding(.vertical, 2.5)
-                            .background(selectedCategory == cat ? Color.accentColor : Color.secondary.opacity(0.08))
+                            .background(selectedCategory == cat ? TransToolsTheme.accent : Color.secondary.opacity(0.08))
                             .foregroundStyle(selectedCategory == cat ? .white : .primary)
                             .clipShape(Capsule())
                     }
@@ -1462,7 +1487,7 @@ public struct DeveloperPhrasesCompactList: View {
                         HStack(alignment: .top, spacing: 6) {
                             Image(systemName: phrase.icon)
                                 .font(.system(size: 10))
-                                .foregroundStyle(Color.accentColor)
+                                .foregroundStyle(TransToolsTheme.accent)
                                 .frame(width: 14)
                                 .padding(.top, 1)
 

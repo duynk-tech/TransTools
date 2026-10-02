@@ -69,7 +69,7 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
     private var downloadContinuation: CheckedContinuation<URL, Error>?
 
     var currentVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.2.0"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.3.0"
     }
 
     var currentVersionDisplay: String {
@@ -155,11 +155,9 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
                     // Find zip asset for macOS
                     if let zipAsset = release.assets.first(where: {
                         let name = $0.name.lowercased()
-                        return name.hasSuffix(".zip") || name.contains("transtools") || name.hasSuffix(".dmg")
+                        return name.hasSuffix(".zip") && name.contains("transtools")
                     }) {
                         self.downloadURL = URL(string: zipAsset.browserDownloadUrl)
-                    } else if let firstAsset = release.assets.first {
-                        self.downloadURL = URL(string: firstAsset.browserDownloadUrl)
                     } else {
                         self.downloadURL = nil
                     }
@@ -421,7 +419,7 @@ struct UpdateSheetView: View {
             HStack(spacing: 10) {
                 ZStack {
                     LinearGradient(
-                        colors: [Color.blue, Color.accentColor],
+                        colors: [TransToolsTheme.accent, TransToolsTheme.accent],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -517,7 +515,7 @@ struct UpdateSheetView: View {
                             .font(.system(size: 12, weight: .semibold))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)
-                            .background(Color.accentColor)
+                            .background(TransToolsTheme.accent)
                             .foregroundStyle(.white)
                             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         }
@@ -606,8 +604,8 @@ struct UpdateSheetView: View {
                                 .font(.system(size: 11, weight: .medium))
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 6)
-                                .background(Color.accentColor.opacity(0.15))
-                                .foregroundStyle(Color.accentColor)
+                                .background(TransToolsTheme.accent.opacity(0.15))
+                                .foregroundStyle(TransToolsTheme.accent)
                                 .clipShape(RoundedRectangle(cornerRadius: 6))
                         }
                         .buttonStyle(.plain)

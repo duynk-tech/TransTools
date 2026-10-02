@@ -1,4 +1,4 @@
-# TransTools — v1.2.0
+# TransTools — v1.3.0
 
 > **Bộ công cụ dịch thuật trực tiếp âm thanh cuộc họp, phụ đề nổi song ngữ & trợ lý AI thông minh trên macOS.**  
 > 🌐 **Website giới thiệu:** [duynk-tech.github.io/TransTools](https://duynk-tech.github.io/TransTools/)  
@@ -40,7 +40,7 @@
 - Chip Apple Silicon (M1/M2/M3/M4) hoặc Intel.
 
 ### 2. Tải về bản đóng gói sẵn
-Tải bản phát hành mới nhất (`TransTools.zip`) tại mục [GitHub Releases](https://github.com/duynk-tech/TransTools/releases), giải nén và kéo vào thư mục `/Applications`.
+Tải bản phát hành mới nhất (`TransTools.dmg` hoặc `TransTools.zip`) tại mục [GitHub Releases](https://github.com/duynk-tech/TransTools/releases), mở DMG và kéo TransTools vào Applications; hoặc giải nén ZIP và đưa app vào `/Applications`.
 
 ### 3. Tự biên dịch từ mã nguồn
 ```bash
@@ -63,9 +63,9 @@ open build/TransTools.app
 ```bash
 ./scripts/package-release.sh
 ```
-Lệnh trên sẽ tự động build release, đóng gói `build/TransTools.zip` chuẩn macOS với đầy đủ chữ ký số và sinh mã checksum SHA256.
+Lệnh trên sẽ tự động build release, đóng gói cả `build/TransTools.zip` và `build/TransTools.dmg` (kéo thả vào Applications), cùng tệp SHA256 cho mỗi định dạng. App dùng chữ ký ad hoc của quy trình build hiện tại.
 
-Khi bạn push một git tag mới (ví dụ: `v1.2.0`), GitHub Actions trong file `.github/workflows/release.yml` sẽ tự động kích hoạt, build và tạo GitHub Release đính kèm tệp `TransTools.zip` sẵn sàng cho tính năng Auto-Update trên máy người dùng.
+Khi bạn push một git tag mới (ví dụ: `v1.3.0`), GitHub Actions trong file `.github/workflows/release.yml` sẽ tự động kích hoạt, build và tạo GitHub Release đính kèm `TransTools.zip`, `TransTools.dmg` và hai tệp SHA256. Auto-Update dùng ZIP; DMG dành cho cài đặt kéo thả.
 
 ---
 

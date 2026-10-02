@@ -1195,7 +1195,9 @@ final class LiveSpeech {
     private var generation = UUID()
     private var pendingCMSamples: [CMSampleBuffer] = []
     private var pendingPCMBuffers: [AVAudioPCMBuffer] = []
-    private let maxPendingBuffers = 35 // ~1.5 - 2s buffer queue for seamless rotation
+    private var recentSamples: [(Date, CMSampleBuffer)] = []
+    private var recentPCM: [(Date, AVAudioPCMBuffer)] = []
+    private let maxPendingBuffers = 200 // ~1.5 - 2s buffer queue for seamless rotation
 
     var onResult: ((String, Bool) -> Void)?
     var onError: ((Error) -> Void)?
@@ -1229,6 +1231,13 @@ final class LiveSpeech {
             next.requiresOnDeviceRecognition = false
         }
 
+        // Replay the last two seconds across request boundaries, including audio not yet recognized.
+        let cutoff = Date().addingTimeInterval(-2)
+        recentSamples.removeAll { $0.0 < cutoff }
+        recentPCM.removeAll { $0.0 < cutoff }
+        for (_, sample) in recentSamples { next.appendAudioSampleBuffer(sample) }
+        for (_, pcm) in recentPCM { next.append(pcm) }
+
         // Drain any pending buffered audio samples into the new request so no audio is lost during rotation
         for sample in pendingCMSamples {
             next.appendAudioSampleBuffer(sample)
@@ -1255,7 +1264,7 @@ final class LiveSpeech {
                 self.onResult?(result.bestTranscription.formattedString, result.isFinal)
             }
 
-            if let error {
+            if let error, result?.isFinal != true {
                 let nsErr = error as NSError
                 let desc = error.localizedDescription
 
@@ -1285,6 +1294,8 @@ final class LiveSpeech {
         lock.lock()
         defer { lock.unlock() }
         if let req = request {
+            recentSamples.append((Date(), sample))
+            recentSamples.removeAll { $0.0 < Date().addingTimeInterval(-2) }
             req.appendAudioSampleBuffer(sample)
         } else {
             pendingCMSamples.append(sample)
@@ -1298,6 +1309,19 @@ final class LiveSpeech {
         lock.lock()
         defer { lock.unlock() }
         if let req = request {
+            // Audio-engine callback buffers are reused; the replay ring owns a deep copy.
+            if let copy = AVAudioPCMBuffer(pcmFormat: buffer.format, frameCapacity: buffer.frameLength) {
+                copy.frameLength = buffer.frameLength
+                let source = UnsafeMutableAudioBufferListPointer(buffer.mutableAudioBufferList)
+                let destination = UnsafeMutableAudioBufferListPointer(copy.mutableAudioBufferList)
+                for index in 0..<source.count {
+                    if let from = source[index].mData, let to = destination[index].mData {
+                        memcpy(to, from, Int(source[index].mDataByteSize))
+                    }
+                }
+                recentPCM.append((Date(), copy))
+                recentPCM.removeAll { $0.0 < Date().addingTimeInterval(-2) }
+            }
             req.append(buffer)
         } else {
             pendingPCMBuffers.append(buffer)
@@ -1314,6 +1338,8 @@ final class LiveSpeech {
         request = nil
         pendingCMSamples.removeAll()
         pendingPCMBuffers.removeAll()
+        recentSamples.removeAll()
+        recentPCM.removeAll()
         lock.unlock()
         task?.cancel()
         task = nil

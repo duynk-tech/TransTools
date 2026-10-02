@@ -1,0 +1,10 @@
+func check(_ condition: Bool, _ name: String) { precondition(condition, name); print("PASS: " + name) }
+check(SpeechTextReconciler.removingOverlap("project today and tomorrow", after: "We discuss the project today") == "and tomorrow", "rotation overlap")
+check(SpeechTextReconciler.removingOverlap("New topic now", after: "We discuss the project today") == "New topic now", "new words preserved")
+check(SpeechTextReconciler.removingOverlap("Hello, WORLD! next", after: "hello world") == "next", "punctuation overlap")
+check(SpeechTextReconciler.remainder("We meet today. Next item", committed: "We meet today") == "Next item", "sentence boundary")
+check(SpeechTextReconciler.remainder("Actually we should meet today before lunch Next item", committed: "We should meet today before lunch") == "Next item", "revision before boundary")
+check(SpeechTextReconciler.remainder("Hello", committed: "Hello there everyone") == "", "short partial does not reset")
+check(SpeechTextReconciler.remainder("A new unrelated utterance", committed: "Last sentence done") == nil, "fresh utterance detected")
+check(SpeechTextReconciler.keepLongerPartial("We need all these words", incoming: "We need", final: false) == "We need all these words", "short partial retained")
+check(SpeechTextReconciler.keepLongerPartial("We need more work", incoming: "We need less work", final: false) == "We need less work", "correction allowed")

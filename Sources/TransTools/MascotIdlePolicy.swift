@@ -3,7 +3,7 @@ import CoreGraphics
 
 /// Local context only: never reads keyboard content or sends activity data.
 enum MascotIdlePolicy {
-    static let idleThreshold: TimeInterval = 45
+    static let idleThreshold: TimeInterval = 20
 
     static var systemIdleSeconds: TimeInterval {
         let seconds = CGEventSource.secondsSinceLastEventType(
