@@ -7661,6 +7661,27 @@ struct QuickTranslateView: View {
                                     .foregroundStyle(.tertiary)
                                     .padding(12)
                             } else {
+                                primaryTranslation
+                                // Alternatives / Gợi ý phương án diễn đạt khác (khi dịch)
+                                if !lastActionWasPolish && !translationResult.alternatives.isEmpty {
+                                    alternativeTranslations
+                                }
+                            }
+                        }
+                        .padding(10)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                    )
+
+    }
+
+
+    private var primaryTranslation: some View {
                                 // Primary result (Đã bỏ label "BẢN DỊCH CHUẨN" theo yêu cầu người dùng)
                                 Text(output)
                                     .font(.system(size: 15, weight: .semibold, design: .rounded))
@@ -7672,8 +7693,9 @@ struct QuickTranslateView: View {
                                     .background(lastActionWasPolish ? TransToolsTheme.navy.opacity(0.06) : TransToolsTheme.accent.opacity(0.06))
                                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
-                                // Alternatives / Gợi ý phương án diễn đạt khác (khi dịch)
-                                if !lastActionWasPolish && !translationResult.alternatives.isEmpty {
+    }
+
+    private var alternativeTranslations: some View {
                                     VStack(alignment: .leading, spacing: 8) {
                                         HStack(spacing: 5) {
                                             Image(systemName: "sparkles")
@@ -7686,6 +7708,12 @@ struct QuickTranslateView: View {
                                         .padding(.top, 4)
 
                                         ForEach(translationResult.alternatives) { alt in
+                                            alternativeRow(alt)
+                                        }
+                                    }
+    }
+
+    private func alternativeRow(_ alt: TranslationAlternative) -> some View {
                                             HStack(alignment: .top, spacing: 10) {
                                                 VStack(alignment: .leading, spacing: 2) {
                                                     Text(alt.tone)
@@ -7727,21 +7755,6 @@ struct QuickTranslateView: View {
                                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                                                     .stroke(Color.primary.opacity(0.06), lineWidth: 0.8)
                                             )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        .padding(10)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-                    )
-
     }
 
     private var resultFooter: some View {
