@@ -1,0 +1,311 @@
+{
+  "title": "Chú âm · Mandarin Đài Loan",
+  "locale": "zh-TW",
+  "kind": "zhuyin-reference",
+  "author": "Ministry of Education, R.O.C. (Taiwan)",
+  "year": 2017,
+  "license": "CC-BY-4.0",
+  "licenseURL": "https://creativecommons.org/licenses/by/4.0/",
+  "source": "https://language.moe.gov.tw/001/Upload/files/SITE_CONTENT/M0001/deploy/index.html",
+  "mappingSource": "https://language.moe.gov.tw/001/Upload/files/site_content/M0001/juyin/html_ch/index.html",
+  "archiveSHA256": "40f7feea03a09e8036201ccab939d01c7e57aef8dcc0a1ee34c40d5182234213",
+  "modified": false,
+  "entries": [
+    {
+      "id": "1",
+      "symbol": "ㄅ",
+      "file": "F1.wav",
+      "sha256": "ff794a493cbb8e582ac70b54da41a57b7639bd2bed8ba8a036425817d8fdae9c",
+      "seconds": 0.829047619047619,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "2",
+      "symbol": "ㄆ",
+      "file": "F2.wav",
+      "sha256": "65f7faf3ab4ec318cc489a61b365980bf17877b919b8df2fdc94ad902d1f6573",
+      "seconds": 0.8033333333333333,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "3",
+      "symbol": "ㄇ",
+      "file": "F3.wav",
+      "sha256": "814481eeb38f357a1181b067b25784d1ec614a01fd7396d27a4c641ebe727add",
+      "seconds": 0.8256009070294784,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "4",
+      "symbol": "ㄈ",
+      "file": "F4.wav",
+      "sha256": "68bf5b9025831561d62d7d2cce1c2b8d784cbc3b7851b9a2993157f50585b620",
+      "seconds": 0.8386848072562358,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "5",
+      "symbol": "ㄉ",
+      "file": "F5.wav",
+      "sha256": "49b0a896d93553bf8b57cbf245753460abb2df9c4028d372e2828ee57b004cfe",
+      "seconds": 0.8322448979591837,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "6",
+      "symbol": "ㄊ",
+      "file": "F6.wav",
+      "sha256": "d8ec83f5359fb9066ca1bb4b7c0a8ed11f378fd05795024f624b432ce1f42afb",
+      "seconds": 0.8001360544217687,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "7",
+      "symbol": "ㄋ",
+      "file": "F7.wav",
+      "sha256": "a503a0caf984dcdada06b25cfc91cd12046c1ef07874466a18dc45c3a44bdf28",
+      "seconds": 0.827437641723356,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "8",
+      "symbol": "ㄌ",
+      "file": "F8.wav",
+      "sha256": "b9b5fc35148fb396667074496668e58a6bf3077f3aaa76454f219c0314ae8a6c",
+      "seconds": 0.8370748299319728,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "9",
+      "symbol": "ㄍ",
+      "file": "F9.wav",
+      "sha256": "b910b2228d4b6d67228d64cd8caf2bda6f54e89913696b9461bbf139fe3d1bc7",
+      "seconds": 0.8370748299319728,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "10",
+      "symbol": "ㄎ",
+      "file": "F10.wav",
+      "sha256": "94d68908d8a28d62768b11fa5a4b926babd744719ee68704ae750597d4c90ef5",
+      "seconds": 0.8354648526077098,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "11",
+      "symbol": "ㄏ",
+      "file": "F11.wav",
+      "sha256": "a5969aaeceb2658ff78624819f905c1dac24a7224fc59a7337fdb8dc609aeb50",
+      "seconds": 0.8209977324263038,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "12",
+      "symbol": "ㄐ",
+      "file": "F12.wav",
+      "sha256": "bd617d30b34ee3e4dc39d29d82db3e0993ba55262802e2196b5427e559ad24c5",
+      "seconds": 0.8258276643990929,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "13",
+      "symbol": "ㄑ",
+      "file": "F13.wav",
+      "sha256": "6c002446a5d58421aa47571bde0f34f899a8b3e797c6c3fd551e375ab541c60d",
+      "seconds": 0.8242176870748299,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "14",
+      "symbol": "ㄒ",
+      "file": "F14.wav",
+      "sha256": "cde858075fa16078457aefdc6c586b7a4c5ee088c3e3ab0eaf46fed915778e7d",
+      "seconds": 0.8386848072562358,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "15",
+      "symbol": "ㄓ",
+      "file": "F15.wav",
+      "sha256": "74f9b1444b3cb4ac2d8dac14b05d9b8ef1d09a4107a33eae47a8a9355e6be290",
+      "seconds": 0.8322675736961451,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "16",
+      "symbol": "ㄔ",
+      "file": "F16.wav",
+      "sha256": "080d9be21f769863b5e462743596d79017429834750328a284c3f06753781ee0",
+      "seconds": 0.7872562358276644,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "17",
+      "symbol": "ㄕ",
+      "file": "F17.wav",
+      "sha256": "fda75dff8b11daab818b94a67c9585414ad7db74fc2ecbb703871018d8c9517e",
+      "seconds": 0.8322448979591837,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "18",
+      "symbol": "ㄖ",
+      "file": "F18.wav",
+      "sha256": "75224437ecfbbfc752a6a744b7f7eaff257ea2f6709ce02ffe69752bbe88f183",
+      "seconds": 0.8387074829931973,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "19",
+      "symbol": "ㄗ",
+      "file": "F19.wav",
+      "sha256": "48c6849d0f5d735b5cdddc81fbdea39f6194f6632a7fa30c90ae9e1db7f21e4f",
+      "seconds": 0.8258276643990929,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "20",
+      "symbol": "ㄘ",
+      "file": "F20.wav",
+      "sha256": "a373b1e3cb43e207fc5de2563d6f4775b6dc234d16744387377106ff9f1051f9",
+      "seconds": 0.8178004535147392,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "21",
+      "symbol": "ㄙ",
+      "file": "F21.wav",
+      "sha256": "0804096bba32009b07b79de5553c014c18e940b7878924b61618c1a41cf70a53",
+      "seconds": 0.8145804988662132,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "22",
+      "symbol": "ㄚ",
+      "file": "F22.wav",
+      "sha256": "937acb887c383a7d45eaffce4376ce3a053c514b221bbba13323796287a37100",
+      "seconds": 0.8001133786848073,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "23",
+      "symbol": "ㄛ",
+      "file": "F23.wav",
+      "sha256": "8f5fc2ca710d36371082e5e395ec9e6538e5a9064213bceb1597b58a540584b1",
+      "seconds": 0.8081632653061225,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "24",
+      "symbol": "ㄜ",
+      "file": "F24.wav",
+      "sha256": "5c5171e144ad10df390820faa530b0930ea03d70d1d51f30964fd6ec7e20ade6",
+      "seconds": 0.8096598639455782,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "25",
+      "symbol": "ㄝ",
+      "file": "F25.wav",
+      "sha256": "e0c164d346cdf69e49de36f8b2e6ebb49c09adb1f5c48545c02701232fffd857",
+      "seconds": 0.8184807256235828,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "26",
+      "symbol": "ㄞ",
+      "file": "F26.wav",
+      "sha256": "03d701ce1feec644b4c3934e75636b728b0edcf7b643a6c5ea14b9be032e9321",
+      "seconds": 0.8224716553287982,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "27",
+      "symbol": "ㄟ",
+      "file": "F27.wav",
+      "sha256": "d9ff24329b99838d1e97fab27dc821b095734179ef081073344aac2c288b0568",
+      "seconds": 0.8287528344671202,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "28",
+      "symbol": "ㄠ",
+      "file": "F28.wav",
+      "sha256": "4e4dc81e930be2302ed6142a618d39624df7d8054eb39c6191ae326c592b3a94",
+      "seconds": 0.8272108843537415,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "29",
+      "symbol": "ㄡ",
+      "file": "F29.wav",
+      "sha256": "168993425e47150ff6e5ac9eca356363d0be109f40a89eef1cc5d9a5588f44f8",
+      "seconds": 0.8336281179138322,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "30",
+      "symbol": "ㄢ",
+      "file": "F30.wav",
+      "sha256": "e63521363829ccb6ebc0653ec05bcfe5257a9d85a1a40688e4ec0256351282e1",
+      "seconds": 0.8240816326530612,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "31",
+      "symbol": "ㄣ",
+      "file": "F31.wav",
+      "sha256": "ec4a5014a7ddeaf4c3bf7077035f2434b1970384fe862b379362b163030d6650",
+      "seconds": 0.833718820861678,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "32",
+      "symbol": "ㄤ",
+      "file": "F32.wav",
+      "sha256": "5135613be150d43028307d6322319f999a00a6c5d0eb5ad41c64daa00e41d6d0",
+      "seconds": 0.8112698412698413,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "33",
+      "symbol": "ㄥ",
+      "file": "F33.wav",
+      "sha256": "53487d1215a35ed5291e53621bf28b977489f9dd23fa07aeed020087f9f77fc4",
+      "seconds": 0.8032426303854875,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "34",
+      "symbol": "ㄦ",
+      "file": "F34.wav",
+      "sha256": "3b7c3d8022d7a08f9fbe95fc874b0b2b0c955798fe54cb2a710abee0871196d8",
+      "seconds": 0.8385260770975057,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "35",
+      "symbol": "ㄧ",
+      "file": "F35.wav",
+      "sha256": "32f6d205454e5b110abc285012a2731c0355bce6692a19cdb7827cba6deba5e1",
+      "seconds": 0.8080498866213152,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "36",
+      "symbol": "ㄨ",
+      "file": "F36.wav",
+      "sha256": "5e66d7d1d0f20c9fcbd87d72cefc19312a30150f31c2b0bd3ed75725dccd2161",
+      "seconds": 0.8385260770975057,
+      "review": "official mapping verified; no independent listening review"
+    },
+    {
+      "id": "37",
+      "symbol": "ㄩ",
+      "file": "F37.wav",
+      "sha256": "13408b0d91e0141a2a6c797ad87035a90e5f547ecde3ac3de3f4e0990becaa47",
+      "seconds": 0.8224716553287982,
+      "review": "official mapping verified; no independent listening review"
+    }
+  ]
+}

@@ -9,7 +9,8 @@ enum SpeechTextReconciler {
     static func removingOverlap(_ text: String, after previous: String) -> String {
         let input = words(text), tail = Array(words(previous).suffix(32))
         guard !input.isEmpty, !tail.isEmpty else { return text }
-        for count in stride(from: min(input.count, tail.count), through: 1, by: -1) {
+        guard min(input.count, tail.count) >= 2 else { return text }
+        for count in stride(from: min(input.count, tail.count), through: 2, by: -1) {
             if tail.suffix(count).map(normalized) == input.prefix(count).map(normalized) {
                 return input.dropFirst(count).joined(separator: " ")
             }
@@ -34,7 +35,7 @@ enum SpeechTextReconciler {
     }
     static func keepLongerPartial(_ previous: String, incoming: String, final: Bool) -> String {
         let old = words(previous).map(normalized), next = words(incoming).map(normalized)
-        if !final, old.count > next.count, old.starts(with: next) { return previous }
+        if old.count > next.count, old.starts(with: next) { return previous }
         return incoming
     }
 }

@@ -1,0 +1,165 @@
+[
+  {
+    "id": "vi.g1.reading.001",
+    "revision": 1,
+    "grade": 1,
+    "title": "Chậu hoa của bé",
+    "skill": "Đọc",
+    "instruction": "Đọc ngữ liệu, sau đó trả lời câu hỏi bằng lời của con.",
+    "curriculumPage": 18,
+    "sourceURL": "https://thbinhloitrung.hcm.edu.vn/doi-moi-ctgdpt/chuong-trinh-giao-duc-pho-thong-mon-ngu-van/vbctmb/84846/421496",
+    "license": "Original draft — chưa xác nhận quyền phân phối cuối",
+    "reviewerIDs": [],
+    "reviewDate": null,
+    "audioPath": null,
+    "strokePath": null,
+    "approved": false,
+    "text": "Bé có chậu hoa. Bé tưới hoa. Hoa nở. Bé vui.",
+    "question": "Bé làm gì cho hoa?",
+    "expectedAnswers": [
+      "tưới hoa"
+    ],
+    "prerequisites": [
+      "Đã học các âm và tiếng trong ngữ liệu; giáo viên chọn thời điểm phù hợp"
+    ],
+    "assessmentPolicy": "Giáo viên/phụ huynh đối chiếu ý trả lời; chưa dùng khớp chuỗi hoặc ASR để chấm đúng sai",
+    "reviewChecklist": [
+      "Phù hợp yêu cầu và thời điểm học trong lớp",
+      "Từ ngữ, dấu thanh, diễn đạt và độ khó",
+      "Đáp án và cách chấp nhận diễn đạt tương đương",
+      "Thu và duyệt audio riêng",
+      "Xác nhận quyền và hai người duyệt"
+    ]
+  },
+  {
+    "id": "vi.g2.reading.001",
+    "revision": 1,
+    "grade": 2,
+    "title": "Chiếc ô màu xanh",
+    "skill": "Đọc",
+    "instruction": "Đọc ngữ liệu, sau đó trả lời câu hỏi bằng lời của con.",
+    "curriculumPage": 22,
+    "sourceURL": "https://thbinhloitrung.hcm.edu.vn/doi-moi-ctgdpt/chuong-trinh-giao-duc-pho-thong-mon-ngu-van/vbctmb/84846/421496",
+    "license": "Original draft — chưa xác nhận quyền phân phối cuối",
+    "reviewerIDs": [],
+    "reviewDate": null,
+    "audioPath": null,
+    "strokePath": null,
+    "approved": false,
+    "text": "Sáng nay, trời mưa. Mai mang một chiếc ô màu xanh đến trường. Thấy Nam đứng dưới mái hiên, Mai rủ bạn đi cùng. Hai bạn che ô và bước chậm để không bị trượt. Đến lớp, Nam nói lời cảm ơn. Mai mỉm cười.",
+    "question": "Vì sao Mai rủ Nam đi cùng?",
+    "expectedAnswers": [
+      "Nam chưa có ô để đi trong mưa",
+      "Mai muốn giúp bạn tránh mưa"
+    ],
+    "prerequisites": [
+      "Đọc được câu ngắn"
+    ],
+    "assessmentPolicy": "Giáo viên/phụ huynh đối chiếu ý trả lời; chưa dùng khớp chuỗi hoặc ASR để chấm đúng sai",
+    "reviewChecklist": [
+      "Phù hợp yêu cầu và thời điểm học trong lớp",
+      "Từ ngữ, dấu thanh, diễn đạt và độ khó",
+      "Đáp án và cách chấp nhận diễn đạt tương đương",
+      "Thu và duyệt audio riêng",
+      "Xác nhận quyền và hai người duyệt"
+    ]
+  },
+  {
+    "id": "vi.g3.reading.001",
+    "revision": 1,
+    "grade": 3,
+    "title": "Góc đọc sách",
+    "skill": "Đọc",
+    "instruction": "Đọc ngữ liệu, sau đó trả lời câu hỏi bằng lời của con.",
+    "curriculumPage": 26,
+    "sourceURL": "https://thbinhloitrung.hcm.edu.vn/doi-moi-ctgdpt/chuong-trinh-giao-duc-pho-thong-mon-ngu-van/vbctmb/84846/421496",
+    "license": "Original draft — chưa xác nhận quyền phân phối cuối",
+    "reviewerIDs": [],
+    "reviewDate": null,
+    "audioPath": null,
+    "strokePath": null,
+    "approved": false,
+    "text": "Lớp của An có một kệ sách nhỏ. Mỗi tuần, các bạn mang đến một cuốn sách đã đọc. An viết một tấm thẻ giới thiệu cuốn sách mình thích. Trên thẻ, bạn ghi tên sách và một điều thú vị. Cuối giờ học, cả nhóm đọc các tấm thẻ rồi chọn sách mượn về. An nhận ra rằng mỗi người có một sở thích khác nhau. Nhờ chia sẻ, góc đọc sách có thêm nhiều lựa chọn.",
+    "question": "Các tấm thẻ giúp các bạn làm gì?",
+    "expectedAnswers": [
+      "biết thông tin và chọn sách để đọc"
+    ],
+    "prerequisites": [
+      "Đọc hiểu đoạn kể; trả lời bằng thông tin trong bài"
+    ],
+    "assessmentPolicy": "Giáo viên/phụ huynh đối chiếu ý trả lời; chưa dùng khớp chuỗi hoặc ASR để chấm đúng sai",
+    "reviewChecklist": [
+      "Phù hợp yêu cầu và thời điểm học trong lớp",
+      "Từ ngữ, dấu thanh, diễn đạt và độ khó",
+      "Đáp án và cách chấp nhận diễn đạt tương đương",
+      "Thu và duyệt audio riêng",
+      "Xác nhận quyền và hai người duyệt"
+    ]
+  },
+  {
+    "id": "vi.g4.reading.001",
+    "revision": 1,
+    "grade": 4,
+    "title": "Giữ một khoảng xanh",
+    "skill": "Đọc",
+    "instruction": "Đọc ngữ liệu, sau đó trả lời câu hỏi bằng lời của con.",
+    "curriculumPage": 31,
+    "sourceURL": "https://thbinhloitrung.hcm.edu.vn/doi-moi-ctgdpt/chuong-trinh-giao-duc-pho-thong-mon-ngu-van/vbctmb/84846/421496",
+    "license": "Original draft — chưa xác nhận quyền phân phối cuối",
+    "reviewerIDs": [],
+    "reviewDate": null,
+    "audioPath": null,
+    "strokePath": null,
+    "approved": false,
+    "text": "Sân trường có một góc đất cạnh hàng rào. Trước đây, góc ấy thường bị bỏ quên. Một buổi chiều, lớp của Huy cùng cô giáo trồng vài cây nhỏ. Các nhóm thay nhau tưới nước và nhặt lá khô. Huy muốn tưới thật nhiều vì nghĩ cây sẽ lớn nhanh. Cô hướng dẫn bạn quan sát đất và tưới vừa đủ. Sau vài tuần, những lá non xuất hiện. Huy ghi lại sự thay đổi trong sổ. Bạn hiểu rằng chăm sóc cây cần đều đặn và biết quan sát, chứ không chỉ làm thật nhiều trong một ngày.",
+    "question": "Huy thay đổi cách chăm cây như thế nào?",
+    "expectedAnswers": [
+      "quan sát đất và tưới vừa đủ",
+      "chăm đều đặn và quan sát"
+    ],
+    "prerequisites": [
+      "Tìm chi tiết để giải thích ý kiến"
+    ],
+    "assessmentPolicy": "Giáo viên/phụ huynh đối chiếu ý trả lời; chưa dùng khớp chuỗi hoặc ASR để chấm đúng sai",
+    "reviewChecklist": [
+      "Phù hợp yêu cầu và thời điểm học trong lớp",
+      "Từ ngữ, dấu thanh, diễn đạt và độ khó",
+      "Đáp án và cách chấp nhận diễn đạt tương đương",
+      "Thu và duyệt audio riêng",
+      "Xác nhận quyền và hai người duyệt"
+    ]
+  },
+  {
+    "id": "vi.g5.reading.001",
+    "revision": 1,
+    "grade": 5,
+    "title": "Một đề nghị cho thư viện",
+    "skill": "Đọc",
+    "instruction": "Đọc ngữ liệu, sau đó trả lời câu hỏi bằng lời của con.",
+    "curriculumPage": 36,
+    "sourceURL": "https://thbinhloitrung.hcm.edu.vn/doi-moi-ctgdpt/chuong-trinh-giao-duc-pho-thong-mon-ngu-van/vbctmb/84846/421496",
+    "license": "Original draft — chưa xác nhận quyền phân phối cuối",
+    "reviewerIDs": [],
+    "reviewDate": null,
+    "audioPath": null,
+    "strokePath": null,
+    "approved": false,
+    "text": "Trong giờ sinh hoạt, Bình đề nghị đặt một hộp góp ý ở thư viện. Bạn giải thích rằng không phải học sinh nào cũng tự tin phát biểu trước lớp. Hộp góp ý giúp các bạn nêu tên sách muốn đọc và những điều cần cải thiện. Lan đồng ý, nhưng lo rằng có thể xuất hiện những lời thiếu lịch sự. Bình đề nghị ghi hướng dẫn cạnh hộp: góp ý cụ thể, dùng lời tôn trọng và không ghi thông tin riêng của người khác. Cả lớp thống nhất thử trong hai tuần. Sau đó, các bạn sẽ cùng cô giáo xem những góp ý phù hợp để quyết định bước tiếp theo.",
+    "question": "Vì sao hướng dẫn góp ý là cần thiết?",
+    "expectedAnswers": [
+      "giúp góp ý cụ thể và tôn trọng",
+      "tránh lời thiếu lịch sự và bảo vệ thông tin riêng"
+    ],
+    "prerequisites": [
+      "Đọc hiểu thông tin; giải thích dựa trên chi tiết"
+    ],
+    "assessmentPolicy": "Giáo viên/phụ huynh đối chiếu ý trả lời; chưa dùng khớp chuỗi hoặc ASR để chấm đúng sai",
+    "reviewChecklist": [
+      "Phù hợp yêu cầu và thời điểm học trong lớp",
+      "Từ ngữ, dấu thanh, diễn đạt và độ khó",
+      "Đáp án và cách chấp nhận diễn đạt tương đương",
+      "Thu và duyệt audio riêng",
+      "Xác nhận quyền và hai người duyệt"
+    ]
+  }
+]

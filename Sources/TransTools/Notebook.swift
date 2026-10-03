@@ -153,7 +153,7 @@ struct MeetingNotebookView: View {
                     }
                 }
                 .padding(.horizontal, 10)
-                .padding(.vertical, 6)
+                .padding(.vertical, 10)
                 .background(Color(nsColor: .textBackgroundColor).opacity(0.8))
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .overlay(
@@ -400,6 +400,8 @@ private struct SessionDetailView: View {
     @State private var isNotesExpanded = false
     @State private var copiedConfirmation = false
 
+    @State private var showActionItemsSheet = false
+
     var filteredCaptions: [CaptionRecord] {
         if transcriptQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return session.captions
@@ -437,7 +439,8 @@ private struct SessionDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Top Action Header
-            HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
                 // Editable Title
                 if isEditingTitle {
                     TextField("Tiêu đề cuộc họp", text: $editableTitle, onCommit: {
@@ -482,8 +485,38 @@ private struct SessionDetailView: View {
 
                 Spacer()
 
-                // Export Buttons
-                HStack(spacing: 8) {
+                }
+                // Keep actions on a separate row so long titles cannot squeeze button labels.
+                ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                if session.audioSource == "Luyện nói với AI" {
+                    Button {
+                        model.pendingConversationID = session.id
+                        model.selectedDashboardTab = 5
+                    } label: { Label("Tiếp tục trò chuyện", systemImage: "bubble.left.and.bubble.right") }
+                    .buttonStyle(SettingsActionButtonStyle())
+                }
+
+                    // Extract Action Items (AI)
+                    Button {
+                        showActionItemsSheet = true
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "checklist")
+                                .font(.system(size: 12))
+                            Text("Việc cần làm (AI)")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 10)
+                        .frame(minHeight: 40)
+                        .background(Color.orange.opacity(0.15))
+                        .foregroundStyle(Color.orange)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Trích xuất việc cần làm (Action Items) từ cuộc họp và thêm vào Apple Reminders")
+
                     // Export to Word (.docx)
                     Button {
                         model.exportSessionToDocx(session)
@@ -491,11 +524,12 @@ private struct SessionDetailView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "doc.richtext.fill")
                                 .font(.system(size: 12))
-                            Text("Xuất Word (.docx)")
+                            Text("Xuất Word")
                                 .font(.system(size: 12, weight: .semibold))
                         }
                         .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
+                        .padding(.vertical, 10)
+                        .frame(minHeight: 40)
                         .background(
                             LinearGradient(
                                 colors: [Color(red: 0.1, green: 0.45, blue: 0.9), Color(red: 0.05, green: 0.35, blue: 0.8)],
@@ -521,18 +555,25 @@ private struct SessionDetailView: View {
                                 .font(.system(size: 12, weight: .medium))
                         }
                         .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
+                        .padding(.vertical, 10)
+                        .frame(minHeight: 40)
                         .background(Color.secondary.opacity(0.12))
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                     .buttonStyle(.plain)
                     .help("Xuất ra file văn bản thuần (.txt)")
                 }
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.vertical, 3)
+                }
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 14)
             .background(Color(nsColor: .controlBackgroundColor).opacity(0.7))
             .overlay(Divider().opacity(0.5), alignment: .bottom)
+            .sheet(isPresented: $showActionItemsSheet) {
+                MeetingActionItemsSheetView(session: session, model: model)
+            }
 
             // Content Scroll
             ScrollView {
@@ -869,6 +910,10 @@ private struct NotebookCaptionCard: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             // Vietnamese Translation
+            if let speakers = item.speakers {
+                Text(speakers.isEmpty ? "Chưa phân biệt" : speakers.map { "Người nói \($0)" }.joined(separator: " · "))
+                    .font(.caption.weight(.semibold)).foregroundStyle(TransToolsTheme.accent)
+            }
             if !item.vietnamese.isEmpty {
                 Text(item.vietnamese)
                     .font(.system(size: 13, weight: .regular))
@@ -890,5 +935,227 @@ private struct NotebookCaptionCard: View {
     private func copy(_ text: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
+    }
+}
+
+// MARK: - AI Action Items Sheet View
+
+struct MeetingActionItemsSheetView: View {
+    let session: MeetingSession
+    @ObservedObject var model: MeetingModel
+    @Environment(\.dismiss) private var dismiss
+
+    @StateObject private var extractor = MeetingTaskExtractorService.shared
+    @State private var items: [MeetingActionItem] = []
+    @State private var newTodoText: String = ""
+    @State private var exportStatusMessage: String = ""
+    @State private var isExporting: Bool = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack(spacing: 12) {
+                Image(systemName: "checklist.checked")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(TransToolsTheme.navy)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Việc cần làm sau cuộc họp (AI)")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.primary)
+
+                    Text(session.title)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(Color(nsColor: .windowBackgroundColor))
+
+            Divider()
+
+            // Content
+            if extractor.isExtracting {
+                VStack(spacing: 14) {
+                    Spacer()
+                    ProgressView()
+                        .scaleEffect(1.2)
+                    Text("Đang phân tích biên bản và trích xuất nhiệm vụ...")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if items.isEmpty {
+                VStack(spacing: 12) {
+                    Spacer()
+                    Image(systemName: "tray")
+                        .font(.system(size: 36))
+                        .foregroundStyle(.secondary.opacity(0.6))
+                    Text("Chưa tìm thấy đầu việc nào từ cuộc họp")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.secondary)
+
+                    Button("Phân tích tự động lại") {
+                        Task {
+                            await runExtraction()
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(TransToolsTheme.navy)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    VStack(spacing: 8) {
+                        ForEach($items) { $item in
+                            HStack(spacing: 10) {
+                                Button(action: {
+                                    item.isCompleted.toggle()
+                                }) {
+                                    Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
+                                        .font(.system(size: 16))
+                                        .foregroundStyle(item.isCompleted ? .green : .secondary)
+                                }
+                                .buttonStyle(.plain)
+
+                                TextField("Nội dung việc", text: $item.title)
+                                    .textFieldStyle(.plain)
+                                    .font(.system(size: 13, weight: item.isCompleted ? .regular : .medium))
+                                    .strikethrough(item.isCompleted)
+                                    .foregroundStyle(item.isCompleted ? .secondary : .primary)
+
+                                if !item.assignee.isEmpty {
+                                    Text(item.assignee)
+                                        .font(.system(size: 10, weight: .semibold))
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(TransToolsTheme.navy.opacity(0.12))
+                                        .foregroundStyle(TransToolsTheme.navy)
+                                        .clipShape(Capsule())
+                                }
+
+                                Button(action: {
+                                    items.removeAll { $0.id == item.id }
+                                }) {
+                                    Image(systemName: "trash")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(.secondary.opacity(0.7))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color(nsColor: .controlBackgroundColor))
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        }
+
+                        // Add new item input
+                        HStack(spacing: 8) {
+                            Image(systemName: "plus.circle")
+                                .foregroundStyle(TransToolsTheme.navy)
+                            TextField("Thêm việc cần làm thủ công...", text: $newTodoText, onCommit: {
+                                let trimmed = newTodoText.trimmingCharacters(in: .whitespacesAndNewlines)
+                                if !trimmed.isEmpty {
+                                    items.append(MeetingActionItem(title: trimmed, assignee: "Tôi"))
+                                    newTodoText = ""
+                                }
+                            })
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 13))
+
+                            if !newTodoText.isEmpty {
+                                Button("Thêm") {
+                                    let trimmed = newTodoText.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    if !trimmed.isEmpty {
+                                        items.append(MeetingActionItem(title: trimmed, assignee: "Tôi"))
+                                        newTodoText = ""
+                                    }
+                                }
+                                .font(.system(size: 11, weight: .bold))
+                                .buttonStyle(.borderless)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.primary.opacity(0.03))
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    }
+                    .padding(16)
+                }
+            }
+
+            Divider()
+
+            // Footer
+            HStack(spacing: 12) {
+                if !exportStatusMessage.isEmpty {
+                    Text(exportStatusMessage)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.green)
+                }
+
+                Spacer()
+
+                Button("Phân tích lại") {
+                    Task {
+                        await runExtraction()
+                    }
+                }
+                .buttonStyle(.bordered)
+                .disabled(extractor.isExtracting)
+
+                Button(action: exportToReminders) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "calendar.badge.plus")
+                        Text("Xuất vào Apple Reminders")
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(TransToolsTheme.navy)
+                .disabled(items.isEmpty || extractor.isExtracting)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(Color(nsColor: .windowBackgroundColor))
+        }
+        .frame(width: 540, height: 460)
+        .onAppear {
+            Task {
+                await runExtraction()
+            }
+        }
+    }
+
+    private func runExtraction() async {
+        let extracted = await extractor.extractActionItems(
+            from: session,
+            model: model
+        )
+        self.items = extracted
+    }
+
+    private func exportToReminders() {
+        let success = extractor.exportToAppleReminders(items: items, sessionTitle: session.title)
+        if success {
+            exportStatusMessage = "✓ Đã thêm vào ứng dụng Nhắc nhở (Reminders)"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                exportStatusMessage = ""
+            }
+        } else {
+            exportStatusMessage = "✕ Không thể đồng bộ với Reminders"
+        }
     }
 }

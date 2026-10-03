@@ -1,0 +1,470 @@
+{
+  "source": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds",
+  "revision": "6de3a8ad639b29ad2e58276e6ef51038591cb95f",
+  "creditedAuthor": "FUN Japanese Learning",
+  "declaredLicense": "CC-BY-4.0",
+  "licenseVerification": "downstream declaration only; original site not confirmed",
+  "bundled": false,
+  "entries": [
+    {
+      "hiragana": "あ",
+      "katakana": "ア",
+      "romaji": "a",
+      "file": "a.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/a.mp3",
+      "sha256": "37f57bd43ba94b67031da79322c11ff896a6d8ca40ba2e7b04731d40850e6f82",
+      "bytes": 9421,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "い",
+      "katakana": "イ",
+      "romaji": "i",
+      "file": "i.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/i.mp3",
+      "sha256": "443f9355282b12033de5c884d7c7b83a14587ba080123e4ea381417d426d0c70",
+      "bytes": 10257,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "う",
+      "katakana": "ウ",
+      "romaji": "u",
+      "file": "u.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/u.mp3",
+      "sha256": "3b87a740c587ec6d09c65bfef79ba0baec50422bd9d1b401174b7faf576191f5",
+      "bytes": 10257,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "え",
+      "katakana": "エ",
+      "romaji": "e",
+      "file": "e.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/e.mp3",
+      "sha256": "de66befaa4d3e2b38f9d4a8b4ca47a3122590855e6715e91dcab973c80bc9c90",
+      "bytes": 10257,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "お",
+      "katakana": "オ",
+      "romaji": "o",
+      "file": "o.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/o.mp3",
+      "sha256": "c28c4e76eacda3c6ba00327199978b3f2f4c9c513ee693f85a896bd572bcb4a8",
+      "bytes": 9003,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "か",
+      "katakana": "カ",
+      "romaji": "ka",
+      "file": "ka.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/ka.mp3",
+      "sha256": "cbfb3ad5292113486ab8d2fc6b1de635ac73c354ba558330ee627b29f1013f4b",
+      "bytes": 10218,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "き",
+      "katakana": "キ",
+      "romaji": "ki",
+      "file": "ki.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/ki.mp3",
+      "sha256": "4ade309478591218a8b6861659dfad89c5540aabac5dc1d781d5bb586fe2cd3c",
+      "bytes": 11054,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "く",
+      "katakana": "ク",
+      "romaji": "ku",
+      "file": "ku.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/ku.mp3",
+      "sha256": "b7bdc868e9c03eaa0b90f390dd1360b31c0c121e633af9897084b083f5fe7a22",
+      "bytes": 11054,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "け",
+      "katakana": "ケ",
+      "romaji": "ke",
+      "file": "ke.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/ke.mp3",
+      "sha256": "897a0e2da0cc3e771b1ec6a6a116c43513fd80d393b5980e4c4eaa623922afd2",
+      "bytes": 10218,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "こ",
+      "katakana": "コ",
+      "romaji": "ko",
+      "file": "ko.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/ko.mp3",
+      "sha256": "34589723789cd29c84fb5a7821f52f032e722427cabf57c9ac8cdec9f30c6592",
+      "bytes": 9800,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "さ",
+      "katakana": "サ",
+      "romaji": "sa",
+      "file": "sa.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/sa.mp3",
+      "sha256": "af6d8cef63600d50b47bf9197b5e8ef9498360ba09f1aaf9b6a929620cde5ba6",
+      "bytes": 11055,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "し",
+      "katakana": "シ",
+      "romaji": "shi",
+      "file": "shi.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/shi.mp3",
+      "sha256": "3e1eaa30f6a44bffd2a068e993672808bd42a2aa6dbf708d9ee6cef49d204ecc",
+      "bytes": 11890,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "す",
+      "katakana": "ス",
+      "romaji": "su",
+      "file": "su.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/su.mp3",
+      "sha256": "2ed35d0cf949d2e55fcec01852ad3e76536b92fc4d243cd84ca0cd08d2375770",
+      "bytes": 11472,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "せ",
+      "katakana": "セ",
+      "romaji": "se",
+      "file": "se.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/se.mp3",
+      "sha256": "5187c3fe1722f499b005d83321170a2e17b8461801fe4f76b7f7edc9543e2a63",
+      "bytes": 11055,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "そ",
+      "katakana": "ソ",
+      "romaji": "so",
+      "file": "so.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/so.mp3",
+      "sha256": "e08e882b0c0abd2b1dd0f57f863eca799b608975ae89522839a13397649d83b6",
+      "bytes": 10219,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "た",
+      "katakana": "タ",
+      "romaji": "ta",
+      "file": "ta.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/ta.mp3",
+      "sha256": "c9892f02aae8c67c90ef5ea8118d76041df8c0a3e52dcabc8f086e458caff66a",
+      "bytes": 11100,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "ち",
+      "katakana": "チ",
+      "romaji": "chi",
+      "file": "chi.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/chi.mp3",
+      "sha256": "5ecaac26eec99525eda100583539196c59f78d66ec1befbd1e4fbf30462129e9",
+      "bytes": 10682,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "つ",
+      "katakana": "ツ",
+      "romaji": "tsu",
+      "file": "tsu.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/tsu.mp3",
+      "sha256": "21e8d28ff92cc952e933d920a3b022455b8c2f88fc950e0313fbe5be4e0eae9b",
+      "bytes": 11935,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "て",
+      "katakana": "テ",
+      "romaji": "te",
+      "file": "te.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/te.mp3",
+      "sha256": "2d6ff238abdbdf33c9b4285565749ba9d3742d672c65958cc107ad3d18cce0a0",
+      "bytes": 10682,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "と",
+      "katakana": "ト",
+      "romaji": "to",
+      "file": "to.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/to.mp3",
+      "sha256": "cf67b513628d7cd45b6c9331c8b06d209daf933a9c63655a4ac0349b7e9e8a39",
+      "bytes": 10264,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "な",
+      "katakana": "ナ",
+      "romaji": "na",
+      "file": "na.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/na.mp3",
+      "sha256": "95fe34ae2ea4ddfad46cdf9e73136971e60b710d4232b843c883db5201ba8457",
+      "bytes": 11515,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "に",
+      "katakana": "ニ",
+      "romaji": "ni",
+      "file": "ni.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/ni.mp3",
+      "sha256": "36b4f4de9a524705adeb598cd733520914874f6d8070dc06a97689e0b857e8fb",
+      "bytes": 11515,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "ぬ",
+      "katakana": "ヌ",
+      "romaji": "nu",
+      "file": "nu.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/nu.mp3",
+      "sha256": "89089a8338ee09b52ab80c636921d88f552e02e1adb90ff09fe5fb7921d4e541",
+      "bytes": 11098,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "ね",
+      "katakana": "ネ",
+      "romaji": "ne",
+      "file": "ne.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/ne.mp3",
+      "sha256": "025a1d7b3c508c7d19009aca6c955881ad422688ae9acbac19d6248b75427509",
+      "bytes": 11933,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "の",
+      "katakana": "ノ",
+      "romaji": "no",
+      "file": "no.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/no.mp3",
+      "sha256": "fa0598fb02ec37a446533262f9669941e014df6ff8febeafeda86429efe180af",
+      "bytes": 10262,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "は",
+      "katakana": "ハ",
+      "romaji": "ha",
+      "file": "ha.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/ha.mp3",
+      "sha256": "7784657c99d73f164b110f6d5bd5b93862bc9bee0f8608417c73f299e8ed7883",
+      "bytes": 11098,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "ひ",
+      "katakana": "ヒ",
+      "romaji": "hi",
+      "file": "hi.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/hi.mp3",
+      "sha256": "3c564fbcdfe7bc688e752b944e91324a92edd152163986d9b3d1062d784b7eb6",
+      "bytes": 11098,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "ふ",
+      "katakana": "フ",
+      "romaji": "fu",
+      "file": "fu.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/fu.mp3",
+      "sha256": "fba233506627677721529b875ea1f49c37a210342fc5342064121ef46bdf1fe4",
+      "bytes": 10262,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "へ",
+      "katakana": "ヘ",
+      "romaji": "he",
+      "file": "he.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/he.mp3",
+      "sha256": "64230e252ce4df2315b2a77d74f6ae6c559b2eda5eff23fdb50db4f6a4c6008a",
+      "bytes": 10262,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "ほ",
+      "katakana": "ホ",
+      "romaji": "ho",
+      "file": "ho.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/ho.mp3",
+      "sha256": "52a57a9de30465889c73568fdc1a70ba3395d2b44ceacdb053c888956050f9dc",
+      "bytes": 9426,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "ま",
+      "katakana": "マ",
+      "romaji": "ma",
+      "file": "ma.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/ma.mp3",
+      "sha256": "02555feff62a49feb9d6a1c974aae6eafdf8f78a5e4ac776f97c29c853ad3455",
+      "bytes": 11889,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "み",
+      "katakana": "ミ",
+      "romaji": "mi",
+      "file": "mi.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/mi.mp3",
+      "sha256": "23f31365da9365c86d5f9334e5324ff63087f90793592e0b2775c166155d54b2",
+      "bytes": 11889,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "む",
+      "katakana": "ム",
+      "romaji": "mu",
+      "file": "mu.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/mu.mp3",
+      "sha256": "25d0ed196b5f1822adaac728cd40d9aa99f2d8782b1c5024818b45a23e42d217",
+      "bytes": 11889,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "め",
+      "katakana": "メ",
+      "romaji": "me",
+      "file": "me.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/me.mp3",
+      "sha256": "10a5f7533cc482deebdd345cc7b4a2110abb472dbba06fede63a95ca7c6f7a0d",
+      "bytes": 11471,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "も",
+      "katakana": "モ",
+      "romaji": "mo",
+      "file": "mo.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/mo.mp3",
+      "sha256": "4b6876c56b0866041845c724fe76406d9cd5e21973ff4bca667352ab27475a46",
+      "bytes": 10636,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "や",
+      "katakana": "ヤ",
+      "romaji": "ya",
+      "file": "ya.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/ya.mp3",
+      "sha256": "7fee7c45868715a70a7dea60d4745a7f027189ac154576f7389d7a775f1b062d",
+      "bytes": 11885,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "ゆ",
+      "katakana": "ユ",
+      "romaji": "yu",
+      "file": "yu.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/yu.mp3",
+      "sha256": "2b84194904f36bc8e491ae97299bb658dba63193a1ea10df71e6a35cbf337a18",
+      "bytes": 12303,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "よ",
+      "katakana": "ヨ",
+      "romaji": "yo",
+      "file": "yo.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/yo.mp3",
+      "sha256": "7f33daafbf920dd38e94fe24d6784f47d6cb536b2b709a82d3120359164d652c",
+      "bytes": 11050,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "ら",
+      "katakana": "ラ",
+      "romaji": "ra",
+      "file": "ra.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/ra.mp3",
+      "sha256": "0fbe2c161407434a9f6be22f0542d6254fb0483be2551df8bee2bf95734a58d3",
+      "bytes": 11889,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "り",
+      "katakana": "リ",
+      "romaji": "ri",
+      "file": "ri.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/ri.mp3",
+      "sha256": "d96bcd2d6853a1c6a35823b848ee047922f4cd54395d34b86a64a491f6f1fb06",
+      "bytes": 11054,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "る",
+      "katakana": "ル",
+      "romaji": "ru",
+      "file": "ru.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/ru.mp3",
+      "sha256": "83f6dd35a58693e173550b3207d67f1ad253e391549ce8796bef8ca19810804f",
+      "bytes": 11471,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "れ",
+      "katakana": "レ",
+      "romaji": "re",
+      "file": "re.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/re.mp3",
+      "sha256": "be535476116e8c4aec90017036d976ef1834748dc955bfd79004b9fd4e763d46",
+      "bytes": 11889,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "ろ",
+      "katakana": "ロ",
+      "romaji": "ro",
+      "file": "ro.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/ro.mp3",
+      "sha256": "fe2604f3497f8161c6dafe7cd9b8bc49746afbb07ad1915aa4068e943feadb92",
+      "bytes": 10636,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "わ",
+      "katakana": "ワ",
+      "romaji": "wa",
+      "file": "wa.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/wa.mp3",
+      "sha256": "f54c65d0481bc58c30e5db997951e54b7ed200c6651816d90e11b99da54a01a8",
+      "bytes": 11050,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "を",
+      "katakana": "ヲ",
+      "romaji": "wo",
+      "file": "wo.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/wo.mp3",
+      "sha256": "63fcc45ff6d474275f2c735c5361b80e7f84dc2a33adb3612814e4512a1ddc86",
+      "bytes": 11050,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    },
+    {
+      "hiragana": "ん",
+      "katakana": "ン",
+      "romaji": "n",
+      "file": "n.mp3",
+      "sourceURL": "https://huggingface.co/datasets/arsalan-anwari/kana-sounds/resolve/6de3a8ad639b29ad2e58276e6ef51038591cb95f/audio/seion/n.mp3",
+      "sha256": "3f83f488bcba98ebf3e941715c9666756c9018c31c1bfa89ecd44a58e11ceb82",
+      "bytes": 9378,
+      "approval": "pending original-rightsholder license confirmation and listening review"
+    }
+  ]
+}

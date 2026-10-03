@@ -9,6 +9,11 @@ mkdir -p build/TransTools.app/Contents/Resources
 cp .build/release/TransTools build/TransTools.app/Contents/MacOS/TransTools
 cp Info.plist build/TransTools.app/Contents/Info.plist
 if [ -d Resources ]; then
+    ditto Resources/Licenses build/TransTools.app/Contents/Resources/Licenses
+    if [ -d Resources/Pronunciation ]; then
+        mkdir -p build/TransTools.app/Contents/Resources/Pronunciation
+        cp -R Resources/Pronunciation/. build/TransTools.app/Contents/Resources/Pronunciation/
+    fi
     cp Resources/AppIcon.icns build/TransTools.app/Contents/Resources/AppIcon.icns 2>/dev/null || true
     cp Resources/AppIcon.png build/TransTools.app/Contents/Resources/AppIcon.png 2>/dev/null || true
     cp Resources/Mini.png build/TransTools.app/Contents/Resources/Mini.png 2>/dev/null || true
@@ -33,5 +38,8 @@ if [ -d Resources ]; then
         cp -R Resources/MascotSprites build/TransTools.app/Contents/Resources/MascotSprites
     fi
 fi
+for resource_bundle in .build/release/*.bundle(N); do
+    ditto "$resource_bundle" "build/TransTools.app/Contents/Resources/$(basename "$resource_bundle")"
+done
 codesign --force --deep --sign - --identifier "local.mactools.transtools" -r='designated => identifier "local.mactools.transtools"' build/TransTools.app
 

@@ -3,11 +3,37 @@ import AppKit
 import Foundation
 import Combine
 import CryptoKit
+import Security
 
 // MARK: - App Updater State & Manager
 
 @MainActor
 final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
+    private static func validateSignature(_ url: URL) throws {
+        func code(_ path: URL) throws -> SecStaticCode {
+            var result: SecStaticCode?
+            let status = SecStaticCodeCreateWithPath(path as CFURL, [], &result)
+            guard status == errSecSuccess, let result else {
+                throw NSError(domain: "AppUpdater", code: Int(status), userInfo: [NSLocalizedDescriptionKey: "Không đọc được chữ ký ứng dụng."])
+            }
+            return result
+        }
+        let candidate = try code(url)
+        let status = SecStaticCodeCheckValidity(candidate, SecCSFlags(rawValue: kSecCSStrictValidate | kSecCSCheckAllArchitectures), nil)
+        guard status == errSecSuccess else {
+            throw NSError(domain: "AppUpdater", code: Int(status), userInfo: [NSLocalizedDescriptionKey: "Chữ ký bộ cài không hợp lệ."])
+        }
+        func team(_ value: SecStaticCode) -> String? {
+            var info: CFDictionary?
+            guard SecCodeCopySigningInformation(value, SecCSFlags(rawValue: kSecCSSigningInformation), &info) == errSecSuccess else { return nil }
+            return (info as? [String: Any])?[kSecCodeInfoTeamIdentifier as String] as? String
+        }
+        // Developer ID releases must preserve publisher identity; local ad-hoc builds have no Team ID.
+        if let currentTeam = team(try code(Bundle.main.bundleURL)), team(candidate) != currentTeam {
+            throw NSError(domain: "AppUpdater", code: -4, userInfo: [NSLocalizedDescriptionKey: "Bộ cài không cùng nhà phát hành với ứng dụng hiện tại."])
+        }
+    }
+
     static let shared = AppUpdater()
 
     static let repoOwner = "duynk-tech"
@@ -195,21 +221,21 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
                     throw NSError(domain: "AppUpdater", code: -2, userInfo: [NSLocalizedDescriptionKey: "Lỗi giải nén tệp cập nhật."])
                 }
 
-                // Find .app inside extracted folder (recursively in case archive has a root folder)
                 let fileManager = FileManager.default
-                var foundAppPath: String? = nil
-                if let subpaths = try? fileManager.subpathsOfDirectory(atPath: extractedDir.path) {
-                    for path in subpaths {
-                        if path.hasSuffix(".app") {
-                            foundAppPath = extractedDir.appendingPathComponent(path).path
-                            break
-                        }
-                    }
+                let root = extractedDir.resolvingSymlinksInPath().standardizedFileURL
+                let candidates = try fileManager.subpathsOfDirectory(atPath: root.path)
+                    .filter { $0.hasSuffix(".app") }
+                    .map { root.appendingPathComponent($0).resolvingSymlinksInPath().standardizedFileURL }
+                    .filter { $0.path.hasPrefix(root.path + "/") }
+                    .filter { Bundle(url: $0)?.bundleIdentifier == Bundle.main.bundleIdentifier }
+                guard candidates.count == 1, let appURL = candidates.first,
+                      let bundle = Bundle(url: appURL),
+                      let version = bundle.infoDictionary?["CFBundleShortVersionString"] as? String,
+                      version == self.latestVersion.replacingOccurrences(of: "v", with: "") else {
+                    throw NSError(domain: "AppUpdater", code: -3, userInfo: [NSLocalizedDescriptionKey: "Bộ cài không có đúng một ứng dụng TransTools với phiên bản đã chọn."])
                 }
-
-                guard let newAppPath = foundAppPath else {
-                    throw NSError(domain: "AppUpdater", code: -3, userInfo: [NSLocalizedDescriptionKey: "Không tìm thấy tệp TransTools.app trong bản cập nhật đã giải nén."])
-                }
+                try Self.validateSignature(appURL)
+                let newAppPath = appURL.path
 
                 let currentAppPath = Bundle.main.bundleURL.path
 
@@ -657,49 +683,118 @@ struct SettingsUpdateTabView: View {
         return "Kiểm tra lần cuối: \(formatter.string(from: date))"
     }
 
+    private var statusTitle: String {
+        if updater.isDownloading { return "Đang tải bản cập nhật" }
+        if updater.isChecking { return "Đang kiểm tra phiên bản mới" }
+        if updater.hasError { return "Chưa thể kiểm tra cập nhật" }
+        if updater.updateAvailable { return "Đã có phiên bản mới" }
+        return updater.didCheckSuccessfully ? "Bạn đang dùng phiên bản mới nhất" : "Sẵn sàng kiểm tra cập nhật"
+    }
+
+    private var statusIcon: String {
+        if updater.hasError { return "exclamationmark.arrow.triangle.2.circlepath" }
+        if updater.updateAvailable { return "arrow.down.circle.fill" }
+        return updater.didCheckSuccessfully ? "checkmark.seal.fill" : "arrow.triangle.2.circlepath"
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Cập nhật phần mềm")
-                .font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
-                .padding(.leading, 12)
-            VStack(alignment: .leading, spacing: 10) {
-                Text(lastChecked).font(.system(size: 12)).foregroundStyle(.secondary)
-                Toggle("Tự động kiểm tra bản cập nhật", isOn: $autoCheckUpdates)
-                    .help("Kiểm tra bản phát hành TransTools khi mở app.")
-                Toggle("Tự động tải bản cập nhật và cài đặt khi thoát TransTools", isOn: .constant(false))
-                    .disabled(true)
-                    .help("Chưa bật chức năng tự động cài đặt khi thoát.")
-                HStack(spacing: 8) {
-                    Button(updater.isChecking ? "Đang kiểm tra…" : "Kiểm tra bản cập nhật…") {
-                        updater.checkForUpdates(userInitiated: true)
-                    }.disabled(updater.isChecking || updater.isDownloading)
-                    Button("Lịch sử phiên bản") {
-                        if let url = URL(string: AppUpdater.releasesURLString) { NSWorkspace.shared.open(url) }
+        VStack(alignment: .leading, spacing: 22) {
+            HStack(alignment: .top, spacing: 16) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14).fill(TransToolsTheme.accent.opacity(0.10))
+                    if updater.isChecking || updater.isDownloading {
+                        ProgressView().controlSize(.regular)
+                    } else {
+                        Image(systemName: statusIcon)
+                            .font(.system(size: 26, weight: .medium))
+                            .foregroundStyle(updater.hasError ? Color.orange : TransToolsTheme.accent)
                     }
-                }.buttonStyle(.bordered).controlSize(.small)
-                if updater.isDownloading {
-                    ProgressView(value: updater.downloadProgress)
+                }.frame(width: 58, height: 58)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(statusTitle).font(.system(size: 17, weight: .semibold))
+                    Text("TransTools \(updater.currentVersionDisplay)")
+                        .font(.system(size: 13)).foregroundStyle(.secondary)
+                    Text(lastChecked).font(.system(size: 11.5)).foregroundStyle(.secondary)
                 }
-                if updater.hasError {
-                    Text(updater.errorMessage).foregroundStyle(.red)
-                } else if !updater.installStatusMessage.isEmpty {
-                    Text(updater.installStatusMessage).foregroundStyle(.secondary)
-                }
-                if updater.updateAvailable && !updater.isDownloading {
-                    Button("Cập nhật ngay lên v\(updater.latestVersion)") { updater.downloadAndInstallUpdate() }
-                        .buttonStyle(.bordered).controlSize(.small)
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(18)
+            .background(TransToolsTheme.accent.opacity(0.04), in: RoundedRectangle(cornerRadius: 14))
+
+            if updater.updateAvailable {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Phiên bản mới · v\(updater.latestVersion)", systemImage: "sparkles")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(TransToolsTheme.accent)
+                    if !updater.releaseNotes.isEmpty {
+                        Text(updater.releaseNotes).font(.system(size: 12)).foregroundStyle(.secondary)
+                            .lineLimit(6).fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
-            .font(.system(size: 12))
-            .toggleStyle(.switch).controlSize(.mini)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(12)
-            .background(Color(nsColor: .controlBackgroundColor))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.secondary.opacity(0.12), lineWidth: 1))
-            Text("TransTools \(updater.currentVersionDisplay)")
-                .font(.system(size: 11)).foregroundStyle(.tertiary).padding(.leading, 12)
+
+            if updater.isDownloading {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Đang tải về").font(.system(size: 12, weight: .medium))
+                        Spacer()
+                        Text("\(Int(updater.downloadProgress * 100))%")
+                            .font(.system(size: 12, design: .monospaced)).foregroundStyle(.secondary)
+                    }
+                    ProgressView(value: updater.downloadProgress)
+                }
+            }
+
+            if updater.hasError || !updater.installStatusMessage.isEmpty {
+                Label(updater.hasError ? updater.errorMessage : updater.installStatusMessage,
+                      systemImage: updater.hasError ? "exclamationmark.circle" : "info.circle")
+                    .font(.system(size: 12))
+                    .foregroundStyle(updater.hasError ? Color.orange : Color.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) { updateActions }
+                VStack(alignment: .leading, spacing: 12) { updateActions }
+            }
+
+            Divider()
+            HStack(spacing: 20) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Tự động kiểm tra cập nhật").font(.system(size: 13, weight: .semibold))
+                    Text("Kiểm tra phiên bản mới khi mở TransTools. Bạn quyết định thời điểm cài đặt.")
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Toggle("Tự động kiểm tra cập nhật", isOn: $autoCheckUpdates)
+                    .labelsHidden().toggleStyle(.switch).controlSize(.regular)
+                    .fixedSize()
+            }
+
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder private var updateActions: some View {
+        if updater.updateAvailable {
+            Button { updater.downloadAndInstallUpdate() } label: {
+                Label("Tải & Cài đặt", systemImage: "arrow.down.circle")
+            }
+            .buttonStyle(SettingsActionButtonStyle(prominent: true))
+            .disabled(updater.isChecking || updater.isDownloading)
+        }
+        Button { updater.checkForUpdates(userInitiated: true) } label: {
+            Label(updater.isChecking ? "Đang kiểm tra…" : "Kiểm tra cập nhật", systemImage: "arrow.clockwise")
+        }
+        .buttonStyle(SettingsActionButtonStyle(prominent: !updater.updateAvailable))
+        .disabled(updater.isChecking || updater.isDownloading)
+        Button {
+            if let url = URL(string: AppUpdater.releasesURLString) { NSWorkspace.shared.open(url) }
+        } label: {
+            Label("Lịch sử phiên bản", systemImage: "clock.arrow.circlepath")
+        }
+        .buttonStyle(SettingsActionButtonStyle())
     }
 }

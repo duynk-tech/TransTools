@@ -1,0 +1,840 @@
+{
+  "source": "https://www3.nhk.or.jp/nhkworld/lesson/vi/letters/hiragana.html",
+  "name": "NHK WORLD-JAPAN Kana",
+  "usage": "Personal offline learning requested by user; redistribution rights not established; not bundled in app releases",
+  "review": "Mapping from original Hiragana and Katakana HTML; same 104 audio IDs; intact AAC stream remuxed to M4A with no voice synthesis or speed change; decode checked, no independent listening review",
+  "entries": [
+    {
+      "id": "a",
+      "file": "a.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/0/index.m3u8",
+      "sha256": "4247d9727a8af8f87ff7004bd5f8c9a14e22887adabd49b597306dbfe82f16d2",
+      "bytes": 8906,
+      "seconds": 1.024
+    },
+    {
+      "id": "i",
+      "file": "i.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/1/index.m3u8",
+      "sha256": "d9202fe23a266b898beb43d731fe60574231fdcb1e24b10d8a9ce356ca1ca71c",
+      "bytes": 7891,
+      "seconds": 0.896
+    },
+    {
+      "id": "u",
+      "file": "u.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/2/index.m3u8",
+      "sha256": "327f04e17584d30147495c6310983413075286cedbe524ab1fe03fb55271683e",
+      "bytes": 7558,
+      "seconds": 0.853333
+    },
+    {
+      "id": "e",
+      "file": "e.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/3/index.m3u8",
+      "sha256": "e642fe6de174a4b8daf3e1a4863db5b29e39b6b88d0549409c83405409a899fc",
+      "bytes": 7558,
+      "seconds": 0.853333
+    },
+    {
+      "id": "o",
+      "file": "o.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/4/index.m3u8",
+      "sha256": "133b5fa3a61bb0af4a6a302173513821fb3beee25e40415b26d20aeabadf1a13",
+      "bytes": 7558,
+      "seconds": 0.853333
+    },
+    {
+      "id": "ka",
+      "file": "ka.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/5/index.m3u8",
+      "sha256": "f7989f0902135de26bbb79763791afc204bb8c1f8927a3096a79b18f98839ad8",
+      "bytes": 8906,
+      "seconds": 1.024
+    },
+    {
+      "id": "ki",
+      "file": "ki.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/6/index.m3u8",
+      "sha256": "3d53f4d96f7f6a3c3e10aa8c079d202c09f030737cbcc78006189e6e903e346c",
+      "bytes": 7558,
+      "seconds": 0.853333
+    },
+    {
+      "id": "ku",
+      "file": "ku.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/7/index.m3u8",
+      "sha256": "286b2b5f0819cd0330826e7ff8c534fce08fab8fe6c9aa5d90f280d13740d138",
+      "bytes": 7209,
+      "seconds": 0.810667
+    },
+    {
+      "id": "ke",
+      "file": "ke.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/8/index.m3u8",
+      "sha256": "4d9d16e3c021b9054d5bf9635acd26cac546528df501ed01ac65319a52a49071",
+      "bytes": 7891,
+      "seconds": 0.896
+    },
+    {
+      "id": "ko",
+      "file": "ko.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/9/index.m3u8",
+      "sha256": "e0c0a5cda639a787411bdfba0e56e8a151062c54f223982f73e0ff89aa2ee748",
+      "bytes": 7891,
+      "seconds": 0.896
+    },
+    {
+      "id": "sa",
+      "file": "sa.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/10/index.m3u8",
+      "sha256": "d88b6568dff56fc763019c80b256a86a611c84161d3a2be294cb40033ab03a58",
+      "bytes": 7891,
+      "seconds": 0.896
+    },
+    {
+      "id": "shi",
+      "file": "shi.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/11/index.m3u8",
+      "sha256": "cdc43d90657e2dabc363b563ce9ecd95945e8493e8e443a285818591c5126afd",
+      "bytes": 6194,
+      "seconds": 0.682667
+    },
+    {
+      "id": "su",
+      "file": "su.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/12/index.m3u8",
+      "sha256": "eae0857b950d4e63af3f5e242687cf2e5aa04d8f8e642f25f58de1949d8683f7",
+      "bytes": 6194,
+      "seconds": 0.682667
+    },
+    {
+      "id": "se",
+      "file": "se.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/13/index.m3u8",
+      "sha256": "d4783015367e64dbd2de5d04d03496d06ab054f91d20045eaf0a99dfbb0cca79",
+      "bytes": 6194,
+      "seconds": 0.682667
+    },
+    {
+      "id": "so",
+      "file": "so.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/14/index.m3u8",
+      "sha256": "02f89e07cf204ab72e29edca67eee98185597953ee01213655587d3b09ec03a2",
+      "bytes": 6194,
+      "seconds": 0.682667
+    },
+    {
+      "id": "ta",
+      "file": "ta.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/15/index.m3u8",
+      "sha256": "ee5e8b4e0f5c33e4bd4095624627dbdf4a429f83550cef80bd409408f7a5dac8",
+      "bytes": 8573,
+      "seconds": 0.981333
+    },
+    {
+      "id": "chi",
+      "file": "chi.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/16/index.m3u8",
+      "sha256": "de9f03b30613dd88527762d2e09917408cbd9e2a17b2d0707e055987a2d78624",
+      "bytes": 7209,
+      "seconds": 0.810667
+    },
+    {
+      "id": "tsu",
+      "file": "tsu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/17/index.m3u8",
+      "sha256": "a6aa2f78c9eb388468740f158a1344e2014365633473769a5ddab261a0185653",
+      "bytes": 7558,
+      "seconds": 0.853333
+    },
+    {
+      "id": "te",
+      "file": "te.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/18/index.m3u8",
+      "sha256": "311c5feb92a157b0e2aa316e69cbb28527d4785e806fc5874ed39c085e3c8e32",
+      "bytes": 7558,
+      "seconds": 0.853333
+    },
+    {
+      "id": "to",
+      "file": "to.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/19/index.m3u8",
+      "sha256": "75b070a881865902f9222f051657666cb0685632865ee8efe54409e516788244",
+      "bytes": 7891,
+      "seconds": 0.896
+    },
+    {
+      "id": "na",
+      "file": "na.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/20/index.m3u8",
+      "sha256": "f43b6f6358d2a28813e03516e50f2674cb9fce5f5e1e509951376dd0e47b6b4d",
+      "bytes": 7891,
+      "seconds": 0.896
+    },
+    {
+      "id": "ni",
+      "file": "ni.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/21/index.m3u8",
+      "sha256": "36cf971ca1b2f4bee106c844b59412471762e51e6bf1550d36a14711d81b1094",
+      "bytes": 6876,
+      "seconds": 0.768
+    },
+    {
+      "id": "nu",
+      "file": "nu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/22/index.m3u8",
+      "sha256": "d3e3e560cfcd934eb198e7763f53bfb4338aa729619b341241938052242f9686",
+      "bytes": 6543,
+      "seconds": 0.725333
+    },
+    {
+      "id": "ne",
+      "file": "ne.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/23/index.m3u8",
+      "sha256": "e90a329256d3160381408ee0f3f6f7a76746437fa8cfdb4dec6c132a0343f7f9",
+      "bytes": 6876,
+      "seconds": 0.768
+    },
+    {
+      "id": "no",
+      "file": "no.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/24/index.m3u8",
+      "sha256": "f732f9578a934730459e1393f09a39ca6d991ab2657647290872776887691975",
+      "bytes": 7891,
+      "seconds": 0.896
+    },
+    {
+      "id": "ha",
+      "file": "ha.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/25/index.m3u8",
+      "sha256": "41034af4b08b86b0edd358af53f3182b0dca7ea70478dd30f569d10b5e7fc1ee",
+      "bytes": 8573,
+      "seconds": 0.981333
+    },
+    {
+      "id": "hi",
+      "file": "hi.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/26/index.m3u8",
+      "sha256": "11097b03605918c6fc1a71b97407f40f14ab4e274110abc2c8c8148c55ca7271",
+      "bytes": 7558,
+      "seconds": 0.853333
+    },
+    {
+      "id": "fu",
+      "file": "fu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/27/index.m3u8",
+      "sha256": "2f42aa033f8a6b7f560fbdc565c79597c5e75b58e417ad0a71d57a052465e2fe",
+      "bytes": 6876,
+      "seconds": 0.768
+    },
+    {
+      "id": "he",
+      "file": "he.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/28/index.m3u8",
+      "sha256": "1d9f2993bcf2492cf67870b907651d40b39f122c6e686969d0c952596969c378",
+      "bytes": 6876,
+      "seconds": 0.768
+    },
+    {
+      "id": "ho",
+      "file": "ho.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/29/index.m3u8",
+      "sha256": "cee33c4e4210bd11a57fe774a2c959e499a58227fb49403fdcdcd1d1dd7eafc1",
+      "bytes": 7558,
+      "seconds": 0.853333
+    },
+    {
+      "id": "ma",
+      "file": "ma.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/30/index.m3u8",
+      "sha256": "e9fe3d15cdfd71fd89680b0a7888369f488f9a33d7e2577a9ec996d32025334a",
+      "bytes": 8573,
+      "seconds": 0.981333
+    },
+    {
+      "id": "mi",
+      "file": "mi.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/31/index.m3u8",
+      "sha256": "13cf1c2f440f2fae7caa19bf955beb15331b95e42d4344853792f69f2f065144",
+      "bytes": 7558,
+      "seconds": 0.853333
+    },
+    {
+      "id": "mu",
+      "file": "mu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/32/index.m3u8",
+      "sha256": "9fdea07e9515f60fd4a4c6515ee88e3770b6167cfceea6e981566a750b945168",
+      "bytes": 7558,
+      "seconds": 0.853333
+    },
+    {
+      "id": "me",
+      "file": "me.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/33/index.m3u8",
+      "sha256": "79f6432099d713994e9d98ad2c81618b96bb26e7f5e2a16fdcce8ca4ba2cd60d",
+      "bytes": 7891,
+      "seconds": 0.896
+    },
+    {
+      "id": "mo",
+      "file": "mo.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/34/index.m3u8",
+      "sha256": "607bb264c2fb66fcc6af215fda15d766116314247e32f44f06b20eec7112431e",
+      "bytes": 7558,
+      "seconds": 0.853333
+    },
+    {
+      "id": "ya",
+      "file": "ya.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/35/index.m3u8",
+      "sha256": "4cbc07dbbc03766400fb37c0b10d95745dc0798ce4ad742c57cc8360fbadf5bd",
+      "bytes": 8573,
+      "seconds": 0.981333
+    },
+    {
+      "id": "yu",
+      "file": "yu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/36/index.m3u8",
+      "sha256": "17d6cb1f618b807c71177e1e3399906875b648a44dfebb89023b1f6463d08c50",
+      "bytes": 7891,
+      "seconds": 0.896
+    },
+    {
+      "id": "yo",
+      "file": "yo.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/37/index.m3u8",
+      "sha256": "27615dd5f91466edb9a45513c7d871004ea547ed5f4151d16b59e840d3ea5836",
+      "bytes": 7558,
+      "seconds": 0.853333
+    },
+    {
+      "id": "ra",
+      "file": "ra.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/38/index.m3u8",
+      "sha256": "2e288701dac6f5e9985424f3bc11bfce2f0920fc2f510ebcd1a4e71358c38352",
+      "bytes": 8573,
+      "seconds": 0.981333
+    },
+    {
+      "id": "ri",
+      "file": "ri.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/39/index.m3u8",
+      "sha256": "227c4d3848356034bc63ddf1b5e8980eb278ee84acb400a538404a95f954aa77",
+      "bytes": 6876,
+      "seconds": 0.768
+    },
+    {
+      "id": "ru",
+      "file": "ru.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/40/index.m3u8",
+      "sha256": "c4177a51bbf089328e0ac1e237061d7c0af3ecde50d786368dd82a0e2ad6e5e9",
+      "bytes": 6876,
+      "seconds": 0.768
+    },
+    {
+      "id": "re",
+      "file": "re.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/41/index.m3u8",
+      "sha256": "1ee3dfed5d6456964b3a61455084df55134f42a7433efa56b3bba52b006b3912",
+      "bytes": 7558,
+      "seconds": 0.853333
+    },
+    {
+      "id": "ro",
+      "file": "ro.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/42/index.m3u8",
+      "sha256": "4180a8bfd7ed4cd657c2fdb8d93051958361e26f0606bf171d046089936628e2",
+      "bytes": 6876,
+      "seconds": 0.768
+    },
+    {
+      "id": "wa",
+      "file": "wa.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/43/index.m3u8",
+      "sha256": "b4a6c5dbe14064fcfbf4faa66cd9541c1786041990f2e6188b41ac5d18580bbd",
+      "bytes": 10254,
+      "seconds": 1.194667
+    },
+    {
+      "id": "wo",
+      "file": "wo.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/44/index.m3u8",
+      "sha256": "861f3ad1067940ecc448ad3e84eea4725692684c060052c091d13e10ff037e94",
+      "bytes": 10254,
+      "seconds": 1.194667
+    },
+    {
+      "id": "n",
+      "file": "n.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/45/index.m3u8",
+      "sha256": "0b2cf753df5557fdea4e1c5a22c73405d83431acb48d1f03ec616aaf351e85d8",
+      "bytes": 10254,
+      "seconds": 1.194667
+    },
+    {
+      "id": "ga",
+      "file": "ga.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/46/index.m3u8",
+      "sha256": "437972e8d1018a023db4d178dd4fac3278ae75c43ea6dc35e7f190a4740ca187",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "gi",
+      "file": "gi.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/47/index.m3u8",
+      "sha256": "ba4399230b8e3778cb435556e3efbd284214a2f0921ffa1d7675552cf205650b",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "gu",
+      "file": "gu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/48/index.m3u8",
+      "sha256": "23394b27776e49c4c2a52d049376a85f929da1f97dd05486788fca365fe644e0",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "ge",
+      "file": "ge.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/49/index.m3u8",
+      "sha256": "0a2d6021030a39c99144c3dde08c827cd03cdab667e1735bc7a87594c1062344",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "go",
+      "file": "go.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/50/index.m3u8",
+      "sha256": "893a0f3eca7ad468e4ccc54826c3249268e39941815f12b020471bb2779dd563",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "za",
+      "file": "za.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/51/index.m3u8",
+      "sha256": "ee679c76d7ebd53bdfd850c99a377c76014a9a2f4ceb06ca26eb5cdf47352b17",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "ji",
+      "file": "ji.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/52/index.m3u8",
+      "sha256": "25063fd7b4357c7d9216d366722c29f3ed478427e35411c3c0779b905c265562",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "zu",
+      "file": "zu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/53/index.m3u8",
+      "sha256": "6d87a1f5d46a86f4b4da36460b6f921f5eab8335e7c886001654bfa9a3584949",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "ze",
+      "file": "ze.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/54/index.m3u8",
+      "sha256": "b4903b4015c3dcc5265016984042017dde35bbaefe4f045a362bdf08128f8c0e",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "zo",
+      "file": "zo.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/55/index.m3u8",
+      "sha256": "e691bfb71c7315f4c676c5990a28eb6e5b9c69458096019a01cd6b5a3666f388",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "da",
+      "file": "da.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/56/index.m3u8",
+      "sha256": "61e1e17251c547a36104c70c11408ca018c7625a42022bd94db13ff265cab8ce",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "ji2",
+      "file": "ji2.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/57/index.m3u8",
+      "sha256": "25063fd7b4357c7d9216d366722c29f3ed478427e35411c3c0779b905c265562",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "zu2",
+      "file": "zu2.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/58/index.m3u8",
+      "sha256": "6d87a1f5d46a86f4b4da36460b6f921f5eab8335e7c886001654bfa9a3584949",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "de",
+      "file": "de.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/59/index.m3u8",
+      "sha256": "6c17e62e3e2f1ff39f81eea2e29c3d571e804a6b08f1f3e82af90be7a7ad6e94",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "do",
+      "file": "do.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/60/index.m3u8",
+      "sha256": "4e865d773e7e7526f729bdcfa08d8e1570e2a51c76b98cce1934dc094bb04ad9",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "ba",
+      "file": "ba.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/61/index.m3u8",
+      "sha256": "3848d5339163c86ef3880ee434786c61f68df086c060966d370a3f3926590276",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "bi",
+      "file": "bi.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/62/index.m3u8",
+      "sha256": "b246a18f20a8e4353a1db35ea36dc3986da0769e795508cac0314be5d6eb78d2",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "bu",
+      "file": "bu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/63/index.m3u8",
+      "sha256": "fae7bbf028ffb1303613bca32c4477405babafbd8afdf08a725191d9e321ce6f",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "be",
+      "file": "be.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/64/index.m3u8",
+      "sha256": "0c3021a6bb35bec602cc8197a82967a4d591a90c9b005634419098c5ed810963",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "bo",
+      "file": "bo.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/65/index.m3u8",
+      "sha256": "d4cec4a38d7790f0971725a566dc41f55eed7045a827bf09749e67f69feb3824",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "pa",
+      "file": "pa.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/66/index.m3u8",
+      "sha256": "f94d95b527d4fd13a1a6ba668ca6fd74c74aea5126ea9ceee8a2d60c25bc15a8",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "pi",
+      "file": "pi.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/67/index.m3u8",
+      "sha256": "96ca169c12677b2d8b9a1998caeb536a719366a4638dc2258df5dd023bd3d601",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "pu",
+      "file": "pu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/68/index.m3u8",
+      "sha256": "409c93b851d46e0d3ce374393dd39d864a55baebe4768915c075fc2a9a3fa2b6",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "pe",
+      "file": "pe.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/69/index.m3u8",
+      "sha256": "80d8de80b1334fe19e33aaba222c47c46650f98d22a71b7280a73fb6a8ad277e",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "po",
+      "file": "po.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/70/index.m3u8",
+      "sha256": "5758db0f81a8c0cb08c4c3669c4a4928c6f54ee1068901032f495d881b7c05e8",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "kya",
+      "file": "kya.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/71/index.m3u8",
+      "sha256": "7fbcbc542914090b4dc8a5e8c1ccb28dc032902c230fe9d3fae73eeeaf462d5f",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "kyu",
+      "file": "kyu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/72/index.m3u8",
+      "sha256": "3db09d727cc7d44f97fce6a379b8b8f9f927109746fcfff0beb8a462c4698829",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "kyo",
+      "file": "kyo.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/73/index.m3u8",
+      "sha256": "ca87157671a23def13cad9afbad2dd2b2829e76abf7e95d40228f8639faacca0",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "sha",
+      "file": "sha.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/74/index.m3u8",
+      "sha256": "392196717814593d1d43427d8fe1da848fedad708ecd2420eefe81839f3379d7",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "shu",
+      "file": "shu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/75/index.m3u8",
+      "sha256": "d47b7e6002042a44c7a0e4f78d870f85a44e7fa8588b00652a62b142b28545c4",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "sho",
+      "file": "sho.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/76/index.m3u8",
+      "sha256": "72a70b126f5e3b9a1afb7c4f82f52ae610c8388218702c861dcd9188e2e34ed1",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "cha",
+      "file": "cha.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/77/index.m3u8",
+      "sha256": "e8f98b25fe80f873514d004bdb692d75b741e49da27a81ddeaf5079d6fe4c9ae",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "chu",
+      "file": "chu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/78/index.m3u8",
+      "sha256": "487a7f2fd3d61b04ec0d7ea08fb33f65e159694b2f81e14da8f4fd6ba7028a11",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "cho",
+      "file": "cho.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/79/index.m3u8",
+      "sha256": "4a66b4eeb42d7b377bd0482dc6c96fcba3baa9f55e823a7f8d41e36f736387cc",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "nya",
+      "file": "nya.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/80/index.m3u8",
+      "sha256": "1bdac6e40e09d97df8a49e6063f7bfc43d4c3c2b430a7dfc54d243dca12cceca",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "nyu",
+      "file": "nyu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/81/index.m3u8",
+      "sha256": "1be5775a94ba253163e5bbb917df137b4e5d66480652f00251f5888085b20d3c",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "nyo",
+      "file": "nyo.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/82/index.m3u8",
+      "sha256": "d2b2c66b31cada0f6f9e3162b880305321a82d21381af0f3c96b2426a3153756",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "hya",
+      "file": "hya.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/83/index.m3u8",
+      "sha256": "2bf5184d8dad16718539a5ef4ed2b97bb19901d3f5ef94ccbcdbd387857f719b",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "hyu",
+      "file": "hyu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/84/index.m3u8",
+      "sha256": "fcb8a0ff2a7d029bece77a70771f71ac02860b16aeb3d21944bae9bcdae463e5",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "hyo",
+      "file": "hyo.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/85/index.m3u8",
+      "sha256": "cdb8e5bfae53c01d1623ce44d32aaffea33acfb95891d5d0c26ac13b5a7855a6",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "mya",
+      "file": "mya.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/86/index.m3u8",
+      "sha256": "31fbe312e01e509e031033513b1461001f3a75a740ae979be77c45910ca8e38f",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "myu",
+      "file": "myu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/87/index.m3u8",
+      "sha256": "960346d798001d761a16e57e68849e4beafce25034cedfcb5ae97109b26969ee",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "myo",
+      "file": "myo.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/88/index.m3u8",
+      "sha256": "a78796bbff61869d03040a47446cd053d80e223344803f05b5a9168b419ec8a9",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "rya",
+      "file": "rya.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/89/index.m3u8",
+      "sha256": "a7bad87b10abfa6fd311c998420ea2ce3b094e2da646af8d7fea33de00cb14e9",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "ryu",
+      "file": "ryu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/90/index.m3u8",
+      "sha256": "bf170ae5df904d72ee10bb04d9ff0ce38df9d5c209b47c629832405f6ea0f710",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "ryo",
+      "file": "ryo.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/91/index.m3u8",
+      "sha256": "65f831d96faed5d318ec1efd8b391dabd6adfa61e707f81f33bdc809dca6e04c",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "gya",
+      "file": "gya.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/92/index.m3u8",
+      "sha256": "d470a849e4d156838bc0c0ddffe010a5bb449ae017113ac70372d4d44a4197fb",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "gyu",
+      "file": "gyu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/93/index.m3u8",
+      "sha256": "3b20062283d47f58df538764da7a4b27be2f59a519d093f4dfca7e4525a0376e",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "gyo",
+      "file": "gyo.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/94/index.m3u8",
+      "sha256": "1dacbbdffbe00794f217d17e1a511bd66c1865aeb0f80dd69fa4a8eca0b64eb5",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "ja",
+      "file": "ja.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/95/index.m3u8",
+      "sha256": "abf6169d3e7bbdd6aebb6d352205d3d02b7200f3ac2db3a89b0309936c9e7bdc",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "ju",
+      "file": "ju.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/96/index.m3u8",
+      "sha256": "cbe1de522970d383e26ba06b9d263f4a03a8e728dec43364fe54d462a3b00a0f",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "jo",
+      "file": "jo.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/97/index.m3u8",
+      "sha256": "7e78e267699757f55c81af926d92ca2e73647c1712efcc2bcdae543c4e712bf5",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "bya",
+      "file": "bya.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/98/index.m3u8",
+      "sha256": "a15ae07a7deb33f2a49337696d539f78d6762c81a6e64d0ccffde897654a783e",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "byu",
+      "file": "byu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/99/index.m3u8",
+      "sha256": "89b69dae6b735bc7e2541983d565ce6e99423ec2c6c6b01ae497ea018bc6b49e",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "byo",
+      "file": "byo.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/100/index.m3u8",
+      "sha256": "df67dde37b82a3f60ee9f205bfbe4d6ee1eb1d7b37dfe63858f9299005cbb1cc",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "pya",
+      "file": "pya.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/101/index.m3u8",
+      "sha256": "174108a68ffaa92cabb0810920b6fec908170dc337e2488a8743e509465cf6ef",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "pyu",
+      "file": "pyu.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/102/index.m3u8",
+      "sha256": "7ec35223eb17e1be74cb7a53cb11036bbe2f5e921ac7e26877ccde3a369b5d73",
+      "bytes": 9588,
+      "seconds": 1.109333
+    },
+    {
+      "id": "pyo",
+      "file": "pyo.m4a",
+      "sourceURL": "https://vod-stream.nhk.jp/nhkworld/lesson/assets/data/hls/103/index.m3u8",
+      "sha256": "184ac73c9e63c9ec4c483149d6522e5a3c11c7871cc901001b09951badb40b67",
+      "bytes": 9588,
+      "seconds": 1.109333
+    }
+  ]
+}

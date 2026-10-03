@@ -174,7 +174,7 @@ struct DictionaryView: View {
                         TextField(mode == .vietnameseEnglish ? "Tra một từ hoặc cụm tiếng Việt…" : "Tra một từ tiếng Anh…", text: $query)
                             .textFieldStyle(.plain).font(.system(size: 15)).onSubmit(lookup)
                         if !query.isEmpty { Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }.buttonStyle(.plain) }
-                        Button("Tra từ", action: lookup).buttonStyle(.borderedProminent)
+                        Button("Tra từ", action: lookup).buttonStyle(SettingsActionButtonStyle(prominent: true))
                             .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }.padding(12).background(Color(nsColor: .textBackgroundColor)).clipShape(RoundedRectangle(cornerRadius: 13))
                         .overlay(RoundedRectangle(cornerRadius: 13).stroke(TransToolsTheme.accent.opacity(0.2)))
@@ -186,10 +186,10 @@ struct DictionaryView: View {
                                         Text(resultMode.rawValue.uppercased()).font(.system(size: 9, weight: .bold)).tracking(1.5).foregroundStyle(TransToolsTheme.accent)
                                         Text(englishWord.isEmpty ? resultQuery : englishWord).font(.system(size: 34, weight: .bold, design: .rounded)).textSelection(.enabled)
                                         if !pronunciation.isEmpty { Text(pronunciation).font(.system(size: 17, design: .monospaced)).foregroundStyle(TransToolsTheme.navy).textSelection(.enabled) }
-                                        Button { VocabularyManager.shared.speak(englishWord) } label: { Label("Nghe phát âm", systemImage: "speaker.wave.2.fill") }.buttonStyle(.bordered).controlSize(.small)
+                                        Button { VocabularyManager.shared.speak(englishWord) } label: { Label("Nghe phát âm", systemImage: "speaker.wave.2.fill") }.buttonStyle(SettingsActionButtonStyle())
                                     }
                                     Spacer()
-                                    Button(action: saveWord) { Label("Lưu từ", systemImage: "bookmark") }.buttonStyle(.bordered).controlSize(.small)
+                                    Button(action: saveWord) { Label("Lưu từ", systemImage: "bookmark") }.buttonStyle(SettingsActionButtonStyle())
                                 }
                                 if !translation.isEmpty {
                                     VStack(alignment: .leading, spacing: 6) {
@@ -223,7 +223,7 @@ struct DictionaryView: View {
                                     VStack(alignment: .leading, spacing: 12) {
                                         Label("Định nghĩa trên máy", systemImage: "book.closed").font(.headline)
                                         Text(offlineDefinition).font(.system(size: 14, design: .serif)).lineSpacing(7).textSelection(.enabled)
-                                        Text("Apple Dictionary · Bộ từ điển đã cài trên Mac").font(.caption).foregroundStyle(.secondary)
+                                        Text("Apple Dictionary · Bộ từ điển đã cài").font(.caption).foregroundStyle(.secondary)
                                     }.padding(18).frame(maxWidth: .infinity, alignment: .leading).background(Color(nsColor: .textBackgroundColor)).clipShape(RoundedRectangle(cornerRadius: 14))
                                 }
                             }
@@ -232,7 +232,7 @@ struct DictionaryView: View {
                                 HStack(alignment: .top, spacing: 10) {
                                     Image(systemName: "wifi.exclamationmark").foregroundStyle(.orange)
                                     Text(message).font(.caption).foregroundStyle(.secondary)
-                                    Spacer(); Button("Thử lại", action: lookup).controlSize(.small)
+                                    Spacer(); Button("Thử lại", action: lookup).buttonStyle(SettingsActionButtonStyle())
                                 }.padding(12).background(Color.orange.opacity(0.07)).clipShape(RoundedRectangle(cornerRadius: 10))
                             }
                             if !hasResult && !loading && message.isEmpty {
@@ -256,7 +256,7 @@ struct DictionaryView: View {
         if !words.isEmpty {
             VStack(alignment: .leading, spacing: 7) {
                 Text(title).font(.caption.bold()).foregroundStyle(.secondary)
-                ScrollView(.horizontal, showsIndicators: false) { HStack { ForEach(Array(words.prefix(15)), id: \.self) { word in Button(word) { query = word; lookup() }.buttonStyle(.bordered).controlSize(.small) } } }
+                ScrollView(.horizontal, showsIndicators: false) { HStack { ForEach(Array(words.prefix(15)), id: \.self) { word in Button(word) { query = word; lookup() }.buttonStyle(SettingsActionButtonStyle()) } } }
             }
         }
     }

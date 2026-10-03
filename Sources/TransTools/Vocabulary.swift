@@ -15,6 +15,14 @@ public struct VocabularyItem: Identifiable, Codable, Equatable {
     public var createdAt: Date
     public var isMastered: Bool
 
+    // SRS Spaced Repetition & Language properties
+    public var dueAt: Date?
+    public var interval: Int
+    public var repetition: Int
+    public var easeFactor: Double
+    public var lastReviewedAt: Date?
+    public var language: String
+
     public init(
         id: UUID = UUID(),
         word: String,
@@ -23,7 +31,13 @@ public struct VocabularyItem: Identifiable, Codable, Equatable {
         context: String = "",
         sourceApp: String = "",
         createdAt: Date = Date(),
-        isMastered: Bool = false
+        isMastered: Bool = false,
+        dueAt: Date? = nil,
+        interval: Int = 1,
+        repetition: Int = 0,
+        easeFactor: Double = 2.5,
+        lastReviewedAt: Date? = nil,
+        language: String = "en"
     ) {
         self.id = id
         self.word = word
@@ -33,6 +47,35 @@ public struct VocabularyItem: Identifiable, Codable, Equatable {
         self.sourceApp = sourceApp
         self.createdAt = createdAt
         self.isMastered = isMastered
+        self.dueAt = dueAt
+        self.interval = interval
+        self.repetition = repetition
+        self.easeFactor = easeFactor
+        self.lastReviewedAt = lastReviewedAt
+        self.language = language
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, word, meaning, phonetic, context, sourceApp, createdAt, isMastered
+        case dueAt, interval, repetition, easeFactor, lastReviewedAt, language
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        word = try container.decodeIfPresent(String.self, forKey: .word) ?? ""
+        meaning = try container.decodeIfPresent(String.self, forKey: .meaning) ?? ""
+        phonetic = try container.decodeIfPresent(String.self, forKey: .phonetic) ?? ""
+        context = try container.decodeIfPresent(String.self, forKey: .context) ?? ""
+        sourceApp = try container.decodeIfPresent(String.self, forKey: .sourceApp) ?? ""
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        isMastered = try container.decodeIfPresent(Bool.self, forKey: .isMastered) ?? false
+        dueAt = try container.decodeIfPresent(Date.self, forKey: .dueAt)
+        interval = try container.decodeIfPresent(Int.self, forKey: .interval) ?? 1
+        repetition = try container.decodeIfPresent(Int.self, forKey: .repetition) ?? 0
+        easeFactor = try container.decodeIfPresent(Double.self, forKey: .easeFactor) ?? 2.5
+        lastReviewedAt = try container.decodeIfPresent(Date.self, forKey: .lastReviewedAt)
+        language = try container.decodeIfPresent(String.self, forKey: .language) ?? "en"
     }
 }
 
@@ -63,14 +106,14 @@ public final class VocabularyManager: ObservableObject {
         }
     }
 
-    public func add(word: String, meaning: String, phonetic: String = "", context: String = "", sourceApp: String = "") {
+    public func add(word: String, meaning: String, phonetic: String = "", context: String = "", sourceApp: String = "", language: String = "en") {
         let trimmedWord = word.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedMeaning = meaning.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedPhonetic = phonetic.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedWord.isEmpty else { return }
 
         // If already exists, update meaning/phonetic and move to front
-        if let idx = items.firstIndex(where: { $0.word.lowercased() == trimmedWord.lowercased() }) {
+        if let idx = items.firstIndex(where: { $0.word.lowercased() == trimmedWord.lowercased() && $0.language == language }) {
             items[idx].meaning = trimmedMeaning
             if !trimmedPhonetic.isEmpty { items[idx].phonetic = trimmedPhonetic }
             if !context.isEmpty { items[idx].context = context }
@@ -83,7 +126,8 @@ public final class VocabularyManager: ObservableObject {
                 meaning: trimmedMeaning,
                 phonetic: trimmedPhonetic,
                 context: context,
-                sourceApp: sourceApp
+                sourceApp: sourceApp,
+                language: language
             )
             items.insert(newItem, at: 0)
         }
@@ -107,13 +151,133 @@ public final class VocabularyManager: ObservableObject {
         return items.contains { $0.word.lowercased() == trimmed }
     }
 
-    public func speak(_ text: String, language: String = "en-US") {
+    // MARK: - Spaced Repetition (SRS)
+    public enum SRSGrade: Int {
+        case again = 0 // Quên
+        case hard = 1  // Khó
+        case good = 2  // Nhớ
+        case easy = 3  // Dễ
+    }
+
+    public func review(itemId: UUID, grade: SRSGrade) {
+        guard let idx = items.firstIndex(where: { $0.id == itemId }) else { return }
+        var item = items[idx]
+        let now = Date()
+        item.lastReviewedAt = now
+
+        switch grade {
+        case .again:
+            item.isMastered = false
+            item.repetition = 0
+            item.interval = 1
+            item.easeFactor = max(1.3, item.easeFactor - 0.2)
+            item.dueAt = Calendar.current.date(byAdding: .minute, value: 10, to: now)
+        case .hard:
+            item.repetition = max(1, item.repetition)
+            item.interval = max(1, Int(Double(item.interval) * 1.2))
+            item.easeFactor = max(1.3, item.easeFactor - 0.15)
+            item.dueAt = Calendar.current.date(byAdding: .day, value: item.interval, to: now)
+        case .good:
+            if item.repetition == 0 {
+                item.interval = 1
+            } else if item.repetition == 1 {
+                item.interval = 3
+            } else {
+                item.interval = max(item.interval + 1, Int(Double(item.interval) * item.easeFactor))
+            }
+            item.repetition += 1
+            item.dueAt = Calendar.current.date(byAdding: .day, value: item.interval, to: now)
+            if item.repetition >= 5 {
+                item.isMastered = true
+            }
+        case .easy:
+            if item.repetition == 0 {
+                item.interval = 4
+            } else {
+                item.interval = max(item.interval + 2, Int(Double(item.interval) * (item.easeFactor + 0.5)))
+            }
+            item.repetition += 2
+            item.easeFactor = min(3.0, item.easeFactor + 0.15)
+            item.dueAt = Calendar.current.date(byAdding: .day, value: item.interval, to: now)
+            if item.repetition >= 4 {
+                item.isMastered = true
+            }
+        }
+
+        items[idx] = item
+        saveItems()
+    }
+
+    public var dueItemsCount: Int {
+        let now = Date()
+        return items.filter { item in
+            guard let dueAt = item.dueAt else { return true }
+            return dueAt <= now
+        }.count
+    }
+
+    public var dueItems: [VocabularyItem] {
+        let now = Date()
+        return items.filter { item in
+            guard let dueAt = item.dueAt else { return true }
+            return dueAt <= now
+        }
+    }
+
+    private var audioPlayer: AVAudioPlayer?
+    private var audioTask: Task<Void, Never>?
+    private var playbackToken = UUID()
+
+    public func speak(_ text: String, language: String = "en-US", rate: Float = 0.46) {
         if synthesizer.isSpeaking {
             synthesizer.stopSpeaking(at: .immediate)
         }
+        audioPlayer?.stop()
+        audioPlayer = nil
+        audioTask?.cancel()
+        audioTask = nil
+
+        let voiceLang: String
+        switch language.lowercased() {
+        case "ja", "ja-jp": voiceLang = "ja-JP"
+        case "zh", "zh-cn", "zh-hans": voiceLang = "zh-CN"
+        case "ko", "ko-kr": voiceLang = "ko-KR"
+        case "vi", "vi-vn": voiceLang = "vi-VN"
+        case "en", "en-us": voiceLang = "en-US"
+        default: voiceLang = language
+        }
+
+        if TTSService.shared.useEdgeNaturalVoice {
+            let token = UUID()
+            self.playbackToken = token
+            let rateMod: Float = rate / 0.46
+            self.audioTask = Task { [weak self] in
+                do {
+                    let data = try await EdgeTTSService.shared.synthesize(text: text, locale: voiceLang, rateModifier: rateMod)
+                    try Task.checkCancellation()
+                    guard let self, self.playbackToken == token else { return }
+                    let player = try AVAudioPlayer(data: data)
+                    player.volume = TTSService.shared.speechVolume
+                    self.audioPlayer = player
+                    player.play()
+                } catch {
+                    guard let self, !Task.isCancelled, self.playbackToken == token else { return }
+                    self.playFallbackSystemUtterance(text: text, voiceLang: voiceLang, rate: rate)
+                }
+            }
+            return
+        }
+
+        playFallbackSystemUtterance(text: text, voiceLang: voiceLang, rate: rate)
+    }
+
+    private func playFallbackSystemUtterance(text: String, voiceLang: String, rate: Float) {
         let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: language) ?? AVSpeechSynthesisVoice(language: "en-US")
-        utterance.rate = 0.46
+        let settings = TTSService.shared
+        utterance.voice = settings.bestVoice(for: voiceLang) ?? AVSpeechSynthesisVoice(language: voiceLang)
+        utterance.rate = max(0.25, min(0.75, settings.speechRate * (rate / 0.46) + settings.voiceTone.rateModifier))
+        utterance.volume = settings.speechVolume
+        utterance.pitchMultiplier = settings.voiceTone.pitchMultiplier
         synthesizer.speak(utterance)
     }
 
@@ -196,6 +360,7 @@ private var gGlobalHotKeyRef: EventHotKeyRef?
 private var gGlobalHotKeyAltRef: EventHotKeyRef?
 private var gGlobalHotKeyGrammarRef: EventHotKeyRef?
 private var gGlobalHotKeyVIToENRef: EventHotKeyRef?
+private var gGlobalHotKeyOCRRef: EventHotKeyRef?
 private var gEventHandlerRef: EventHandlerRef?
 
 private func carbonHotKeyCallback(
@@ -216,7 +381,9 @@ private func carbonHotKeyCallback(
     let hotKeyNumber = (status == noErr) ? hotKeyID.id : 1
 
     Task { @MainActor in
-        if hotKeyNumber == 4 {
+        if hotKeyNumber == 5 {
+            ScreenOCRService.shared.triggerScreenOCRTranslation()
+        } else if hotKeyNumber == 4 {
             await GlobalHotkeyManager.shared.triggerVietnameseToEnglish()
         } else if hotKeyNumber == 3 {
             GlobalHotkeyManager.shared.handleGrammarHotKeyTriggered()
@@ -295,6 +462,18 @@ public final class GlobalHotkeyManager: ObservableObject {
             RegisterEventHotKey(UInt32(kVK_ANSI_E), UInt32(optionKey),
                 EventHotKeyID(signature: OSType(0x5452414E), id: 4),
                 GetApplicationEventTarget(), 0, &gGlobalHotKeyVIToENRef)
+
+            // Hotkey 5: Option + S (kVK_ANSI_S = 0x01) - Dịch ảnh chụp màn hình OCR
+            let hotKeyID5 = EventHotKeyID(signature: OSType(0x5452414E), id: 5)
+            RegisterEventHotKey(
+                UInt32(kVK_ANSI_S),
+                UInt32(optionKey),
+                hotKeyID5,
+                GetApplicationEventTarget(),
+                0,
+                &gGlobalHotKeyOCRRef
+            )
+
             isRegistered = true
         }
     }
@@ -315,6 +494,10 @@ public final class GlobalHotkeyManager: ObservableObject {
         if let ref = gGlobalHotKeyVIToENRef {
             UnregisterEventHotKey(ref)
             gGlobalHotKeyVIToENRef = nil
+        }
+        if let ref = gGlobalHotKeyOCRRef {
+            UnregisterEventHotKey(ref)
+            gGlobalHotKeyOCRRef = nil
         }
         if let handler = gEventHandlerRef {
             RemoveEventHandler(handler)

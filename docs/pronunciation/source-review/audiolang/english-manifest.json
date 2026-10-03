@@ -1,0 +1,218 @@
+{
+  "source": "http://audiolang.info/vi/english-alphabet/",
+  "name": "AudioLang English alphabet",
+  "locale": "en",
+  "accent": "not independently established; source mentions UK/US variants for R and Z",
+  "usage": "Downloaded for personal offline learning as requested; redistribution rights not established",
+  "review": "26 URLs matched to page and MP3 decode passed; no independent listening review",
+  "entries": [
+    {
+      "symbol": "A",
+      "file": "a.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/a.mp3",
+      "sha256": "17734149a3e06711f93d9a9c60aae2d8d5937c5e9fd944676a31a87fc2c18ad9",
+      "bytes": 12539,
+      "seconds": 0.783688
+    },
+    {
+      "symbol": "B",
+      "file": "b.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/b.mp3",
+      "sha256": "1769acc782529c3e9a9ced2328556b27d4845e8ec59674c1cc523ec01aebd59a",
+      "bytes": 12121,
+      "seconds": 0.757563
+    },
+    {
+      "symbol": "C",
+      "file": "c.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/c.mp3",
+      "sha256": "6c58dd8abb4b6cf7f510e1d204f0dc080a5d882ea6b1729716e7fd830604c07d",
+      "bytes": 13793,
+      "seconds": 0.862063
+    },
+    {
+      "symbol": "D",
+      "file": "d.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/d.mp3",
+      "sha256": "f763b24bdd250c9d724005da47950c1763e11d848120d31687561ede7987bd77",
+      "bytes": 10449,
+      "seconds": 0.653063
+    },
+    {
+      "symbol": "E",
+      "file": "e.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/e.mp3",
+      "sha256": "4ef4b1c0113f576d4d5b57b4f813c02e8c5b1d126a56defe573cc1b89ca79be0",
+      "bytes": 12121,
+      "seconds": 0.757563
+    },
+    {
+      "symbol": "F",
+      "file": "f.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/f.mp3",
+      "sha256": "059000148124ad1d8087e028efa65a595003193678c0147c42c9fbe4d93fa9a0",
+      "bytes": 10449,
+      "seconds": 0.653063
+    },
+    {
+      "symbol": "G",
+      "file": "g.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/g.mp3",
+      "sha256": "28ee14e1ae0ebbc9baa17715fd79306549534714f4f62b024b65fd307b660a49",
+      "bytes": 11703,
+      "seconds": 0.731438
+    },
+    {
+      "symbol": "H",
+      "file": "h.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/h.mp3",
+      "sha256": "848d1c95dfa3632485c0d8d72aca8fa546ac847ad4669ce5b9104d29715e4db6",
+      "bytes": 12539,
+      "seconds": 0.783688
+    },
+    {
+      "symbol": "I",
+      "file": "i.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/i.mp3",
+      "sha256": "d3cf3bfea6e92f26712867027ec3ce35a819d489d9481ea3b704ba361ec82e02",
+      "bytes": 12539,
+      "seconds": 0.783688
+    },
+    {
+      "symbol": "J",
+      "file": "j.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/j.mp3",
+      "sha256": "c34390b04611624e7c20571de4a6fc0eb1af9880da457eb8c9a6f6ba551d83b7",
+      "bytes": 12957,
+      "seconds": 0.809813
+    },
+    {
+      "symbol": "K",
+      "file": "k.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/k.mp3",
+      "sha256": "2b40c9889a4d185356d7f65d675647cfaf4ddf12f0debd1fc5205b848e8e50c0",
+      "bytes": 11703,
+      "seconds": 0.731438
+    },
+    {
+      "symbol": "L",
+      "file": "l.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/l.mp3",
+      "sha256": "105bd8748955c3eaeb446613370415d3b31772c12a3f942fb9879786b7a4d492",
+      "bytes": 10867,
+      "seconds": 0.679188
+    },
+    {
+      "symbol": "M",
+      "file": "m.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/m.mp3",
+      "sha256": "e53ac295df56da8a3afab3076f4997cd9f3ba656dc507a4b92535e442545934a",
+      "bytes": 10449,
+      "seconds": 0.653063
+    },
+    {
+      "symbol": "N",
+      "file": "n.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/n.mp3",
+      "sha256": "c55977cff47e8d791d3b9acf7564754e1ff484d8fcb8182663e6e258ab449659",
+      "bytes": 11285,
+      "seconds": 0.705313
+    },
+    {
+      "symbol": "O",
+      "file": "o.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/o.mp3",
+      "sha256": "9083ec6ec6e19a41d86dba509755d327bc68761cb6029bae62a8464609a7f737",
+      "bytes": 11703,
+      "seconds": 0.731438
+    },
+    {
+      "symbol": "P",
+      "file": "p.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/p.mp3",
+      "sha256": "ee8ea42cb948c7ca872e96607a61b870ee565e0a11f5f73510802218bf633182",
+      "bytes": 12957,
+      "seconds": 0.809813
+    },
+    {
+      "symbol": "Q",
+      "file": "q.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/q.mp3",
+      "sha256": "606af62ebdf5d93dd1ff020e61c98124d29d1a8a7ce53dd572a8c44c40be0673",
+      "bytes": 12539,
+      "seconds": 0.783688
+    },
+    {
+      "symbol": "R",
+      "file": "r.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/r.mp3",
+      "sha256": "0a1db31f9071e9706e0e7fba9e49bf61ddf7956c55dd0d433f21aeafe0663464",
+      "bytes": 13375,
+      "seconds": 0.835938
+    },
+    {
+      "symbol": "S",
+      "file": "s.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/s.mp3",
+      "sha256": "bc1f1f034580bf863320011173c7671267b55edeece684a30d426393efb67b47",
+      "bytes": 12121,
+      "seconds": 0.757563
+    },
+    {
+      "symbol": "T",
+      "file": "t.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/t.mp3",
+      "sha256": "c2b197db75ac970bdc85f82365c091907dcbd97fee6a092d63ed244db4187530",
+      "bytes": 12957,
+      "seconds": 0.809813
+    },
+    {
+      "symbol": "U",
+      "file": "u.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/u.mp3",
+      "sha256": "09b1dc46e8d80037887604ef25756c9258c8c36c71db53654be08f98a4c6e673",
+      "bytes": 13793,
+      "seconds": 0.862063
+    },
+    {
+      "symbol": "V",
+      "file": "v.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/v.mp3",
+      "sha256": "774327c96bb755b51d7e63509747353dbcc18c0485d7eb21a928f930a451f12b",
+      "bytes": 12957,
+      "seconds": 0.809813
+    },
+    {
+      "symbol": "W",
+      "file": "w.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/w.mp3",
+      "sha256": "56f121cdc3bb66e3b6557c6683e9727e81dc4f65ee9e7af80b33794cc4b2aaa2",
+      "bytes": 15882,
+      "seconds": 0.992625
+    },
+    {
+      "symbol": "X",
+      "file": "x.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/x.mp3",
+      "sha256": "ced59860eb05cb3ebf1a8574b6bb629f66a52f17f6bd0d7430440192b6f597f2",
+      "bytes": 13375,
+      "seconds": 0.835938
+    },
+    {
+      "symbol": "Y",
+      "file": "y.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/y.mp3",
+      "sha256": "a650deaadae08b73a3032b856fd122ce5b82f15ad11b3eedc4e4d5b0509e798a",
+      "bytes": 11703,
+      "seconds": 0.731438
+    },
+    {
+      "symbol": "Z",
+      "file": "z.mp3",
+      "sourceURL": "http://audiolang.info/alphabet/alphabet-eng/z.mp3",
+      "sha256": "8b1cefde51c218ae7aec743edada473aa9051daafb7731a405dee20de6cad36d",
+      "bytes": 20480,
+      "seconds": 1.28
+    }
+  ]
+}

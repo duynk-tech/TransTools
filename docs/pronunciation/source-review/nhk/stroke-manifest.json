@@ -1,0 +1,1254 @@
+{
+  "source": "NHK WORLD-JAPAN letter detail figures",
+  "usage": "Personal offline learning; not distributed in app releases",
+  "entries": [
+    {
+      "file": "hira_a.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/a.png",
+      "sha256": "b80e8024337f11416527d45628908aaf7b3516f76d459ed5a36230120c93ef81",
+      "bytes": 10818
+    },
+    {
+      "file": "hira_i.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/i.png",
+      "sha256": "8146aa22430e1fda550f4b4ad213a25d19d6d8b623ab46f4be074884b6f31ea1",
+      "bytes": 7463
+    },
+    {
+      "file": "hira_u.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/u.png",
+      "sha256": "90955946577e4c74ac8229f3dd3c0d9116ff865afa1961681ad6a2a6d140fa3c",
+      "bytes": 8290
+    },
+    {
+      "file": "hira_e.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/e.png",
+      "sha256": "543c0bfc609e82db0da8387dd04f4edbb65b151ec205f41d33e5991e33b795af",
+      "bytes": 9349
+    },
+    {
+      "file": "hira_o.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/o.png",
+      "sha256": "995fa04af6f4bbaece377d8fadba7cf47eda67fa0eceb1f434d7813550698cef",
+      "bytes": 10051
+    },
+    {
+      "file": "hira_ka.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ka.png",
+      "sha256": "6095d4452bc6dcaf27f9005676bb398046946b4b5ceab61717360fe0be95cd5f",
+      "bytes": 10992
+    },
+    {
+      "file": "hira_ki.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ki.png",
+      "sha256": "89e78d64324b64b227ca00ed5acac96b6d0ba7a2b04038d9da9e9e25bc87b98f",
+      "bytes": 11036
+    },
+    {
+      "file": "hira_ku.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ku.png",
+      "sha256": "00db9ba5ad6bc0feecc66b191f8ea8b8b23031c0defcfbe4db48ff039a2451f8",
+      "bytes": 7559
+    },
+    {
+      "file": "hira_ke.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ke.png",
+      "sha256": "fa415dfba635fd66a871a42782c14eaec7aa0d471e9eae6b85ce05bed1f80bce",
+      "bytes": 10376
+    },
+    {
+      "file": "hira_ko.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ko.png",
+      "sha256": "f7c0c1464efd2634c420048a601d44d8c6a2f2d60b840a53c254326fa177d807",
+      "bytes": 6957
+    },
+    {
+      "file": "hira_sa.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/sa.png",
+      "sha256": "f108b4b15aedf4f7c815e670291115085d0558ed65d95bddc3df8f603db79a15",
+      "bytes": 10549
+    },
+    {
+      "file": "hira_shi.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/shi.png",
+      "sha256": "4b201b588c430c8e21339ac4245c3709586de3b77a1e1d232556509f1b8d15e7",
+      "bytes": 7263
+    },
+    {
+      "file": "hira_su.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/su.png",
+      "sha256": "ba14551036b3bbc7009d2f974f4752ccfb081e50afb019882f2c652e084b78b9",
+      "bytes": 8666
+    },
+    {
+      "file": "hira_se.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/se.png",
+      "sha256": "34ac7b7b0620c2f1ef6e8aed1d9a9c6ae8b416c1c907919004e9a38f4ff87bdc",
+      "bytes": 11199
+    },
+    {
+      "file": "hira_so.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/so.png",
+      "sha256": "742b39b45cbaa371331c20643442748cb2b0e18cb7a4ce503393f3c7d0b44c62",
+      "bytes": 7796
+    },
+    {
+      "file": "hira_ta.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ta.png",
+      "sha256": "0c29f5b43b66ce1c5335e23b269c91c32de9d9fdfebb6281f1309b41614e082e",
+      "bytes": 11277
+    },
+    {
+      "file": "hira_chi.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/chi.png",
+      "sha256": "c30377dfc4630d9c872c328a62bf058ccebbaa54f293ec94374fad69ecfca212",
+      "bytes": 9489
+    },
+    {
+      "file": "hira_tsu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/tsu.png",
+      "sha256": "4b6ab1591acd30d0485fa46e46ca2444823247e698ee5dda3fdc047fc601564d",
+      "bytes": 7666
+    },
+    {
+      "file": "hira_te.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/te.png",
+      "sha256": "65e5ad2637e6887e5c7019d4db117288dc509dacea757fa82f00fb8a1bd6a3de",
+      "bytes": 7181
+    },
+    {
+      "file": "hira_to.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/to.png",
+      "sha256": "6053a4d6f3f471dee7e0a2c3a596e508457d68b612d15de495031e4113ea2e06",
+      "bytes": 8725
+    },
+    {
+      "file": "hira_na.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/na.png",
+      "sha256": "d780713d624ec27b53cdeae7012c43dba1156474cd7d56d4d539132ec641c605",
+      "bytes": 11857
+    },
+    {
+      "file": "hira_ni.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ni.png",
+      "sha256": "fac5261ffcbc1fbea88078b615247917168a45e39b5189c46015c9140103f90f",
+      "bytes": 9961
+    },
+    {
+      "file": "hira_nu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/nu.png",
+      "sha256": "e43ccfeba46eb70dd770e63a6326ca51d05bacdddc3e64dc4105cf7d6f3c5c59",
+      "bytes": 10790
+    },
+    {
+      "file": "hira_ne.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ne.png",
+      "sha256": "2b5752452e7356fbf7c28eec941050651059894627076eca3a821331e00fe049",
+      "bytes": 10767
+    },
+    {
+      "file": "hira_no.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/no.png",
+      "sha256": "f9a6ecde8c8dfa7b591d3d89b834fa68b4acf96e042876cc425da2755756a78b",
+      "bytes": 8910
+    },
+    {
+      "file": "hira_ha.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ha.png",
+      "sha256": "e8db32f25f653e312f33535d08c8ebcc97858cb07e54a65a2befa5df4268bb29",
+      "bytes": 10994
+    },
+    {
+      "file": "hira_hi.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/hi.png",
+      "sha256": "ce82e2ac4f9705d5e51fc1ede73e77a7a16f0d70b0a65416c9154d2855f136e0",
+      "bytes": 9892
+    },
+    {
+      "file": "hira_fu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/fu.png",
+      "sha256": "ef4ae1e436bc1bf32a9a59747d2d5dd92cba231e3494540dd7ddc73eff220730",
+      "bytes": 10628
+    },
+    {
+      "file": "hira_he.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/he.png",
+      "sha256": "e4689ec6734fbaba439aa139270e922b92b2634c3737a087ba8a5fcf9a5cb889",
+      "bytes": 7047
+    },
+    {
+      "file": "hira_ho.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ho.png",
+      "sha256": "d272197316a055e77bbe7c3ff4649f51893829ec4d57d1e315d1f577eb9d8087",
+      "bytes": 12031
+    },
+    {
+      "file": "hira_ma.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ma.png",
+      "sha256": "edabfb60dd087d3d663aa36ca3514aa51ff216d9d071e882690ae2230a4efa78",
+      "bytes": 8737
+    },
+    {
+      "file": "hira_mi.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/mi.png",
+      "sha256": "0e1ee785d78b9b016f7fde3973734b946a4a9a2caad312611d41a66d951edf40",
+      "bytes": 9626
+    },
+    {
+      "file": "hira_mu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/mu.png",
+      "sha256": "e247c1624a4b3655b93aa5cd82e120b369886b2acda4e05b72e30107c8f419da",
+      "bytes": 10300
+    },
+    {
+      "file": "hira_me.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/me.png",
+      "sha256": "2ea1c40c66740881ba8c5404b77a7dc93fcf4a824a012df6cb83cab856243666",
+      "bytes": 10183
+    },
+    {
+      "file": "hira_mo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/mo.png",
+      "sha256": "4883fc988163ae311da4b5a805fdee53b86acc876815b2325dd9545c00b49780",
+      "bytes": 9645
+    },
+    {
+      "file": "hira_ya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ya.png",
+      "sha256": "173bda1e37cb86239c49efb5c366c9fab48a07c76ed9cf510cf7833851feb4e9",
+      "bytes": 10754
+    },
+    {
+      "file": "hira_yu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/yu.png",
+      "sha256": "668afa2dbee43ce1e3d30aaeb0f18c2bd66e8933cef9500eed5467d7892450d5",
+      "bytes": 10443
+    },
+    {
+      "file": "hira_yo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/yo.png",
+      "sha256": "42a3a3e48169b36e6f20fc0a315bc84e698f60150ad72301bfd1b906bd5acf54",
+      "bytes": 7606
+    },
+    {
+      "file": "hira_ra.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ra.png",
+      "sha256": "52d81ee1cee62e8b9a8020b0ab74ca72f593039a48e432d96f408bbfe4c9d1ee",
+      "bytes": 9156
+    },
+    {
+      "file": "hira_ri.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ri.png",
+      "sha256": "d608e6794aeb1fd1f0e65d34da9f4a3beefa7a3738ea365d7aedc2540747dbf4",
+      "bytes": 7650
+    },
+    {
+      "file": "hira_ru.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ru.png",
+      "sha256": "d31c3b45e0132487e17cfe0a1141e74375ee7ff6415237f1db1bdfc0102e619e",
+      "bytes": 8170
+    },
+    {
+      "file": "hira_re.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/re.png",
+      "sha256": "7258600e8a7784bc71b4987b57c9d7de3074a1095e2ff214c8e6e88be2a50ff6",
+      "bytes": 10335
+    },
+    {
+      "file": "hira_ro.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ro.png",
+      "sha256": "fa1937cbe6a22749ad0f3d5d4fad0567b9a8b152e1da9b190f67cf045bba5517",
+      "bytes": 7891
+    },
+    {
+      "file": "hira_wa.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/wa.png",
+      "sha256": "a8cfdc8b196fb9a2d79e14728d6d663a185f0aae46c68781f6893adbfe9961df",
+      "bytes": 10098
+    },
+    {
+      "file": "hira_wo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/wo.png",
+      "sha256": "dc7a0615342c5a0285d84d3747a482a729f936b7ab17f1dada03816d0eba9f74",
+      "bytes": 10090
+    },
+    {
+      "file": "hira_n.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/n.png",
+      "sha256": "bc40a51af7776e3292ef80bb431f950eaafcae57f7045f811fe0a123aa2e96d2",
+      "bytes": 8732
+    },
+    {
+      "file": "hira_ga.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ga.png",
+      "sha256": "d12fdbd258f11d821e54970cc71494deece2c9d39775e5c1763ed3534176e6db",
+      "bytes": 13664
+    },
+    {
+      "file": "hira_gi.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/gi.png",
+      "sha256": "9926695db5b6012b54b5c07d0d36d5640ec0b2b1a481a4546ebe18e4b60211ff",
+      "bytes": 12436
+    },
+    {
+      "file": "hira_gu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/gu.png",
+      "sha256": "13fc07a013c9538cf0fa580aa87e57ec09b5e2547aa82d7d30b522d187551509",
+      "bytes": 10400
+    },
+    {
+      "file": "hira_ge.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ge.png",
+      "sha256": "8d5eaf5c56eead0847fc7585ee35478becf5df7e00dcecb8ab52755b27c22417",
+      "bytes": 13669
+    },
+    {
+      "file": "hira_go.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/go.png",
+      "sha256": "4ea83665d766a951aa91827d4cad90d7db63ce997b4819b3c93b37efeeb03b1f",
+      "bytes": 10200
+    },
+    {
+      "file": "hira_za.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/za.png",
+      "sha256": "a6c4bc7976b52248bb37077384f5fe3c409e53c603e5ea95ee90906cbd396cd3",
+      "bytes": 12429
+    },
+    {
+      "file": "hira_ji.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ji.png",
+      "sha256": "de5152157a4a470d91f463614a3b16c0ba94dbe898bae110a33e223f7f530cbd",
+      "bytes": 8975
+    },
+    {
+      "file": "hira_zu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/zu.png",
+      "sha256": "19abbfa93d3ef18b26e9fd46f313ab2e98d7f6fb7cdf6becc76d43614e469a64",
+      "bytes": 10678
+    },
+    {
+      "file": "hira_ze.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ze.png",
+      "sha256": "9ed0696d19d4fd63e8eea78be70618c69fc7593e52ee66117fbb988bdd388a1e",
+      "bytes": 12588
+    },
+    {
+      "file": "hira_zo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/zo.png",
+      "sha256": "bfe2ee9e09b218cae7941435c57602b96752bedea82bf524b911aab59862cdc2",
+      "bytes": 10515
+    },
+    {
+      "file": "hira_da.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/da.png",
+      "sha256": "0f2f44e1dbce2dc220cb886e2b7033512660c76a6fba6e8380a7b1fb4f235a49",
+      "bytes": 13815
+    },
+    {
+      "file": "hira_ji2.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ji2.png",
+      "sha256": "ac28b1e764f1a3d129e7eda7d56b627e45f8a9ce56670c9791be165e3ae367d0",
+      "bytes": 11294
+    },
+    {
+      "file": "hira_zu2.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/zu2.png",
+      "sha256": "fe21da52b73cc06e86d9425f8fae38c080a61182e67c3432c96ab897826b740d",
+      "bytes": 9677
+    },
+    {
+      "file": "hira_de.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/de.png",
+      "sha256": "6b9b8fb5704f6d09c0113177ccdb28b17dd77d79cea869743e4747bd97a95046",
+      "bytes": 10111
+    },
+    {
+      "file": "hira_do.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/do.png",
+      "sha256": "8a1d5c1afb1b243814fa97066b6f38038708722438758036f510821d9ea454a3",
+      "bytes": 10894
+    },
+    {
+      "file": "hira_ba.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ba.png",
+      "sha256": "31ddb3d6847e0e495aa51e4cf8d55259b0f8e809fe0285c0258e334a7dab2465",
+      "bytes": 13982
+    },
+    {
+      "file": "hira_bi.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/bi.png",
+      "sha256": "96e108ea6ea32bd03b043c12c334ac222d56b94d9692fc3e57e7d35b6dd8f65a",
+      "bytes": 11103
+    },
+    {
+      "file": "hira_bu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/bu.png",
+      "sha256": "f2cd7346b02e398bc34d20b81112fbfd829a75048a5acd71dd13e0c4383767f1",
+      "bytes": 12841
+    },
+    {
+      "file": "hira_be.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/be.png",
+      "sha256": "dd60a01e59820a129ad94b96b8a046020077aa85d2917da0ae9c357e700bd138",
+      "bytes": 10286
+    },
+    {
+      "file": "hira_bo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/bo.png",
+      "sha256": "cf0687be7d7c7579ce247b238dd791d7eeefaea03d7a372105c6b565cb4d7260",
+      "bytes": 14499
+    },
+    {
+      "file": "hira_pa.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/pa.png",
+      "sha256": "83ba3e8f411adee464427c06783ad8992a68829ac04244d6a515c083d7b788e4",
+      "bytes": 13529
+    },
+    {
+      "file": "hira_pi.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/pi.png",
+      "sha256": "44569e0f09ae9f8402046fcb266d4cffa28c78f7d966fc3f60a6f6ca46131e70",
+      "bytes": 11015
+    },
+    {
+      "file": "hira_pu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/pu.png",
+      "sha256": "dd9ddd1614522a0b5dbfe46164cad1e36d25b36046a1529e259ab59285c10e2a",
+      "bytes": 12808
+    },
+    {
+      "file": "hira_pe.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/pe.png",
+      "sha256": "8473d9dd336353eaa8d38c03134bc6f003bb99aeb886e4c46ccd9ed6f55111aa",
+      "bytes": 9746
+    },
+    {
+      "file": "hira_po.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/po.png",
+      "sha256": "c0886763743a2a0f4357d750d73834cbf7ea0718b543304d101a5b888047cd8b",
+      "bytes": 14257
+    },
+    {
+      "file": "hira_kya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/kya.png",
+      "sha256": "d1819407649d68629315c2321e0146ff23fee4c08b3ba77d4108d9daed6c39c1",
+      "bytes": 17092
+    },
+    {
+      "file": "hira_kyu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/kyu.png",
+      "sha256": "1e7abfa07910b96dbef62fbf662856dfa0ed229ea4d2c4ad9af21126b132a7ec",
+      "bytes": 16125
+    },
+    {
+      "file": "hira_kyo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/kyo.png",
+      "sha256": "603984d3b2d987b078fd585e2a3a695b8e25f8d2ed7bb2b60e2ae6a9f2bca70a",
+      "bytes": 14133
+    },
+    {
+      "file": "hira_sha.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/sha.png",
+      "sha256": "4aa76b2b5a3ed3e858dc35d11f77ceb2fd4e38757a9ce9df6c5754d4e734e880",
+      "bytes": 13204
+    },
+    {
+      "file": "hira_shu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/shu.png",
+      "sha256": "a8688a78a092525e541e9cd920a8915b3ecb53e0ef9ce3d0064441fb368c7074",
+      "bytes": 12265
+    },
+    {
+      "file": "hira_sho.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/sho.png",
+      "sha256": "2d2974d7cb0de65713b2c48ab74f4764e2d691514c90faeed42af0e96b6be154",
+      "bytes": 9840
+    },
+    {
+      "file": "hira_cha.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/cha.png",
+      "sha256": "25621e9c3ed18cab9280518e77bc6a6fcc809dc9d7224c96f836b6c9b294403c",
+      "bytes": 14832
+    },
+    {
+      "file": "hira_chu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/chu.png",
+      "sha256": "31dd873cbd975e9c272219fd87633038938b449a5d3b0799be9db58f6744b452",
+      "bytes": 14309
+    },
+    {
+      "file": "hira_cho.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/cho.png",
+      "sha256": "46326be3182bcc2dbdbbf996eda45b310aaf7efffc74b4daa2bf66da66ff1f9c",
+      "bytes": 12633
+    },
+    {
+      "file": "hira_nya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/nya.png",
+      "sha256": "f1dc374b43d4093a122b12056dfd7ff6fa383a28134a7c0d02fd0eea3f9a1666",
+      "bytes": 15225
+    },
+    {
+      "file": "hira_nyu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/nyu.png",
+      "sha256": "da0b0cd6c5384d9fef3808c3019b1c56d061a6c90b38c842ae9d35dff910720f",
+      "bytes": 13427
+    },
+    {
+      "file": "hira_nyo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/nyo.png",
+      "sha256": "ba954b10ac72f83774a8e299651561eefa8633da093e93cd7652de63247d25e7",
+      "bytes": 13097
+    },
+    {
+      "file": "hira_hya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/hya.png",
+      "sha256": "6e7599cad9e699f3516931da20a6320b0e5398772c5f84ea177365851eb5c054",
+      "bytes": 15243
+    },
+    {
+      "file": "hira_hyu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/hyu.png",
+      "sha256": "6c0f113f64e71174a080a80edc0e1aad7c2790b1cf542b44532b3f395c948d5f",
+      "bytes": 14154
+    },
+    {
+      "file": "hira_hyo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/hyo.png",
+      "sha256": "8d075d978a222e0b3673f87b30443c9d6b33347e4d7fc8cc863b634249c4f8c0",
+      "bytes": 12249
+    },
+    {
+      "file": "hira_mya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/mya.png",
+      "sha256": "3494b5062c80e92608dcfdfd61468f79a601fe3c5f772b4eb6d74c0ed37b5371",
+      "bytes": 15799
+    },
+    {
+      "file": "hira_myu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/myu.png",
+      "sha256": "f1224d123a15487c6664e9511acdf740aab078dacdf07f8cb333abd9a9be9c9c",
+      "bytes": 14275
+    },
+    {
+      "file": "hira_myo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/myo.png",
+      "sha256": "910ccd698ac7e342d7b846b7a66a32de93be4a6a1c5c1372cd60694ecb535bc0",
+      "bytes": 13574
+    },
+    {
+      "file": "hira_rya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/rya.png",
+      "sha256": "2fbd381e4d36d1d60b6b9c9e43ade3ecebee46bc7d9fc33dbefdce47e7f33923",
+      "bytes": 14278
+    },
+    {
+      "file": "hira_ryu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ryu.png",
+      "sha256": "fc004aab587bf3300d2d0c713c96943b9ecb1dd1eac6da40406ca89694aa71b2",
+      "bytes": 13337
+    },
+    {
+      "file": "hira_ryo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ryo.png",
+      "sha256": "e067396031ae633741a29011e76c54ad115e83f07d73488e703738d4bc297f9b",
+      "bytes": 12420
+    },
+    {
+      "file": "hira_gya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/gya.png",
+      "sha256": "181b6c25d6124422562d155f5d360a3f72dc5e72ad61219655b43ae73646748d",
+      "bytes": 18161
+    },
+    {
+      "file": "hira_gyu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/gyu.png",
+      "sha256": "61e0e286228c9c393d8f357a10257c8e040e29eadcbc8acb42e28811a178e20a",
+      "bytes": 17794
+    },
+    {
+      "file": "hira_gyo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/gyo.png",
+      "sha256": "a6cb7e227e53279631cb139dfc55050dc7d28b8fe612c85d97da4dc69fe5bd47",
+      "bytes": 17026
+    },
+    {
+      "file": "hira_ja.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ja.png",
+      "sha256": "7ee4a473d53e017c9e04426f95d2269314c971226b9c987b7f383e8d58c2cc1d",
+      "bytes": 14166
+    },
+    {
+      "file": "hira_ju.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/ju.png",
+      "sha256": "d17df14b5897934f3567c73ccd240ac6d78acdf8ef33a73cb265e22395ad7bf1",
+      "bytes": 13248
+    },
+    {
+      "file": "hira_jo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/jo.png",
+      "sha256": "c3865e86260842cf16b867c3272f0b2174fb41949265a5b3120876030d121728",
+      "bytes": 12286
+    },
+    {
+      "file": "hira_bya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/bya.png",
+      "sha256": "a383aa178ccc032234857f591a058e65446f492c672e905574d0342b1a51e678",
+      "bytes": 17536
+    },
+    {
+      "file": "hira_byu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/byu.png",
+      "sha256": "c565423a708825013ec90e0265e263c958f41452810b5fe5606e34a28d994b10",
+      "bytes": 16408
+    },
+    {
+      "file": "hira_byo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/byo.png",
+      "sha256": "32d6729123c33be0f202fe2f5a2496035732462412193134322798f11a608a39",
+      "bytes": 15042
+    },
+    {
+      "file": "hira_pya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/pya.png",
+      "sha256": "e5fb53c364243a86fdf299bac08d836f46de4ffdc139233e21f24caaca012978",
+      "bytes": 16695
+    },
+    {
+      "file": "hira_pyu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/pyu.png",
+      "sha256": "2195c1262cca0e79be45fa6485b32cc664ae8dfc4f4279a889a642f6b1e82756",
+      "bytes": 16379
+    },
+    {
+      "file": "hira_pyo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/hira/pyo.png",
+      "sha256": "50d0fb35645cf38b1546166c87607993bda4b04e562999389b204f1d780d978c",
+      "bytes": 14862
+    },
+    {
+      "file": "kana_a.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/a.png",
+      "sha256": "a35a1cce10ae81189f303c21c3cfb71fd1b249f579abaad2226ba2cc68ad31d7",
+      "bytes": 8800
+    },
+    {
+      "file": "kana_i.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/i.png",
+      "sha256": "84d7b7037a11d9560ac4c4d4622779ded565b5f2285423dec0a05c7a66e524b5",
+      "bytes": 7093
+    },
+    {
+      "file": "kana_u.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/u.png",
+      "sha256": "f9ea4d3fd311112ce446e6442990101a6a161040dbcb9ec639fa752f9152a5ca",
+      "bytes": 7956
+    },
+    {
+      "file": "kana_e.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/e.png",
+      "sha256": "7a4f50eab5af5d9fa0ebf3a40b6f2d4ea09f8d293b6a08352fab2ce0ab16cd39",
+      "bytes": 7783
+    },
+    {
+      "file": "kana_o.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/o.png",
+      "sha256": "5f39e5428ef704964b3dbc595b8ed82636864fd8d6696711b9ee4381823e6512",
+      "bytes": 9740
+    },
+    {
+      "file": "kana_ka.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ka.png",
+      "sha256": "51cb83e3aee2ba74a62737b772dfb9e148b8f2ec70a0279a648bb3f3eeec1456",
+      "bytes": 9826
+    },
+    {
+      "file": "kana_ki.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ki.png",
+      "sha256": "105112053a1cff879400e8eeefd2f1b5e1456530256a5ff2e660c2433d697143",
+      "bytes": 8560
+    },
+    {
+      "file": "kana_ku.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ku.png",
+      "sha256": "8eddc58ed4a567887baaf4d21de36057555979d8d1d9fdc9da85e755381c0591",
+      "bytes": 8379
+    },
+    {
+      "file": "kana_ke.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ke.png",
+      "sha256": "9f7a764db46a88b27de701a33b41aaea700a97adb0a17517adb6510b7491221d",
+      "bytes": 10034
+    },
+    {
+      "file": "kana_ko.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ko.png",
+      "sha256": "1035a53abb9929af856c68cd1d5a0f6fb4941419d0eeec9845ec517f3fa44426",
+      "bytes": 6687
+    },
+    {
+      "file": "kana_sa.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/sa.png",
+      "sha256": "cbad9c5dcf8f0e1ec5b475a1de9ad923631b8ed1123b78729735d4fb5e90b293",
+      "bytes": 9578
+    },
+    {
+      "file": "kana_shi.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/shi.png",
+      "sha256": "2a0a5777cf3c96e612e7499f51e513dd04d435350accc872b6efb46c654fb105",
+      "bytes": 11079
+    },
+    {
+      "file": "kana_su.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/su.png",
+      "sha256": "6760987d637b3c98b04e5ca5b8965c66f595c7726142a966ea96171c3848f084",
+      "bytes": 8984
+    },
+    {
+      "file": "kana_se.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/se.png",
+      "sha256": "f0521279822390139f479c0d1f0d76696d29ec0a5524cac17663349b3bebc222",
+      "bytes": 9166
+    },
+    {
+      "file": "kana_so.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/so.png",
+      "sha256": "9d0e57fc1d4891487867363963397476c663e3d82448d683533f35dc217cfa24",
+      "bytes": 9105
+    },
+    {
+      "file": "kana_ta.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ta.png",
+      "sha256": "849004f212daad624d6351291f98d9088e15211b59f586f7b6471c2a2cb95cb2",
+      "bytes": 9070
+    },
+    {
+      "file": "kana_chi.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/chi.png",
+      "sha256": "b9c260bbc0c17eefe11dc8b55fdcc762411c60969587ded4ca9d1eb4200b7c5a",
+      "bytes": 8901
+    },
+    {
+      "file": "kana_tsu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/tsu.png",
+      "sha256": "99ec6f6e8a105b8d42385ec1c70f009ede20fda387478449c43370664104dc05",
+      "bytes": 10303
+    },
+    {
+      "file": "kana_te.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/te.png",
+      "sha256": "f871b5fc02483427aa616bc0f9ac672bd059bcdda28ee919550d94a862a809ce",
+      "bytes": 9039
+    },
+    {
+      "file": "kana_to.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/to.png",
+      "sha256": "d3fd067b99026c6ec8d830c967f9316fb22e2dab3234df324624741404ef9ddf",
+      "bytes": 7669
+    },
+    {
+      "file": "kana_na.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/na.png",
+      "sha256": "3ca058cf7a540b038156536b1017dab9d5d3225215a5a0c2d0e7a00281d0afca",
+      "bytes": 7014
+    },
+    {
+      "file": "kana_ni.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ni.png",
+      "sha256": "638e6f989c7da1b00a63f7686bf4228ce82fca9b3bd5afba30de3218de2cc202",
+      "bytes": 6955
+    },
+    {
+      "file": "kana_nu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/nu.png",
+      "sha256": "fd68727794ae20f6143129ac127429351f7fae16f861646f780c5bce6d446361",
+      "bytes": 8081
+    },
+    {
+      "file": "kana_ne.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ne.png",
+      "sha256": "d66118ae7a4e9d2aeeefadef5fbf2865e27ebe3842c439aea647e77c33622a98",
+      "bytes": 10399
+    },
+    {
+      "file": "kana_no.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/no.png",
+      "sha256": "39e258f7f8a64a9769873e1e4863c6152312a05602f01d003465d005d5fed74a",
+      "bytes": 6806
+    },
+    {
+      "file": "kana_ha.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ha.png",
+      "sha256": "801f7f67476667ab732bf9dbada442dd7fa0f2e7dea26a1dbd065a81980ed06a",
+      "bytes": 7940
+    },
+    {
+      "file": "kana_hi.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/hi.png",
+      "sha256": "dd056a31625cf61e0619cab74716d69140d630f826bde8cebd598188bc51057c",
+      "bytes": 8100
+    },
+    {
+      "file": "kana_fu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/fu.png",
+      "sha256": "8b854411d21afd7843e4c0efe54856a9e8a709c1c536b2b33044bf438ba5c7db",
+      "bytes": 6579
+    },
+    {
+      "file": "kana_he.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/he.png",
+      "sha256": "4d9cfb64db993b01c8aca1255ddaf42a2d6f7ca549463b89d5c22b8a62a2c3f7",
+      "bytes": 6347
+    },
+    {
+      "file": "kana_ho.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ho.png",
+      "sha256": "fe642072ce54b9a8fb160e6361feef37966e46f191b6a15857ca27de247bdbf3",
+      "bytes": 10260
+    },
+    {
+      "file": "kana_ma.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ma.png",
+      "sha256": "7703edfdc100f89da24133f7cf1ef473ca15e23e80cfa80425ceff68d35cee77",
+      "bytes": 8398
+    },
+    {
+      "file": "kana_mi.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/mi.png",
+      "sha256": "1df5aeb767f024c6d96592236048df15b3bc47d72256a75c19f0512c8044c49e",
+      "bytes": 8320
+    },
+    {
+      "file": "kana_mu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/mu.png",
+      "sha256": "26d51519e05d48d6f899deb1421373db752d442bdf2548a31fff2d810cb326d8",
+      "bytes": 8259
+    },
+    {
+      "file": "kana_me.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/me.png",
+      "sha256": "9f294fe54b4fc27474e24e4bbcf88b312fe2ab2d70b0586cf90469aa35289863",
+      "bytes": 8079
+    },
+    {
+      "file": "kana_mo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/mo.png",
+      "sha256": "7572c3e25a1ccbcb83064749429fd46f379704330a0f5ee6d387aab439edfdda",
+      "bytes": 9440
+    },
+    {
+      "file": "kana_ya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ya.png",
+      "sha256": "0d141720b4e181c5d894630c744a17ede2bd957cb276aa6657e683c844a38a77",
+      "bytes": 9087
+    },
+    {
+      "file": "kana_yu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/yu.png",
+      "sha256": "8d80d053bb34fa97488d577991162c2fb8b3f2dfdc2d4bd03a303d93399f7512",
+      "bytes": 7219
+    },
+    {
+      "file": "kana_yo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/yo.png",
+      "sha256": "8029226b5a888cf7b9000ff38d97f41087463b6eff52656dec0c605d76809f5b",
+      "bytes": 9996
+    },
+    {
+      "file": "kana_ra.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ra.png",
+      "sha256": "1eb280ca9716c3b9fbebda976cc576112d8c4e7aaa5eff4f179f910c117c3e41",
+      "bytes": 8638
+    },
+    {
+      "file": "kana_ri.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ri.png",
+      "sha256": "754c714b8313999f21f0d2d10954762d2061d806a82b296104bc5d9e2d83e96c",
+      "bytes": 7542
+    },
+    {
+      "file": "kana_ru.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ru.png",
+      "sha256": "84b705d2e95adadf7425bc78b84ecbd29c827d67352cc6df4bd281c10e06e60f",
+      "bytes": 9159
+    },
+    {
+      "file": "kana_re.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/re.png",
+      "sha256": "ac281f72e4225e03a7f72c5908607adeacb38bd9f498cba3b8f5eea24d864bfc",
+      "bytes": 7555
+    },
+    {
+      "file": "kana_ro.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ro.png",
+      "sha256": "20b3a6e22c30e1c6c2ca56e50d3ea6ba8ecf4c4e0db13d24cf7e90bd0e1fa24d",
+      "bytes": 9346
+    },
+    {
+      "file": "kana_wa.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/wa.png",
+      "sha256": "1479eb6590cfc8b580bea633746d61f73bd656580b950cc79f326ba4094c4e39",
+      "bytes": 9060
+    },
+    {
+      "file": "kana_wo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/wo.png",
+      "sha256": "92d5277f933a53f0715a20728c68a2bb8507f2c641f1044cd7abed5bfa7e05cb",
+      "bytes": 9140
+    },
+    {
+      "file": "kana_n.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/n.png",
+      "sha256": "3dc68f98aba693377b91ec8af2e3d4aa8962ce447d0f7b9a1043cb95d8645e1e",
+      "bytes": 7317
+    },
+    {
+      "file": "kana_ga.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ga.png",
+      "sha256": "a9bbe6f8cb7c4ef927c56c6a7d75cd547505a6b3c92810d087e3dfccb8d8c972",
+      "bytes": 12414
+    },
+    {
+      "file": "kana_gi.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/gi.png",
+      "sha256": "36eaaf0d8f5fc723db29eaae7ddd612f6d5783c4517811504a128eee614d7e59",
+      "bytes": 10836
+    },
+    {
+      "file": "kana_gu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/gu.png",
+      "sha256": "f59a4909c7f386a45aea035995933d373977eb54544901aaaa55eba6f9271937",
+      "bytes": 10979
+    },
+    {
+      "file": "kana_ge.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ge.png",
+      "sha256": "b1a4463c52be93cb0d7346ea05b48295a381de94fec8004a3441fcdd18195ec3",
+      "bytes": 12682
+    },
+    {
+      "file": "kana_go.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/go.png",
+      "sha256": "24609bc179a7ee3a17de119e76db71b91609718dd52c3b222a08e0538a1155fe",
+      "bytes": 10985
+    },
+    {
+      "file": "kana_za.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/za.png",
+      "sha256": "ed74c9789e3f00898f092a8c1484c60fa655cb46eba135316355cbbd1870434e",
+      "bytes": 11129
+    },
+    {
+      "file": "kana_ji.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ji.png",
+      "sha256": "fefe25a32f97b9ec51298fca719948fa73fe4a127094e0cb0a2bf06fe5d8fbd1",
+      "bytes": 11209
+    },
+    {
+      "file": "kana_zu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/zu.png",
+      "sha256": "e5158e4d53823f7257651aa7b266198a52e553626ff8127a7d4a11921fd40646",
+      "bytes": 11281
+    },
+    {
+      "file": "kana_ze.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ze.png",
+      "sha256": "6eaaf9549663b47257687f9d2fdbe364d24b3de0e89011421a81ec00f7855c00",
+      "bytes": 10831
+    },
+    {
+      "file": "kana_zo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/zo.png",
+      "sha256": "0e822a80b39940b155914f01e700013240bd5eabe37559c9b19b3dbc6bf0bb39",
+      "bytes": 10794
+    },
+    {
+      "file": "kana_da.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/da.png",
+      "sha256": "4f952f16a8ce827603d63be44d3bfacf8ebbffedb3e7761c70a0db486d1fca76",
+      "bytes": 12446
+    },
+    {
+      "file": "kana_ji2.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ji2.png",
+      "sha256": "0f9a5b6a1156ef7ea500725c1c6c4480df9324ec3beb31b5283303d95c66a22e",
+      "bytes": 11190
+    },
+    {
+      "file": "kana_zu2.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/zu2.png",
+      "sha256": "6928639f326e2d7b442554c9bd11e9a07ab750709d4fe8aa3f62c9e95a4fb3bf",
+      "bytes": 11147
+    },
+    {
+      "file": "kana_de.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/de.png",
+      "sha256": "2237ef64aef089ac4be57d587619a6e9913b157bc3c43917273f18ccacb3db97",
+      "bytes": 12427
+    },
+    {
+      "file": "kana_do.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/do.png",
+      "sha256": "3c5fa8cd627ab0096ea004f4803cedf95683a73d9fb6e77235f37554cd36adbc",
+      "bytes": 9986
+    },
+    {
+      "file": "kana_ba.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ba.png",
+      "sha256": "385b773ebee94478d70140f868ee15a11c6338b232b56031ec956edcbd3e1f3e",
+      "bytes": 11144
+    },
+    {
+      "file": "kana_bi.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/bi.png",
+      "sha256": "be2464f0d26fc060f5af8769c33619243cadc31314f31d27fd8990423089b00c",
+      "bytes": 9455
+    },
+    {
+      "file": "kana_bu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/bu.png",
+      "sha256": "1acb2108b4ef0cc2f03d9c002392771027788292b172b4e0a77bace5eb7ea26a",
+      "bytes": 9303
+    },
+    {
+      "file": "kana_be.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/be.png",
+      "sha256": "5cb1217151e813213ffc075685522764324bdacc92127bb806314e53fb9469b9",
+      "bytes": 9665
+    },
+    {
+      "file": "kana_bo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/bo.png",
+      "sha256": "6b7a9352aec3c9e9d83eb6e73af98fa06f86454a4031803056ac54530ad0938f",
+      "bytes": 13008
+    },
+    {
+      "file": "kana_pa.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/pa.png",
+      "sha256": "c6e5b31514b08242256406bdc4b8ee25e3c8e97d3623d2d90c5ad0bbac143098",
+      "bytes": 10057
+    },
+    {
+      "file": "kana_pi.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/pi.png",
+      "sha256": "9e983941b3ce57150f013739664957c4d42518e5b9347f6a24431377869da1fa",
+      "bytes": 9170
+    },
+    {
+      "file": "kana_pu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/pu.png",
+      "sha256": "76bb9d2133421aced4f5c7a2285dcc52402087b9876f893bb86b4230a2bef6bf",
+      "bytes": 9434
+    },
+    {
+      "file": "kana_pe.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/pe.png",
+      "sha256": "0f83ca764a69cd2b5a1407dc0832521cc5137ed2a82bbca1e278c1d861adfdeb",
+      "bytes": 8878
+    },
+    {
+      "file": "kana_po.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/po.png",
+      "sha256": "84da7cf2415f80fd424263c7ad8c3b26c68bacf7e8a17aa00b7b9d36f61db5ab",
+      "bytes": 12819
+    },
+    {
+      "file": "kana_kya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/kya.png",
+      "sha256": "3853acc8d1186843b90553f86d70ddd5a8822aa0006fd9f45d0c61f791ada352",
+      "bytes": 13920
+    },
+    {
+      "file": "kana_kyu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/kyu.png",
+      "sha256": "ba6f1794cdd0379bcc2dffed53100baf60e04ca1137ccb186998bff451577135",
+      "bytes": 13658
+    },
+    {
+      "file": "kana_kyo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/kyo.png",
+      "sha256": "cf197eac032a669ae4789324db558aea4682b6b6e4f9d07c5f1ac695903f4713",
+      "bytes": 15182
+    },
+    {
+      "file": "kana_sha.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/sha.png",
+      "sha256": "9d59f5d146f627b417aef1e8f087f7e6908c865c77b3388bfda91ba5fdae2e15",
+      "bytes": 12878
+    },
+    {
+      "file": "kana_shu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/shu.png",
+      "sha256": "d63fe20f0acbf266191b2cb6b4028fbaec14c7669c152787a682564694c5b6b5",
+      "bytes": 12584
+    },
+    {
+      "file": "kana_sho.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/sho.png",
+      "sha256": "72785f8d32379b92da5e4502d8268c63acde0c6f63f7cecad92f1ebc0c3b5d77",
+      "bytes": 12827
+    },
+    {
+      "file": "kana_cha.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/cha.png",
+      "sha256": "02ad0dfd210193f6554ef77e4aac2ced1d77d6ef8d776a5c8963949ed5a9a70b",
+      "bytes": 13413
+    },
+    {
+      "file": "kana_chu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/chu.png",
+      "sha256": "75b9ae2d8dc36240a8f310875a17f43a8c430b51e858083f50cc2738a4be1679",
+      "bytes": 12627
+    },
+    {
+      "file": "kana_cho.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/cho.png",
+      "sha256": "f1ac162bbf82cfe54d8daaf546c10a40f2321a96ea1b29b813c43df3851f6006",
+      "bytes": 14109
+    },
+    {
+      "file": "kana_nya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/nya.png",
+      "sha256": "c8008e0276ee63222d0e1be622c0d21ad87d3cd8e5cc7f49541d0e7f99e0c06d",
+      "bytes": 11517
+    },
+    {
+      "file": "kana_nyu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/nyu.png",
+      "sha256": "d31e0d0e011d5fd71744befaa8b46a53ea830190337fc72fe7e1948037e22a33",
+      "bytes": 10673
+    },
+    {
+      "file": "kana_nyo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/nyo.png",
+      "sha256": "935625e144ef7688721848ebaa615da0421ca38ffe6f0a96f6b40e4439d5b51f",
+      "bytes": 11937
+    },
+    {
+      "file": "kana_hya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/hya.png",
+      "sha256": "a12bccb92a02ae882c40f0b44760dabd71accae656b5630144d8c70aedca5036",
+      "bytes": 12092
+    },
+    {
+      "file": "kana_hyu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/hyu.png",
+      "sha256": "30d07ca3acc6eb4b626d096b2d814e058903466b98fe5047eabe889c276d5ad1",
+      "bytes": 11180
+    },
+    {
+      "file": "kana_hyo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/hyo.png",
+      "sha256": "0e3b11d57b8157642eaaf1eb5b12d7561cf652669097d4bf51b8a2c9823e14bc",
+      "bytes": 12460
+    },
+    {
+      "file": "kana_mya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/mya.png",
+      "sha256": "b380bae74251a269b455a4612a91d90c3c1a571ed5ac3b6a147083720817f0f1",
+      "bytes": 12708
+    },
+    {
+      "file": "kana_myu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/myu.png",
+      "sha256": "9be22702b12c9bf5252d924e8cb22e114ef5a9c080d93dc11f381e8b0014c6bf",
+      "bytes": 10976
+    },
+    {
+      "file": "kana_myo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/myo.png",
+      "sha256": "ff31fd3e4de8e67d260e02715bb66920ae58d46cc4aaaee266abece4121bbdae",
+      "bytes": 12304
+    },
+    {
+      "file": "kana_rya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/rya.png",
+      "sha256": "7eca7b3ed851b64b0d62869efe70791a59a7eb4b15d8ccfb7da949ec15a16c28",
+      "bytes": 11903
+    },
+    {
+      "file": "kana_ryu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ryu.png",
+      "sha256": "0a7a2d8fba333dfeba796f165ecf5767f3bb03a2c42779c96ad4c61910bbc05b",
+      "bytes": 10567
+    },
+    {
+      "file": "kana_ryo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ryo.png",
+      "sha256": "6f51b476c1d6f4fa34c657667b2d25e624d88331e0a8d02d3deae1685b5c039d",
+      "bytes": 12560
+    },
+    {
+      "file": "kana_gya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/gya.png",
+      "sha256": "1cb333add86c3f968d902c68618a2bc3d1a64fc7e0b416f441ec55ac50d7231a",
+      "bytes": 15829
+    },
+    {
+      "file": "kana_gyu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/gyu.png",
+      "sha256": "90b3687fbda51f9669697f3d19ed0f28298c1c9da4324cfc897d11ed0f2faf91",
+      "bytes": 14296
+    },
+    {
+      "file": "kana_gyo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/gyo.png",
+      "sha256": "86b373f3a13ff2f8bbf75741cbc99863ae0b40229080d056d8ec919be4767839",
+      "bytes": 15976
+    },
+    {
+      "file": "kana_ja.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ja.png",
+      "sha256": "dc57cc0929117bc18e9b5dd97e9026be7b5a8e3db6139cf9e03211a25febcf65",
+      "bytes": 14999
+    },
+    {
+      "file": "kana_ju.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/ju.png",
+      "sha256": "eb99b636216d1a23ba5230ca7627f983ab1530707dc84d156e90f703f9ff77e4",
+      "bytes": 14039
+    },
+    {
+      "file": "kana_jo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/jo.png",
+      "sha256": "ac601dcfacf335ed10c4bad74fe32329f29c70f9869ad29e1365b6dbf463ae87",
+      "bytes": 15045
+    },
+    {
+      "file": "kana_bya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/bya.png",
+      "sha256": "f542750ef92657886c69293f1651308ab8e6f139e9dd3a31b36ee4a2e5509514",
+      "bytes": 14014
+    },
+    {
+      "file": "kana_byu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/byu.png",
+      "sha256": "bcb6df9ea0a7321ea14f47a13d140a45c2423e0a2055eff13644474b3203058b",
+      "bytes": 13099
+    },
+    {
+      "file": "kana_byo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/byo.png",
+      "sha256": "dff3450b391f231b996290705453dc2a4938bb4f5314f650708301a9ba7b7ba5",
+      "bytes": 15432
+    },
+    {
+      "file": "kana_pya.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/pya.png",
+      "sha256": "30bfc034950961236d3e7dbdd7ae7a0e9fcb1ede95c74d6f5ef48104b269e67d",
+      "bytes": 13782
+    },
+    {
+      "file": "kana_pyu.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/pyu.png",
+      "sha256": "e4a8a3bd4b21fea4ee68cceab9a3f7be01d8ee1f69ce41b04d365d615e3a03cb",
+      "bytes": 13249
+    },
+    {
+      "file": "kana_pyo.png",
+      "sourceURL": "https://www3.nhk.or.jp/nhkworld/lesson/assets/images/letters/detail/kana/pyo.png",
+      "sha256": "e606bcabc609b28063bbe12036840a8f3f821ffe6bb5b3e99c25c0991e5be7b5",
+      "bytes": 14176
+    }
+  ]
+}

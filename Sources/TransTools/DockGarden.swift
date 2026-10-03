@@ -6,31 +6,13 @@ import SwiftUI
     private var panel: NSPanel?
 
     func update(screen: NSScreen, mascot: NSWindow, visible: Bool) {
-        guard visible else { hide(); return }
-        let area = screen.visibleFrame
-        let frame = NSRect(x: area.minX + 16, y: mascot.frame.minY,
-                           width: max(1, area.width - 32), height: 80)
-        if panel == nil {
-            let p = NSPanel(contentRect: frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
-            p.backgroundColor = .clear; p.isOpaque = false; p.hasShadow = false
-            p.ignoresMouseEvents = true; p.hidesOnDeactivate = false; p.isReleasedWhenClosed = false
-            p.level = NSWindow.Level(rawValue: NSWindow.Level.floating.rawValue - 1)
-            p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-            p.contentView = NSHostingView(rootView: DockGardenView())
-            panel = p
-        }
-        guard let panel else { return }
-        if panel.frame != frame { panel.setFrame(frame, display: true) }
-        if panel.contentView == nil { panel.contentView = NSHostingView(rootView: DockGardenView()) }
-        if !panel.isVisible {
-            panel.orderFrontRegardless()
-            mascot.order(.above, relativeTo: panel.windowNumber)
-        }
+        hide()
     }
 
     func hide() {
         panel?.orderOut(nil)
         panel?.contentView = nil // Release the animation timeline while hidden.
+        panel = nil
     }
 }
 

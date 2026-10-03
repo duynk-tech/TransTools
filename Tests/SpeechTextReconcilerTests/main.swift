@@ -8,3 +8,6 @@ check(SpeechTextReconciler.remainder("Hello", committed: "Hello there everyone")
 check(SpeechTextReconciler.remainder("A new unrelated utterance", committed: "Last sentence done") == nil, "fresh utterance detected")
 check(SpeechTextReconciler.keepLongerPartial("We need all these words", incoming: "We need", final: false) == "We need all these words", "short partial retained")
 check(SpeechTextReconciler.keepLongerPartial("We need more work", incoming: "We need less work", final: false) == "We need less work", "correction allowed")
+
+check(SpeechTextReconciler.keepLongerPartial("Ragnar true story is almost a mystery", incoming: "Ragnar true story is almost a", final: true) == "Ragnar true story is almost a mystery", "short final retains received words")
+check(SpeechTextReconciler.removingOverlap("very important", after: "This is very") == "very important", "one-word repetition preserved")
