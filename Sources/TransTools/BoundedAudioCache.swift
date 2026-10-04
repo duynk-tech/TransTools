@@ -6,6 +6,10 @@ struct BoundedAudioCache {
     private(set) var byteCount = 0
     private var values: [String: Data] = [:]
     private var order: [String] = []
+
+    init(limit: Int) {
+        self.limit = limit
+    }
     mutating func value(for key: String) -> Data? {
         guard let value = values[key] else { return nil }
         order.removeAll { $0 == key }; order.append(key)

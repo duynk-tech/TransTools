@@ -20,6 +20,7 @@ final class LanguagePronunciationService: NSObject, ObservableObject, AVAudioPla
     private var sequenceLanguage: LearningLanguage = .english
     private var delay: TimeInterval = 0.5
 
+    @MainActor
     func speak(text: String, language: LearningLanguage, british: Bool = false, rate: Float = 0.44) {
         TTSService.shared.stop()
         stop()
@@ -30,6 +31,7 @@ final class LanguagePronunciationService: NSObject, ObservableObject, AVAudioPla
         play(file, text: text)
     }
 
+    @MainActor
     func playSequence(items: [String], language: LearningLanguage, british: Bool = false,
                       rate: Float = 0.44, delay: TimeInterval = 0.5,
                       onProgress: ((Int) -> Void)? = nil, onFinished: (() -> Void)? = nil) {
