@@ -63,7 +63,7 @@ public class WhisperSttService : IDisposable
 
     private static async Task DownloadModelAsync(GgmlType modelType, string destinationPath, IProgress<double>? progress = null)
     {
-        using var modelStream = await WhisperGgmlDownloader.Default.GetGgmlModelAsync(modelType);
+        using var modelStream = await WhisperGgmlDownloader.GetGgmlModelAsync(modelType);
         using var fileStream = File.Create(destinationPath);
 
         var buffer = new byte[81920];
