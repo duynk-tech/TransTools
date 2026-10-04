@@ -223,7 +223,7 @@ struct DictionaryView: View {
                                     VStack(alignment: .leading, spacing: 12) {
                                         Label("Định nghĩa trên máy", systemImage: "book.closed").font(.headline)
                                         Text(offlineDefinition).font(.system(size: 14, design: .serif)).lineSpacing(7).textSelection(.enabled)
-                                        Text("Apple Dictionary · Bộ từ điển đã cài").font(.caption).foregroundStyle(.secondary)
+                                        Text("Từ điển hệ thống · Bộ từ điển đã cài").font(.caption).foregroundStyle(.secondary)
                                     }.padding(18).frame(maxWidth: .infinity, alignment: .leading).background(Color(nsColor: .textBackgroundColor)).clipShape(RoundedRectangle(cornerRadius: 14))
                                 }
                             }
@@ -240,12 +240,12 @@ struct DictionaryView: View {
                                     Image(systemName: "character.book.closed.fill").font(.system(size: 46)).foregroundStyle(TransToolsTheme.accent)
                                     Text("Mỗi từ mở ra một câu chuyện.").font(.system(size: 22, weight: .semibold, design: .rounded))
                                     Text("Tra nghĩa, khám phá cách dùng và giữ lại những từ bạn muốn nhớ.").font(.system(size: 13)).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                                    HStack { ForEach(["inspire", "curiosity", "serendipity"], id: \.self) { word in Button(word) { query = word; mode = .englishEnglish; lookup() }.buttonStyle(.bordered) } }
+                                    HStack { ForEach(["inspire", "curiosity", "serendipity"], id: \.self) { word in Button(word) { query = word; mode = .englishEnglish; lookup() }.buttonStyle(TransToolsActionButtonStyle()) } }
                                 }.padding(.vertical, 75).frame(maxWidth: .infinity)
                             }
                         }.frame(maxWidth: .infinity, alignment: .leading).padding(.bottom, 20)
                     }
-                    Text("Free Dictionary API / Apple Dictionary · Nghĩa dịch: Google Dịch. Từ tương đương phụ thuộc ngữ cảnh.").font(.system(size: 10)).foregroundStyle(.secondary)
+                    Text("Free Dictionary API / Từ điển hệ thống · Nghĩa dịch: Google Dịch. Từ tương đương phụ thuộc ngữ cảnh.").font(.system(size: 10)).foregroundStyle(.secondary)
                 }.padding(22).frame(maxWidth: .infinity)
             }
         }.frame(width: 920, height: 690).background(TransToolsTheme.background).tint(TransToolsTheme.accent)

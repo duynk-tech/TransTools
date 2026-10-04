@@ -62,6 +62,8 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
     @Published var errorMessage: String = ""
     @Published var showUpdateSheet: Bool = false
 
+    private var automaticallyNotifiedVersion: String?
+
     private var downloadTask: URLSessionDownloadTask?
     private var downloadContinuation: CheckedContinuation<URL, Error>?
 
@@ -151,7 +153,9 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
                     self.downloadURL = release.zip.url
 
                     self.installStatusMessage = "Đã có bản cập nhật mới v\(tagClean)!"
-                    if userInitiated {
+                    let skipped = UserDefaults.standard.string(forKey: "SkippedUpdateVersion") == tagClean
+                    if userInitiated || (!skipped && self.automaticallyNotifiedVersion != tagClean) {
+                        self.automaticallyNotifiedVersion = tagClean
                         self.showUpdateSheet = true
                     }
                 } else {
@@ -232,14 +236,14 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
                       let bundle = Bundle(url: appURL),
                       let version = bundle.infoDictionary?["CFBundleShortVersionString"] as? String,
                       version == self.latestVersion.replacingOccurrences(of: "v", with: "") else {
-                    throw NSError(domain: "AppUpdater", code: -3, userInfo: [NSLocalizedDescriptionKey: "Bộ cài không có đúng một ứng dụng TransTools với phiên bản đã chọn."])
+                    throw NSError(domain: "AppUpdater", code: -3, userInfo: [NSLocalizedDescriptionKey: "Bộ cài không có đúng một ứng dụng Trans Tools với phiên bản đã chọn."])
                 }
                 try Self.validateSignature(appURL)
                 let newAppPath = appURL.path
 
                 let currentAppPath = Bundle.main.bundleURL.path
 
-                self.installStatusMessage = "Đang cập nhật và khởi động lại TransTools..."
+                self.installStatusMessage = "Đang cập nhật và khởi động lại Trans Tools..."
 
                 // Spawn update script detached
                 try launchUpdateScript(newAppPath: newAppPath, currentAppPath: currentAppPath, tempDir: tempDir.path)
@@ -433,7 +437,7 @@ struct UpdateSheetView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(updater.updateAvailable ? "Có bản cập nhật mới!" : "Cập nhật TransTools")
+                    Text(updater.updateAvailable ? "Có bản cập nhật mới!" : "Cập nhật Trans Tools")
                         .font(.system(size: 15, weight: .bold, design: .rounded))
 
                     HStack(spacing: 6) {
@@ -470,7 +474,7 @@ struct UpdateSheetView: View {
 
             if updater.updateAvailable {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(updater.releaseTitle.isEmpty ? "TransTools v\(updater.latestVersion)" : updater.releaseTitle)
+                    Text(updater.releaseTitle.isEmpty ? "Trans Tools v\(updater.latestVersion)" : updater.releaseTitle)
                         .font(.system(size: 13, weight: .semibold))
 
                     ScrollView {
@@ -505,53 +509,19 @@ struct UpdateSheetView: View {
                     }
                     .padding(.top, 4)
                 } else {
-                    HStack(spacing: 10) {
-                        Button {
-                            updater.downloadAndInstallUpdate()
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "arrow.down.circle.fill")
-                                Text("Cập nhật & Khởi động lại")
-                            }
-                            .font(.system(size: 12, weight: .semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
-                            .background(TransToolsTheme.accent)
-                            .foregroundStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-
-                        if let htmlURL = updater.htmlURL {
-                            Button {
-                                NSWorkspace.shared.open(htmlURL)
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Text("Xem Release")
-                                    Image(systemName: "arrow.up.right.square")
-                                }
-                                .font(.system(size: 11, weight: .medium))
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 8)
-                                .background(Color.secondary.opacity(0.12))
-                                .foregroundStyle(.primary)
-                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                            }
-                            .buttonStyle(.plain)
-                        }
-
-                        Button {
+                    HStack(spacing: 12) {
+                        Button("Bỏ qua phiên bản này") {
+                            UserDefaults.standard.set(updater.latestVersion, forKey: "SkippedUpdateVersion")
                             closeSheet()
-                        } label: {
-                            Text("Để sau")
-                                .font(.system(size: 11, weight: .medium))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(Color.secondary.opacity(0.12))
-                                .foregroundStyle(.secondary)
-                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(SettingsActionButtonStyle())
+                        Spacer(minLength: 0)
+                        Button("Để sau") { closeSheet() }
+                            .buttonStyle(SettingsActionButtonStyle())
+                        Button { updater.downloadAndInstallUpdate() } label: {
+                            Label("Cập nhật ngay", systemImage: "arrow.down.circle.fill")
+                        }
+                        .buttonStyle(SettingsActionButtonStyle(prominent: true))
                     }
                 }
             } else {
@@ -637,35 +607,8 @@ struct UpdateSheetView: View {
             }
         }
         .padding(16)
-        .frame(width: 400)
+        .frame(width: 560)
         .background(Color(nsColor: .windowBackgroundColor))
-    }
-}
-
-// MARK: - Auto Update Navigation Badge
-
-struct AutoUpdateNavBadge: View {
-    @ObservedObject var updater = AppUpdater.shared
-
-    var body: some View {
-        if updater.updateAvailable {
-            Button {
-                updater.showUpdateSheet = true
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "arrow.up.circle.fill")
-                    Text("Cập nhật v\(updater.latestVersion)")
-                }
-                .font(.system(size: 10, weight: .bold))
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(Color.green.opacity(0.18))
-                .foregroundStyle(Color.green)
-                .clipShape(Capsule())
-            }
-            .buttonStyle(.plain)
-            .help("Đã có bản cập nhật mới v\(updater.latestVersion)! Nhấn để nâng cấp ngay.")
-        }
     }
 }
 
@@ -712,7 +655,7 @@ struct SettingsUpdateTabView: View {
                 }.frame(width: 58, height: 58)
                 VStack(alignment: .leading, spacing: 6) {
                     Text(statusTitle).font(.system(size: 17, weight: .semibold))
-                    Text("TransTools \(updater.currentVersionDisplay)")
+                    Text("Trans Tools \(updater.currentVersionDisplay)")
                         .font(.system(size: 13)).foregroundStyle(.secondary)
                     Text(lastChecked).font(.system(size: 11.5)).foregroundStyle(.secondary)
                 }

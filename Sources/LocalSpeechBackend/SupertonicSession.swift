@@ -9,7 +9,26 @@ public actor SupertonicSession {
     private var style: Style?
     private var loadedDirectory: URL?
 
+    private var idleReleaseTask: Task<Void, Never>?
+    private var lease = UUID()
+
+    private func retainUntilIdle() {
+        idleReleaseTask?.cancel()
+        let token = UUID(); lease = token
+        idleReleaseTask = Task { [weak self] in
+            do { try await Task.sleep(nanoseconds: 120_000_000_000) } catch { return }
+            await self?.releaseIfIdle(token)
+        }
+    }
+
+    private func releaseIfIdle(_ token: UUID) {
+        guard lease == token else { return }
+        release()
+    }
+
     public func release() {
+        lease = UUID()
+        idleReleaseTask?.cancel(); idleReleaseTask = nil
         style = nil
         model = nil
         environment = nil
@@ -18,6 +37,7 @@ public actor SupertonicSession {
 
     public func prepare(directory: URL) throws {
         try Task.checkCancellation()
+        defer { retainUntilIdle() }
         if model == nil || loadedDirectory != directory {
             release()
             let started = Date()
@@ -45,6 +65,8 @@ public actor SupertonicSession {
         }
         try prepare(directory: directory)
         guard let model, let style else { throw CancellationError() }
+        // Actor isolation keeps eviction from releasing sessions during inference.
+        defer { retainUntilIdle() }
         let output = try model.call(text, language, style, 8, speed: min(1.5, max(0.7, speed)))
         try Task.checkCancellation()
         guard !output.wav.isEmpty, output.wav.allSatisfy({ $0.isFinite }), output.wav.contains(where: { abs($0) > 0.0001 }) else {

@@ -49,7 +49,7 @@ struct OfflineIPAReferenceView: View {
                     ForEach(sounds, id: \.self) { sound in
                         Button { audio.play(sound) } label: {
                             Text("/\(sound)/").font(.system(size: 18)).frame(maxWidth: .infinity).padding(.vertical, 9)
-                        }.buttonStyle(.bordered).tint(audio.active == sound ? TransToolsTheme.accent : .secondary)
+                        }.buttonStyle(TransToolsActionButtonStyle()).tint(audio.active == sound ? TransToolsTheme.accent : .secondary)
                             .accessibilityLabel("Nghe bản ghi IPA \(sound)")
                     }
                 }

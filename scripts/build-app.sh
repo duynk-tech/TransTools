@@ -9,6 +9,12 @@ mkdir -p build/TransTools.app/Contents/Resources
 cp .build/release/TransTools build/TransTools.app/Contents/MacOS/TransTools
 cp Info.plist build/TransTools.app/Contents/Info.plist
 if [ -d Resources ]; then
+    if [ -d Resources/SpeechRuntime ]; then
+        rm -rf build/TransTools.app/Contents/Resources/SpeechRuntime
+        ditto Resources/SpeechRuntime build/TransTools.app/Contents/Resources/SpeechRuntime
+    fi
+    ditto Resources/SpeechNative build/TransTools.app/Contents/Resources/SpeechNative
+    codesign --force --sign - build/TransTools.app/Contents/Resources/SpeechNative/libsea_g2p_rs.dylib
     ditto Resources/Licenses build/TransTools.app/Contents/Resources/Licenses
     if [ -d Resources/Pronunciation ]; then
         mkdir -p build/TransTools.app/Contents/Resources/Pronunciation
@@ -42,4 +48,7 @@ for resource_bundle in .build/release/*.bundle(N); do
     ditto "$resource_bundle" "build/TransTools.app/Contents/Resources/$(basename "$resource_bundle")"
 done
 codesign --force --deep --sign - --identifier "local.mactools.transtools" -r='designated => identifier "local.mactools.transtools"' build/TransTools.app
+rm -rf "build/Trans Tools.app"
+ditto build/TransTools.app "build/Trans Tools.app"
+codesign --force --deep --sign - --identifier "local.mactools.transtools" -r='designated => identifier "local.mactools.transtools"' "build/Trans Tools.app"
 

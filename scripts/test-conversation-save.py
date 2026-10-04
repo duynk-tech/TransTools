@@ -14,7 +14,10 @@ deletion = app[app.index('    func deleteConversationSession('):app.index('    f
 persist = app[app.index('    private func persistSessions('):app.index('    func saveCurrentSession(')]
 current = app[app.index('    func saveCurrentSession('):app.index('    func updateSessionTitle(')]
 snapshot = chat[chat.index('    @discardableResult\n    func saveConversation('):chat.index('    func updateSavedConversation()')]
-code = 'import Foundation\n' + records + (root/'Sources/TransTools/SessionStore.swift').read_text().replace('import Foundation', '') + turn + languages + '''
+services = (root/'Sources/TransTools/Services.swift').read_text()
+app_language = services[services.index('public enum AppLanguage:'):services.index('// MARK:', services.index('public enum AppLanguage:'))]
+topics = chat[chat.index('enum ConversationTopic:'):chat.index('private struct ConversationTurn:')]
+code = 'import Foundation\n' + app_language + topics + records + (root/'Sources/TransTools/SessionStore.swift').read_text().replace('import Foundation', '') + turn + languages + '''
 @MainActor class MeetingModel {
  var captions: [CaptionRecord] = []; var started = Date(); var recordingSessionID = UUID(); var status = ""
  func currentSourceName() -> String { "System" }
@@ -40,7 +43,8 @@ code = 'import Foundation\n' + records + (root/'Sources/TransTools/SessionStore.
  var sessionEnded: Date?
  var hasSaved = false
  var saveStatus = ""
- var language = LearningLanguage.english
+ var language = AppLanguage.english
+ var topicProfile = ConversationTopicProfile()
  var resumeLoaded = false
  var retainedTitle: String?
  var retainedNotes = ""

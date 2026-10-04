@@ -22,7 +22,7 @@ enum AIProvider: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .apple: return "Apple Translate (Miễn phí trên máy, Siêu tốc)"
+        case .apple: return "Translate (Miễn phí trên máy, Siêu tốc)"
         case .free: return "Google Dịch (Miễn phí web)"
         case .gemini: return "Google Gemini"
         case .openai: return "OpenAI (ChatGPT)"
@@ -33,7 +33,7 @@ enum AIProvider: String, CaseIterable, Identifiable {
 
     var shortName: String {
         switch self {
-        case .apple: return "Apple Translate"
+        case .apple: return "Translate"
         case .free: return "Google Dịch"
         case .gemini: return "Gemini"
         case .openai: return "OpenAI"
@@ -66,7 +66,7 @@ enum AIProvider: String, CaseIterable, Identifiable {
     var defaultModels: [String] {
         switch self {
         case .apple:
-            return ["Apple Translate (Tích hợp trên máy)"]
+            return ["Translate (Tích hợp trên máy)"]
         case .free:
             return ["Tiêu chuẩn (Standard)"]
         case .gemini:
@@ -356,7 +356,7 @@ enum AppleNativeTranslator {
         }
         let availability = await LanguageAvailability().status(from: from, to: to)
         guard availability != .unsupported else {
-            throw NSError(domain: "AppleTranslation", code: 1, userInfo: [NSLocalizedDescriptionKey: "Apple chưa hỗ trợ cặp ngôn ngữ này."])
+            throw NSError(domain: "AppleTranslation", code: 1, userInfo: [NSLocalizedDescriptionKey: "Translate chưa hỗ trợ cặp ngôn ngữ này."])
         }
         if #available(macOS 26.0, *), availability == .installed {
             let native: TranslationSession
@@ -370,7 +370,7 @@ enum AppleNativeTranslator {
         if let native = sessions[key] as? TranslationSession {
             return try await native.translate(trimmed).targetText
         }
-        throw NSError(domain: "AppleTranslation", code: 2, userInfo: [NSLocalizedDescriptionKey: "Cần tải bộ ngôn ngữ Apple trước khi dịch."])
+        throw NSError(domain: "AppleTranslation", code: 2, userInfo: [NSLocalizedDescriptionKey: "Cần tải bộ ngôn ngữ Local trước khi dịch."])
     }
 
     /// Prepare only already-installed packs; never trigger a download prompt.
@@ -642,7 +642,7 @@ struct AITranslator {
                     throw NSError(domain: "AppleTranslation", code: 3, userInfo: [NSLocalizedDescriptionKey: "Dịch local cần macOS 15 trở lên."])
                 }
                 #else
-                throw NSError(domain: "AppleTranslation", code: 3, userInfo: [NSLocalizedDescriptionKey: "Apple Translation chưa khả dụng trên máy này."])
+                throw NSError(domain: "AppleTranslation", code: 3, userInfo: [NSLocalizedDescriptionKey: "Translate · Local chưa khả dụng."])
                 #endif
             } else {
             #if canImport(Translation)
@@ -1143,7 +1143,7 @@ final class LiveSpeech {
             throw NSError(domain: "Speech", code: 1, userInfo: [NSLocalizedDescriptionKey: "Không khởi tạo được bộ nhận diện giọng nói cho mã ngôn ngữ \(localeIdentifier)."])
         }
         guard rec.isAvailable else {
-            throw NSError(domain: "Speech", code: 2, userInfo: [NSLocalizedDescriptionKey: "Apple Speech chưa sẵn sàng cho \(localeIdentifier). Vui lòng vào Cài đặt hệ thống (System Settings) → Bàn phím (Keyboard) → Bật 'Đọc chính tả' (Dictation)."])
+            throw NSError(domain: "Speech", code: 2, userInfo: [NSLocalizedDescriptionKey: "Nhận diện giọng nói chưa sẵn sàng cho \(localeIdentifier). Vui lòng vào Cài đặt hệ thống (System Settings) → Bàn phím (Keyboard) → Bật 'Đọc chính tả' (Dictation)."])
         }
         self.recognizer = rec
 
@@ -1591,7 +1591,7 @@ public final class TTSService: NSObject, ObservableObject, AVSpeechSynthesizerDe
     }
 
     // Manual playback of a specific caption/text
-    public func speak(id: UUID? = nil, text: String, language: AppLanguage, context: ConversationContext? = nil) {
+    public func speak(id: UUID? = nil, text: String, language: AppLanguage, context: ConversationContext? = nil, rateMultiplier: Float = 1) {
         isSettingsPreview = false
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -1606,7 +1606,7 @@ public final class TTSService: NSObject, ObservableObject, AVSpeechSynthesizerDe
         currentlySpeakingCaptionID = id
         currentlySpeakingText = trimmed
         localSpeechContext = context
-        playUtterance(text: trimmed, language: language)
+        playUtterance(text: trimmed, language: language, rateMultiplier: rateMultiplier)
     }
 
     // Quick Voice & Tone Preview
@@ -1617,11 +1617,11 @@ public final class TTSService: NSObject, ObservableObject, AVSpeechSynthesizerDe
         } else {
             switch language {
             case .vietnamese:
-                sampleText = "Xin chào! Đây là trợ lý dịch thuật TransTools. Giọng đọc tự nhiên, rõ ràng và chuẩn ngữ cảnh."
+                sampleText = "Xin chào! Đây là trợ lý dịch thuật Trans Tools. Giọng đọc tự nhiên, rõ ràng và chuẩn ngữ cảnh."
             case .english, .englishIndia:
-                sampleText = "Hello! This is TransTools live earphone interpreter. Speaking clearly and naturally."
+                sampleText = "Hello! This is Trans Tools live earphone interpreter. Speaking clearly and naturally."
             default:
-                sampleText = "Xin chào! Đây là trợ lý dịch thuật TransTools."
+                sampleText = "Xin chào! Đây là trợ lý dịch thuật Trans Tools."
             }
         }
         stop()
@@ -1652,7 +1652,7 @@ public final class TTSService: NSObject, ObservableObject, AVSpeechSynthesizerDe
 
         spokenCaptionIDs.insert(id)
 
-        if LocalTTSModelManager.shared.isNaturalVoiceEnabled && TTSAudioPlayer.shared.policy == .interruptCurrent {
+        if LanguageVoicePreferences.resolved(for: langToUse.speechLocale, localDefault: LocalTTSModelManager.shared.isNaturalVoiceEnabled, edgeDefault: useEdgeNaturalVoice) .isLocal && TTSAudioPlayer.shared.policy == .interruptCurrent {
             stop()
             speechQueue.append((id: id, text: textToSpeak, language: langToUse))
             processNextInQueue()
@@ -1693,51 +1693,63 @@ public final class TTSService: NSObject, ObservableObject, AVSpeechSynthesizerDe
         playUtterance(text: item.text, language: item.language)
     }
 
-    private func playUtterance(text: String, language: AppLanguage) {
+    private func playUtterance(text: String, language: AppLanguage, rateMultiplier: Float = 1) {
+        LanguagePronunciationService.shared.stop()
         let cleaned = Self.normalizeForSpeech(text, languageLocale: language.speechLocale)
         guard !cleaned.isEmpty else {
             processNextInQueue()
             return
         }
 
-        if LocalTTSModelManager.shared.isNaturalVoiceEnabled {
+        let engine = LanguageVoicePreferences.resolved(for: language.speechLocale,
+            localDefault: LocalTTSModelManager.shared.isNaturalVoiceEnabled, edgeDefault: useEdgeNaturalVoice)
+        if !engine.isLocal {
+            ExternalTTSSession.shared.stop()
+            LocalTTSSession.shared.releaseResources()
+        }
+        if engine.isLocal {
             let token = UUID()
             playbackToken = token
             isSpeaking = true
             voiceStatus = "Đang tạo giọng Local…"
             let context = localSpeechContext ?? ConversationContext(currentUtterance: cleaned, detectedLanguage: language.speechLocale)
-            let options = TTSOptions(rate: speechRate + voiceTone.rateModifier, pitch: voiceTone.pitchMultiplier, volume: speechVolume)
+            let options = TTSOptions(rate: speechRate * rateMultiplier + (engine.externalModel == nil ? voiceTone.rateModifier : 0), pitch: voiceTone.pitchMultiplier, volume: speechVolume)
             audioTask = Task { [weak self] in
                 do {
                     _ = try await TTSEngineRouter.shared.synthesizeAndPlay(text: cleaned, language: language.speechLocale,
-                        context: context, options: options, onComplete: { [weak self] in
+                        context: context, options: options, engine: engine, onComplete: { [weak self] in
                             Task { @MainActor in
                                 guard let self, self.playbackToken == token else { return }
                                 self.processNextInQueue()
                             }
                         })
                     guard let self, !Task.isCancelled, self.playbackToken == token else { return }
-                    self.voiceStatus = "Giọng tự nhiên · Local"
+                    self.voiceStatus = engine.title
                 } catch {
                     guard let self, !Task.isCancelled, self.playbackToken == token else { return }
                     TTSEngineRouter.shared.stop()
+                    if (error as NSError).userInfo["audioStarted"] as? Bool == true {
+                        self.processNextInQueue()
+                        self.voiceStatus = "Audio bị gián đoạn. Nhấn đọc lại để nghe đầy đủ."
+                        return
+                    }
                     self.voiceStatus = "Giọng tự nhiên Local chưa khả dụng · Đang dùng giọng cơ bản"
                     #if DEBUG
                     print("[TTS] Engine: System Language: \(language.speechLocale) Reason: localUnavailableOrFailed")
                     #endif
-                    self.playSystemUtterance(cleaned: cleaned, language: language)
+                    self.playSystemUtterance(cleaned: cleaned, language: language, rateMultiplier: rateMultiplier)
                 }
             }
             return
         }
 
-        if useEdgeNaturalVoice {
+        if engine == .edge {
             // High-fidelity natural voice via Edge-TTS (Zero-cost, no API key)
             let token = UUID()
             playbackToken = token
             isSpeaking = true
             voiceStatus = "Đang tải giọng tự nhiên…"
-            let rateMod: Float = self.speechRate / 0.44
+            let rateMod: Float = self.speechRate * rateMultiplier / 0.44
             audioTask = Task { [weak self] in
                 do {
                     let data = try await EdgeTTSService.shared.synthesize(text: cleaned, locale: language.speechLocale, rateModifier: rateMod)
@@ -1753,19 +1765,19 @@ public final class TTSService: NSObject, ObservableObject, AVSpeechSynthesizerDe
                     guard let self, !Task.isCancelled, self.playbackToken == token else { return }
                     // Fallback seamlessly to native macOS voice
                     self.voiceStatus = "Đang dùng giọng cơ bản."
-                    self.playSystemUtterance(cleaned: cleaned, language: language)
+                    self.playSystemUtterance(cleaned: cleaned, language: language, rateMultiplier: rateMultiplier)
                 }
             }
             return
         } else {
             voiceStatus = nil
         }
-        playSystemUtterance(cleaned: cleaned, language: language)
+        playSystemUtterance(cleaned: cleaned, language: language, rateMultiplier: rateMultiplier)
     }
 
-    private func playSystemUtterance(cleaned: String, language: AppLanguage) {
+    private func playSystemUtterance(cleaned: String, language: AppLanguage, rateMultiplier: Float = 1) {
         let utterance = AVSpeechUtterance(string: cleaned)
-        let effectiveRate = max(0.25, min(0.75, speechRate + voiceTone.rateModifier))
+        let effectiveRate = max(0.25, min(0.75, speechRate * rateMultiplier + voiceTone.rateModifier))
         utterance.rate = effectiveRate
         utterance.volume = speechVolume
         utterance.pitchMultiplier = voiceTone.pitchMultiplier

@@ -80,7 +80,7 @@ struct AlphabetLearningView: View {
                             } label: {
                                 Label("Dừng phát", systemImage: "stop.fill")
                             }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(TransToolsActionButtonStyle(prominent: true))
                             .tint(.red)
                         } else {
                             Button {
@@ -88,7 +88,7 @@ struct AlphabetLearningView: View {
                             } label: {
                                 Label(manager.selectedLanguage == .english ? "Phát tất cả" : "Nghe tại nguồn", systemImage: manager.selectedLanguage == .english ? "play.fill" : "arrow.up.right.square")
                             }
-                            .buttonStyle(.bordered)
+                            .buttonStyle(TransToolsActionButtonStyle())
                             .help("Tự động phát tuần tự toàn bộ bảng chữ cái")
                         }
                     }
@@ -170,7 +170,7 @@ struct AlphabetLearningView: View {
                                     Image(systemName: audio.isSpeaking && audio.currentText == currentLetter.symbol ? "speaker.wave.3.fill" : "speaker.wave.2.fill")
                                         .font(.title3)
                                 }
-                                .buttonStyle(.borderedProminent)
+                                .buttonStyle(TransToolsActionButtonStyle(prominent: true))
                                 .tint(TransToolsTheme.accent)
                                 .help("Nghe phát âm chữ này")
                             }

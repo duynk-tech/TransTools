@@ -45,7 +45,7 @@ struct ChinesePinyinLearningView: View {
                         } label: {
                             Label("Dừng phát", systemImage: "stop.fill")
                         }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(TransToolsActionButtonStyle(prominent: true))
                         .tint(.red)
                     } else {
                         Button {
@@ -53,7 +53,7 @@ struct ChinesePinyinLearningView: View {
                         } label: {
                             Label("Phát tất cả", systemImage: "play.fill")
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(TransToolsActionButtonStyle())
                         .help("Tự động phát tuần tự các âm Pinyin trong mục này")
                     }
                 }
@@ -213,7 +213,7 @@ struct ChinesePinyinLearningView: View {
                         Image(systemName: audio.isSpeaking && audio.currentText == selectedItem.speechSample ? "speaker.wave.3.fill" : "speaker.wave.2.fill")
                             .font(.title3)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(TransToolsActionButtonStyle(prominent: true))
                     .tint(TransToolsTheme.accent)
                     .help("Nghe phát âm chuẩn")
                 }
@@ -245,7 +245,7 @@ struct ChinesePinyinLearningView: View {
                         } label: {
                             Image(systemName: "speaker.wave.2")
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(TransToolsActionButtonStyle())
                         .help("Nghe từ ví dụ")
                     }
                 }
@@ -365,7 +365,7 @@ struct ChinesePinyinLearningView: View {
                                 } label: {
                                     Image(systemName: "speaker.wave.2.fill")
                                 }
-                                .buttonStyle(.bordered)
+                                .buttonStyle(TransToolsActionButtonStyle())
                             }
                             Text(tone.desc)
                                 .font(.caption)
@@ -434,7 +434,7 @@ struct ChinesePinyinLearningView: View {
                             } label: {
                                 Image(systemName: "speaker.wave.2.fill")
                             }
-                            .buttonStyle(.bordered)
+                            .buttonStyle(TransToolsActionButtonStyle())
                         }
                         .padding(10)
                         .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))

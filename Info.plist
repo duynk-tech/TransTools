@@ -3,17 +3,17 @@
 <plist version="1.0"><dict>
 <key>CFBundleExecutable</key><string>TransTools</string>
 <key>CFBundleIdentifier</key><string>local.mactools.transtools</string>
-<key>CFBundleName</key><string>TransTools</string>
-<key>CFBundleDisplayName</key><string>TransTools</string>
+<key>CFBundleName</key><string>Trans Tools</string>
+<key>CFBundleDisplayName</key><string>Trans Tools</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>CFBundleVersion</key><string>1</string>
-<key>CFBundleShortVersionString</key><string>1.3.1</string>
+<key>CFBundleShortVersionString</key><string>1.4.1</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSSpeechRecognitionUsageDescription</key><string>Chuyển âm thanh Teams thành phụ đề tiếng Anh trực tiếp.</string>
 <key>NSMicrophoneUsageDescription</key><string>Cho phép kiểm tra phụ đề bằng microphone khi bạn chọn nguồn Microphone.</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>NSAudioCaptureUsageDescription</key><string>Thu âm thanh hệ thống (Teams và các ứng dụng khác) để hiển thị phụ đề và dịch tiếng Việt.</string>
-<key>NSScreenCaptureUsageDescription</key><string>TransTools cần quyền ghi màn hình và âm thanh hệ thống để thu âm thanh cuộc họp và hiển thị phụ đề.</string>
+<key>NSScreenCaptureUsageDescription</key><string>Trans Tools cần quyền ghi màn hình và âm thanh hệ thống để thu âm thanh cuộc họp và hiển thị phụ đề.</string>
 <key>TransToolsUpdateFeedURL</key><string>https://trans-tools.vercel.app/updates/latest.json</string>
 </dict></plist>

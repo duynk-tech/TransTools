@@ -273,32 +273,32 @@ public final class LanguageLearningManager: ObservableObject {
         let vocab = VocabularyManager.shared
         switch selectedLanguage {
         case .english:
-            vocab.add(word: "clarify", meaning: "làm rõ, giải thích chi tiết", phonetic: "/ˈklær.ɪ.faɪ/", context: "Could you clarify the requirements?", sourceApp: "TransTools", language: "en")
-            vocab.add(word: "deadline", meaning: "hạn chót hoàn thành", phonetic: "/ˈded.laɪn/", context: "The deadline for this deliverable is Friday.", sourceApp: "TransTools", language: "en")
-            vocab.add(word: "action item", meaning: "nhiệm vụ cần thực hiện", phonetic: "/ˈæk.ʃən ˈaɪ.təm/", context: "Let's summarize the key action items.", sourceApp: "TransTools", language: "en")
-            vocab.add(word: "follow up", meaning: "tiếp tục theo dõi / phản hồi lại", phonetic: "/ˈfɒl.əʊ ʌp/", context: "I will follow up with the design team tomorrow.", sourceApp: "TransTools", language: "en")
-            vocab.add(word: "schedule", meaning: "lên lịch, sắp xếp thời gian", phonetic: "/ˈʃedʒ.uːl/", context: "Can we schedule a quick call?", sourceApp: "TransTools", language: "en")
+            vocab.add(word: "clarify", meaning: "làm rõ, giải thích chi tiết", phonetic: "/ˈklær.ɪ.faɪ/", context: "Could you clarify the requirements?", sourceApp: "Trans Tools", language: "en")
+            vocab.add(word: "deadline", meaning: "hạn chót hoàn thành", phonetic: "/ˈded.laɪn/", context: "The deadline for this deliverable is Friday.", sourceApp: "Trans Tools", language: "en")
+            vocab.add(word: "action item", meaning: "nhiệm vụ cần thực hiện", phonetic: "/ˈæk.ʃən ˈaɪ.təm/", context: "Let's summarize the key action items.", sourceApp: "Trans Tools", language: "en")
+            vocab.add(word: "follow up", meaning: "tiếp tục theo dõi / phản hồi lại", phonetic: "/ˈfɒl.əʊ ʌp/", context: "I will follow up with the design team tomorrow.", sourceApp: "Trans Tools", language: "en")
+            vocab.add(word: "schedule", meaning: "lên lịch, sắp xếp thời gian", phonetic: "/ˈʃedʒ.uːl/", context: "Can we schedule a quick call?", sourceApp: "Trans Tools", language: "en")
 
         case .japanese:
-            vocab.add(word: "お疲れ様です", meaning: "Cảm ơn bạn đã vất vả (chào khi làm việc)", phonetic: "おつかれさまです (Otsukaresama desu)", context: "お疲れ様です。進捗のご確認です。", sourceApp: "TransTools", language: "ja")
-            vocab.add(word: "よろしくお願いします", meaning: "Rất mong được giúp đỡ / Xin nhờ cậy", phonetic: "よろしくおねがいします (Yoroshiku onegaishimasu)", context: "今後ともよろしくお願いいたします。", sourceApp: "TransTools", language: "ja")
-            vocab.add(word: "承知いたしました", meaning: "Tôi đã hiểu rõ / Đã tiếp nhận thông tin", phonetic: "しょうちいたしました (Shouchi itashimashita)", context: "ご指摘の件、承知いたしました。", sourceApp: "TransTools", language: "ja")
-            vocab.add(word: "確認", meaning: "xác nhận, kiểm tra", phonetic: "かくにん (Kakunin)", context: "仕様の確認をお願いします。", sourceApp: "TransTools", language: "ja")
-            vocab.add(word: "検討", meaning: "xem xét, cân nhắc kỹ lưỡng", phonetic: "けんとう (Kentou)", context: "社内で検討の上、ご連絡します。", sourceApp: "TransTools", language: "ja")
+            vocab.add(word: "お疲れ様です", meaning: "Cảm ơn bạn đã vất vả (chào khi làm việc)", phonetic: "おつかれさまです (Otsukaresama desu)", context: "お疲れ様です。進捗のご確認です。", sourceApp: "Trans Tools", language: "ja")
+            vocab.add(word: "よろしくお願いします", meaning: "Rất mong được giúp đỡ / Xin nhờ cậy", phonetic: "よろしくおねがいします (Yoroshiku onegaishimasu)", context: "今後ともよろしくお願いいたします。", sourceApp: "Trans Tools", language: "ja")
+            vocab.add(word: "承知いたしました", meaning: "Tôi đã hiểu rõ / Đã tiếp nhận thông tin", phonetic: "しょうちいたしました (Shouchi itashimashita)", context: "ご指摘の件、承知いたしました。", sourceApp: "Trans Tools", language: "ja")
+            vocab.add(word: "確認", meaning: "xác nhận, kiểm tra", phonetic: "かくにん (Kakunin)", context: "仕様の確認をお願いします。", sourceApp: "Trans Tools", language: "ja")
+            vocab.add(word: "検討", meaning: "xem xét, cân nhắc kỹ lưỡng", phonetic: "けんとう (Kentou)", context: "社内で検討の上、ご連絡します。", sourceApp: "Trans Tools", language: "ja")
 
         case .chinese:
-            vocab.add(word: "你好", meaning: "xin chào", phonetic: "Nǐ hǎo", context: "你好，很高兴和你合作。", sourceApp: "TransTools", language: "zh")
-            vocab.add(word: "没问题", meaning: "không vấn đề gì / sẵn sàng làm", phonetic: "Méi wèntí", context: "这件事交给我，没问题！", sourceApp: "TransTools", language: "zh")
-            vocab.add(word: "开会", meaning: "họp, mở cuộc họp", phonetic: "Kāihuì", context: "我们下午两点开会讨论方案。", sourceApp: "TransTools", language: "zh")
-            vocab.add(word: "进度", meaning: "tiến độ công việc / dự án", phonetic: "Jìndù", context: "请同步一下当前的开发进度。", sourceApp: "TransTools", language: "zh")
-            vocab.add(word: "合作", meaning: "hợp tác, cùng làm việc", phonetic: "Hézuò", context: "期待与贵团队的深入合作。", sourceApp: "TransTools", language: "zh")
+            vocab.add(word: "你好", meaning: "xin chào", phonetic: "Nǐ hǎo", context: "你好，很高兴和你合作。", sourceApp: "Trans Tools", language: "zh")
+            vocab.add(word: "没问题", meaning: "không vấn đề gì / sẵn sàng làm", phonetic: "Méi wèntí", context: "这件事交给我，没问题！", sourceApp: "Trans Tools", language: "zh")
+            vocab.add(word: "开会", meaning: "họp, mở cuộc họp", phonetic: "Kāihuì", context: "我们下午两点开会讨论方案。", sourceApp: "Trans Tools", language: "zh")
+            vocab.add(word: "进度", meaning: "tiến độ công việc / dự án", phonetic: "Jìndù", context: "请同步一下当前的开发进度。", sourceApp: "Trans Tools", language: "zh")
+            vocab.add(word: "合作", meaning: "hợp tác, cùng làm việc", phonetic: "Hézuò", context: "期待与贵团队的深入合作。", sourceApp: "Trans Tools", language: "zh")
 
         case .korean:
-            vocab.add(word: "안녕하세요", meaning: "xin chào lịch sự", phonetic: "Annyeonghaseyo", context: "안녕하세요, 처음 뵙겠습니다.", sourceApp: "TransTools", language: "ko")
-            vocab.add(word: "감사합니다", meaning: "cảm ơn chân thành", phonetic: "Gamsahamnida", context: "도와주셔서 진심으로 감사합니다.", sourceApp: "TransTools", language: "ko")
-            vocab.add(word: "알겠습니다", meaning: "tôi đã hiểu rõ / vâng tôi biết rồi", phonetic: "Algesseumnida", context: "네, 전달해주신 내용 잘 알겠습니다.", sourceApp: "TransTools", language: "ko")
-            vocab.add(word: "회의", meaning: "cuộc họp", phonetic: "Hoe-ui", context: "다음 주 회의 일정을 조율해 봅시다.", sourceApp: "TransTools", language: "ko")
-            vocab.add(word: "확인", meaning: "xác nhận, kiểm tra", phonetic: "Hwag-in", context: "보내드린 메일 확인 부탁드립니다.", sourceApp: "TransTools", language: "ko")
+            vocab.add(word: "안녕하세요", meaning: "xin chào lịch sự", phonetic: "Annyeonghaseyo", context: "안녕하세요, 처음 뵙겠습니다.", sourceApp: "Trans Tools", language: "ko")
+            vocab.add(word: "감사합니다", meaning: "cảm ơn chân thành", phonetic: "Gamsahamnida", context: "도와주셔서 진심으로 감사합니다.", sourceApp: "Trans Tools", language: "ko")
+            vocab.add(word: "알겠습니다", meaning: "tôi đã hiểu rõ / vâng tôi biết rồi", phonetic: "Algesseumnida", context: "네, 전달해주신 내용 잘 알겠습니다.", sourceApp: "Trans Tools", language: "ko")
+            vocab.add(word: "회의", meaning: "cuộc họp", phonetic: "Hoe-ui", context: "다음 주 회의 일정을 조율해 봅시다.", sourceApp: "Trans Tools", language: "ko")
+            vocab.add(word: "확인", meaning: "xác nhận, kiểm tra", phonetic: "Hwag-in", context: "보내드린 메일 확인 부탁드립니다.", sourceApp: "Trans Tools", language: "ko")
         }
     }
 
@@ -866,7 +866,7 @@ struct TodayRoutineView: View {
                         meaning: sentence.keyWordMeaning,
                         phonetic: sentence.keyWordReading,
                         context: sentence.originalText,
-                        sourceApp: "TransTools Daily",
+                        sourceApp: "Trans Tools Daily",
                         language: sentence.language.rawValue
                     )
                     sentenceSaved = true
@@ -1301,12 +1301,12 @@ struct AddWordSheetView: View {
                         meaning: meaning,
                         phonetic: phonetic,
                         context: context,
-                        sourceApp: "TransTools",
+                        sourceApp: "Trans Tools",
                         language: defaultLanguage
                     )
                     dismiss()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(TransToolsActionButtonStyle(prominent: true))
                 .keyboardShortcut(.defaultAction)
                 .disabled(word.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || meaning.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
@@ -1569,7 +1569,7 @@ struct GoalAndOnboardingView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Bắt đầu: Thiết lập mục tiêu học tập")
                     .font(.system(size: 18, weight: .bold))
-                Text("Chọn ngôn ngữ, trình độ và thời gian mỗi ngày để TransTools điều chỉnh bài học phù hợp với bạn.")
+                Text("Chọn ngôn ngữ, trình độ và thời gian mỗi ngày để Trans Tools điều chỉnh bài học phù hợp với bạn.")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }
@@ -1693,40 +1693,9 @@ struct GoalAndOnboardingView: View {
                 }
             }
 
-            // 5. Natural Voice Settings (Edge Neural + Mac Enhanced)
-            VStack(alignment: .leading, spacing: 10) {
-                Text("5. Cấu hình phát âm & Giọng đọc tự nhiên:")
-                    .font(.system(size: 13, weight: .bold))
-
-                HStack(spacing: 16) {
-                    Toggle("Bật giọng đọc tự nhiên chuẩn bản xứ (Microsoft Edge Neural · Miễn phí)", isOn: Binding(
-                        get: { TTSService.shared.useEdgeNaturalVoice },
-                        set: { TTSService.shared.useEdgeNaturalVoice = $0 }
-                    ))
-                    .toggleStyle(.checkbox)
-                    .font(.system(size: 12.5, weight: .medium))
-
-                    Spacer()
-
-                    Button {
-                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.speech") {
-                            NSWorkspace.shared.open(url)
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.down.circle")
-                            Text("Tải giọng Apple Enhanced (Offline)")
-                        }
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(TransToolsTheme.accent)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Mở Cài đặt hệ thống Mac để tải giọng Enhanced/Premium miễn phí của Apple")
-                }
-                .padding(12)
-                .background(Color.primary.opacity(0.03))
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            }
+            Text("Giọng đọc dùng cấu hình riêng của ngôn ngữ đã chọn. Bạn có thể chọn mô hình và nghe thử trong Cài đặt → Giọng đọc & Phát âm. Bài học chữ cơ bản dùng bản ghi phát âm.")
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
 
             // Save & Start Button
             HStack {

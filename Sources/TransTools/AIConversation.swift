@@ -38,7 +38,7 @@ struct ConversationTopicProfile: Codable, Equatable {
 
 }
 
-private struct ConversationTurn: Identifiable {
+struct ConversationTurn: Identifiable {
     var id = UUID()
     let speaker: String
     let text: String
@@ -47,10 +47,34 @@ private struct ConversationTurn: Identifiable {
     var translation: String?
 }
 
-@MainActor private final class ConversationController: ObservableObject {
-    @Published var topicProfile = ConversationTopicProfile()
+@MainActor final class ConversationController: ObservableObject {
+    static let shared = ConversationController()
+    @Published var topicProfile: ConversationTopicProfile = {
+        let topicRaw = UserDefaults.standard.string(forKey: "Conversation_Topic") ?? ""
+        let topic = ConversationTopic(rawValue: topicRaw) ?? .everyday
+        let customPrompt = UserDefaults.standard.string(forKey: "Conversation_CustomPrompt") ?? ""
+        return ConversationTopicProfile(topic: topic, customPrompt: customPrompt)
+    }() {
+        didSet {
+            UserDefaults.standard.set(topicProfile.topic.rawValue, forKey: "Conversation_Topic")
+            UserDefaults.standard.set(topicProfile.customPrompt, forKey: "Conversation_CustomPrompt")
+        }
+    }
     @Published var turns: [ConversationTurn] = []
     @Published var saveStatus = ""
+    @Published var chatLanguage: AppLanguage = {
+        if let saved = UserDefaults.standard.string(forKey: "Conversation_ChatLanguage"),
+           let lang = AppLanguage(rawValue: saved) {
+            return lang
+        }
+        if let defaultLang = UserDefaults.standard.string(forKey: "SelectedLanguage"),
+           let lang = AppLanguage(rawValue: defaultLang) {
+            return lang
+        }
+        return .english
+    }() {
+        didSet { UserDefaults.standard.set(chatLanguage.rawValue, forKey: "Conversation_ChatLanguage") }
+    }
     private(set) var sessionID = UUID()
     private var sessionStarted = Date()
     private var sessionEnded: Date?
@@ -71,18 +95,19 @@ private struct ConversationTurn: Identifiable {
         let vietnamese: String
     }
     let readReplies = true
-    @Published var suggestionsEnabled = false {
+    @Published var suggestionsEnabled: Bool = UserDefaults.standard.bool(forKey: "Conversation_SuggestionsEnabled") {
         didSet {
+            UserDefaults.standard.set(suggestionsEnabled, forKey: "Conversation_SuggestionsEnabled")
             if suggestionsEnabled { refreshHelp() }
             else { helpTask?.cancel(); suggestions = [] }
         }
     }
     @Published var suggestions: [Suggestion] = []
     @Published var helpStatus = "Gợi ý sẽ xuất hiện sau câu trả lời của AI."
-    @Published var bilingual = UserDefaults.standard.bool(forKey: "Conversation_Bilingual") {
+    @Published var bilingual: Bool = UserDefaults.standard.object(forKey: "Conversation_Bilingual") as? Bool ?? true {
         didSet { UserDefaults.standard.set(bilingual, forKey: "Conversation_Bilingual"); refreshTranslations() }
     }
-    @Published var translationStatus = "Apple Translate · trên máy"
+    @Published var translationStatus = "Translate · trên máy"
     private var translationTask: Task<Void, Never>?
     private var translationCache: [String: String] = [:]
     private var helpTask: Task<Void, Never>?
@@ -147,7 +172,7 @@ private struct ConversationTurn: Identifiable {
         do {
             try speech.start(localeIdentifier: language.speechLocale)
             try capture.startMicrophone()
-            status = "Đang nghe… Ngừng khoảng \(String(format: "%.1f", pauseSeconds)) giây để gửi."
+            status = "Đang nghe… Dừng nói để gửi."
         } catch { stop(); status = error.localizedDescription }
     }
     private func received(_ text: String, final: Bool) {
@@ -207,6 +232,7 @@ private struct ConversationTurn: Identifiable {
     func newConversation() {
         stop()
         guard saveStatus.isEmpty || !saveStatus.hasPrefix("Chưa lưu") else { return }
+        translationCache.removeAll(keepingCapacity: false)
         turns = []; suggestions = []; feedback = ""; draft = ""; resumeLoaded = false; hasSaved = false; saveStatus = ""
         status = "Buổi mới. Bấm Bắt đầu nói."
     }
@@ -255,13 +281,16 @@ private struct ConversationTurn: Identifiable {
                     else if #available(macOS 15.0, *) {
                         translated = try await AppleNativeTranslator.translate(turn.text, from: source, to: .vietnamese)
                     } else {
-                        throw NSError(domain: "AppleTranslation", code: 3, userInfo: [NSLocalizedDescriptionKey: "Apple Translate cần macOS 15 trở lên."])
+                        throw NSError(domain: "AppleTranslation", code: 3, userInfo: [NSLocalizedDescriptionKey: "Translate cần macOS 15 trở lên."])
                     }
                     try Task.checkCancellation()
                     if let index = self.turns.firstIndex(where: { $0.id == turn.id }) {
                         self.turns[index].translation = translated
                         self.translationCache[cacheKey] = translated
-                        self.translationStatus = "Apple Translate · trên máy"
+                        if self.translationCache.count > 128 {
+                            self.translationCache = [cacheKey: translated]
+                        }
+                        self.translationStatus = "Translate · trên máy"
                     }
                 } catch {
                     guard !Task.isCancelled else { return }
@@ -358,8 +387,7 @@ private struct ConversationTurn: Identifiable {
 struct AIConversationView: View {
     @ObservedObject var model: MeetingModel
     @ObservedObject var manager: LanguageLearningManager
-    @StateObject private var conversation = ConversationController()
-    @State private var chatLanguage: AppLanguage = .english
+    @ObservedObject private var conversation = ConversationController.shared
     @State private var showTopicPrompt = false
     @State private var showConversations = false
     @State private var searchConversations = ""
@@ -369,15 +397,12 @@ struct AIConversationView: View {
         model.sessions.filter { $0.audioSource == "Luyện nói với AI" && (searchConversations.isEmpty || $0.title.localizedCaseInsensitiveContains(searchConversations)) }
     }
     @ObservedObject private var tts = TTSService.shared
-    private func pauseLabel(_ seconds: Double) -> String {
-        seconds == 0.8 ? "Chờ 0,8 giây" : seconds == 2 ? "Chờ 2 giây" : "Chờ 1,2 giây"
-    }
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Trò chuyện").font(.title2.bold())
-                    Text("\(conversation.turns.isEmpty ? chatLanguage.displayName : conversation.language.displayName) · \(conversation.topicProfile.topic.title)").font(.caption).foregroundStyle(.secondary)
+                    Text("\(conversation.turns.isEmpty ? conversation.chatLanguage.displayName : conversation.language.displayName) · \(conversation.topicProfile.topic.title)").font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Button { conversation.newConversation() } label: { Label("Tạo mới", systemImage: "plus") }
@@ -390,7 +415,7 @@ struct AIConversationView: View {
             }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
-                Picker("Ngôn ngữ trò chuyện", selection: $chatLanguage) {
+                Picker("Ngôn ngữ trò chuyện", selection: $conversation.chatLanguage) {
                     ForEach([AppLanguage.english, .japanese, .chinese, .korean, .vietnamese]) { language in
                         Text(language.displayName).tag(language)
                     }
@@ -403,39 +428,14 @@ struct AIConversationView: View {
                 Button { showTopicPrompt = true } label: {
                     Label(conversation.topicProfile.customPrompt.isEmpty ? "Prompt" : "Prompt tùy chỉnh", systemImage: "slider.horizontal.3")
                 }
-                .buttonStyle(ConversationActionStyle(tint: TransToolsTheme.accent))
-                Menu {
-                    Button("Buổi trò chuyện mới") { conversation.newConversation() }
-                    Divider()
-                    ForEach([0.8, 1.2, 2.0], id: \.self) { pause in
-                        Button {
-                            conversation.pauseSeconds = pause
-                        } label: {
-                            if conversation.pauseSeconds == pause {
-                                Label(pauseLabel(pause), systemImage: "checkmark")
-                            } else {
-                                Text(pauseLabel(pause))
-                            }
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "timer")
-                        Text(pauseLabel(conversation.pauseSeconds))
-                        Image(systemName: "chevron.down").font(.caption2)
-                    }
-                    .font(.callout)
-                    .padding(.horizontal, 10).padding(.vertical, 7)
-                    .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-                }
-                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
-                .help("Thời gian chờ sau câu nói trước khi gửi")
+                .buttonStyle(ConversationActionStyle(tint: TransToolsTheme.accent, height: 26))
+                .fixedSize()
                 Toggle("Gợi ý", isOn: $conversation.suggestionsEnabled).toggleStyle(.switch).fixedSize()
-                if (conversation.turns.isEmpty ? chatLanguage : conversation.language) != .vietnamese {
-                    VStack(alignment: .trailing, spacing: 3) {
-                        Toggle("Dịch Tiếng Việt", isOn: $conversation.bilingual).toggleStyle(.switch).fixedSize()
-                        if conversation.bilingual { Text(conversation.translationStatus).font(.caption2).foregroundStyle(.secondary) }
-                    }
+                if (conversation.turns.isEmpty ? conversation.chatLanguage : conversation.language) != .vietnamese {
+                    Toggle("Dịch Tiếng Việt", isOn: $conversation.bilingual)
+                        .toggleStyle(.switch)
+                        .fixedSize()
+                        .help(conversation.translationStatus)
                 }
                 }
                 .padding(.vertical, 4)
@@ -456,7 +456,7 @@ struct AIConversationView: View {
                                 if !conversation.draft.isEmpty {
                                     HStack { Spacer(minLength: 48); Text(conversation.draft).foregroundStyle(.secondary).padding(12).background(TransToolsTheme.accent.opacity(0.08)).clipShape(RoundedRectangle(cornerRadius: 16)) }
                                 }
-                                if conversation.waiting { HStack { ProgressView().controlSize(.small); Text(conversation.status).font(.caption); Spacer() } }
+                                if conversation.waiting { HStack { ProgressView().controlSize(.small); Text(conversation.status).font(.caption).lineLimit(1); Spacer() } }
                                 Color.clear.frame(height: 1).id("chat-bottom")
                             }.padding(16)
                         }
@@ -468,14 +468,13 @@ struct AIConversationView: View {
                     }
                     Divider()
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(conversation.status).font(.caption).foregroundStyle(.secondary)
-                        if let voiceStatus = tts.voiceStatus {
-                            Text(voiceStatus).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                        if !conversation.waiting {
+                            Text(conversation.status).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                         }
                         HStack {
                             Button {
                                 if conversation.active { conversation.stop() }
-                                else { Task { await conversation.start(model: model, manager: manager, selectedLanguage: chatLanguage) } }
+                                else { Task { await conversation.start(model: model, manager: manager, selectedLanguage: conversation.chatLanguage) } }
                             } label: {
                                 Label(conversation.active ? "Kết thúc" : conversation.turns.isEmpty ? "Bắt đầu nói" : "Tiếp tục nói", systemImage: conversation.active ? "stop" : "mic")
                             }.buttonStyle(ConversationActionStyle(tint: conversation.active ? .red : TransToolsTheme.accent, prominent: true))
@@ -537,14 +536,11 @@ struct AIConversationView: View {
         .onChange(of: conversation.turns.count) { _, _ in conversation.updateSavedConversation() }
         .onChange(of: conversation.turns.compactMap(\.translation)) { _, _ in conversation.updateSavedConversation() }
         .onAppear {
-            chatLanguage = AppLanguage(rawValue: manager.selectedLanguage.rawValue) ?? .english
             if let id = model.pendingConversationID, let session = model.sessions.first(where: { $0.id == id }) {
                 conversation.restore(session, model: model, manager: manager)
                 model.pendingConversationID = nil
             }
         }
-        .onDisappear { conversation.stop() }
-        .onChange(of: manager.selectedLanguage) { _, _ in conversation.stop() }
         .onChange(of: model.running) { _, running in if running { conversation.stop() } }
     }
 
@@ -676,7 +672,7 @@ struct AIConversationView: View {
                     Divider()
                     if let translation = turn.translation {
                         Text(translation).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
-                    } else { Text(conversation.translationStatus == "Apple Translate · trên máy" ? "Đang dịch tiếng Việt…" : "Chưa có bản dịch · kiểm tra bộ ngôn ngữ Apple").font(.caption).foregroundStyle(.secondary) }
+                    } else { Text(conversation.translationStatus == "Translate · trên máy" ? "Đang dịch tiếng Việt…" : "Chưa có bản dịch · kiểm tra bộ ngôn ngữ Local").font(.caption).foregroundStyle(.secondary) }
                 }
             }.padding(13).background(user ? TransToolsTheme.accent.opacity(0.13) : Color.secondary.opacity(0.08)).clipShape(RoundedRectangle(cornerRadius: 16))
             if !user { Spacer(minLength: 48) }
@@ -688,25 +684,8 @@ struct AIConversationView: View {
 private struct ConversationActionStyle: ButtonStyle {
     var tint: Color
     var prominent = false
+    var height: CGFloat = 40
     func makeBody(configuration: Configuration) -> some View {
-        FlatAction(configuration: configuration, tint: tint, prominent: prominent)
-    }
-    private struct FlatAction: View {
-        @Environment(\.isEnabled) var enabled
-        @State private var hovered = false
-        let configuration: ButtonStyleConfiguration
-        let tint: Color
-        let prominent: Bool
-        var body: some View {
-            configuration.label
-                .font(.system(size: 12, weight: .semibold))
-                .symbolRenderingMode(.monochrome)
-                .foregroundStyle(prominent ? Color.white : tint)
-                .padding(.horizontal, 16).frame(height: 40)
-                .background(prominent ? tint.opacity(configuration.isPressed ? 0.75 : 1) : tint.opacity(configuration.isPressed ? 0.17 : hovered ? 0.12 : 0.06))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .opacity(enabled ? 1 : 0.4)
-                .onHover { hovered = $0 }
-        }
+        TransToolsActionButtonStyle(prominent: prominent, tint: tint, height: height).makeBody(configuration: configuration)
     }
 }

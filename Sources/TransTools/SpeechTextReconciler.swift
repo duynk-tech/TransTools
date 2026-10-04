@@ -19,6 +19,11 @@ enum SpeechTextReconciler {
     }
     /// Locate the committed boundary even if punctuation or earlier words were revised.
     static func remainder(_ text: String, committed: String) -> String? {
+        // Character prefixes also support scripts without spaces (Chinese/Japanese).
+        if committed.unicodeScalars.contains(where: { $0.value >= 0x2E80 }), text.hasPrefix(committed) {
+            return String(text.dropFirst(committed.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if text.unicodeScalars.contains(where: { $0.value >= 0x2E80 }), committed.hasPrefix(text) { return "" }
         let input = words(text), prefix = words(committed)
         guard !prefix.isEmpty else { return text }
         let a = input.map(normalized), b = prefix.map(normalized)
@@ -37,5 +42,54 @@ enum SpeechTextReconciler {
         let old = words(previous).map(normalized), next = words(incoming).map(normalized)
         if old.count > next.count, old.starts(with: next) { return previous }
         return incoming
+    }
+}
+
+/// Caption chunks preserve the original text; sentence boundaries come from
+/// Foundation's linguistic segmentation, with a safety limit for unpunctuated speech.
+enum CaptionSegmenter {
+    static func chunks(_ text: String) -> [String] {
+        var sentences: [String] = []
+        text.enumerateSubstrings(in: text.startIndex..<text.endIndex, options: [.bySentences, .substringNotRequired]) { _, range, _, _ in
+            sentences.append(String(text[range]))
+        }
+        if sentences.isEmpty { sentences = [text] }
+        // Foundation can treat titles such as “Dr.” as a standalone sentence.
+        let abbreviations: Set<String> = ["mr", "mrs", "ms", "dr", "prof", "sr", "jr", "e.g", "i.e", "vs", "etc"]
+        var merged: [String] = []
+        for sentence in sentences {
+            if let previous = merged.last,
+               let lastWord = SpeechTextReconciler.words(previous).last,
+               abbreviations.contains(SpeechTextReconciler.normalized(lastWord)) {
+                merged[merged.count - 1] += sentence
+            } else { merged.append(sentence) }
+        }
+        return merged.flatMap { sentence -> [String] in
+            var remaining = sentence.trimmingCharacters(in: .whitespacesAndNewlines)
+            var result: [String] = []
+            while remaining.count > 160 || SpeechTextReconciler.words(remaining).count > 28 {
+                var wordCount = 0
+                var previousWasSpace = true
+                var boundary = remaining.startIndex
+                var naturalBoundary: String.Index?
+                for (offset, index) in remaining.indices.enumerated() {
+                    let character = remaining[index]
+                    if !character.isWhitespace && previousWasSpace { wordCount += 1 }
+                    previousWasSpace = character.isWhitespace
+                    if offset >= 60 && (character.isWhitespace || ",;:，、；：".contains(character)) {
+                        naturalBoundary = remaining.index(after: index)
+                    }
+                    if offset >= 159 || wordCount > 28 {
+                        boundary = naturalBoundary ?? index
+                        break
+                    }
+                }
+                guard boundary > remaining.startIndex else { break }
+                result.append(String(remaining[..<boundary]).trimmingCharacters(in: .whitespacesAndNewlines))
+                remaining = String(remaining[boundary...]).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            if !remaining.isEmpty { result.append(remaining) }
+            return result
+        }
     }
 }

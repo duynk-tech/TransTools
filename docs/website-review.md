@@ -13,3 +13,7 @@ Kiểm tra cục bộ: JavaScript hợp lệ, các tab mới chuyển nội dung
 README đã viết lại theo luồng Cuộc họp, Dịch nhanh, Sổ tay, Học ngôn ngữ, Trò chuyện và Cài đặt. Website bổ sung các mục Trò chuyện theo chủ đề, Giọng tự nhiên Local và Tách người nói. Hướng dẫn đổi sang tab Trò chuyện riêng, chọn Prompt, quản lý buổi, Dịch Tiếng Việt và giọng Local/AI.
 
 Giữ ảnh hiện có; chưa chụp lại giao diện mới trong đợt này. Chú thích ảnh đã đổi thành ảnh minh họa, tránh khẳng định ảnh phản ánh đầy đủ trạng thái app mới nhất. Không phát hành gói ZIP/DMG hoặc tạo tag mới trong lần push này. Kiểm tra cú pháp JavaScript và liên kết/tài nguyên HTML đạt.
+
+## 04/10/2026 — cập nhật tính năng và ảnh
+
+Đổi tên hiển thị sang Trans Tools. Bổ sung Đọc văn bản/xuất audio, chọn model từ nhà cung cấp, giọng theo ngôn ngữ và Lưu trữ & Dữ liệu. Chụp trực tiếp chín màn hình từ app đã cài: Cuộc họp, Dịch nhanh, Đọc văn bản, Hôm nay, Chữ & Viết, Trò chuyện, Dịch & Phụ đề, Giọng đọc, Lưu trữ. Gallery dùng tám màn hình mới; không đăng ảnh Sổ tay chứa dữ liệu cá nhân. Giữ mô tả Sổ tay/từ vựng trong nội dung; ảnh gallery cũ không còn được sử dụng. Không tạo bản phát hành app mới.

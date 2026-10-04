@@ -21,6 +21,7 @@ final class LanguagePronunciationService: NSObject, ObservableObject, AVAudioPla
     private var delay: TimeInterval = 0.5
 
     func speak(text: String, language: LearningLanguage, british: Bool = false, rate: Float = 0.44) {
+        TTSService.shared.stop()
         stop()
         guard let file = recording(text, language: language) else {
             if language == .japanese || language == .chinese { error = "Chưa có bản ghi offline cho nội dung này." } else { sourceRequired = true }
@@ -32,6 +33,7 @@ final class LanguagePronunciationService: NSObject, ObservableObject, AVAudioPla
     func playSequence(items: [String], language: LearningLanguage, british: Bool = false,
                       rate: Float = 0.44, delay: TimeInterval = 0.5,
                       onProgress: ((Int) -> Void)? = nil, onFinished: (() -> Void)? = nil) {
+        TTSService.shared.stop()
         stop()
         guard !items.isEmpty else { return }
         guard items.allSatisfy({ recording($0, language: language) != nil }) else {

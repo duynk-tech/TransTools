@@ -1,0 +1,70 @@
+name: Build TransTools Windows (.exe)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+    paths:
+      - 'windows/**'
+      - '.github/workflows/build-windows.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Build & Package Windows Executable
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore NuGet Packages
+        shell: pwsh
+        run: |
+          dotnet restore windows/TransTools/TransTools.csproj
+
+      - name: Publish Single-File Executable
+        shell: pwsh
+        run: |
+          dotnet publish windows/TransTools/TransTools.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -o windows/build
+
+      - name: Install Inno Setup
+        uses: stewartcelani/inno-setup-action@v1.0.0
+        with:
+          version: '6.3.3'
+
+      - name: Build Installer (TransTools-Setup.exe)
+        shell: pwsh
+        run: |
+          iscc windows/installer/installer.iss
+
+      - name: Create Portable ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path windows/build/TransTools.exe -DestinationPath windows/build/TransTools-Windows-Portable.zip
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: TransTools-Windows-Release
+          path: |
+            windows/build/TransTools.exe
+            windows/build/TransTools-Setup.exe
+            windows/build/TransTools-Windows-Portable.zip
+
+      - name: Attach Windows Binaries to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            windows/build/TransTools-Setup.exe
+            windows/build/TransTools-Windows-Portable.zip
+          fail_on_unmatched_files: false

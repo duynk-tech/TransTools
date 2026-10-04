@@ -1,0 +1,155 @@
+using System;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Microsoft.Win32;
+using TransTools.Models;
+using TransTools.Services.Export;
+using TransTools.Services.Storage;
+using TransTools.Services.Translation;
+
+namespace TransTools.ViewModels;
+
+public partial class NotebookViewModel : ObservableObject
+{
+    private readonly SessionStore _sessionStore = new();
+    private readonly SecureCredentialStore _credentialStore = new();
+    private readonly LLMTranslationService _llmService = new();
+
+    public ObservableCollection<MeetingSession> Sessions { get; } = new();
+
+    [ObservableProperty]
+    private MeetingSession? _selectedSession;
+
+    [ObservableProperty]
+    private string _searchKeyword = string.Empty;
+
+    [ObservableProperty]
+    private bool _isSummarizing;
+
+    [ObservableProperty]
+    private string _status = "Sẵn sàng";
+
+    public NotebookViewModel()
+    {
+        _ = LoadSessionsAsync();
+    }
+
+    public async Task LoadSessionsAsync()
+    {
+        var list = await _sessionStore.LoadSessionsAsync();
+        Sessions.Clear();
+        foreach (var s in list.OrderByDescending(x => x.CreatedAt))
+        {
+            Sessions.Add(s);
+        }
+        SelectedSession = Sessions.FirstOrDefault();
+    }
+
+    [RelayCommand]
+    public async Task SaveCurrentSessionAsync(MeetingSession session)
+    {
+        Sessions.Insert(0, session);
+        SelectedSession = session;
+        await _sessionStore.SaveSessionsAsync(Sessions.ToList());
+        Status = "Đã lưu vào Sổ tay.";
+    }
+
+    [RelayCommand]
+    public async Task GenerateSummaryAsync()
+    {
+        if (SelectedSession == null || SelectedSession.Captions.Count == 0) return;
+
+        IsSummarizing = true;
+        Status = "Đang tổng hợp và tóm tắt cuộc họp bằng AI...";
+
+        try
+        {
+            var openAiKey = _credentialStore.LoadApiKey("openai");
+            var geminiKey = _credentialStore.LoadApiKey("gemini");
+            var deepSeekKey = _credentialStore.LoadApiKey("deepseek");
+
+            AIProviderConfig? config = null;
+            if (!string.IsNullOrWhiteSpace(openAiKey))
+                config = new AIProviderConfig { ProviderId = "openai", ApiKey = openAiKey, SelectedModel = "gpt-4o-mini" };
+            else if (!string.IsNullOrWhiteSpace(geminiKey))
+                config = new AIProviderConfig { ProviderId = "gemini", ApiKey = geminiKey, SelectedModel = "gemini-1.5-flash" };
+            else if (!string.IsNullOrWhiteSpace(deepSeekKey))
+                config = new AIProviderConfig { ProviderId = "deepseek", ApiKey = deepSeekKey, SelectedModel = "deepseek-chat" };
+
+            if (config == null)
+            {
+                Status = "Vui lòng nhập API Key (OpenAI, Gemini hoặc DeepSeek) trong Cài đặt để tóm tắt cuộc họp.";
+                return;
+            }
+
+            var transcriptBuilder = new StringBuilder();
+            foreach (var cap in SelectedSession.Captions)
+            {
+                transcriptBuilder.AppendLine($"[{cap.FormattedTimestamp}] {cap.Original} -> {cap.Vietnamese}");
+            }
+
+            var prompt = "Bạn là trợ lý thư ký cuộc họp chuyên nghiệp. Hãy tóm tắt nội dung cuộc họp sau bằng tiếng Việt với định dạng:\n1. Tóm tắt tổng quan (2-3 câu)\n2. Các quyết định & ý chính đã thống nhất (gạch đầu dòng)\n3. Việc cần làm tiếp theo (Action items, nếu có)\n\nNội dung cuộc họp:\n" + transcriptBuilder.ToString();
+
+            var summaryResult = await _llmService.TranslateWithAIAsync(prompt, "Vietnamese", "Thư ký cuộc họp chuyên nghiệp", config);
+            SelectedSession.Summary = summaryResult;
+
+            // Trigger UI property changed notification
+            OnPropertyChanged(nameof(SelectedSession));
+
+            await _sessionStore.SaveSessionsAsync(Sessions.ToList());
+            Status = "Đã tạo bản tóm tắt cuộc họp thành công!";
+        }
+        catch (Exception ex)
+        {
+            Status = $"Lỗi tạo tóm tắt: {ex.Message}";
+        }
+        finally
+        {
+            IsSummarizing = false;
+        }
+    }
+
+    [RelayCommand]
+    public void ExportDocx()
+    {
+        if (SelectedSession == null) return;
+
+        var sfd = new SaveFileDialog
+        {
+            Filter = "Word Document (*.docx)|*.docx",
+            FileName = $"{SelectedSession.Title}.docx"
+        };
+
+        if (sfd.ShowDialog() == true)
+        {
+            DocxExportService.ExportMeetingSession(SelectedSession, sfd.FileName);
+            Status = "Đã xuất file Word thành công!";
+        }
+    }
+
+    [RelayCommand]
+    public void ExportSrt()
+    {
+        if (SelectedSession == null) return;
+
+        var sfd = new SaveFileDialog
+        {
+            Filter = "SubRip Subtitle (*.srt)|*.srt",
+            FileName = $"{SelectedSession.Title}.srt"
+        };
+
+        if (sfd.ShowDialog() == true)
+        {
+            var lines = SelectedSession.Captions.Select((c, idx) =>
+                $"{idx + 1}\n{c.FormattedTimestamp} --> {TimeSpan.FromSeconds(Math.Max(c.End, c.Start + 1)):hh\\:mm\\:ss\\,fff}\n{c.Original}\n{c.Vietnamese}\n");
+
+            File.WriteAllText(sfd.FileName, string.Join("\n", lines));
+            Status = "Đã xuất file SRT thành công!";
+        }
+    }
+}

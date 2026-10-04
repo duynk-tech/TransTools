@@ -146,33 +146,22 @@ public final class LocalTTSModelManager: ObservableObject {
     @Published public private(set) var diskUsageFormatted = "0 MB"
     @Published public private(set) var isInstalled = false
     @Published public private(set) var lastErrorMessage: String?
-    @Published public var isNaturalVoiceEnabled = UserDefaults.standard.bool(forKey: "TTS_LocalNaturalEnabled") {
+    @Published public var isNaturalVoiceEnabled = (UserDefaults.standard.object(forKey: "TTS_LocalNaturalEnabled") == nil ? true : UserDefaults.standard.bool(forKey: "TTS_LocalNaturalEnabled")) {
         didSet {
             UserDefaults.standard.set(isNaturalVoiceEnabled, forKey: "TTS_LocalNaturalEnabled")
-            if !isNaturalVoiceEnabled { warmupTask?.cancel(); LocalTTSSession.shared.releaseResources() }
-            else if isInstalled { warmup() }
+            if !isNaturalVoiceEnabled { LocalTTSSession.shared.releaseResources() }
+            // Models load lazily on the first utterance.
         }
     }
     private var task: Task<Void, Never>?
     private var generation = UUID()
-    private var warmupTask: Task<Void, Never>?
     public nonisolated static var defaultActiveModelDirectory: URL { LocalTTSModelStore.activeDirectory() }
     public nonisolated static var defaultInstalledModelFilePath: URL { defaultActiveModelDirectory.appendingPathComponent(LocalTTSModelManifest.default.modelFileName) }
     public nonisolated static var defaultInstalledConfigFilePath: URL { defaultActiveModelDirectory.appendingPathComponent(LocalTTSModelManifest.default.configFileName) }
     public nonisolated static func isModelFileInstalled() -> Bool { LocalTTSModelStore.installed() }
     private init() {
         checkInstallation()
-        if isNaturalVoiceEnabled && isInstalled { warmup() }
-    }
-    private func warmup() {
-        warmupTask?.cancel()
-        warmupTask = Task {
-            do { try await LocalTTSSession.shared.warmUpIfNeeded() }
-            catch {
-                guard !Task.isCancelled else { return }
-                lastErrorMessage = "Không nạp được giọng tự nhiên Local. Khi đọc sẽ dùng giọng cơ bản."
-            }
-        }
+
     }
     public func checkInstallation() {
         isInstalled = Self.isModelFileInstalled()

@@ -6,7 +6,7 @@ public final class LocalTTSSession: @unchecked Sendable {
     public static let shared = LocalTTSSession()
     private var memoryPressureSource: DispatchSourceMemoryPressure?
     private init() {
-        let source = DispatchSource.makeMemoryPressureSource(eventMask: [.critical], queue: .global(qos: .utility))
+        let source = DispatchSource.makeMemoryPressureSource(eventMask: [.warning, .critical], queue: .global(qos: .utility))
         source.setEventHandler { Task { await SupertonicSession.shared.release() } }
         source.resume()
         memoryPressureSource = source
@@ -15,6 +15,7 @@ public final class LocalTTSSession: @unchecked Sendable {
     public func warmUpIfNeeded() async throws {
         try await SupertonicSession.shared.prepare(directory: LocalTTSModelManager.defaultActiveModelDirectory)
     }
+    public func releaseAndWait() async { await SupertonicSession.shared.release() }
     public func releaseResources() { Task { await SupertonicSession.shared.release() } }
 
     public func synthesizeChunk(text: String, prosody: ProsodyResult, language: String) async throws -> AVAudioPCMBuffer {

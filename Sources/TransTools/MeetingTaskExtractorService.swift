@@ -119,13 +119,13 @@ final class MeetingTaskExtractorService: ObservableObject {
         return results.isEmpty ? nil : results
     }
 
-    /// Tự động thêm danh sách công việc vào ứng dụng Apple Reminders của macOS
+    /// Tự động thêm danh sách công việc vào ứng dụng Nhắc nhở của macOS
     func exportToAppleReminders(items: [MeetingActionItem], sessionTitle: String) -> Bool {
         guard !items.isEmpty else { return false }
 
         var scriptLines = [
             "tell application \"Reminders\"",
-            "    set listName to \"Việc cần làm TransTools\"",
+            "    set listName to \"Việc cần làm Trans Tools\"",
             "    if not (exists list listName) then",
             "        make new list with properties {name:listName}",
             "    end if",
@@ -145,7 +145,7 @@ final class MeetingTaskExtractorService: ObservableObject {
         if let script = NSAppleScript(source: fullScript) {
             script.executeAndReturnError(&errorDict)
             if errorDict == nil {
-                lastNotice = "Đã thêm \(items.count) việc vào Apple Reminders thành công!"
+                lastNotice = "Đã thêm \(items.count) việc vào Nhắc nhở thành công!"
                 return true
             }
         }

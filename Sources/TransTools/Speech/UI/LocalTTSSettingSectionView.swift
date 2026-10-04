@@ -14,7 +14,7 @@ public struct LocalTTSSettingSectionView: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Công cụ đọc văn bản")
+            Text("Công cụ mặc định")
                 .font(.headline)
 
             VStack(spacing: 12) {
@@ -99,7 +99,7 @@ public struct LocalTTSSettingSectionView: View {
                             .clipShape(Capsule())
                     }
 
-                    Text("Offline sau khi tải • Việt, Anh, Nhật, Hàn • Tiếng Trung dùng giọng cơ bản")
+                    Text("Supertonic 3 • Offline sau khi tải • Việt, Anh, Nhật, Hàn")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -312,7 +312,7 @@ public struct LocalTTSSettingSectionView: View {
                         updateCheckMessage = nil
                         let hasUpdate = await modelManager.checkForUpdate()
                         isCheckingUpdate = false
-                        updateCheckMessage = hasUpdate ? "Đã có bản cập nhật mới!" : "Đã dùng phiên bản tương thích mới nhất trong TransTools."
+                        updateCheckMessage = hasUpdate ? "Đã có bản cập nhật mới!" : "Đã dùng phiên bản tương thích mới nhất trong Trans Tools."
                     }
                 }) {
                     if isCheckingUpdate {
@@ -347,7 +347,7 @@ public struct LocalTTSSettingSectionView: View {
             }
             Button("Hủy", role: .cancel) {}
         } message: {
-            Text("Mô hình sẽ bị xóa. TransTools sẽ chuyển về giọng cơ bản.")
+            Text("Mô hình sẽ bị xóa. Trans Tools sẽ chuyển về giọng cơ bản.")
         }
     }
 
@@ -380,20 +380,7 @@ public struct LocalTTSSettingSectionView: View {
 
 }
 
-struct SpeechSettingsButtonStyle: ButtonStyle {
-    var prominent = false
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 13, weight: .semibold))
-            .padding(.horizontal, 18)
-            .padding(.vertical, 10)
-            .frame(minHeight: 40)
-            .foregroundStyle(prominent ? Color.white : Color.primary)
-            .background(prominent ? Color.accentColor.opacity(configuration.isPressed ? 0.75 : 1) : Color.primary.opacity(configuration.isPressed ? 0.10 : 0.05), in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(prominent ? 0 : 0.08)))
-            .contentShape(RoundedRectangle(cornerRadius: 10))
-    }
-}
+typealias SpeechSettingsButtonStyle = TransToolsActionButtonStyle
 
 struct SpeechPlaybackSettingsView: View {
     @ObservedObject private var player = TTSAudioPlayer.shared
@@ -415,7 +402,7 @@ struct SpeechPlaybackSettingsView: View {
                         .padding(14).frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
                         .background(player.policy == policy ? Color.accentColor.opacity(0.08) : Color.primary.opacity(0.03), in: RoundedRectangle(cornerRadius: 12))
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(player.policy == policy ? Color.accentColor.opacity(0.4) : Color.primary.opacity(0.08)))
-                    }.buttonStyle(.plain)
+                    }.buttonStyle(.plain).textSelection(.disabled).transToolsButtonCursor()
                 }
             }
         }

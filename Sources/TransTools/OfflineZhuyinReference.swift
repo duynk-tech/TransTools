@@ -38,7 +38,7 @@ struct OfflineZhuyinReferenceView: View {
                         ForEach(ZhuyinCatalog.bundled) { entry in
                             Button { audio.playResource("Zhuyin/\(entry.file)", id: entry.id) } label: {
                                 Text(entry.symbol).font(.system(size: 22)).frame(maxWidth: .infinity).padding(.vertical, 9)
-                            }.buttonStyle(.bordered)
+                            }.buttonStyle(TransToolsActionButtonStyle())
                                 .tint(audio.active == entry.id ? TransToolsTheme.accent : .secondary)
                                 .accessibilityLabel("Nghe Chú âm \(entry.symbol)")
                         }

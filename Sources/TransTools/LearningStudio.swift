@@ -131,7 +131,7 @@ final class LearningCoachWindow: NSObject, NSWindowDelegate {
         mainWasVisible = model.mainWindow?.isVisible == true
         mascotWasVisible = model.isFloatingMascotVisible
         model.beginChipChipLearning()
-        let window = LearningBoardPanel(contentRect: NSRect(x: 0, y: 0, width: 660, height: 470),
+        let window = LearningBoardPanel(contentRect: NSRect(x: 0, y: 0, width: 660, height: 540),
             styleMask: [.borderless], backing: .buffered, defer: false)
         window.title = "Cùng Chip Chip"
         window.isOpaque = false
@@ -208,27 +208,36 @@ struct ChipChipWhiteboard: View {
             }
             ProgressView(value: Double(coach.position), total: Double(max(1, coach.total)))
                 .tint(TransToolsTheme.accent).accessibilityLabel("Tiến trình bài học")
-            Text(coach.symbol).font(.system(size: coach.symbol.count > 3 ? 54 : 84, weight: .medium))
-                .frame(maxWidth: .infinity, minHeight: 140)
-                .accessibilityLabel("Chữ đang học: \(coach.symbol)")
-            Text(coach.reading).font(.title3.weight(.medium)).foregroundStyle(TransToolsTheme.accent)
             ScrollView {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("Gợi ý luyện tập", systemImage: "lightbulb")
-                        .font(.caption.weight(.semibold)).foregroundStyle(TransToolsTheme.accent)
-                    Text(coach.detail).font(.callout).lineSpacing(4)
-                }.frame(maxWidth: .infinity, alignment: .leading).padding(12)
-            }.frame(maxHeight: .infinity)
+                VStack(spacing: 16) {
+                    Text(coach.symbol)
+                        .font(.system(size: coach.symbol.count > 3 ? 54 : 84, weight: .medium))
+                        .frame(maxWidth: .infinity, minHeight: 120)
+                        .accessibilityLabel("Chữ đang học: \(coach.symbol)")
+                    Text(coach.reading).font(.title3.weight(.medium))
+                        .foregroundStyle(TransToolsTheme.accent)
+                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("Gợi ý luyện tập", systemImage: "lightbulb")
+                            .font(.caption.weight(.semibold)).foregroundStyle(TransToolsTheme.accent)
+                        Text(coach.detail).font(.callout).lineSpacing(4)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }.frame(maxWidth: .infinity, alignment: .leading).padding(12)
+                }.frame(maxWidth: .infinity).padding(.bottom, 8)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .layoutPriority(1)
+            .id(coach.position)
             Divider()
             HStack(spacing: 10) {
                 Button(action: coach.previous) { Image(systemName: "chevron.left") }.disabled(coach.position <= 1).help("Chữ trước")
                 Button(action: coach.listen) { Label("Nghe mẫu", systemImage: "speaker.wave.2.fill") }
-                    .buttonStyle(.borderedProminent).tint(TransToolsTheme.accent)
+                    .buttonStyle(TransToolsActionButtonStyle(prominent: true)).tint(TransToolsTheme.accent)
                 Button { audio.stop() } label: { Image(systemName: "stop.fill") }.disabled(!audio.isSpeaking && !audio.isPlayingSequence).help("Dừng")
                 Button(action: coach.next) { Image(systemName: "chevron.right") }.disabled(coach.position >= coach.total).help("Chữ tiếp")
                 Spacer()
                 Button("Kết thúc", action: onClose)
-            }.controlSize(.large)
+            }.controlSize(.large).fixedSize(horizontal: false, vertical: true)
             if let error = audio.error { Text(error).font(.caption).foregroundStyle(.red) }
         }.padding(28)
         .background {

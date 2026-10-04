@@ -3,16 +3,16 @@
 ## Implementation
 
 - Official Supertonic 3 Swift reference, adapted into `LocalSpeechBackend`, MIT code license retained in app Resources/Licenses.
-- ONNX Runtime 1.24.2 is statically linked through Microsoft's Swift package. No Python, CLI or external installation for users.
+- Supertonic uses statically linked ONNX Runtime through Microsoft's Swift package. VieNeu and Qwen use separately managed private Python/SDK environments installed from the app; users do not configure system Python.
 - Model revision pinned to `aafc6e32416a594460b32413efc49d7fe4ce6d46`. Four ONNX files, tokenizer/config, F1 voice and model license: **398,668,255 bytes**. All SHA-256 values come from LFS metadata or direct hashing of resources at that immutable revision.
 - Inference is serialized in a Swift actor and uses up to four CPU threads on Apple Silicon/Intel. CPU execution is deliberate: the official Swift example does not enable a GPU/CoreML provider. No claim of Neural Engine acceleration.
-- Local languages: Vietnamese, English, Japanese, Korean. **Chinese is absent from this model's published language list**, and uses direct AVSpeechSynthesizer.
+- Supertonic languages: Vietnamese, English, Japanese, Korean. Chinese can use the separately installed Qwen adapter; see [per-language routing](language-voice-routing.md).
 
 ## Runtime and privacy
 
 Choosing Natural Local Voice bypasses Edge/Gemini/cloud TTS. Unavailable language, missing installation, initialization, synthesis or initial playback failure uses direct macOS speech. No runtime model fetch or conversation upload. The model downloader only runs after explicit Download & Enable / license acceptance.
 
-ONNX sessions and voice tensors preload asynchronously when enabling an installed model and remain warm between sentences. Disabling/removing the model or critical memory pressure schedules resource release. Session operations are serialized; an ongoing inference finishes/cancels before release.
+ONNX sessions and voice tensors load only on the first reading and remain warm between sentences. Idle timeout (120 seconds), warning/critical memory pressure, disabling/removing the model or switching to a different local backend schedules resource release. Session operations are serialized; an ongoing inference finishes/cancels before release.
 
 Current utterance and at most four preceding utterances (512 characters each) enter rule-based prosody. No local LLM. Model controls are voice preset and speed; semantic emotion affects relative speed, punctuation carries pauses. Precise pitch, emotion conditioning and word-level emphasis are not supported by this backend and are not advertised as implemented.
 

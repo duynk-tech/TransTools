@@ -17,7 +17,6 @@ struct Caption: Identifiable {
     var end: TimeInterval
     var original: String
     var vietnamese = ""
-    var speakers: [Int]? = nil
 }
 
 var appVersionDisplay: String {
@@ -176,15 +175,15 @@ enum AppPermissionType {
     var message: String {
         switch self {
         case .screenCapture:
-            return "TransTools cần quyền 'Ghi màn hình & Âm thanh hệ thống' để thu và dịch âm thanh từ các cuộc họp (Teams, Zoom, Meet, trình duyệt).\n\nBạn có muốn mở Cài đặt hệ thống (System Settings) để cấp quyền ngay không?"
+            return "Trans Tools cần quyền 'Ghi màn hình & Âm thanh hệ thống' để thu và dịch âm thanh từ các cuộc họp (Teams, Zoom, Meet, trình duyệt).\n\nBạn có muốn mở Cài đặt hệ thống (System Settings) để cấp quyền ngay không?"
         case .microphone:
-            return "TransTools cần quyền 'Microphone' để thu âm giọng nói của bạn.\n\nBạn có muốn mở Cài đặt hệ thống để cấp quyền ngay không?"
+            return "Trans Tools cần quyền 'Microphone' để thu âm giọng nói của bạn.\n\nBạn có muốn mở Cài đặt hệ thống để cấp quyền ngay không?"
         case .speechRecognition:
-            return "TransTools cần quyền 'Nhận diện giọng nói' (Speech Recognition) để chuyển giọng nói cuộc họp thành văn bản phụ đề.\n\nBạn có muốn mở Cài đặt hệ thống để cấp quyền ngay không?"
+            return "Trans Tools cần quyền 'Nhận diện giọng nói' (Speech Recognition) để chuyển giọng nói cuộc họp thành văn bản phụ đề.\n\nBạn có muốn mở Cài đặt hệ thống để cấp quyền ngay không?"
         case .dictation:
             return "Ngôn ngữ này cần bật Siri & Đọc chính tả (Dictation) trong Cài đặt Bàn phím.\n\nBạn có muốn mở Cài đặt Bàn phím ngay không?"
         case .accessibility:
-            return "TransTools cần quyền Trợ năng để đọc văn bản bạn bôi đen khi bấm phím tắt Option + D / Option + F.\n\nBạn có muốn mở Cài đặt hệ thống để cấp quyền ngay không?"
+            return "Trans Tools cần quyền Trợ năng để đọc văn bản bạn bôi đen khi bấm phím tắt Option + D / Option + F.\n\nBạn có muốn mở Cài đặt hệ thống để cấp quyền ngay không?"
         }
     }
 
@@ -399,60 +398,6 @@ enum AppPermissionType {
     @Published var liveTranslationPacing: LiveTranslationPacing = LiveTranslationPacing(rawValue: UserDefaults.standard.string(forKey: "LiveTranslationPacing") ?? "balanced") ?? .balanced {
         didSet { UserDefaults.standard.set(liveTranslationPacing.rawValue, forKey: "LiveTranslationPacing") }
     }
-    @Published var speakerSeparationEnabled = UserDefaults.standard.bool(forKey: "SpeakerSeparationEnabled") {
-        didSet {
-            UserDefaults.standard.set(speakerSeparationEnabled, forKey: "SpeakerSeparationEnabled")
-            if running {
-                if speakerSeparationEnabled { diarization.start(token: recordingSessionID, at: started) }
-                else { diarization.stop() }
-            }
-        }
-    }
-    @Published var speakerSeparationStatus = "Tách giọng chưa bật"
-    private let diarization = SpeakerDiarization()
-    private var speakerIntervals: [SpeakerInterval] = []
-    private var speakerProcessedThrough: Double = 0
-    private var captionWordTimings: [UUID: [(String, Double, Double)]] = [:]
-    private func applySpeakerIntervals() {
-        var updated: [Caption] = []
-        let cutoff = max(0, (speakerIntervals.last?.end ?? 0) - 25)
-        for var row in captions {
-            if row.end < cutoff { updated.append(row); continue }
-            let wordTimes = captionWordTimings[row.id]
-            let rowStart = wordTimes?.first?.1 ?? row.start
-            let rowEnd = max(row.end, wordTimes?.last?.2 ?? row.end)
-            let rowIntervals = speakerIntervals.filter { $0.end >= rowStart && $0.start <= rowEnd }
-            let minimumOverlap = min(0.3, max(0.05, (rowEnd - rowStart) * 0.3))
-            let matches = rowIntervals.filter { min($0.end, rowEnd) - max($0.start, rowStart) >= minimumOverlap }
-            if !matches.isEmpty { row.speakers = Array(Set(matches.compactMap(\.speaker))).sorted() }
-            if running, row.id != currentID, let words = captionWordTimings[row.id], !words.isEmpty, (words.last?.2 ?? row.end) <= speakerProcessedThrough, words.count == SpeechTextReconciler.words(row.original).count {
-                let labelled = words.map { word -> (String, Double, Double, Int?) in
-                    let voice = SpeakerWordAssignment.speaker(start: word.1, end: word.2, intervals: rowIntervals)
-                    return (word.0, word.1, word.2, voice)
-                }
-                if Set(labelled.compactMap { $0.3 }).count > 1 {
-                    var groups: [[(String, Double, Double, Int?)]] = []
-                    for word in labelled {
-                        if let last = groups.last?.last, last.3 == word.3 { groups[groups.count - 1].append(word) }
-                        else { groups.append([word]) }
-                    }
-                    for group in groups {
-                        guard let first = group.first, let last = group.last else { continue }
-                        let split = Caption(id: UUID(), start: max(0, first.1), end: max(first.1, last.2), original: group.map { $0.0 }.joined(separator: " "), speakers: first.3.map { [$0] } ?? [])
-                        captionWordTimings[split.id] = group.map { ($0.0, $0.1, $0.2) }
-                        updated.append(split)
-                    }
-                    captionWordTimings[row.id] = nil
-                    continue
-                }
-            }
-            updated.append(row)
-        }
-        captions = updated
-        if running, let row = captions.first(where: { translatedOriginal[$0.id] != $0.original }) {
-            scheduleTranslation(id: row.id, text: row.original)
-        }
-    }
     private var translationTask: Task<Void, Never>?
     private var rotationTask: Task<Void, Never>?
     private var session = UUID()
@@ -465,9 +410,15 @@ enum AppPermissionType {
 
     @Published var storageError: String?
     @Published var pendingConversationID: UUID?
-    @Published var selectedDashboardTab: Int = 0
-    @Published var selectedNotebookTab: Int = 0
-    @Published var selectedSettingsSection: Int = 0
+    @Published var selectedDashboardTab: Int = UserDefaults.standard.object(forKey: "SelectedDashboardTab") as? Int ?? 0 {
+        didSet { UserDefaults.standard.set(selectedDashboardTab, forKey: "SelectedDashboardTab") }
+    }
+    @Published var selectedNotebookTab: Int = UserDefaults.standard.object(forKey: "SelectedNotebookTab") as? Int ?? 0 {
+        didSet { UserDefaults.standard.set(selectedNotebookTab, forKey: "SelectedNotebookTab") }
+    }
+    @Published var selectedSettingsSection: Int = UserDefaults.standard.object(forKey: "SelectedSettingsSection") as? Int ?? 0 {
+        didSet { UserDefaults.standard.set(selectedSettingsSection, forKey: "SelectedSettingsSection") }
+    }
     @Published var showSettingsSheet: Bool = false
     @Published var showAboutSheet: Bool = false
     @Published var isOverlayVisible: Bool = false
@@ -569,26 +520,9 @@ enum AppPermissionType {
         self.coPilotModel = savedCoPilotModel
         self.availableCoPilotModels = initialCoPilot.defaultModels
 
-        diarization.onIntervals = { [weak self] token, intervals, through in
-            Task { @MainActor in
-                guard let self, self.recordingSessionID == token, self.speakerSeparationEnabled else { return }
-                self.speakerIntervals.append(contentsOf: intervals)
-                self.speakerProcessedThrough = max(self.speakerProcessedThrough, through)
-                self.applySpeakerIntervals()
-                if !self.running, let index = self.sessions.firstIndex(where: { $0.id == token }) {
-                    self.sessions[index].captions = self.captions.map { CaptionRecord(id: $0.id, start: $0.start, end: $0.end, original: $0.original, vietnamese: $0.vietnamese, speakers: $0.speakers) }
-                    do { try self.persistSessions(self.sessions) }
-                    catch { self.storageError = "Không lưu được nhãn người nói: " + error.localizedDescription }
-                }
-            }
-        }
-        diarization.onStatus = { [weak self] token, status in
-            Task { @MainActor in guard self?.recordingSessionID == token else { return }; self?.speakerSeparationStatus = status }
-        }
         capture.onAudio = { [weak self] sample in
             guard let self else { return }
             self.speech.append(sample)
-            self.diarization.append(sample)
             let now = Date()
             if now.timeIntervalSince(self.lastAudioUpdateTime) > 0.25 {
                 self.lastAudioUpdateTime = now
@@ -598,7 +532,6 @@ enum AppPermissionType {
         capture.onMicrophone = { [weak self] buffer in
             guard let self else { return }
             self.speech.append(buffer)
-            self.diarization.append(buffer)
             let now = Date()
             if now.timeIntervalSince(self.lastAudioUpdateTime) > 0.25 {
                 self.lastAudioUpdateTime = now
@@ -748,7 +681,7 @@ enum AppPermissionType {
     }
 
     var subtitleEngineLabel: String {
-        if provider == .apple { return "Apple Translate · local" }
+        if provider == .apple { return "Translate · local" }
         if provider == .free || activeKey.isEmpty { return "Google Dịch · online" }
         return "\(provider.shortName) · online"
     }
@@ -813,10 +746,9 @@ enum AppPermissionType {
                 if coPilotProvider == provider {
                     availableCoPilotModels = list
                 }
-                if !list.contains(modelName) {
-                    updateModelName(list.first ?? modelName, for: provider)
-                }
-                modelFetchMessage = "Đã tải \(list.count) model khả dụng từ \(provider.shortName)."
+                modelFetchMessage = list.contains(modelName)
+                    ? "Đã tải \(list.count) model khả dụng từ \(provider.shortName)."
+                    : "Model đã lưu không có trong danh sách mới. Hãy chọn model khả dụng."
             } else {
                 modelFetchMessage = "Không có model phù hợp."
             }
@@ -1005,8 +937,6 @@ enum AppPermissionType {
             }
             activeKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
             started = Date(); recordingSessionID = UUID(); captions = []; translatedOriginal = [:]; currentID = UUID(); lastAudio = nil; session = UUID()
-            speakerIntervals = []; speakerProcessedThrough = 0; captionWordTimings = [:]
-            if speakerSeparationEnabled { diarization.start(token: recordingSessionID, at: started) }
             healthReminderFiredCount = 0
             lastRawRecognizedText = ""
             speechRotationTail = ""
@@ -1056,7 +986,6 @@ enum AppPermissionType {
         translationTask?.cancel(); translationTask = nil
         speech.stop()
         await capture.stop()
-        diarization.stop()
         TTSService.shared.stop()
         if !captions.isEmpty {
             saveCurrentSession()
@@ -1143,7 +1072,7 @@ enum AppPermissionType {
                 meaning: "Bạn đã họp liên tục hơn \(mins) phút. Hãy uống một ngụm nước ấm, chớp mắt và thả lỏng vai một chút nhé!",
                 phonetic: "",
                 context: "⏰ Trợ lý sức khỏe công thái học",
-                sourceApp: "TransTools Health"
+                sourceApp: "Trans Tools Health"
             )
             mascotIdleActivity = .sippingTea
         }
@@ -1159,8 +1088,6 @@ enum AppPermissionType {
         }
         lastRecognitionUpdate = Date()
         let elapsed = Date().timeIntervalSince(started)
-
-        let allWords = trimmedRaw.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
 
         var currentText = speechContinuation.isEmpty ? trimmedRaw : speechContinuation + " " + trimmedRaw
         if !sessionFinalizedPrefix.isEmpty {
@@ -1193,28 +1120,40 @@ enum AppPermissionType {
             captions.append(Caption(id: currentID, start: elapsed, end: elapsed, original: currentText))
         }
 
-        if speakerSeparationEnabled {
-            let words = SpeechTextReconciler.words(currentText)
-            let normalized = timedWords.map { SpeechTextReconciler.normalized($0.0) }
-            let wanted = words.map(SpeechTextReconciler.normalized)
-            if !wanted.isEmpty, normalized.count >= wanted.count {
-                for index in 0...(normalized.count - wanted.count) {
-                    if Array(normalized[index..<(index + wanted.count)]) == wanted {
-                        captionWordTimings[currentID] = zip(words, timedWords[index..<(index + wanted.count)]).map {
-                            ($0.0, $0.1.1 - started.timeIntervalSince1970, $0.1.2 - started.timeIntervalSince1970)
-                        }
-                        break
-                    }
+        let chunks = CaptionSegmenter.chunks(currentText)
+        // Commit complete sentences / bounded clauses, retaining the last live
+        // fragment in the same recognition session instead of restarting audio.
+        if chunks.count > 1 {
+            let firstID = currentID
+            let firstStart = captions.first(where: { $0.id == firstID })?.start ?? elapsed
+            let duration = max(0, elapsed - firstStart)
+            let totalCharacters = max(1, chunks.reduce(0) { $0 + $1.count })
+            var consumedCharacters = 0
+            for (offset, chunk) in chunks.enumerated() {
+                if offset > 0 { currentID = UUID() }
+                let start = firstStart + duration * Double(consumedCharacters) / Double(totalCharacters)
+                consumedCharacters += chunk.count
+                let end = firstStart + duration * Double(consumedCharacters) / Double(totalCharacters)
+                if let index = captions.firstIndex(where: { $0.id == currentID }) {
+                    captions[index].original = chunk
+                    captions[index].end = end
+                    // Any old whole-paragraph translation no longer belongs to this chunk.
+                    captions[index].vietnamese = ""
+                    translatedOriginal[currentID] = nil
+                } else {
+                    captions.append(Caption(id: currentID, start: start, end: end, original: chunk))
                 }
+                if offset < chunks.count - 1 { finalizeCurrentCaption(immediateTranslation: true) }
             }
-            applySpeakerIntervals()
+            if let remainder = chunks.last, let range = trimmedRaw.range(of: remainder, options: .backwards), range.upperBound == trimmedRaw.endIndex {
+                sessionFinalizedPrefix = String(trimmedRaw[..<range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+                sessionFinalizedWordsCount = SpeechTextReconciler.words(sessionFinalizedPrefix).count
+                speechContinuation = ""
+            }
         }
-        let activeWords = currentText.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
-        let isLongChunk = activeWords.count >= 36 && activeWords.dropLast(4).contains { $0.hasSuffix(",") || $0.hasSuffix(";") || $0.hasSuffix(":") }
 
         if final {
             speechContinuation = ""
-            // Utterance finalized by speech recognizer
             speechRotationTail = lastRawRecognizedText
             finalizeCurrentCaption(immediateTranslation: true)
             sessionFinalizedPrefix = ""
@@ -1222,45 +1161,11 @@ enum AppPermissionType {
             currentID = UUID()
             recognitionSessionStarted = Date()
             if running {
-                do {
-                    try speech.start(localeIdentifier: sourceLanguage.speechLocale)
-                } catch {
-                    Task { await fail(error) }
-                }
+                do { try speech.start(localeIdentifier: sourceLanguage.speechLocale) }
+                catch { Task { await fail(error) } }
             }
-        } else if isLongChunk {
-            // Natural comma boundary splitting for long speech chunks
-            var splitIndex = 0
-            for i in stride(from: activeWords.count - 5, through: 12, by: -1) {
-                let word = activeWords[i]
-                if word.hasSuffix(",") || word.hasSuffix(";") || word.hasSuffix(":") {
-                    splitIndex = i + 1
-                    break
-                }
-            }
-            guard splitIndex > 0, speechContinuation.isEmpty else {
-                scheduleTranslation(id: currentID, text: currentText, immediate: false)
-                return
-            }
-            let chunkToFinalize = activeWords.prefix(splitIndex).joined(separator: " ")
-            if let index = captions.firstIndex(where: { $0.id == currentID }) {
-                captions[index].original = chunkToFinalize
-            }
-            let wordsBeforeSplit = (allWords.count - activeWords.count) + splitIndex
-            sessionFinalizedWordsCount = wordsBeforeSplit
-            sessionFinalizedPrefix = allWords.prefix(wordsBeforeSplit).joined(separator: " ")
-            finalizeCurrentCaption(immediateTranslation: true)
-            currentID = UUID()
-
-            let remainingWords = Array(activeWords.dropFirst(splitIndex))
-            if !remainingWords.isEmpty {
-                let remText = remainingWords.joined(separator: " ")
-                captions.append(Caption(id: currentID, start: elapsed, end: elapsed, original: remText))
-                scheduleTranslation(id: currentID, text: remText, immediate: false)
-            }
-        } else {
-            // Live in-progress translation for the active card
-            scheduleTranslation(id: currentID, text: currentText, immediate: false)
+        } else if let row = captions.first(where: { $0.id == currentID }) {
+            scheduleTranslation(id: row.id, text: row.original, immediate: false)
         }
     }
 
@@ -1269,6 +1174,10 @@ enum AppPermissionType {
         immediateTranslationRequested = immediateTranslation
         scheduleTranslation(id: row.id, text: row.original, immediate: immediateTranslation)
         if meetingSuggestionsEnabled { generateSuggestions(for: row.original) }
+        if subtitleMode != .originalOnly, translatedOriginal[row.id] == row.original, !row.vietnamese.isEmpty {
+            TTSService.shared.enqueueAutoTTS(id: row.id, original: row.original,
+                translation: row.vietnamese, sourceLang: sourceLanguage, targetLang: targetLanguage)
+        }
         if subtitleMode == .originalOnly {
             TTSService.shared.enqueueAutoTTS(
                 id: row.id,
@@ -1329,7 +1238,9 @@ enum AppPermissionType {
         let currentKey = activeKey
         translationTask = Task { [weak self] in
             guard let self else { return }
-            defer { self.translationTask = nil }
+            // A cancelled meeting task can finish after the next session starts.
+            // It must not erase that session's active translation task.
+            defer { if self.session == token { self.translationTask = nil } }
             while !Task.isCancelled, self.running, self.session == token, self.subtitleMode != .originalOnly {
                 // Find next caption needing translation
                 guard let row = self.captions.first(where: { self.translatedOriginal[$0.id] != $0.original && !$0.original.isEmpty }) else { break }
@@ -1370,16 +1281,21 @@ enum AppPermissionType {
                     )
                     guard !Task.isCancelled, self.session == token else { return }
                     if let index = self.captions.firstIndex(where: { $0.id == row.id }) {
+                        // Never publish or speak a translation for an obsolete hypothesis.
+                        guard self.captions[index].original == textToTranslate else { continue }
                         self.captions[index].vietnamese = translated
                         self.translatedOriginal[row.id] = textToTranslate
                         self.warning = ""
-                        TTSService.shared.enqueueAutoTTS(
-                            id: row.id,
-                            original: textToTranslate,
-                            translation: translated,
-                            sourceLang: self.sourceLanguage,
-                            targetLang: self.targetLanguage
-                        )
+                        // Live revisions must not repeatedly interrupt the spoken caption.
+                        if row.id != self.currentID {
+                            TTSService.shared.enqueueAutoTTS(
+                                id: row.id,
+                                original: textToTranslate,
+                                translation: translated,
+                                sourceLang: self.sourceLanguage,
+                                targetLang: self.targetLanguage
+                            )
+                        }
                     }
                 } catch {
                     guard !Task.isCancelled, self.session == token else { return }
@@ -1497,9 +1413,8 @@ enum AppPermissionType {
         let panel = NSSavePanel(); panel.nameFieldStringValue = srt ? "TransTools.srt" : "TransTools.txt"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         let content = captions.enumerated().map { index, row in
-            let speaker = row.speakers.map { voices in (voices.isEmpty ? "Chưa phân biệt" : voices.map { "Người nói \($0)" }.joined(separator: " · ")) + "\n" } ?? ""
-            if srt { return "\(index + 1)\n\(Self.timestamp(row.start)) --> \(Self.timestamp(max(row.end, row.start + 1)))\n\(speaker)\(row.original)\n\(row.vietnamese)\n" }
-            return "[\(Self.timestamp(row.start))]\n\(speaker)\(row.original)\n\(row.vietnamese)\n"
+            if srt { return "\(index + 1)\n\(Self.timestamp(row.start)) --> \(Self.timestamp(max(row.end, row.start + 1)))\n\(row.original)\n\(row.vietnamese)\n" }
+            return "[\(Self.timestamp(row.start))]\n\(row.original)\n\(row.vietnamese)\n"
         }.joined(separator: "\n")
         do { try content.write(to: url, atomically: true, encoding: .utf8) } catch { warning = error.localizedDescription }
     }
@@ -1552,7 +1467,7 @@ enum AppPermissionType {
         let now = Date()
         let elapsed = max(1, now.timeIntervalSince(started))
         let records = captions.map { c in
-            CaptionRecord(id: c.id, start: c.start, end: c.end, original: c.original, vietnamese: c.vietnamese, speakers: c.speakers)
+            CaptionRecord(id: c.id, start: c.start, end: c.end, original: c.original, vietnamese: c.vietnamese)
         }
 
         let dateFormatter = DateFormatter()
@@ -1786,11 +1701,11 @@ enum AppPermissionType {
 
     func exportCurrentDocx() {
         let tempSession = MeetingSession(
-            title: "Cuộc họp TransTools (\(DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .short)))",
+            title: "Cuộc họp Trans Tools (\(DateFormatter.localizedString(from: Date(), dateStyle: .short, timeStyle: .short)))",
             createdAt: started,
             durationSeconds: Date().timeIntervalSince(started),
             audioSource: currentSourceName(),
-            captions: captions.map { CaptionRecord(id: $0.id, start: $0.start, end: $0.end, original: $0.original, vietnamese: $0.vietnamese, speakers: $0.speakers) }
+            captions: captions.map { CaptionRecord(id: $0.id, start: $0.start, end: $0.end, original: $0.original, vietnamese: $0.vietnamese) }
         )
         exportSessionToDocx(tempSession)
     }
@@ -1815,6 +1730,7 @@ enum AppPermissionType {
     // Chip Chip Speech Bubble Management
     var mascotBubbleWindow: NSWindow?
     var bubbleDismissTask: Task<Void, Never>?
+    @Published var bubbleOnRight = true
     @Published var bubbleWord: String = ""
     @Published var bubbleMeaning: String = ""
     @Published var bubblePhonetic: String = ""
@@ -1887,6 +1803,9 @@ enum AppPermissionType {
         let convenient = convenientMascotRect()
 
         if let mascotWindow {
+            if mascotWindow.contentView == nil {
+                mascotWindow.contentView = MascotHostingView(rootView: FloatingMascotView(model: self))
+            }
             // Check if existing window is visible on any active screen
             let isVisibleOnScreen = NSScreen.screens.contains { screen in
                 let intersection = screen.visibleFrame.intersection(mascotWindow.frame)
@@ -1965,6 +1884,9 @@ enum AppPermissionType {
     func hideFloatingMascot() {
         stopDockWalking()
         mascotWindow?.orderOut(nil)
+        // orderOut hides the panel but retains SwiftUI's periodic clock.
+        // Release the view tree and recreate it when the mascot returns.
+        mascotWindow?.contentView = nil
         hideSpeechBubble()
         isFloatingMascotVisible = false
         UserDefaults.standard.set(false, forKey: "FloatingMascotEnabled")
@@ -2100,6 +2022,7 @@ enum AppPermissionType {
         dockGarden.hide()
         // Walk and scenery pause as soon as the user resumes interaction.
         guard !running, !busy, !isMascotHovered, !isBubbleHovered, !isBubbleVisible,
+              !ConversationController.shared.active,
               MascotIdlePolicy.systemIdleSeconds >= MascotIdlePolicy.idleThreshold,
               NSEvent.pressedMouseButtons == 0, let window = mascotWindow else { return }
 
@@ -2167,44 +2090,46 @@ enum AppPermissionType {
         mascotBubbleWindow?.orderOut(nil)
     }
 
-    func updateBubblePosition() {
-        guard let mascotWin = mascotWindow, let bubbleWin = mascotBubbleWindow, isBubbleVisible else { return }
-        let mascotFrame = mascotWin.frame
-        let targetScreen = mascotWin.screen ?? NSScreen.main ?? NSScreen()
-        let visible = targetScreen.visibleFrame
-
-        let bubbleW: CGFloat = 280
-        let bubbleH: CGFloat = 135
-
-        var bubbleX = mascotFrame.midX - (bubbleW / 2)
-        bubbleX = max(visible.minX + 10, min(visible.maxX - bubbleW - 10, bubbleX))
-
-        var bubbleY = mascotFrame.maxY - 22
-        if bubbleY + bubbleH > visible.maxY - 10 {
-            bubbleY = mascotFrame.minY - bubbleH - 2
+    var speechBubbleHeight: CGFloat {
+        if isBubbleLoading { return 100 }
+        func textHeight(_ text: String, size: CGFloat, weight: NSFont.Weight) -> CGFloat {
+            ceil((text as NSString).boundingRect(
+                with: NSSize(width: 320, height: CGFloat.greatestFiniteMagnitude),
+                options: [.usesLineFragmentOrigin, .usesFontLeading],
+                attributes: [.font: NSFont.systemFont(ofSize: size, weight: weight)]
+            ).height)
         }
+        var content = textHeight(bubbleMeaning, size: 12.5, weight: .bold)
+        if bubbleMode == "translate" {
+            content += 8 + textHeight(bubbleWord, size: 11, weight: .regular)
+        } else if bubbleWord != bubbleMeaning {
+            content += 5 + textHeight("Gốc: \"\(bubbleWord)\"", size: 10, weight: .regular)
+        }
+        return min(260, max(115, content + 88 + (bubblePhonetic.isEmpty ? 0 : 14)))
+    }
 
-        bubbleWin.setFrame(NSRect(x: bubbleX, y: bubbleY, width: bubbleW, height: bubbleH), display: true)
+    private func speechBubbleRect() -> NSRect? {
+        guard let mascotWin = mascotWindow else { return nil }
+        let mascotFrame = mascotWin.frame
+        let visible = (mascotWin.screen ?? NSScreen.main ?? NSScreen()).visibleFrame
+        let width: CGFloat = min(360, visible.width - 20)
+        let height: CGFloat = min(speechBubbleHeight, visible.height - 20)
+        let rightSpace = visible.maxX - mascotFrame.maxX
+        let leftSpace = mascotFrame.minX - visible.minX
+        bubbleOnRight = rightSpace >= width + 8 || rightSpace >= leftSpace
+        let proposedX = bubbleOnRight ? mascotFrame.maxX + 8 : mascotFrame.minX - width - 8
+        let x = max(visible.minX + 10, min(visible.maxX - width - 10, proposedX))
+        let y = max(visible.minY + 10, min(visible.maxY - height - 10, mascotFrame.midY - height / 2))
+        return NSRect(x: x, y: y, width: width, height: height)
+    }
+
+    func updateBubblePosition() {
+        guard isBubbleVisible, let bubbleWin = mascotBubbleWindow, let rect = speechBubbleRect() else { return }
+        bubbleWin.setFrame(rect, display: true)
     }
 
     func presentBubbleWindow() {
-        guard let mascotWin = mascotWindow else { return }
-        let mascotFrame = mascotWin.frame
-        let targetScreen = mascotWin.screen ?? NSScreen.main ?? NSScreen()
-        let visible = targetScreen.visibleFrame
-
-        let bubbleW: CGFloat = 280
-        let bubbleH: CGFloat = 135
-
-        var bubbleX = mascotFrame.midX - (bubbleW / 2)
-        bubbleX = max(visible.minX + 10, min(visible.maxX - bubbleW - 10, bubbleX))
-
-        var bubbleY = mascotFrame.maxY - 22
-        if bubbleY + bubbleH > visible.maxY - 10 {
-            bubbleY = mascotFrame.minY - bubbleH - 2
-        }
-
-        let bubbleRect = NSRect(x: bubbleX, y: bubbleY, width: bubbleW, height: bubbleH)
+        guard let bubbleRect = speechBubbleRect() else { return }
 
         if let bubbleWin = mascotBubbleWindow {
             bubbleWin.setFrame(bubbleRect, display: true)
@@ -2254,7 +2179,6 @@ enum AppPermissionType {
 
     func showMainWindow() {
         NSApp.activate(ignoringOtherApps: true)
-        selectedDashboardTab = 0 // Mặc định ở màn hình main (Cuộc họp)
         if let mainWindow {
             mainWindow.makeKeyAndOrderFront(nil)
             return
@@ -2311,7 +2235,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.regular)
         DispatchQueue.main.async { [weak self] in
             guard let model = self?.model else { return }
-            model.selectedDashboardTab = 0
             model.checkAllPermissions()
             model.showMainWindow()
         }
@@ -2343,7 +2266,7 @@ final class MenuBarManager: NSObject, NSMenuDelegate {
             let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
             if let button = item.button {
                 button.imagePosition = .imageOnly
-                button.toolTip = "TransTools - Phiên dịch cuộc họp & Trợ lý Chip Chip"
+                button.toolTip = "Trans Tools - Phiên dịch cuộc họp & Trợ lý Chip Chip"
             }
             let menu = NSMenu()
             menu.delegate = self
@@ -2366,20 +2289,20 @@ final class MenuBarManager: NSObject, NSMenuDelegate {
         guard let button = statusItem?.button else { return }
         if isRunning {
             let config = NSImage.SymbolConfiguration(paletteColors: [NSColor.systemGreen])
-            if let liveImg = NSImage(systemSymbolName: "captions.bubble.fill", accessibilityDescription: "TransTools (Đang dịch)")?.withSymbolConfiguration(config) {
+            if let liveImg = NSImage(systemSymbolName: "captions.bubble.fill", accessibilityDescription: "Trans Tools (Đang dịch)")?.withSymbolConfiguration(config) {
                 liveImg.isTemplate = false
                 button.image = liveImg
             } else {
-                let img = NSImage(systemSymbolName: "captions.bubble.fill", accessibilityDescription: "TransTools (Đang dịch)")
+                let img = NSImage(systemSymbolName: "captions.bubble.fill", accessibilityDescription: "Trans Tools (Đang dịch)")
                 img?.isTemplate = true
                 button.image = img
             }
-            button.toolTip = "TransTools: Đang nghe & phiên dịch cuộc họp (LIVE) 🟢"
+            button.toolTip = "Trans Tools: Đang nghe & phiên dịch cuộc họp (LIVE) 🟢"
         } else {
-            let img = NSImage(systemSymbolName: "captions.bubble", accessibilityDescription: "TransTools")
+            let img = NSImage(systemSymbolName: "captions.bubble", accessibilityDescription: "Trans Tools")
             img?.isTemplate = true
             button.image = img
-            button.toolTip = "TransTools - Phiên dịch cuộc họp & Trợ lý Chip Chip"
+            button.toolTip = "Trans Tools - Phiên dịch cuộc họp & Trợ lý Chip Chip"
         }
     }
 
@@ -2388,7 +2311,7 @@ final class MenuBarManager: NSObject, NSMenuDelegate {
         guard let model = self.model else { return }
 
         // 1. Header: Live Status
-        let statusTitle = model.running ? "🟢 TransTools • Đang dịch trực tiếp" : "⚪ TransTools • Sẵn sàng"
+        let statusTitle = model.running ? "🟢 Trans Tools • Đang dịch trực tiếp" : "⚪ Trans Tools • Sẵn sàng"
         let headerItem = NSMenuItem(title: statusTitle, action: nil, keyEquivalent: "")
         headerItem.isEnabled = false
         menu.addItem(headerItem)
@@ -2547,7 +2470,7 @@ final class MenuBarManager: NSObject, NSMenuDelegate {
         }
 
         // 11. Thoát ứng dụng
-        let quitItem = NSMenuItem(title: "Thoát TransTools", action: #selector(quitAppAction), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: "Thoát Trans Tools", action: #selector(quitAppAction), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
     }
@@ -3081,15 +3004,15 @@ struct OverlayView: View {
                         ScrollView(.vertical, showsIndicators: false) {
                             VStack(alignment: .leading, spacing: 5) {
                                 // Active sentence: in-flight spoken sentence or most recent sentence
-                                let activeRow = (model.running ? model.captions.first(where: { $0.id == model.currentID }) : nil) ?? model.captions.last
+                                let activeRow = model.subtitleMode == .translationOnly
+                                    ? model.captions.last(where: { !$0.vietnamese.isEmpty }) ?? model.captions.last
+                                    : (model.running ? model.captions.first(where: { $0.id == model.currentID }) : nil) ?? model.captions.last
                                 // Recent completed sentences strictly excluding activeRow to eliminate duplicate rendering & text jump
-                                let completedCaptions = Array(model.captions.filter { $0.id != activeRow?.id }.suffix(2))
+                                let completedCaptions = Array(model.captions.filter {
+                                    $0.id != activeRow?.id && (model.subtitleMode != .translationOnly || !$0.vietnamese.isEmpty)
+                                }.suffix(2))
                                 ForEach(completedCaptions) { prev in
                                     VStack(alignment: .leading, spacing: 2) {
-                                        if let voices = prev.speakers {
-                                            Text(voices.isEmpty ? "Chưa phân biệt" : voices.map { "Người nói \($0)" }.joined(separator: " · "))
-                                                .font(.caption.weight(.semibold)).foregroundStyle(TransToolsTheme.accent)
-                                        }
                                         if model.subtitleMode != .translationOnly && !prev.original.isEmpty {
                                             Text(prev.original)
                                                 .font(.system(size: max(10, fontSize - 4), weight: .regular))
@@ -3112,10 +3035,6 @@ struct OverlayView: View {
                                 // Active sentence: full multi-line wrapping without cutoffs
                                 if let row = activeRow {
                                     VStack(alignment: .leading, spacing: 3) {
-                                        if let voices = row.speakers {
-                                            Text(voices.isEmpty ? "Chưa phân biệt" : voices.map { "Người nói \($0)" }.joined(separator: " · "))
-                                                .font(.caption.weight(.semibold)).foregroundStyle(TransToolsTheme.accent)
-                                        }
                                         if model.subtitleMode == .originalOnly {
                                             // Real-time Closed Caption (CC - 0ms): Prominent font & primary gradient
                                             if !row.original.isEmpty {
@@ -4229,7 +4148,6 @@ struct ThoughtCloudShape: Shape {
 private struct ChipChipThoughtItem {
     let main: String
     let sub: String?
-    let flag: String
 }
 
 struct MascotThinkingCloudEffect: View {
@@ -4237,37 +4155,37 @@ struct MascotThinkingCloudEffect: View {
 
     private let thoughts: [ChipChipThoughtItem] = [
         // 🇻🇳 Tiếng Việt
-        ChipChipThoughtItem(main: "Hôm nay học từ\nmới chưa nè? 📚", sub: nil, flag: "🇻🇳"),
-        ChipChipThoughtItem(main: "Trà sữa hay\ncà phê ta? 🧋", sub: nil, flag: "🇻🇳"),
-        ChipChipThoughtItem(main: "Giờ làm gì\nta nhỉ? 🤔", sub: nil, flag: "🇻🇳"),
-        ChipChipThoughtItem(main: "Buồn ngủ ghê á…\nngủ xíu nha 🥱", sub: nil, flag: "🇻🇳"),
-        ChipChipThoughtItem(main: "Cố lên nha!\nBạn làm được mà ✨", sub: nil, flag: "🇻🇳"),
-        ChipChipThoughtItem(main: "Ăn lẩu hay\ngà rán ta? 🍗", sub: nil, flag: "🇻🇳"),
-        ChipChipThoughtItem(main: "Chip Chip đang\nsuy nghĩ… ✨", sub: nil, flag: "🇻🇳"),
+        ChipChipThoughtItem(main: "Hôm nay học từ\nmới chưa nè?", sub: nil),
+        ChipChipThoughtItem(main: "Trà sữa hay\ncà phê ta?", sub: nil),
+        ChipChipThoughtItem(main: "Giờ làm gì\nta nhỉ?", sub: nil),
+        ChipChipThoughtItem(main: "Buồn ngủ ghê á…\nngủ xíu nha", sub: nil),
+        ChipChipThoughtItem(main: "Cố lên nha!\nBạn làm được mà", sub: nil),
+        ChipChipThoughtItem(main: "Ăn lẩu hay\ngà rán ta?", sub: nil),
+        ChipChipThoughtItem(main: "Chip Chip đang\nsuy nghĩ…", sub: nil),
 
         // 🇬🇧 Tiếng Anh
-        ChipChipThoughtItem(main: "What should I\ndo now? 🤔", sub: "Giờ làm gì ta?", flag: "🇬🇧"),
-        ChipChipThoughtItem(main: "Boba or coffee\ntoday? 🧋", sub: "Trà sữa hay cà phê?", flag: "🇬🇧"),
-        ChipChipThoughtItem(main: "Time to learn\nnew words! 📚", sub: "Học từ mới thôi!", flag: "🇬🇧"),
-        ChipChipThoughtItem(main: "Keep going!\nYou got this! ✨", sub: "Cố lên bạn ơi!", flag: "🇬🇧"),
-        ChipChipThoughtItem(main: "So sleepy…\nneed a nap 🥱", sub: "Buồn ngủ quá à", flag: "🇬🇧"),
-        ChipChipThoughtItem(main: "Nice weather\ntoday! ⛅️", sub: "Trời hôm nay đẹp ghê!", flag: "🇬🇧"),
+        ChipChipThoughtItem(main: "What should I\ndo now?", sub: "Giờ làm gì ta?"),
+        ChipChipThoughtItem(main: "Boba or coffee\ntoday?", sub: "Trà sữa hay cà phê?"),
+        ChipChipThoughtItem(main: "Time to learn\nnew words!", sub: "Học từ mới thôi!"),
+        ChipChipThoughtItem(main: "Keep going!\nYou got this!", sub: "Cố lên bạn ơi!"),
+        ChipChipThoughtItem(main: "So sleepy…\nneed a nap", sub: "Buồn ngủ quá à"),
+        ChipChipThoughtItem(main: "Nice weather\ntoday!", sub: "Trời hôm nay đẹp ghê!"),
 
         // 🇯🇵 Tiếng Nhật
-        ChipChipThoughtItem(main: "何しようかな？\n🤔", sub: "Giờ làm gì ta?", flag: "🇯🇵"),
-        ChipChipThoughtItem(main: "がんばってね！\n✨", sub: "Cố lên nhé bạn ơi!", flag: "🇯🇵"),
-        ChipChipThoughtItem(main: "タピオカ飲む？\n🧋", sub: "Uống trà sữa hông?", flag: "🇯🇵"),
-        ChipChipThoughtItem(main: "単語覚えた？\n📚", sub: "Nhớ từ vựng chưa nè?", flag: "🇯🇵"),
-        ChipChipThoughtItem(main: "お腹すいたな〜\n🍜", sub: "Đói bụng rồi nè~", flag: "🇯🇵"),
-        ChipChipThoughtItem(main: "今日もいい天気！\n⛅️", sub: "Hôm nay trời đẹp ghê!", flag: "🇯🇵"),
+        ChipChipThoughtItem(main: "何しようかな？", sub: "Giờ làm gì ta?"),
+        ChipChipThoughtItem(main: "がんばってね！", sub: "Cố lên nhé bạn ơi!"),
+        ChipChipThoughtItem(main: "タピオカ飲む？", sub: "Uống trà sữa hông?"),
+        ChipChipThoughtItem(main: "単語覚えた？", sub: "Nhớ từ vựng chưa nè?"),
+        ChipChipThoughtItem(main: "お腹すいたな〜", sub: "Đói bụng rồi nè~"),
+        ChipChipThoughtItem(main: "今日もいい天気！", sub: "Hôm nay trời đẹp ghê!"),
 
         // 🇨🇳 Tiếng Trung
-        ChipChipThoughtItem(main: "今天做什么呢？\n🤔", sub: "Hôm nay làm gì nhỉ?", flag: "🇨🇳"),
-        ChipChipThoughtItem(main: "加油哦！你可以的\n✨", sub: "Cố lên! Bạn làm được mà", flag: "🇨🇳"),
-        ChipChipThoughtItem(main: "奶茶还是咖啡？\n🧋", sub: "Trà sữa hay cà phê?", flag: "🇨🇳"),
-        ChipChipThoughtItem(main: "今天背单词了没？\n📚", sub: "Thuộc từ mới chưa nè?", flag: "🇨🇳"),
-        ChipChipThoughtItem(main: "好困呀…想睡觉\n🥱", sub: "Buồn ngủ quá đi...", flag: "🇨🇳"),
-        ChipChipThoughtItem(main: "想吃好吃的啦！\n🍲", sub: "Thèm ăn đồ ngon quá!", flag: "🇨🇳")
+        ChipChipThoughtItem(main: "今天做什么呢？", sub: "Hôm nay làm gì nhỉ?"),
+        ChipChipThoughtItem(main: "加油哦！你可以的", sub: "Cố lên! Bạn làm được mà"),
+        ChipChipThoughtItem(main: "奶茶还是咖啡？", sub: "Trà sữa hay cà phê?"),
+        ChipChipThoughtItem(main: "今天背单词了没？", sub: "Thuộc từ mới chưa nè?"),
+        ChipChipThoughtItem(main: "好困呀…想睡觉", sub: "Buồn ngủ quá đi..."),
+        ChipChipThoughtItem(main: "想吃好吃的啦！", sub: "Thèm ăn đồ ngon quá!")
     ]
 
     private var currentThoughtIndex: Int {
@@ -4310,16 +4228,13 @@ struct MascotThinkingCloudEffect: View {
 
             // Đám mây suy nghĩ chính (Lobed Cartoon Cloud)
             VStack(spacing: 4) {
-                HStack(spacing: 3) {
-                    Text(thought.flag)
-                        .font(.system(size: 8))
-                    Text(thought.main.replacingOccurrences(of: "\n", with: " "))
+                Text(thought.main.replacingOccurrences(of: "\n", with: " "))
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .foregroundStyle(Color.primary)
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                         .lineSpacing(1.2)
-                }
+                        .frame(maxWidth: .infinity)
                 if let sub = thought.sub {
                     Text("(\(sub))")
                         .font(.system(size: 9, weight: .medium, design: .rounded))
@@ -4848,56 +4763,7 @@ struct MascotStrollingEffects: View {
 
     var body: some View {
         ZStack {
-            // Self-contained Park Lawn Island (Tiểu cảnh công viên bo tròn trọn vẹn)
-            ZStack(alignment: .bottom) {
-                // Soft ground shadow
-                Ellipse()
-                    .fill(Color.black.opacity(0.18))
-                    .frame(width: 98, height: 14)
-                    .offset(y: 4)
-
-                // Rounded park lawn island
-                Capsule()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.40, green: 0.82, blue: 0.46).opacity(0.35),
-                                Color(red: 0.22, green: 0.62, blue: 0.32).opacity(0.15)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .frame(width: 92, height: 8)
-                    .overlay(
-                        Capsule()
-                            .stroke(Color.green.opacity(0.30), lineWidth: 0.8)
-                    )
-                    .offset(y: 2)
-
-                // Stepping stones & clover flowers along the path
-                HStack(spacing: 12) {
-                    Circle()
-                        .fill(Color.secondary.opacity(0.20))
-                        .frame(width: 4, height: 2.5)
-                    Image(systemName: "leaf.fill")
-                        .font(.system(size: 6.5))
-                        .foregroundStyle(Color.green.opacity(0.65))
-                        .rotationEffect(.degrees(-15))
-                    Image(systemName: "camera.macro")
-                        .font(.system(size: 6.5))
-                        .foregroundStyle(Color.pink.opacity(0.55))
-                    Circle()
-                        .fill(Color.secondary.opacity(0.20))
-                        .frame(width: 4, height: 2.5)
-                    Image(systemName: "leaf.fill")
-                        .font(.system(size: 6.5))
-                        .foregroundStyle(Color.green.opacity(0.65))
-                        .rotationEffect(.degrees(20))
-                }
-                .offset(y: 0.5)
-            }
-
+            // The shared meadow supplies the ground; keep only walking effects here.
             // Step dust puffs under Chip Chip's feet
             ForEach(0..<2) { i in
                 let dustPhase = fmod(time * 2.4 + Double(i) * 0.5, 1.0)
@@ -4929,8 +4795,10 @@ struct MascotStrollingEffects: View {
 // MARK: - Floating Mimo Assistant Widget
 
 struct FloatingMascotView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var learningCoach = LearningCoach.shared
     @ObservedObject private var lessonAudio = LanguagePronunciationService.shared
+    @ObservedObject private var conversation = ConversationController.shared
     @ObservedObject var model: MeetingModel
     @State private var isHovered = false
     @State private var showQuickMenu = false
@@ -5186,12 +5054,12 @@ struct FloatingMascotView: View {
     }
 
     private func makeRenderContext(now: Date) -> MascotRenderContext {
-        let time = now.timeIntervalSinceReferenceDate
+        let time = reduceMotion ? 0 : now.timeIntervalSinceReferenceDate
         let isHearingSpeech = (Date().timeIntervalSince(model.lastAudio ?? .distantPast) < 1.8)
         let speed: Double = isHearingSpeech ? 1.4 : 1.0
 
         let idleDuration = min(MascotIdlePolicy.systemIdleSeconds, max(0, now.timeIntervalSince(lastActiveDate)))
-        let isIdle = !model.isChipChipLearning && !model.running && !model.busy && !isHovered && !showQuickMenu &&
+        let isIdle = !model.isChipChipLearning && !model.running && !conversation.active && !model.busy && !isHovered && !showQuickMenu &&
             !model.isBubbleVisible && !model.isBubbleHovered && idleDuration >= MascotIdlePolicy.idleThreshold
 
         let activeActivity: MascotIdleActivity = {
@@ -5292,6 +5160,8 @@ struct FloatingMascotView: View {
                     }
                 }
             }
+        } else if conversation.active {
+            facingToUse = .front
         } else if !model.running && !isBackView && !isSleeping {
             facingToUse = MascotFacing.idleLookAround(time: time) ?? .front
         }
@@ -5355,7 +5225,7 @@ struct FloatingMascotView: View {
             MiniAvatarView(
                 size: model.mascotStyle == "pixel" ? 64 : 80,
                 style: model.mascotStyle,
-                isWorking: model.running,
+                isWorking: model.running || conversation.active,
                 isHovered: isHovered,
                 hoverPoint: hoverPoint,
                 isBackView: rc.isBackView,
@@ -5456,9 +5326,111 @@ struct FloatingMascotView: View {
         }
     }
 
+    private var dynamicArrowEdge: Edge {
+        guard let win = model.mascotWindow,
+              let screen = win.screen ?? NSScreen.main else {
+            return .trailing
+        }
+        let winFrame = win.frame
+        let screenFrame = screen.visibleFrame
+
+        // Khoảng trống xung quanh Chip Chip so với mép hiển thị của màn hình
+        let spaceLeft = winFrame.minX - screenFrame.minX
+        let spaceRight = screenFrame.maxX - winFrame.maxX
+        let spaceTop = screenFrame.maxY - winFrame.maxY
+        let spaceBottom = winFrame.minY - screenFrame.minY
+
+        let popoverWidth: CGFloat = 370
+        let popoverHeight: CGFloat = 460
+
+        // 1. Khi sát mép phải màn hình: Hiện bên TRÁI, mũi tên ở cạnh phải (.trailing) trỏ về Chip Chip
+        if spaceRight < popoverWidth && spaceLeft >= popoverWidth {
+            return .trailing
+        }
+
+        // 2. Khi sát mép trái màn hình: Hiện bên PHẢI, mũi tên ở cạnh trái (.leading) trỏ về Chip Chip
+        if spaceLeft < popoverWidth && spaceRight >= popoverWidth {
+            return .leading
+        }
+
+        // 3. Nếu cả 2 bên đều có đủ diện tích: Ưu tiên bên có nhiều không gian hơn
+        if spaceLeft >= popoverWidth && spaceRight >= popoverWidth {
+            return spaceLeft >= spaceRight ? .trailing : .leading
+        }
+
+        // 4. Nếu không gian 2 bên bị bó hẹp: Ưu tiên theo chiều dọc
+        if spaceTop >= popoverHeight {
+            return .bottom // Popover ở phía trên, mũi tên ở đáy trỏ xuống Chip Chip
+        }
+        if spaceBottom >= popoverHeight {
+            return .top // Popover ở phía dưới, mũi tên ở đỉnh trỏ lên Chip Chip
+        }
+
+        return spaceLeft >= spaceRight ? .trailing : .leading
+    }
+
+    private var renderInterval: TimeInterval {
+        if reduceMotion { return 1 }
+        let conserving = ProcessInfo.processInfo.isLowPowerModeEnabled ||
+            ProcessInfo.processInfo.thermalState == .serious || ProcessInfo.processInfo.thermalState == .critical
+        if conserving { return 1.0 / 4 }
+        let interacting = isHovered || model.running || model.busy || model.isChipChipLearning || showQuickMenu || conversation.active ||
+            (spinStartTime.map { Date().timeIntervalSince($0) < 0.72 } ?? false)
+        return interacting ? 1.0 / 24 : 1.0 / 8
+    }
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { context in
-            mascotContent(rc: makeRenderContext(now: context.date), time: context.date.timeIntervalSinceReferenceDate)
+        ZStack(alignment: .bottom) {
+            // Periodic ticks avoid a continuously active display animation
+            // clock when the assistant only has gentle idle motion.
+            TimelineView(.periodic(from: .now, by: renderInterval)) { context in
+                mascotContent(rc: makeRenderContext(now: context.date), time: reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate)
+            }
+
+            // Điểm neo popover nhắm thẳng vào chính diện thân avatar Chip Chip (thay vì khoảng không phía trên)
+            Color.clear
+                .frame(width: 60, height: 60)
+                .padding(.bottom, 14)
+                .allowsHitTesting(false)
+                .popover(isPresented: $showQuickMenu, arrowEdge: dynamicArrowEdge) {
+                    MascotQuickActionsPopover(model: model, isPresented: $showQuickMenu)
+                }
+
+            // Báo hiệu cuộc trò chuyện AI đang diễn ra & nút dừng nhanh ngay trên đầu Chip Chip
+            if conversation.active {
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 6, height: 6)
+
+                    Image(systemName: conversation.waiting ? "brain.head.profile" : "waveform")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(Color.green)
+
+                    Text(conversation.waiting ? "AI đang trả lời..." : "Trò chuyện AI")
+                        .font(.system(size: 9.5, weight: .bold))
+                        .foregroundStyle(.white)
+
+                    Button {
+                        conversation.stop()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.85))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Tắt nhanh cuộc trò chuyện với Chip Chip")
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule()
+                        .fill(Color.black.opacity(0.82))
+                        .overlay(Capsule().stroke(Color.green.opacity(0.4), lineWidth: 1))
+                )
+                .shadow(color: Color.black.opacity(0.35), radius: 4, y: 2)
+                .padding(.bottom, 92)
+                .transition(.scale.combined(with: .opacity))
+            }
         }
         .frame(width: 186, height: 182, alignment: .bottom)
         .padding(.bottom, 4)
@@ -5485,13 +5457,10 @@ struct FloatingMascotView: View {
             spinStartTime = Date()
             showQuickMenu.toggle()
         }
-            .popover(isPresented: $showQuickMenu, arrowEdge: .leading) {
-                MascotQuickActionsPopover(model: model, isPresented: $showQuickMenu)
-            }
-            .contextMenu {
-                MascotContextMenuView(model: model)
-            }
-            .help("Chip Chip: \(model.isDockWalkEnabled ? "Đang đi dạo thư giãn dọc Dock Bar" : (model.running ? "Đang ghi chép cuộc họp" : "Sẵn sàng hỗ trợ bạn"))")
+        .contextMenu {
+            MascotContextMenuView(model: model)
+        }
+        .help("Chip Chip: \(model.isDockWalkEnabled ? "Đang đi dạo thư giãn dọc Dock Bar" : (conversation.active ? "Đang trò chuyện AI với bạn" : (model.running ? "Đang ghi chép cuộc họp" : "Sẵn sàng hỗ trợ bạn")))")
     }
 }
 
@@ -5499,8 +5468,26 @@ struct FloatingMascotView: View {
 
 struct MascotContextMenuView: View {
     @ObservedObject var model: MeetingModel
+    @ObservedObject private var conversation = ConversationController.shared
 
     var body: some View {
+        if conversation.active {
+            Button {
+                conversation.stop()
+            } label: {
+                Label("Dừng trò chuyện với AI", systemImage: "stop.circle.fill")
+            }
+
+            Button {
+                model.showMainWindow()
+                model.selectedDashboardTab = 5
+            } label: {
+                Label("Mở cuộc trò chuyện", systemImage: "bubble.left.and.bubble.right.fill")
+            }
+
+            Divider()
+        }
+
         Menu {
             Picker("Hoạt cảnh Chip Chip", selection: $model.mascotIdleActivity) {
                 ForEach(MascotIdleActivity.allCases) { act in
@@ -5544,7 +5531,7 @@ struct MascotContextMenuView: View {
         Button {
             model.showMainWindow()
         } label: {
-            Label("Mở TransTools", systemImage: "macwindow")
+            Label("Mở Trans Tools", systemImage: "macwindow")
         }
 
         Menu {
@@ -5577,7 +5564,7 @@ struct MascotContextMenuView: View {
             model.showMainWindow()
             model.showAboutSheet = true
         } label: {
-            Label("Giới thiệu TransTools", systemImage: "info.circle")
+            Label("Giới thiệu Trans Tools", systemImage: "info.circle")
         }
 
         Divider()
@@ -5593,6 +5580,7 @@ struct MascotContextMenuView: View {
 struct MascotQuickActionsPopover: View {
     @ObservedObject var model: MeetingModel
     @ObservedObject private var tts = TTSService.shared
+    @ObservedObject private var conversation = ConversationController.shared
     @Binding var isPresented: Bool
     @Environment(\.dismiss) private var dismiss
     @State private var tipIndex = 0
@@ -5606,8 +5594,8 @@ struct MascotQuickActionsPopover: View {
 
     private var mimoQuotes: [String] {
         [
-            "Chip Chip sẵn sàng hỗ trợ bạn trong mọi cuộc họp! ✨",
-            "Mẹo: Bạn có thể kéo Chip Chip đến bất kỳ vị trí nào trên màn hình đó nha! 🎈",
+            "Chip Chip sẵn sàng hỗ trợ bạn trong mọi cuộc họp!",
+            "Mẹo: Bạn có thể kéo Chip Chip đến bất kỳ vị trí nào trên màn hình! 🎈",
             "Mẹo: Bật 'Phụ đề nổi' để vừa họp Teams vừa xem bản dịch song song! 🎧",
             "Chip Chip luôn dịch bằng AI thông minh (\(model.provider.shortName)) cực mượt! ⚡",
             "Có Chip Chip ở đây rồi, bạn cứ tự tin nghe họp nhé! 💪"
@@ -5615,27 +5603,36 @@ struct MascotQuickActionsPopover: View {
     }
 
     private var currentDialogue: String {
+        if conversation.active {
+            if conversation.waiting {
+                return "Chip Chip đang suy nghĩ câu trả lời cho bạn nè... 💭"
+            }
+            if !conversation.draft.isEmpty {
+                return "Đang nghe bạn nói: \"\(conversation.draft)\" 🎙️"
+            }
+            return "Chip Chip đang lắng nghe bạn nói... Bạn cứ thoải mái trò chuyện nha! 🎙️"
+        }
         if model.running {
-            return "Chip Chip đang chăm chú nghe & ghi chép bản dịch cuộc họp nè! 📝🎧"
+            return "Chip Chip đang chăm chú nghe & ghi chép bản dịch cuộc họp nè! 📝"
         }
         if model.isDockWalkEnabled {
-            return "Chip Chip đang đi dạo thảnh thơi dọc thanh Dock Bar nè! Bạn làm việc vui vẻ nha 🚶‍♂️✨"
+            return "Chip Chip đang đi dạo thảnh thơi dọc thanh Dock Bar nè! 🚶‍♂️"
         }
         switch model.mascotIdleActivity {
         case .writing: return "Chip Chip đang ghi lại ý tưởng vào sổ 📓"
         case .thinking: return "Để Chip Chip suy nghĩ một chút nhé 💭"
         case .fishing:
-            return "Ngồi buông cần câu cá thảnh thơi bên hồ nước trong xanh... Yên bình ghê! 🎣🐟"
+            return "Ngồi buông cần câu cá thảnh thơi bên hồ nước trong xanh... Yên bình ghê! 🎣"
         case .sleeping:
-            return "Khò khò... Chip Chip chợp mắt tí nha, khi nào bắt đầu họp cứ gọi tớ nhé! zZz 💤"
+            return "Khò khò... Chip Chip chợp mắt tí nha, khi nào bắt đầu họp cứ gọi tớ nhé! 💤"
         case .strolling:
-            return "Đi dạo vài bước quanh màn hình cho thư giãn gân cốt nào! 🚶‍♂️✨"
+            return "Đi dạo vài bước quanh màn hình cho thư giãn gân cốt nào! 🚶‍♂️"
         case .catchingButterfly:
-            return "Oa, có chú bướm xinh dập dờn bay qua nè! Đẹp quá đi mất 🦋✨"
+            return "Oa, có chú bướm xinh dập dờn bay qua nè! Đẹp quá đi mất 🦋"
         case .pickingFlowers:
-            return "Bông hoa này ngát hương thơm thật đó! Tặng bạn một ngày làm việc thật vui nha 🌸"
+            return "Bông hoa này ngát hương thơm thật đó! Tặng bạn một ngày thật vui nha 🌸"
         case .listeningMusic:
-            return "Giai điệu này chill quá! Đeo tai nghe nhún nhảy chuẩn bị họp nè 🎧🎵"
+            return "Giai điệu này chill quá! Đeo tai nghe nhún nhảy chuẩn bị họp nè 🎧"
         case .sippingTea:
             return "Nhâm nhi tách trà ấm thơm lừng cho tỉnh táo làm việc nhé bạn ơi! ☕️"
         case .auto:
@@ -5705,7 +5702,7 @@ struct MascotQuickActionsPopover: View {
                         )
                         .frame(width: 36, height: 36)
 
-                    MiniAvatarView(size: 32, style: model.mascotStyle, isWorking: model.running)
+                    MiniAvatarView(size: 32, style: model.mascotStyle, isWorking: model.running || conversation.active)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -5723,11 +5720,17 @@ struct MascotQuickActionsPopover: View {
 
                     HStack(spacing: 4) {
                         Circle()
-                            .fill(model.running ? Color.green : TransToolsTheme.accent)
+                            .fill(conversation.active || model.running ? Color.green : TransToolsTheme.accent)
                             .frame(width: 6, height: 6)
-                        Text(model.running ? "Đang lắng nghe • \(model.provider.shortName)" : "Sẵn sàng • Nghỉ ngơi")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(model.running ? Color.green : Color.secondary)
+                        Text(
+                            conversation.active
+                                ? (conversation.waiting ? "AI đang trả lời..." : "Đang trò chuyện • \(conversation.chatLanguage.displayName)")
+                                : (model.running ? "Đang lắng nghe • \(model.provider.shortName)" : "Sẵn sàng • Nghỉ ngơi")
+                        )
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(conversation.active || model.running ? Color.green : Color.secondary)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                     }
                 }
 
@@ -5772,22 +5775,22 @@ struct MascotQuickActionsPopover: View {
                     tipIndex += 1
                 }
             } label: {
-                HStack(alignment: .top, spacing: 8) {
+                HStack(alignment: .center, spacing: 7) {
                     Image(systemName: "bubble.left.and.bubble.right.fill")
-                        .font(.system(size: 12))
+                        .font(.system(size: 11))
                         .foregroundStyle(
                             LinearGradient(colors: [TransToolsTheme.accent, Color.cyan], startPoint: .topLeading, endPoint: .bottomTrailing)
                         )
-                        .padding(.top, 1)
 
                     Text(currentDialogue)
-                        .font(.system(size: 11.5, weight: .medium, design: .rounded))
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundStyle(.primary)
                         .lineSpacing(2)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(9)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 7)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
                     LinearGradient(
@@ -5807,6 +5810,85 @@ struct MascotQuickActionsPopover: View {
             }
             .buttonStyle(.plain)
             .help("Bấm vào để đổi câu chuyện với Chip Chip")
+
+            // Thẻ Trò chuyện AI đang hoạt động (cho phép tắt nhanh hoặc mở chat)
+            if conversation.active {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        HStack(spacing: 5) {
+                            Circle()
+                                .fill(Color.green)
+                                .frame(width: 7, height: 7)
+                            Text("ĐANG TRÒ CHUYỆN VỚI AI")
+                                .font(.system(size: 9.5, weight: .bold))
+                                .foregroundStyle(Color.green)
+                        }
+                        Spacer()
+                        Text(conversation.chatLanguage.displayName)
+                            .font(.system(size: 9, weight: .bold))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1.5)
+                            .background(Color.green.opacity(0.12))
+                            .foregroundStyle(Color.green)
+                            .clipShape(Capsule())
+                    }
+
+                    if !conversation.draft.isEmpty {
+                        Text("Đang nghe: \"\(conversation.draft)\"")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                    } else {
+                        Text(conversation.status)
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+
+                    HStack(spacing: 8) {
+                        Button {
+                            conversation.stop()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "stop.fill")
+                                Text("Dừng trò chuyện")
+                            }
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 5)
+                            .background(Color.red)
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            isPresented = false
+                            model.showMainWindow()
+                            model.selectedDashboardTab = 5
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.up.forward.app")
+                                Text("Mở chat")
+                            }
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.primary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 5)
+                            .background(Color.secondary.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(9)
+                .background(Color.green.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .stroke(Color.green.opacity(0.25), lineWidth: 1)
+                )
+            }
 
             // Bộ chọn hoạt cảnh giải trí khi rảnh
             HStack(spacing: 6) {
@@ -6323,7 +6405,7 @@ struct MascotQuickActionsPopover: View {
 
                 Spacer()
 
-                Text("TransTools")
+                Text("Trans Tools")
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundStyle(.tertiary)
             }
@@ -6331,7 +6413,7 @@ struct MascotQuickActionsPopover: View {
             .padding(.top, 1)
         }
         .padding(14)
-        .frame(width: 334)
+        .frame(width: 368)
         .background(
             ZStack {
                 Color(nsColor: .windowBackgroundColor)
@@ -6557,7 +6639,6 @@ struct MainDashboardView: View {
                 // Leading Navigation Tabs
                 ScrollView(.horizontal, showsIndicators: false) { headerTabs }
 
-                AutoUpdateNavBadge()
 
                 Spacer(minLength: 16)
 
@@ -6570,21 +6651,31 @@ struct MainDashboardView: View {
             .background(Color(nsColor: .windowBackgroundColor))
             .overlay(Divider().opacity(0.5), alignment: .bottom)
 
-            // Body Content based on Tab
-            Group {
-                if model.selectedDashboardTab == 0 {
-                    MeetingView(model: model)
-                } else if model.selectedDashboardTab == 1 {
-                    MeetingNotebookView(model: model)
-                } else if model.selectedDashboardTab == 2 {
-                    QuickTranslateView(model: model)
-                } else if model.selectedDashboardTab == 3 {
-                    LanguageLearningDashboardView(model: model)
-                } else if model.selectedDashboardTab == 5 {
-                    AIConversationView(model: model, manager: LanguageLearningManager.shared)
-                } else {
-                    SettingsDashboardView(model: model)
-                }
+            // Body Content based on Tab (Dùng ZStack để bảo tồn nguyên trạng thái của từng tab khi chuyển qua lại)
+            ZStack {
+                MeetingView(model: model)
+                    .opacity(model.selectedDashboardTab == 0 ? 1 : 0)
+                    .allowsHitTesting(model.selectedDashboardTab == 0)
+
+                MeetingNotebookView(model: model)
+                    .opacity(model.selectedDashboardTab == 1 ? 1 : 0)
+                    .allowsHitTesting(model.selectedDashboardTab == 1)
+
+                QuickTranslateView(model: model)
+                    .opacity(model.selectedDashboardTab == 2 ? 1 : 0)
+                    .allowsHitTesting(model.selectedDashboardTab == 2)
+
+                LanguageLearningDashboardView(model: model)
+                    .opacity(model.selectedDashboardTab == 3 ? 1 : 0)
+                    .allowsHitTesting(model.selectedDashboardTab == 3)
+
+                AIConversationView(model: model, manager: LanguageLearningManager.shared)
+                    .opacity(model.selectedDashboardTab == 5 ? 1 : 0)
+                    .allowsHitTesting(model.selectedDashboardTab == 5)
+
+                SettingsDashboardView(model: model)
+                    .opacity(model.selectedDashboardTab == 4 ? 1 : 0)
+                    .allowsHitTesting(model.selectedDashboardTab == 4)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -7012,6 +7103,13 @@ struct EarphoneTTSControlMenu: View {
     @ObservedObject var model: MeetingModel
     @ObservedObject var tts = TTSService.shared
 
+    @ObservedObject private var localModels = LocalTTSModelManager.shared
+    @ObservedObject private var externalModels = ExternalTTSModelManager.shared
+    @State private var showVoiceSettings = false
+    private var activeEngine: LanguageVoiceEngine {
+        let _ = externalModels.revision
+        return LanguageVoicePreferences.resolved(for: activeLocale, localDefault: localModels.isNaturalVoiceEnabled, edgeDefault: tts.useEdgeNaturalVoice)
+    }
     private var activeLocale: String {
         tts.autoTarget == .translation ? model.targetLanguage.speechLocale : model.sourceLanguage.speechLocale
     }
@@ -7071,6 +7169,7 @@ struct EarphoneTTSControlMenu: View {
 
             Divider()
 
+            if activeEngine == .system || activeEngine == .local {
             Section("Phong cách giọng đọc (Tone & Cảm xúc)") {
                 ForEach(VoiceTone.allCases) { tone in
                     Button {
@@ -7089,12 +7188,25 @@ struct EarphoneTTSControlMenu: View {
 
             Divider()
 
+            }
+            if let speechModel = activeEngine.externalModel {
+                Section(speechModel.title) {
+                    ForEach(speechModel.voices(for: activeLocale)) { voice in
+                        Button {
+                            UserDefaults.standard.set(voice.id, forKey: "TTS_" + speechModel.rawValue + "_Voice_" + LanguageVoicePreferences.code(activeLocale))
+                            externalModels.refresh()
+                        } label: {
+                            HStack { Text(voice.displayTitle); if speechModel.selectedVoice(for: activeLocale) == voice.id { Image(systemName: "checkmark") } }
+                        }
+                    }
+                }
+            } else {
             Section("Giọng đọc (\(tts.autoTarget == .translation ? model.targetLanguage.shortName : model.sourceLanguage.shortName))") {
                 Button {
                     tts.selectedVoiceID = nil
                 } label: {
                     HStack {
-                        Text("Tự động (Ưu tiên giọng AI tự nhiên nhất)")
+                        Text(activeEngine.isLocal ? "Tự động · Giọng dự phòng" : "Tự động chọn giọng")
                         if tts.selectedVoiceID == nil {
                             Spacer()
                             Image(systemName: "checkmark")
@@ -7119,6 +7231,7 @@ struct EarphoneTTSControlMenu: View {
 
             Divider()
 
+            }
             Section("Tốc độ giọng đọc") {
                 ForEach([Float(0.40), 0.44, 0.46, 0.52, 0.58], id: \.self) { rate in
                     Button {
@@ -7143,15 +7256,8 @@ struct EarphoneTTSControlMenu: View {
 
             Divider()
 
-            Section("Hệ thống") {
-                Button {
-                    if let url = URL(string: "x-apple.systempreferences:com.apple.Accessibility-Settings.extension?SpokenContent") {
-                        NSWorkspace.shared.open(url)
-                    }
-                } label: {
-                    Label("Mở Cài đặt Giọng nói máy Mac...", systemImage: "gearshape")
-                }
-            }
+            Button("Cấu hình giọng theo ngôn ngữ…") { showVoiceSettings = true }
+
         } label: {
             HStack(spacing: 5) {
                 ZStack {
@@ -7186,6 +7292,12 @@ struct EarphoneTTSControlMenu: View {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
                     .stroke(tts.isAutoTTSEnabled ? TransToolsTheme.navy.opacity(0.35) : Color.primary.opacity(0.08), lineWidth: 1)
             )
+        }
+        .sheet(isPresented: $showVoiceSettings) {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack { Text("Giọng đọc & Phát âm").font(.title2.bold()); Spacer(); Button("Xong") { showVoiceSettings = false }.buttonStyle(TransToolsActionButtonStyle()) }
+                ScrollView { SpeechSettingsView(language: tts.autoTarget == .translation ? model.targetLanguage : model.sourceLanguage) }
+            }.padding(24).frame(width: 640, height: 620)
         }
         .buttonStyle(.plain)
         .fixedSize(horizontal: true, vertical: false)
@@ -7472,7 +7584,7 @@ struct MeetingView: View {
                     } else {
                         VStack(spacing: 16) {
                             if model.showMascot {
-                                MiniAvatarView(size: 110, style: model.mascotStyle)
+                                HoverGreetingMascotView(style: model.mascotStyle)
                                     .padding(.bottom, 4)
                             } else {
                                 Image(systemName: "waveform.badge.mic")
@@ -7485,7 +7597,7 @@ struct MeetingView: View {
                                 Text("Sẵn sàng nghe & phiên dịch")
                                     .font(.system(size: 17, weight: .bold, design: .rounded))
 
-                                Text("Chọn nguồn âm thanh (Âm thanh hệ thống hoặc Teams) rồi bấm Bắt đầu.")
+                                Text("Chọn nguồn âm để bắt đầu")
                                     .font(.system(size: 13))
                                     .foregroundStyle(.secondary)
                                     .multilineTextAlignment(.center)
@@ -7690,10 +7802,6 @@ struct CaptionCardView: View {
                 .background(Color.secondary.opacity(0.1))
                 .clipShape(Capsule())
 
-                if let speakers = caption.speakers {
-                    Label(speakers.isEmpty ? "Chưa phân biệt" : speakers.map { "Người nói \($0)" }.joined(separator: " · "), systemImage: "person.wave.2")
-                        .font(.caption.weight(.semibold)).foregroundStyle(TransToolsTheme.accent)
-                }
                 if isLive {
                     HStack(spacing: 4) {
                         Circle()
@@ -7912,6 +8020,8 @@ struct FeatureBadge: View {
 struct QuickTranslateView: View {
     @ObservedObject var model: MeetingModel
     @State private var input = ""
+    @FocusState private var sourceEditorFocused: Bool
+    @AppStorage("QuickTranslateTextSize") private var editorTextSize: Double = 15
     @State private var readingMode = false
     @State private var showContext = false
     @State private var output = ""
@@ -7940,7 +8050,7 @@ struct QuickTranslateView: View {
                 .pickerStyle(.segmented).frame(width: 340).controlSize(.large)
             }
             if readingMode {
-                TextReaderView(text: $input)
+                TextReaderView(text: $input, model: model)
             } else {
             HStack {
                 Label(model.domainSpecialty.title, systemImage: model.domainSpecialty.icon)
@@ -8349,25 +8459,27 @@ struct QuickTranslateView: View {
 
                     ZStack(alignment: .topLeading) {
                         if input.isEmpty {
-                            Text("Nhập hoặc dán đoạn văn cần dịch…\n⌘ + Enter để dịch nhanh")
-                                .font(.system(size: 14))
-                                .foregroundStyle(.tertiary)
-                                .padding(12)
+                            Text("Nhập hoặc dán văn bản…")
+                                .font(.system(size: editorTextSize))
+                                .foregroundStyle(.secondary.opacity(0.65))
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 18)
                         }
 
                         TextEditor(text: $input)
-                            .font(.system(size: 14))
+                            .font(.system(size: editorTextSize))
                             .scrollContentBackground(.hidden)
-                            .padding(14)
-                            .lineSpacing(5)
+                            .padding(16)
+                            .lineSpacing(6)
+                            .focused($sourceEditorFocused)
                             .accessibilityLabel("Văn bản cần dịch")
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, minHeight: 220, maxHeight: 360)
                     .background(Color(nsColor: .controlBackgroundColor))
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                            .stroke(TransToolsTheme.accent.opacity(sourceEditorFocused ? 0.65 : 0.22), lineWidth: sourceEditorFocused ? 1.5 : 1)
                     )
 
                     // Footer of Left Panel
@@ -8378,9 +8490,21 @@ struct QuickTranslateView: View {
 
                         Spacer()
 
-                        Text("Phím tắt: ⌘ + Enter")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
+                        HStack(spacing: 8) {
+                            Button { editorTextSize = max(12, editorTextSize - 1) } label: {
+                                Image(systemName: "textformat.size.smaller")
+                            }
+                            .help("Giảm cỡ chữ")
+                            Text("\(Int(editorTextSize))")
+                                .monospacedDigit()
+                            Button { editorTextSize = min(22, editorTextSize + 1) } label: {
+                                Image(systemName: "textformat.size.larger")
+                            }
+                            .help("Tăng cỡ chữ")
+                        }
+                        .font(.system(size: 11))
+                        .foregroundStyle(TransToolsTheme.accent)
+                        .buttonStyle(.plain)
                     }
                 }
 
@@ -8407,7 +8531,7 @@ struct QuickTranslateView: View {
                                     .foregroundStyle(.purple)
                             }
                         } else {
-                            Text("KẾT QUẢ DỊCH (\(model.targetLanguage.shortName.uppercased()))")
+                            Text("Bản dịch · \(model.targetLanguage.shortName.uppercased())")
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundStyle(.secondary)
                         }
@@ -8463,10 +8587,10 @@ struct QuickTranslateView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 12) {
                             if output.isEmpty {
-                                Text(translating ? "Đang dịch câu của bạn theo chuyên ngành \(model.domainSpecialty.title)…" : (polishing ? "Đang sửa ngữ pháp theo \(polishedLanguage.displayName)…" : "Kết quả bản dịch (\(model.targetLanguage.displayName)) hoặc sửa lỗi sẽ xuất hiện tại đây."))
-                                    .font(.system(size: 14))
+                                Text(translating ? "Đang dịch câu của bạn theo chuyên ngành \(model.domainSpecialty.title)…" : (polishing ? "Đang sửa ngữ pháp theo \(polishedLanguage.displayName)…" : "Bản dịch sẽ hiện tại đây."))
+                                    .font(.system(size: editorTextSize))
                                     .foregroundStyle(.tertiary)
-                                    .padding(12)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             } else {
                                 primaryTranslation
                                 // Alternatives / Gợi ý phương án diễn đạt khác (khi dịch)
@@ -8475,14 +8599,15 @@ struct QuickTranslateView: View {
                                 }
                             }
                         }
-                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(20)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, minHeight: 220, maxHeight: 360)
                     .background(Color(nsColor: .controlBackgroundColor))
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                            .stroke(TransToolsTheme.accent.opacity(0.22), lineWidth: 1)
                     )
 
     }
@@ -8491,14 +8616,11 @@ struct QuickTranslateView: View {
     private var primaryTranslation: some View {
                                 // Primary result (Đã bỏ label "BẢN DỊCH CHUẨN" theo yêu cầu người dùng)
                                 Text(output)
-                                    .font(.system(size: 15, weight: .semibold, design: .rounded))
-                                    .lineSpacing(4)
+                                    .font(.system(size: editorTextSize, weight: .regular))
+                                    .lineSpacing(6)
                                     .foregroundStyle(.primary)
                                     .textSelection(.enabled)
-                                    .padding(12)
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(lastActionWasPolish ? TransToolsTheme.navy.opacity(0.06) : TransToolsTheme.accent.opacity(0.06))
-                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
     }
 
@@ -8574,7 +8696,7 @@ struct QuickTranslateView: View {
                                 .lineLimit(1)
                         } else {
                             let engineInfo = model.provider == .apple
-                                ? "Apple Translate • Trên thiết bị"
+                                ? "Translate • Trên thiết bị"
                                 : model.provider == .free || model.key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                                 ? "Google Dịch • Miễn phí"
                                 : "\(model.provider.displayName) • \(model.modelName)"
@@ -8672,7 +8794,7 @@ struct SettingsPopoverView: View {
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 16))
                         .foregroundStyle(TransToolsTheme.accent)
-                    Text("Cấu hình TransTools")
+                    Text("Cấu hình Trans Tools")
                         .font(.system(size: 15, weight: .bold, design: .rounded))
                 }
 
@@ -8758,7 +8880,7 @@ struct SettingsPopoverView: View {
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundStyle(.secondary)
 
-                            // Card 1: Apple Translate (Default)
+                            // Card 1: Translate (Default)
                             Button {
                                 model.setProvider(.apple)
                             } label: {
@@ -8770,7 +8892,7 @@ struct SettingsPopoverView: View {
 
                                     VStack(alignment: .leading, spacing: 2) {
                                         HStack {
-                                            Text("Apple Translate (Mặc định)")
+                                            Text("Translate (Mặc định)")
                                                 .font(.system(size: 12, weight: .bold))
                                             Text("Khuyên dùng")
                                                 .font(.system(size: 9, weight: .bold))
@@ -8952,7 +9074,7 @@ struct SettingsPopoverView: View {
                                                         editingKeyForProvider = nil
                                                     }
                                                 }
-                                                .buttonStyle(.borderedProminent)
+                                                .buttonStyle(TransToolsActionButtonStyle(prominent: true))
                                                 .controlSize(.small)
                                                 .disabled(tempKeyInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
@@ -8961,7 +9083,7 @@ struct SettingsPopoverView: View {
                                                         editingKeyForProvider = nil
                                                     }
                                                 }
-                                                .buttonStyle(.bordered)
+                                                .buttonStyle(TransToolsActionButtonStyle())
                                                 .controlSize(.small)
                                             }
                                         }
@@ -9559,7 +9681,7 @@ struct SettingsPopoverView: View {
                                 }
                                 .font(.system(size: 11))
                             }
-                            .buttonStyle(.bordered)
+                            .buttonStyle(TransToolsActionButtonStyle())
                             .controlSize(.small)
                             .padding(.leading, 26)
                         }
@@ -9714,7 +9836,7 @@ struct SettingsPopoverView: View {
                 Button("Cấp quyền") {
                     onRequest()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(TransToolsActionButtonStyle(prominent: true))
                 .controlSize(.mini)
                 .tint(TransToolsTheme.accent)
             }
@@ -9822,7 +9944,7 @@ struct AboutAppPopoverView: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
-                        Text("TransTools")
+                        Text("Trans Tools")
                             .font(.system(size: 18, weight: .bold, design: .rounded))
                         Text(appVersionDisplay)
                             .font(.system(size: 10, weight: .semibold, design: .monospaced))
@@ -10011,7 +10133,7 @@ struct AboutAppPopoverView: View {
 
             // Highlight Tags
             HStack(spacing: 12) {
-                Label("Apple & Cloud AI", systemImage: "sparkles")
+                Label("Local & Cloud AI", systemImage: "sparkles")
                 Label("Trợ lý Chip Chip", systemImage: "face.smiling.fill")
                 Label("Phụ đề HUD", systemImage: "pip.fill")
             }
@@ -10085,5 +10207,26 @@ struct AboutAppPopoverView: View {
             MascotSpritePreviewView()
         }
         .defaultSize(width: 980, height: 640)
+    }
+}
+
+// A hover-only greeting keeps the dashboard still while nobody interacts.
+private struct HoverGreetingMascotView: View {
+    let style: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var hovered = false
+
+    var body: some View {
+        MiniAvatarView(size: 110, style: style)
+            .rotationEffect(.degrees(hovered && !reduceMotion ? 5 : 0), anchor: .bottom)
+            .offset(y: hovered && !reduceMotion ? -5 : 0)
+            .scaleEffect(hovered && !reduceMotion ? 1.04 : 1)
+            .animation(hovered && !reduceMotion
+                ? .easeInOut(duration: 0.65).repeatForever(autoreverses: true)
+                : .easeOut(duration: 0.2), value: hovered)
+            .contentShape(Rectangle())
+            .onHover { hovered = $0 }
+            .onDisappear { hovered = false }
+            .accessibilityLabel("Chip Chip")
     }
 }

@@ -61,7 +61,7 @@ final class ScreenOCRService: ObservableObject {
                     await MainActor.run {
                         if captureFailed {
                             self.lastOCRText = ""; self.lastTranslatedText = ""
-                            self.notice = "Chưa chụp được màn hình. Kiểm tra quyền Ghi màn hình cho TransTools trong Cài đặt hệ thống rồi thử lại."
+                            self.notice = "Chưa chụp được màn hình. Kiểm tra quyền Ghi màn hình cho Trans Tools trong Cài đặt hệ thống rồi thử lại."
                             self.showReview = true
                         }
                         self.isCapturing = false
@@ -147,7 +147,7 @@ final class ScreenOCRService: ObservableObject {
         let text = lastOCRText, source = sourceLanguage, target = targetLanguage
         if source == target { lastTranslatedText = text; notice = "Hai ngôn ngữ giống nhau."; return }
         if #available(macOS 15.0, *), let result = try? await AppleNativeTranslator.translate(text, from: source, to: target) {
-            lastTranslatedText = result; notice = "Đã dịch bằng Apple trên máy."; return
+            lastTranslatedText = result; notice = "Đã dịch bằng Translate · Local."; return
         }
         if let model = MeetingModel.shared, let ai = model.configuredAI,
            let result = try? await AITranslator.translate(text, from: source, to: target, domain: model.domainSpecialty, provider: ai.provider, model: ai.model, key: ai.key) {
@@ -192,9 +192,12 @@ struct ScreenOCRReviewView: View {
                 Spacer()
                 if !service.lastTranslatedText.isEmpty {
                     Button("Sao chép") { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(service.lastTranslatedText, forType: .string) }
+                        .buttonStyle(TransToolsActionButtonStyle(height: 30))
                 }
                 Button { Task { await service.translateReviewedText() } } label: { Label(service.isTranslating ? "Đang dịch…" : "Dịch", systemImage: "character.bubble") }
-                    .buttonStyle(.borderedProminent).disabled(service.isTranslating || service.lastOCRText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .buttonStyle(TransToolsActionButtonStyle(prominent: true, height: 30))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(TransToolsTheme.accent.opacity(0.45), lineWidth: 1).allowsHitTesting(false))
+                    .disabled(service.isTranslating || service.lastOCRText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }.padding(24).frame(width: 720)
     }

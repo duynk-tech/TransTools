@@ -8,6 +8,7 @@ enum SettingsSection: Int, CaseIterable, Identifiable {
     case speech = 3
     case permissions = 4
     case system = 5
+    case storage = 6
 
     var id: Int { rawValue }
 
@@ -18,6 +19,7 @@ enum SettingsSection: Int, CaseIterable, Identifiable {
         case .chipchip: return "Chip Chip & Sức khỏe"
         case .speech: return "Giọng đọc & Phát âm"
         case .permissions: return "Quyền & Phím tắt"
+        case .storage: return "Lưu trữ & Dữ liệu"
         case .system: return "Hệ thống & Cập nhật"
         }
     }
@@ -29,6 +31,7 @@ enum SettingsSection: Int, CaseIterable, Identifiable {
         case .chipchip: return "Hoạt cảnh, đi dạo Dock & nhắc nhở giải lao Pomodoro"
         case .speech: return "Giọng tự nhiên Local, giọng AI trực tuyến & phát âm"
         case .permissions: return "Trạng thái cấp quyền & danh sách phím tắt"
+        case .storage: return "Mô hình đã cài, học liệu offline & cache"
         case .system: return "Tự khởi động cùng Mac & kiểm tra phiên bản mới"
         }
     }
@@ -40,6 +43,7 @@ enum SettingsSection: Int, CaseIterable, Identifiable {
         case .chipchip: return "face.smiling.fill"
         case .speech: return "waveform"
         case .permissions: return "hand.raised.fill"
+        case .storage: return "internaldrive.fill"
         case .system: return "gearshape.2.fill"
         }
     }
@@ -51,6 +55,7 @@ enum SettingsSection: Int, CaseIterable, Identifiable {
         case .chipchip: return .orange
         case .speech: return .teal
         case .permissions: return .green
+        case .storage: return .teal
         case .system: return .indigo
         }
     }
@@ -63,6 +68,7 @@ struct SettingsDashboardView: View {
     @State private var activeSection: SettingsSection = .translation
     @State private var editingKeyForProvider: AIProvider? = nil
     @State private var tempKeyInput: String = ""
+    @State private var keyRevision = 0
 
     var body: some View {
         HStack(spacing: 0) {
@@ -121,7 +127,7 @@ struct SettingsDashboardView: View {
                                         .fill(activeSection == section ? Color(nsColor: .selectedContentBackgroundColor).opacity(0.18) : Color.clear)
                                 )
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.plain).textSelection(.disabled).transToolsButtonCursor()
                             .accessibilityAddTraits(activeSection == section ? .isSelected : [])
                         }
                     }
@@ -135,7 +141,7 @@ struct SettingsDashboardView: View {
                     Image(systemName: "info.circle")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
-                    Text("TransTools \(appVersionDisplay)")
+                    Text("Trans Tools \(appVersionDisplay)")
                         .font(.system(size: 10.5, weight: .medium, design: .monospaced))
                         .foregroundStyle(.secondary)
                 }
@@ -179,6 +185,8 @@ struct SettingsDashboardView: View {
                         speechSettingsSection
                     case .permissions:
                         permissionsSettingsSection
+                    case .storage:
+                        StorageSettingsView(model: model)
                     case .system:
                         systemSettingsSection
                     }
@@ -239,14 +247,6 @@ struct SettingsDashboardView: View {
                 }
             }
 
-            settingsCard(title: "Tách người nói", icon: "person.2.wave.2", color: .teal) {
-                Toggle("Phân biệt giọng thành Người nói 1, 2…", isOn: $model.speakerSeparationEnabled)
-                    .toggleStyle(TrailingSettingsToggleStyle())
-                Text(model.speakerSeparationStatus).font(.caption).foregroundStyle(.secondary)
-                Text("Lần đầu cần tải mô hình CoreML. Audio được phân tích trên máy theo khoảng 10 giây; phụ đề vẫn hiện ngay. Đoạn có nhiều giọng hiển thị nhiều nhãn, không đoán tên thật. Giọng ngắn hoặc nói chồng có thể chưa phân biệt được.")
-                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            }
-
             settingsCard(title: "Nhịp dịch cuộc họp", icon: "captions.bubble", color: .teal) {
                 Picker("Độ trễ bản dịch", selection: $model.liveTranslationPacing) {
                     ForEach(LiveTranslationPacing.allCases) { mode in Text(mode.title).tag(mode) }
@@ -260,7 +260,7 @@ struct SettingsDashboardView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     // Apple Native
                     engineRow(
-                        title: "Apple Translate · Local",
+                        title: "Translate · Local",
                         subtitle: "Dịch Local. Dùng ngoại tuyến sau khi tải ngôn ngữ được hỗ trợ.",
                         icon: "apple.logo",
                         isSelected: model.provider == .apple
@@ -340,9 +340,13 @@ struct SettingsDashboardView: View {
                                     }
                                 }
 
-                                Text(p.defaultModels.joined(separator: " • "))
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(.secondary)
+                                if hasKey {
+                                    ProviderModelSettingsView(model: model, provider: p)
+                                        .id("\(p.rawValue)-\(keyRevision)")
+                                } else {
+                                    Text("Nhập API key để tải và chọn model từ nhà cung cấp.")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
                             }
 
                             HStack(spacing: 12) {
@@ -389,6 +393,7 @@ struct SettingsDashboardView: View {
 
                                     Button("Lưu & Áp dụng") {
                                         model.saveKeyForProvider(tempKeyInput, for: p)
+                                        keyRevision += 1
                                         model.setProvider(p)
                                         withAnimation { editingKeyForProvider = nil }
                                     }
@@ -400,6 +405,7 @@ struct SettingsDashboardView: View {
                                     if hasKey {
                                         Button("Xóa Key") {
                                             model.saveKeyForProvider("", for: p)
+                                            keyRevision += 1
                                             withAnimation { editingKeyForProvider = nil }
                                         }
                                         .buttonStyle(SettingsActionButtonStyle())
@@ -573,14 +579,14 @@ struct SettingsDashboardView: View {
             settingsCard(title: "Khởi động & Trải nghiệm", icon: "power", color: .indigo) {
                 HStack(spacing: 20) {
                     VStack(alignment: .leading, spacing: 5) {
-                        Text("Tự động mở TransTools khi khởi động máy Mac")
+                        Text("Tự động mở Trans Tools khi khởi động máy Mac")
                             .font(.system(size: 13, weight: .medium))
                         Text("Giúp phím tắt dịch nhanh và Trợ lý Chip Chip luôn sẵn sàng phục vụ bạn.")
                             .font(.system(size: 11)).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    Toggle("Tự động mở TransTools khi khởi động máy Mac", isOn: Binding(
+                    Toggle("Tự động mở Trans Tools khi khởi động máy Mac", isOn: Binding(
                         get: { model.isLaunchAtLoginEnabled },
                         set: { model.setLaunchAtLogin(enabled: $0) }
                     ))
@@ -607,7 +613,7 @@ struct SettingsDashboardView: View {
             .background(model.mascotStyle == value ? TransToolsTheme.accent.opacity(0.12) : Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(model.mascotStyle == value ? TransToolsTheme.accent.opacity(0.45) : Color.primary.opacity(0.1)))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plain).textSelection(.disabled).transToolsButtonCursor()
         .accessibilityAddTraits(model.mascotStyle == value ? .isSelected : [])
     }
 
@@ -630,12 +636,7 @@ struct SettingsDashboardView: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(nsColor: .controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-        )
+        .transToolsPanel()
     }
 
     private func engineRow(title: String, subtitle: String, icon: String, isSelected: Bool, onSelect: @escaping () -> Void) -> some View {
@@ -665,7 +666,7 @@ struct SettingsDashboardView: View {
             .background(isSelected ? TransToolsTheme.navy.opacity(0.08) : Color.primary.opacity(0.02))
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plain).textSelection(.disabled).transToolsButtonCursor()
     }
 
     private func permissionRow(title: String, subtitle: String, icon: String, isGranted: Bool, onRequest: @escaping () -> Void) -> some View {
@@ -725,19 +726,7 @@ struct SettingsDashboardView: View {
     }
 }
 
-struct SettingsActionButtonStyle: ButtonStyle {
-    var prominent = false
-    @Environment(\.isEnabled) private var isEnabled
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 12.5, weight: .semibold))
-            .padding(.horizontal, 16).padding(.vertical, 10)
-            .frame(minHeight: 40)
-            .foregroundStyle(prominent ? Color.white : Color.primary)
-            .background(prominent ? TransToolsTheme.accent : Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-            .opacity(isEnabled ? (configuration.isPressed ? 0.7 : 1) : 0.45)
-    }
-}
+typealias SettingsActionButtonStyle = TransToolsActionButtonStyle
 
 /// A full-width settings row with a consistently aligned trailing switch.
 struct TrailingSettingsToggleStyle: ToggleStyle {

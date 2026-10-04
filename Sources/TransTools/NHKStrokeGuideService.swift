@@ -16,7 +16,9 @@ final class NHKStrokeGuideService: ObservableObject {
         return dir
     }
 
-    private init() {}
+    private init() { memoryCache.countLimit = 24 }
+
+    func clearMemoryCache() { memoryCache.removeAllObjects() }
 
     func imageURL(for id: String, isKatakana: Bool) -> URL {
         let folder = isKatakana ? "kana" : "hira"

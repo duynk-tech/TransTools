@@ -1,0 +1,116 @@
+<UserControl x:Class="TransTools.Views.ConversationView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Topic & Controls Bar -->
+        <Border Grid.Row="0" Background="#1E293B" CornerRadius="12" Padding="16" Margin="0,0,0,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Chủ đề luyện nói:" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox SelectedValue="{Binding CurrentTopic}" Width="240" Background="#0F172A" Foreground="#F8FAFC" Margin="0,0,16,0">
+                        <ComboBoxItem Content="Phỏng vấn xin việc (Job Interview)" IsSelected="True"/>
+                        <ComboBoxItem Content="Du lịch &amp; Nhận phòng khách sạn"/>
+                        <ComboBoxItem Content="Công nghệ &amp; Lập trình viên"/>
+                        <ComboBoxItem Content="Giao tiếp xã giao hàng ngày"/>
+                        <ComboBoxItem Content="Thuyết trình dự án"/>
+                    </ComboBox>
+
+                    <TextBlock Text="Ngôn ngữ luyện:" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox SelectedValue="{Binding TargetLanguage}" Width="150" Background="#0F172A" Foreground="#F8FAFC">
+                        <ComboBoxItem Content="Tiếng Anh (English)" IsSelected="True"/>
+                        <ComboBoxItem Content="Tiếng Nhật (日本語)"/>
+                        <ComboBoxItem Content="Tiếng Trung (中文)"/>
+                        <ComboBoxItem Content="Tiếng Hàn (한국어)"/>
+                    </ComboBox>
+                </StackPanel>
+
+                <CheckBox Grid.Column="1" Content="Tự động đọc câu trả lời bằng giọng AI" IsChecked="{Binding AutoSpeakResponse}" Foreground="#E2E8F0" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- Chat History -->
+        <Border Grid.Row="1" Background="#1E293B" CornerRadius="12" Padding="16">
+            <ListBox ItemsSource="{Binding Messages}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,4,0,8">
+                            <!-- User Message -->
+                            <Border Background="#2563EB" CornerRadius="12,12,2,12" Padding="14,10"
+                                    HorizontalAlignment="Right" MaxWidth="500">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsUser}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Text}" FontSize="14" Foreground="White" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding TimeString}" FontSize="10" Foreground="#BFDBFE" HorizontalAlignment="Right" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- AI Message -->
+                            <Border Background="#0F172A" BorderBrush="#334155" BorderThickness="1"
+                                    CornerRadius="12,12,12,2" Padding="14,10"
+                                    HorizontalAlignment="Left" MaxWidth="540">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsUser}" Value="False">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <TextBlock Text="🐣 Chip Chip AI" FontSize="11" FontWeight="Bold" Foreground="#F59E0B"/>
+                                        <TextBlock Text="{Binding TimeString}" FontSize="10" Foreground="#64748B" Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Text}" FontSize="14" Foreground="#F8FAFC" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding Translation}" FontSize="12" Foreground="#38BDF8" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <!-- Input Bar -->
+        <Border Grid.Row="2" Background="#1E293B" CornerRadius="12" Padding="12" Margin="0,16,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBox Text="{Binding UserInput, UpdateSourceTrigger=PropertyChanged}"
+                         Background="Transparent" Foreground="#F8FAFC" BorderThickness="0"
+                         FontSize="14" Padding="8,4" VerticalAlignment="Center"
+                         KeyDown="InputTextBox_KeyDown"/>
+
+                <Button Grid.Column="1" Content="Gửi ➔" Command="{Binding SendMessageCommand}"
+                        Background="#2563EB" Foreground="White" FontWeight="Bold"
+                        Padding="20,10" Cursor="Hand"/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

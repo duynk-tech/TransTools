@@ -87,7 +87,6 @@ public final class VocabularyManager: ObservableObject {
 
     @Published public var items: [VocabularyItem] = []
     private let storageKey = "TransTools_SavedVocabulary_v1"
-    private let synthesizer = AVSpeechSynthesizer()
 
     private init() {
         loadItems()
@@ -224,61 +223,12 @@ public final class VocabularyManager: ObservableObject {
         }
     }
 
-    private var audioPlayer: AVAudioPlayer?
-    private var audioTask: Task<Void, Never>?
-    private var playbackToken = UUID()
-
     public func speak(_ text: String, language: String = "en-US", rate: Float = 0.46) {
-        if synthesizer.isSpeaking {
-            synthesizer.stopSpeaking(at: .immediate)
-        }
-        audioPlayer?.stop()
-        audioPlayer = nil
-        audioTask?.cancel()
-        audioTask = nil
-
-        let voiceLang: String
-        switch language.lowercased() {
-        case "ja", "ja-jp": voiceLang = "ja-JP"
-        case "zh", "zh-cn", "zh-hans": voiceLang = "zh-CN"
-        case "ko", "ko-kr": voiceLang = "ko-KR"
-        case "vi", "vi-vn": voiceLang = "vi-VN"
-        case "en", "en-us": voiceLang = "en-US"
-        default: voiceLang = language
-        }
-
-        if TTSService.shared.useEdgeNaturalVoice {
-            let token = UUID()
-            self.playbackToken = token
-            let rateMod: Float = rate / 0.46
-            self.audioTask = Task { [weak self] in
-                do {
-                    let data = try await EdgeTTSService.shared.synthesize(text: text, locale: voiceLang, rateModifier: rateMod)
-                    try Task.checkCancellation()
-                    guard let self, self.playbackToken == token else { return }
-                    let player = try AVAudioPlayer(data: data)
-                    player.volume = TTSService.shared.speechVolume
-                    self.audioPlayer = player
-                    player.play()
-                } catch {
-                    guard let self, !Task.isCancelled, self.playbackToken == token else { return }
-                    self.playFallbackSystemUtterance(text: text, voiceLang: voiceLang, rate: rate)
-                }
-            }
-            return
-        }
-
-        playFallbackSystemUtterance(text: text, voiceLang: voiceLang, rate: rate)
-    }
-
-    private func playFallbackSystemUtterance(text: String, voiceLang: String, rate: Float) {
-        let utterance = AVSpeechUtterance(string: text)
-        let settings = TTSService.shared
-        utterance.voice = settings.bestVoice(for: voiceLang) ?? AVSpeechSynthesisVoice(language: voiceLang)
-        utterance.rate = max(0.25, min(0.75, settings.speechRate * (rate / 0.46) + settings.voiceTone.rateModifier))
-        utterance.volume = settings.speechVolume
-        utterance.pitchMultiplier = settings.voiceTone.pitchMultiplier
-        synthesizer.speak(utterance)
+        let normalized = language.lowercased().replacingOccurrences(of: "_", with: "-")
+        let selected = AppLanguage.allCases.first { $0.speechLocale.lowercased() == normalized }
+            ?? AppLanguage.allCases.first { $0.rawValue == LanguageVoicePreferences.code(language) }
+        guard let selected else { return }
+        TTSService.shared.speak(text: text, language: selected, rateMultiplier: rate / 0.46)
     }
 
     public func fillMissingPhonetics() async {
@@ -777,7 +727,7 @@ public struct MascotBubbleView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 0) {
+        ZStack(alignment: model.bubbleOnRight ? .leading : .trailing) {
             // Main Bubble Card
             VStack(alignment: .leading, spacing: 7) {
                 // Header: Word + Audio + Source + Close
@@ -805,17 +755,7 @@ public struct MascotBubbleView: View {
                                 Label(model.bubbleMode == "viToEn" ? "Dịch VI → EN" : "Sửa ngữ pháp", systemImage: "sparkles")
                                     .font(.system(size: 11, weight: .bold, design: .rounded))
                                     .foregroundStyle(TransToolsTheme.navy)
-                            } else {
-                                Text(model.bubbleWord)
-                                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                                    .foregroundStyle(.primary)
-                                    .lineLimit(1)
 
-                                if !model.bubblePhonetic.isEmpty {
-                                    Text(model.bubblePhonetic)
-                                        .font(.system(size: 10, weight: .medium, design: .monospaced))
-                                        .foregroundStyle(TransToolsTheme.navy)
-                                }
                             }
                         }
                     }
@@ -858,19 +798,21 @@ public struct MascotBubbleView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 3)
                 } else {
+                    ScrollView {
+                    VStack(alignment: .leading, spacing: 8) {
                     if (model.bubbleMode == "grammar" || model.bubbleMode == "viToEn") {
                         VStack(alignment: .leading, spacing: 5) {
                             Text(model.bubbleMeaning)
                                 .font(.system(size: 12.5, weight: .bold, design: .rounded))
                                 .foregroundStyle(Color.primary)
                                 .fixedSize(horizontal: false, vertical: true)
-                                .lineLimit(4)
+                                .textSelection(.enabled)
 
                             if model.bubbleWord != model.bubbleMeaning {
                                 Text("Gốc: \"\(model.bubbleWord)\"")
                                     .font(.system(size: 10, design: .rounded))
                                     .foregroundStyle(.secondary)
-                                    .lineLimit(2)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                         }
                     } else {
@@ -878,8 +820,20 @@ public struct MascotBubbleView: View {
                             .font(.system(size: 12.5, weight: .semibold))
                             .foregroundStyle(.primary)
                             .fixedSize(horizontal: false, vertical: true)
-                            .lineLimit(3)
+                            .textSelection(.enabled)
                     }
+
+                    if model.bubbleMode == "translate" {
+                        Text(model.bubbleWord)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .textSelection(.enabled)
+                    }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                     // Footer actions
                     HStack(spacing: 7) {
@@ -982,35 +936,57 @@ public struct MascotBubbleView: View {
                 }
             }
             .padding(10)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color(nsColor: .windowBackgroundColor).opacity(0.96))
-                    .shadow(color: Color.black.opacity(0.18), radius: 8, y: 3)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(Color.primary.opacity(0.12), lineWidth: 1)
-            )
-
-            // Triangle tail pointing down to Chip Chip
-            BubbleTail()
-                .fill(Color(nsColor: .windowBackgroundColor).opacity(0.96))
-                .frame(width: 14, height: 6)
-                .offset(y: -1)
+            .padding(.horizontal, 10)
         }
-        .frame(width: 280)
+        .frame(width: 360, height: model.speechBubbleHeight)
+        .background {
+            MascotBoardBubbleShape(tailOnLeft: model.bubbleOnRight)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.14), radius: 8, y: 3)
+        }
+        .overlay {
+            MascotBoardBubbleShape(tailOnLeft: model.bubbleOnRight)
+                .stroke(TransToolsTheme.accent.opacity(0.58), lineWidth: 2.5)
+                .allowsHitTesting(false)
+        }
+        .environment(\.colorScheme, .light)
         .onHover { hov in
             model.isBubbleHovered = hov
         }
     }
 }
 
-private struct BubbleTail: Shape {
+// One outline keeps the white board and its pointer joined without a border seam.
+private struct MascotBoardBubbleShape: Shape {
+    var tailOnLeft: Bool
+
     func path(in rect: CGRect) -> Path {
+        let left = rect.minX + 10
+        let right = rect.maxX - 10
+        let top = rect.minY + 2
+        let bottom = rect.maxY - 2
+        let radius: CGFloat = 12
+        let middle = rect.midY
         var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
+        path.move(to: CGPoint(x: left + radius, y: top))
+        path.addLine(to: CGPoint(x: right - radius, y: top))
+        path.addQuadCurve(to: CGPoint(x: right, y: top + radius), control: CGPoint(x: right, y: top))
+        if !tailOnLeft {
+            path.addLine(to: CGPoint(x: right, y: middle - 8))
+            path.addLine(to: CGPoint(x: rect.maxX - 2, y: middle))
+            path.addLine(to: CGPoint(x: right, y: middle + 8))
+        }
+        path.addLine(to: CGPoint(x: right, y: bottom - radius))
+        path.addQuadCurve(to: CGPoint(x: right - radius, y: bottom), control: CGPoint(x: right, y: bottom))
+        path.addLine(to: CGPoint(x: left + radius, y: bottom))
+        path.addQuadCurve(to: CGPoint(x: left, y: bottom - radius), control: CGPoint(x: left, y: bottom))
+        if tailOnLeft {
+            path.addLine(to: CGPoint(x: left, y: middle + 8))
+            path.addLine(to: CGPoint(x: rect.minX + 2, y: middle))
+            path.addLine(to: CGPoint(x: left, y: middle - 8))
+        }
+        path.addLine(to: CGPoint(x: left, y: top + radius))
+        path.addQuadCurve(to: CGPoint(x: left + radius, y: top), control: CGPoint(x: left, y: top))
         path.closeSubpath()
         return path
     }
@@ -1288,7 +1264,7 @@ public struct VocabularyNotebookSectionView: View {
                 Spacer()
 
                 Button("Siêu từ điển") { showDictionary = true }
-                    .buttonStyle(.bordered).controlSize(.small)
+                    .buttonStyle(TransToolsActionButtonStyle()).controlSize(.small)
 
                 // Practice Flashcards Button
                 Button {

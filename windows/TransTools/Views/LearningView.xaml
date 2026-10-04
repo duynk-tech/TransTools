@@ -1,0 +1,163 @@
+<UserControl x:Class="TransTools.Views.LearningView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:TransTools.ViewModels">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top Header & Streak Stats -->
+        <Border Grid.Row="0" Background="#1E293B" CornerRadius="12" Padding="16" Margin="0,0,0,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="🔥 Chuỗi học:" FontSize="14" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="{Binding DailyStreak, StringFormat='{}{0} ngày liên tiếp'}" FontSize="15" FontWeight="Bold" Foreground="#F59E0B" VerticalAlignment="Center" Margin="0,0,24,0"/>
+
+                    <TextBlock Text="🎯 Mục tiêu hôm nay:" FontSize="14" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="{Binding WordsLearnedToday}" FontSize="15" FontWeight="Bold" Foreground="#10B981" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding DailyGoal, StringFormat='/ {0} từ'}" FontSize="14" Foreground="#64748B" VerticalAlignment="Center" Margin="0,0,24,0"/>
+
+                    <!-- Sub Tab Selector -->
+                    <StackPanel Orientation="Horizontal" Background="#0F172A" Margin="0,0,0,0">
+                        <RadioButton Content="Thẻ từ vựng" IsChecked="True" Foreground="#F8FAFC" Margin="8,4" Checked="VocabTab_Checked"/>
+                        <RadioButton Content="Bảng chữ cái &amp; Phát âm" Foreground="#F8FAFC" Margin="8,4" Checked="AlphabetTab_Checked"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Language Selector -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <ComboBox SelectedValue="{Binding SelectedLanguage}" Width="160" Background="#0F172A" Foreground="#F8FAFC" SelectionChanged="Language_SelectionChanged">
+                        <ComboBoxItem Content="Tiếng Anh (EN)" Tag="en" IsSelected="True"/>
+                        <ComboBoxItem Content="Tiếng Nhật (JA)" Tag="ja"/>
+                        <ComboBoxItem Content="Tiếng Trung (ZH)" Tag="zh"/>
+                        <ComboBoxItem Content="Tiếng Hàn (KO)" Tag="ko"/>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Content Area: Controlled by Tab -->
+        <!-- Tab 1: Flashcard & Vocab List -->
+        <Grid x:Name="VocabTabGrid" Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="380"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Interactive Flashcard -->
+            <Border Grid.Column="0" Background="#1E293B" CornerRadius="16" Padding="24" Margin="0,0,16,0" Cursor="Hand" MouseLeftButtonDown="Flashcard_Click">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="THẺ TỪ VỰNG (NHẤP ĐỂ LẬT)" FontSize="11" FontWeight="Bold" Foreground="#64748B" HorizontalAlignment="Center"/>
+
+                    <!-- Action Buttons -->
+                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0">
+                        <Button Content="🔊 Phát âm" Command="{Binding SpeakCurrentWordCommand}" Background="#2563EB" Foreground="White" Padding="14,6" Margin="0,0,8,0" Cursor="Hand"/>
+                        <Button Content="🔄 Lật thẻ" Command="{Binding FlipFlashcardCommand}" Background="#334155" Foreground="White" Padding="14,6" Cursor="Hand"/>
+                    </StackPanel>
+
+                    <!-- Flashcard Center Content -->
+                    <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <!-- Front Face (Word & Phonetic) -->
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsFlashcardFlipped}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Text="{Binding SelectedWord.Word}" FontSize="28" FontWeight="Bold" Foreground="#F8FAFC" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding SelectedWord.Phonetic}" FontSize="15" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                        </StackPanel>
+
+                        <!-- Back Face (Meaning & Example) -->
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsFlashcardFlipped}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Text="{Binding SelectedWord.Meaning}" FontSize="20" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding SelectedWord.ExampleSentence}" FontSize="13" Foreground="#E2E8F0" HorizontalAlignment="Center" TextWrapping="Wrap" Margin="0,10,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </DockPanel>
+            </Border>
+
+            <!-- Vocabulary List -->
+            <Border Grid.Column="1" Background="#1E293B" CornerRadius="16" Padding="16">
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
+                        <TextBlock Text="Danh sách từ vựng" FontSize="15" FontWeight="Bold" Foreground="#F8FAFC"/>
+                    </Grid>
+
+                    <ListBox ItemsSource="{Binding VocabularyList}" SelectedItem="{Binding SelectedWord}" Background="Transparent" BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#0F172A" CornerRadius="8" Padding="12" Margin="0,0,0,6">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Word}" FontSize="15" FontWeight="Bold" Foreground="#F8FAFC"/>
+                                                <TextBlock Text="{Binding Phonetic}" FontSize="12" Foreground="#64748B" Margin="8,2,0,0"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Meaning}" FontSize="13" Foreground="#38BDF8" Margin="0,2,0,0"/>
+                                            <TextBlock Text="{Binding ExampleSentence}" FontSize="12" Foreground="#94A3B8" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- Tab 2: Alphabet & Pronunciation Grid -->
+        <Border x:Name="AlphabetTabBorder" Grid.Row="1" Background="#1E293B" CornerRadius="16" Padding="20" Visibility="Collapsed">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Bảng chữ cái &amp; Ký tự phiên âm chuẩn (Bấm để nghe phát âm)" FontSize="15" FontWeight="Bold" Foreground="#F8FAFC" Margin="0,0,0,14"/>
+
+                <ListBox ItemsSource="{Binding AlphabetList}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Width="160" Height="100" Background="#0F172A" BorderBrush="#334155" BorderThickness="1" CornerRadius="10" Padding="10" Margin="6" Cursor="Hand" MouseLeftButtonDown="AlphabetItem_Click">
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <TextBlock Text="{Binding Character}" FontSize="24" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Transcription}" FontSize="12" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                    <TextBlock Text="{Binding Example}" FontSize="10" Foreground="#64748B" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

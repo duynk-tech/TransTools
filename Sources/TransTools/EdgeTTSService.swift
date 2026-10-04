@@ -8,7 +8,8 @@ import AVFoundation
 public actor EdgeTTSService {
     public static let shared = EdgeTTSService()
 
-    private var memoryCache: [String: Data] = [:]
+    private var memoryCache = BoundedAudioCache(limit: 16 * 1024 * 1024)
+    private var memoryPressure: DispatchSourceMemoryPressure?
     private let cacheDirectory: URL
 
     // Trusted Microsoft Edge Client Token
@@ -19,7 +20,11 @@ public actor EdgeTTSService {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first ?? URL(fileURLWithPath: NSTemporaryDirectory())
         self.cacheDirectory = caches.appendingPathComponent("TransToolsEdgeTTS", isDirectory: true)
         try? FileManager.default.createDirectory(at: self.cacheDirectory, withIntermediateDirectories: true)
+        let source = DispatchSource.makeMemoryPressureSource(eventMask: [.warning, .critical], queue: .global(qos: .utility))
+        source.setEventHandler { Task { await EdgeTTSService.shared.clearMemoryCache() } }
+        source.resume(); memoryPressure = source
     }
+    public func clearMemoryCache() { memoryCache.removeAll() }
 
     /// Best natural neural voice for each language
     public static func defaultVoice(for locale: String) -> String? {
@@ -68,14 +73,15 @@ public actor EdgeTTSService {
         let key = cacheKey(text: trimmed, voice: voice, ratePercent: ratePercent)
 
         // 1. Check memory cache
-        if let cached = memoryCache[key] {
+        try Task.checkCancellation()
+        if let cached = memoryCache.value(for: key) {
             return cached
         }
 
         // 2. Check disk cache
         let fileURL = cacheDirectory.appendingPathComponent("\(key).mp3")
         if let data = try? Data(contentsOf: fileURL), !data.isEmpty {
-            memoryCache[key] = data
+            memoryCache.insert(data, for: key)
             return data
         }
 
@@ -83,8 +89,10 @@ public actor EdgeTTSService {
         let audioData = try await fetchFromWebSocket(text: trimmed, voice: voice, ratePercent: ratePercent)
 
         // Save to cache
-        memoryCache[key] = audioData
-        try? audioData.write(to: fileURL)
+        try Task.checkCancellation()
+        memoryCache.insert(audioData, for: key)
+        try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+        try? audioData.write(to: fileURL, options: .atomic)
 
         return audioData
     }
@@ -160,6 +168,7 @@ public actor EdgeTTSService {
                         let headerData = rawData.subdata(in: 2..<(headerLength + 2))
                         if let headerString = String(data: headerData, encoding: .utf8), headerString.contains("Path:audio") {
                             let payload = rawData.subdata(in: (headerLength + 2)..<rawData.count)
+                            guard accumulatedAudio.count + payload.count <= 16 * 1024 * 1024 else { throw URLError(.dataLengthExceedsMaximum) }
                             accumulatedAudio.append(payload)
                         }
                     }

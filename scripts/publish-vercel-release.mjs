@@ -47,13 +47,13 @@ async function main() {
     });
     console.log(`Uploaded TransTools.${extension}`);
   }
-  let notes = `TransTools v${version}: cải tiến và sửa lỗi.`;
+  let notes = `Trans Tools v${version}: cải tiến và sửa lỗi.`;
   if (process.env.RELEASE_NOTES_FILE) {
     try { notes = await readFile(process.env.RELEASE_NOTES_FILE, 'utf8'); }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
   }
   const release = {
-    schemaVersion: 1, version, title: `TransTools v${version}`, notes,
+    schemaVersion: 1, version, title: `Trans Tools v${version}`, notes,
     publishedAt: new Date().toISOString(), minimumMacOS: '14.0',
     releaseURL: 'https://trans-tools.vercel.app/releases', ...assets
   };

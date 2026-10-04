@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>TransTools</RootNamespace>
+    <AssemblyName>TransTools</AssemblyName>
+    <ApplicationTitle>Trans Tools</ApplicationTitle>
+    <Company>DuyNK-Tech</Company>
+    <Product>Trans Tools for Windows</Product>
+    <Version>1.4.0</Version>
+    
+    <!-- Publishing Settings -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MVVM Community Toolkit -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+
+    <!-- Audio & Loopback Capture -->
+    <PackageReference Include="NAudio" Version="2.2.1" />
+
+    <!-- Offline STT (Whisper) & Runtimes -->
+    <PackageReference Include="Whisper.net" Version="1.7.4" />
+    <PackageReference Include="Whisper.net.AllRuntimes" Version="1.7.4" />
+    
+    <!-- Local ONNX Runtime for Natural TTS -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.20.0" />
+
+    <!-- Export Word Document -->
+    <PackageReference Include="DocumentFormat.OpenXml" Version="3.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\**\*" />
+  </ItemGroup>
+
+</Project>

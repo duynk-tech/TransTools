@@ -14,3 +14,7 @@ work/
 .vercel/
 node_modules/
 .env*
+*.ses
+windows/build/
+windows/**/bin/
+windows/**/obj/

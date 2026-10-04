@@ -123,7 +123,7 @@ struct LetterPronunciationView: View {
                 } label: {
                     Label(voiceService.isSpeaking ? "Đang phát..." : "Phát âm ngay", systemImage: voiceService.isSpeaking ? "speaker.wave.3.fill" : "speaker.wave.2")
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(TransToolsActionButtonStyle(prominent: true))
                 .tint(TransToolsTheme.accent)
 
                 // Nút mở nguồn tham khảo
@@ -132,7 +132,7 @@ struct LetterPronunciationView: View {
                 } label: {
                     Image(systemName: "safari")
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(TransToolsActionButtonStyle())
                 .help("Mở bài học tại nguồn (\(sourceName))")
             }
             .controlSize(.large)

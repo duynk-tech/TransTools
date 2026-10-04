@@ -144,7 +144,9 @@ struct MascotWalkSpriteView: View {
     @State private var cycleStart = Date()
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: reduceMotion)) { context in
+        // Parent-driven walk already supplies time/distance; do not create a
+        // second display refresh loop for the same animation.
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: reduceMotion || time != nil || distance != nil)) { context in
             let frames = towardRight ? MascotSpriteLibrary.walkRight : MascotSpriteLibrary.walkLeft
             if !reduceMotion, !frames.isEmpty {
                 let count = frames.count

@@ -72,7 +72,7 @@ struct JapaneseNHKLearningView: View {
                     } label: {
                         Label("Dừng phát", systemImage: "stop.fill")
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(TransToolsActionButtonStyle(prominent: true))
                     .tint(.red)
                 } else {
                     Button {
@@ -80,7 +80,7 @@ struct JapaneseNHKLearningView: View {
                     } label: {
                         Label("Phát tất cả", systemImage: "play.fill")
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(TransToolsActionButtonStyle())
                     .help("Tự động phát tuần tự toàn bộ bảng chữ cái đang xem")
                 }
 
@@ -188,7 +188,7 @@ struct JapaneseNHKLearningView: View {
                                 }
                                 .font(.callout.bold())
                             }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(TransToolsActionButtonStyle(prominent: true))
                             .tint(TransToolsTheme.accent)
                         }
                         .padding(10)
@@ -218,7 +218,7 @@ struct JapaneseNHKLearningView: View {
                                 Image(systemName: "speaker.wave.2")
                                     .font(.caption)
                             }
-                            .buttonStyle(.bordered)
+                            .buttonStyle(TransToolsActionButtonStyle())
                             .disabled(LocalJapaneseRecordings.file(for: selectedItem.exampleWord) == nil)
                             .help("Từ minh họa này chưa có bản ghi riêng")
                         }

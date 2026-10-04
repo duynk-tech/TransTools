@@ -460,7 +460,7 @@ private struct SessionDetailView: View {
                         }
                         isEditingTitle = false
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(TransToolsActionButtonStyle(prominent: true))
                     .tint(.purple)
                     .controlSize(.small)
                 } else {
@@ -515,7 +515,7 @@ private struct SessionDetailView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                     .buttonStyle(.plain)
-                    .help("Trích xuất việc cần làm (Action Items) từ cuộc họp và thêm vào Apple Reminders")
+                    .help("Trích xuất việc cần làm (Action Items) từ cuộc họp và thêm vào Nhắc nhở")
 
                     // Export to Word (.docx)
                     Button {
@@ -910,10 +910,6 @@ private struct NotebookCaptionCard: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             // Vietnamese Translation
-            if let speakers = item.speakers {
-                Text(speakers.isEmpty ? "Chưa phân biệt" : speakers.map { "Người nói \($0)" }.joined(separator: " · "))
-                    .font(.caption.weight(.semibold)).foregroundStyle(TransToolsTheme.accent)
-            }
             if !item.vietnamese.isEmpty {
                 Text(item.vietnamese)
                     .font(.system(size: 13, weight: .regular))
@@ -981,7 +977,7 @@ struct MeetingActionItemsSheetView: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(TransToolsTheme.mint)
 
             Divider()
 
@@ -1012,7 +1008,7 @@ struct MeetingActionItemsSheetView: View {
                             await runExtraction()
                         }
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(TransToolsActionButtonStyle(prominent: true))
                     .tint(TransToolsTheme.navy)
                     Spacer()
                 }
@@ -1058,8 +1054,7 @@ struct MeetingActionItemsSheetView: View {
                             }
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(Color(nsColor: .controlBackgroundColor))
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .transToolsPanel()
                         }
 
                         // Add new item input
@@ -1114,24 +1109,24 @@ struct MeetingActionItemsSheetView: View {
                         await runExtraction()
                     }
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(TransToolsActionButtonStyle())
                 .disabled(extractor.isExtracting)
 
                 Button(action: exportToReminders) {
                     HStack(spacing: 6) {
                         Image(systemName: "calendar.badge.plus")
-                        Text("Xuất vào Apple Reminders")
+                        Text("Xuất vào Nhắc nhở")
                     }
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(TransToolsActionButtonStyle(prominent: true))
                 .tint(TransToolsTheme.navy)
                 .disabled(items.isEmpty || extractor.isExtracting)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(TransToolsTheme.mint)
         }
-        .frame(width: 540, height: 460)
+        .frame(width: 640, height: 500)
         .onAppear {
             Task {
                 await runExtraction()

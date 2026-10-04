@@ -13,9 +13,15 @@ enum LiveTranslationPacing: String, CaseIterable, Identifiable {
         switch self { case .fast: return 1; case .balanced: return 2; case .contextual: return 3 }
     }
     func ready(text: String, quiet: TimeInterval, elapsed: TimeInterval) -> Bool {
-        if elapsed >= maximumWait { return true }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let sentenceEnded = trimmed.last.map { ".!?。！？".contains($0) } ?? false
-        return quiet >= (sentenceEnded ? min(pause, 0.25) : pause)
+        // Short live fragments need a longer pause; recognizer final results
+        // bypass this gate, so short complete answers still translate promptly.
+        let wordCount = trimmed.split(whereSeparator: { $0.isWhitespace }).count
+        let isShortFragment = wordCount < 4 && !sentenceEnded
+            && !trimmed.contains(where: { "。！？，、".contains($0) }) && trimmed.count < 16
+        let contextPause = isShortFragment ? max(pause, 1.5) : pause
+        if elapsed >= maximumWait && (!isShortFragment || quiet >= contextPause) { return true }
+        return quiet >= (sentenceEnded ? min(pause, 0.25) : contextPause)
     }
 }

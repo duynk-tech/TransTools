@@ -1,0 +1,68 @@
+<Window x:Class="TransTools.Views.FloatingSubtitleWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Phụ đề Trans Tools"
+        Height="110" Width="720"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+
+    <Border Background="#E60F172A"
+            CornerRadius="16"
+            BorderBrush="#33FFFFFF"
+            BorderThickness="1"
+            Padding="16,10">
+        
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Control Bar (Drag Handle, Mode, Font Size & Close) -->
+            <Grid Grid.Row="0" Margin="0,0,0,4">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <Ellipse Width="8" Height="8" Fill="#10B981" Margin="0,0,6,0"/>
+                    <TextBlock Text="Trans Tools" FontSize="11" FontWeight="Bold" Foreground="#F8FAFC" Margin="0,0,12,0"/>
+
+                    <!-- Subtitle Mode Toggles -->
+                    <RadioButton x:Name="ModeBilingual" Content="Song ngữ" IsChecked="True" Foreground="#94A3B8" FontSize="10" Margin="0,0,8,0" Checked="Mode_Checked"/>
+                    <RadioButton x:Name="ModeOriginal" Content="Tiếng gốc" Foreground="#94A3B8" FontSize="10" Margin="0,0,8,0" Checked="Mode_Checked"/>
+                    <RadioButton x:Name="ModeTranslation" Content="Bản dịch" Foreground="#94A3B8" FontSize="10" Checked="Mode_Checked"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Content="A-" Width="22" Height="20" Background="#334155" Foreground="#E2E8F0" FontSize="10" Margin="0,0,4,0" Click="FontDecrease_Click" Cursor="Hand"/>
+                    <Button Content="A+" Width="22" Height="20" Background="#334155" Foreground="#E2E8F0" FontSize="10" Margin="0,0,8,0" Click="FontIncrease_Click" Cursor="Hand"/>
+                    <Button Content="✕" Width="20" Height="20" Background="Transparent" Foreground="#94A3B8" BorderThickness="0" Click="CloseButton_Click" Cursor="Hand"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Subtitle Lines -->
+            <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                <!-- Original Text -->
+                <TextBlock x:Name="OriginalText"
+                           Text="Listening to meeting audio..."
+                           FontSize="13"
+                           Foreground="#94A3B8"
+                           TextWrapping="Wrap"
+                           MaxHeight="26"
+                           TextTrimming="CharacterEllipsis"/>
+
+                <!-- Vietnamese Translated Text -->
+                <TextBlock x:Name="TranslatedText"
+                           Text="Đang lắng nghe âm thanh cuộc họp..."
+                           FontSize="16"
+                           FontWeight="Bold"
+                           Foreground="#38BDF8"
+                           TextWrapping="Wrap"
+                           MaxHeight="30"
+                           TextTrimming="CharacterEllipsis"
+                           Margin="0,2,0,0"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
