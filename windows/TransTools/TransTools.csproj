@@ -11,7 +11,7 @@
     <ApplicationTitle>Trans Tools</ApplicationTitle>
     <Company>DuyNK-Tech</Company>
     <Product>Trans Tools for Windows</Product>
-    <Version>1.4.0</Version>
+    <Version>1.4.2</Version>
     
     <!-- Publishing Settings -->
     <PublishSingleFile>true</PublishSingleFile>

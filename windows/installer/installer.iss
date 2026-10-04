@@ -1,6 +1,6 @@
 ; Inno Setup Script for Trans Tools Windows Installer
 #define MyAppName "Trans Tools"
-#define MyAppVersion "1.4.0"
+#define MyAppVersion "1.4.2"
 #define MyAppPublisher "DuyNK-Tech"
 #define MyAppURL "https://trans-tools.vercel.app/"
 #define MyAppExeName "TransTools.exe"
