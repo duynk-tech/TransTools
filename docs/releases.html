@@ -1,14 +1,16 @@
 <!doctype html>
-<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phiên bản TransTools</title><link rel="stylesheet" href="/site.css"></head>
-<body><main class="wrap section"><a class="text-link" href="/">← TransTools</a><p class="eyebrow" style="margin-top:40px">CẬP NHẬT PHẦN MỀM</p><h1 id="release-title">Phiên bản TransTools</h1><p id="release-status" class="intro">Đang lấy bản phát hành mới nhất…</p><div id="release-actions" class="actions" hidden><a class="button dark" href="/download?format=dmg">Tải DMG · Kéo vào Applications</a><a class="text-link" href="/download?format=zip">Tải ZIP ↓</a></div><pre id="release-notes" style="white-space:pre-wrap;font:inherit;line-height:1.8;margin-top:32px"></pre><p id="release-checksum" style="overflow-wrap:anywhere;font-size:12px"></p></main><script type="module">
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phiên bản Trans Tools</title><link rel="stylesheet" href="/site.css"></head>
+<body><main class="wrap section"><a class="text-link" href="/">← Trans Tools</a><p class="eyebrow" style="margin-top:40px">CẬP NHẬT PHẦN MỀM</p><h1 id="release-title">Phiên bản Trans Tools</h1><p id="release-status" class="intro">Đang lấy bản phát hành mới nhất…</p><div id="release-actions" class="actions" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:20px" hidden><a class="button dark" href="/download?format=dmg">Tải cho Mac · DMG</a><a class="button dark" href="/download?format=exe">Tải cho Windows · EXE</a><a class="text-link" href="/download?format=zip">Mac ZIP ↓</a><a class="text-link" href="/download?format=winzip">Windows ZIP ↓</a></div><pre id="release-notes" style="white-space:pre-wrap;font:inherit;line-height:1.8;margin-top:32px"></pre><p id="release-checksum" style="overflow-wrap:anywhere;font-size:12px"></p></main><script type="module">
 try {
  const response=await fetch('/updates/latest.json',{cache:'no-store'});
  if(!response.ok) throw new Error('Chưa lấy được bản phát hành. Vui lòng thử lại sau.');
  const release=await response.json();
  document.querySelector('#release-title').textContent=release.title;
- document.querySelector('#release-status').textContent='macOS '+release.minimumMacOS+'+ · '+new Date(release.publishedAt).toLocaleDateString('vi-VN');
+ document.querySelector('#release-status').textContent='Hỗ trợ macOS 14+ & Windows 10/11 · '+new Date(release.publishedAt).toLocaleDateString('vi-VN');
  document.querySelector('#release-notes').textContent=release.notes;
  document.querySelector('#release-actions').hidden=false;
- document.querySelector('#release-checksum').textContent='SHA256 DMG: '+release.dmg.sha256;
+ let checksumText = 'SHA256 DMG: ' + (release.dmg?.sha256 || 'N/A');
+ if (release.exe?.sha256) checksumText += ' | SHA256 EXE: ' + release.exe.sha256;
+ document.querySelector('#release-checksum').textContent=checksumText;
 } catch(error) { document.querySelector('#release-status').textContent=error.message; }
 </script></body></html>
