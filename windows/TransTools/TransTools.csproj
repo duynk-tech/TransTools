@@ -32,8 +32,6 @@
     <PackageReference Include="Whisper.net" Version="1.7.4" />
     <PackageReference Include="Whisper.net.AllRuntimes" Version="1.7.4" />
     
-    <!-- Local ONNX Runtime for Natural TTS -->
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.20.0" />
 
     <!-- Export Word Document -->
     <PackageReference Include="DocumentFormat.OpenXml" Version="3.1.1" />

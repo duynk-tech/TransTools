@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
+using Windows.Storage.Streams;
 
 namespace TransTools.Services.OCR;
 

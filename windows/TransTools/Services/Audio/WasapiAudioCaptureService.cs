@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using NAudio.Wave;
+using NAudio.CoreAudioApi;
 using NAudio.Wave.SampleProviders;
 
 namespace TransTools.Services.Audio;
