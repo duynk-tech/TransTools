@@ -350,25 +350,12 @@ enum AppleNativeTranslator {
         let from = Locale.Language(identifier: source.appleLanguageCode)
         let to = Locale.Language(identifier: target.appleLanguageCode)
         let key = sessionKey(from: source, to: target)
-        if #available(macOS 26.0, *), let native = installedSessions[key] as? TranslationSession {
-            do { return try await native.translate(trimmed).targetText }
-            catch { installedSessions.removeValue(forKey: key); throw error }
+        if let native = (installedSessions[key] ?? sessions[key]) as? TranslationSession {
+            return try await native.translate(trimmed).targetText
         }
         let availability = await LanguageAvailability().status(from: from, to: to)
         guard availability != .unsupported else {
             throw NSError(domain: "AppleTranslation", code: 1, userInfo: [NSLocalizedDescriptionKey: "Translate chưa hỗ trợ cặp ngôn ngữ này."])
-        }
-        if #available(macOS 26.0, *), availability == .installed {
-            let native: TranslationSession
-            if let existing = installedSessions[key] as? TranslationSession { native = existing }
-            else {
-                native = TranslationSession(installedSource: from, target: to)
-                installedSessions[key] = native
-            }
-            return try await native.translate(trimmed).targetText
-        }
-        if let native = sessions[key] as? TranslationSession {
-            return try await native.translate(trimmed).targetText
         }
         throw NSError(domain: "AppleTranslation", code: 2, userInfo: [NSLocalizedDescriptionKey: "Cần tải bộ ngôn ngữ Local trước khi dịch."])
     }
@@ -376,29 +363,12 @@ enum AppleNativeTranslator {
     /// Prepare only already-installed packs; never trigger a download prompt.
     static func prepareInstalled(from source: AppLanguage, to target: AppLanguage) async {
         guard source.appleLanguageCode != target.appleLanguageCode else { return }
-        guard #available(macOS 26.0, *) else { return }
-        let from = Locale.Language(identifier: source.appleLanguageCode)
-        let to = Locale.Language(identifier: target.appleLanguageCode)
         let key = sessionKey(from: source, to: target)
-        guard installedSessions[key] == nil,
-              await LanguageAvailability().status(from: from, to: to) == .installed else { return }
-        let native = TranslationSession(installedSource: from, target: to)
-        do {
-            try await native.prepareTranslation()
-            guard !Task.isCancelled else { return }
-            if installedSessions[key] == nil { installedSessions[key] = native }
-            // Load inference before the first live caption using fixed, non-user text.
-            let warmup: String?
-            switch source {
-            case .english, .englishIndia: warmup = "Hello."
-            case .vietnamese: warmup = "Xin chào."
-            case .japanese: warmup = "こんにちは。"
-            case .chinese: warmup = "你好。"
-            case .korean: warmup = "안녕하세요."
-            default: warmup = nil
-            }
-            if let warmup { _ = try await native.translate(warmup) }
-        } catch { /* Real translation reports an error if preparation fails. */ }
+        if let native = (installedSessions[key] ?? sessions[key]) as? TranslationSession {
+            do {
+                try await native.prepareTranslation()
+            } catch { /* Real translation reports an error if preparation fails. */ }
+        }
     }
 
     static func viToEn(_ text: String) async throws -> String {
