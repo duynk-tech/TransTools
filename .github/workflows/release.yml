@@ -62,13 +62,15 @@ jobs:
         run: dotnet publish windows/TransTools/TransTools.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -o windows/build
 
       - name: Install Inno Setup
-        uses: stewartcelani/inno-setup-action@v1.0.0
-        with:
-          version: '6.3.3'
+        shell: pwsh
+        run: |
+          choco install innosetup -y
+          echo "C:\Program Files (x86)\Inno Setup 6" >> $env:GITHUB_PATH
 
       - name: Build Installer (TransTools-Setup.exe)
         shell: pwsh
-        run: iscc windows/installer/installer.iss
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" windows/installer/installer.iss
 
       - name: Create Portable ZIP
         shell: pwsh
