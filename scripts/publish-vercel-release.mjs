@@ -47,6 +47,42 @@ async function main() {
     });
     console.log(`Uploaded TransTools.${extension}`);
   }
+
+  // Windows assets (if built)
+  const windowsAssets = [
+    { key: 'installer', paths: ['windows/build/TransTools-Setup.exe', 'build/TransTools-Setup.exe'], targetName: 'TransTools-Setup.exe' },
+    { key: 'exe', paths: ['windows/build/TransTools.exe', 'build/TransTools.exe'], targetName: 'TransTools.exe' },
+    { key: 'windowsZip', paths: ['windows/build/TransTools-Windows-Portable.zip', 'build/TransTools-Windows-Portable.zip'], targetName: 'TransTools-Windows-Portable.zip' }
+  ];
+
+  for (const item of windowsAssets) {
+    let sourcePath = item.paths.find(p => {
+      try { return stat(p).then(() => true).catch(() => false); } catch { return false; }
+    });
+    // synchronous check with async stat
+    for (const p of item.paths) {
+      try {
+        await stat(p);
+        sourcePath = p;
+        break;
+      } catch {}
+    }
+
+    if (sourcePath) {
+      const digest = await sha256(sourcePath);
+      const size = (await stat(sourcePath)).size;
+      const uploaded = await put(`releases/v${version}/${item.targetName}`, createReadStream(sourcePath), {
+        access: 'public', addRandomSuffix: false, allowOverwrite: false,
+        contentType: 'application/octet-stream', multipart: true,
+        cacheControlMaxAge: 31536000
+      });
+      assets[item.key] = { url: uploaded.url, sha256: digest, size };
+      await put(`releases/v${version}/${item.targetName}.sha256`, `${digest}  ${item.targetName}\n`, {
+        access: 'public', addRandomSuffix: false, allowOverwrite: false, contentType: 'text/plain'
+      });
+      console.log(`Uploaded ${item.targetName} for Windows to Vercel Blob`);
+    }
+  }
   let notes = `Trans Tools v${version}: cải tiến và sửa lỗi.`;
   if (process.env.RELEASE_NOTES_FILE) {
     try { notes = await readFile(process.env.RELEASE_NOTES_FILE, 'utf8'); }

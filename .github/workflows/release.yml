@@ -1,4 +1,4 @@
-name: Release TransTools
+name: Release TransTools (macOS & Windows)
 
 on:
   push:
@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-release:
-    name: Build & Package TransTools
+  build-macos:
+    name: Build macOS (ZIP & DMG)
     runs-on: macos-15
 
     steps:
@@ -30,6 +30,80 @@ jobs:
       - name: Build and Package ZIP and DMG
         run: zsh scripts/package-release.sh
 
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-release-artifacts
+          path: |
+            build/TransTools.zip
+            build/TransTools.zip.sha256
+            build/TransTools.dmg
+            build/TransTools.dmg.sha256
+
+  build-windows:
+    name: Build Windows (.exe & Setup)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore NuGet Packages
+        shell: pwsh
+        run: dotnet restore windows/TransTools/TransTools.csproj
+
+      - name: Publish Single-File Executable
+        shell: pwsh
+        run: dotnet publish windows/TransTools/TransTools.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -o windows/build
+
+      - name: Install Inno Setup
+        uses: stewartcelani/inno-setup-action@v1.0.0
+        with:
+          version: '6.3.3'
+
+      - name: Build Installer (TransTools-Setup.exe)
+        shell: pwsh
+        run: iscc windows/installer/installer.iss
+
+      - name: Create Portable ZIP
+        shell: pwsh
+        run: Compress-Archive -Path windows/build/TransTools.exe -DestinationPath windows/build/TransTools-Windows-Portable.zip
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-artifacts
+          path: |
+            windows/build/TransTools.exe
+            windows/build/TransTools-Setup.exe
+            windows/build/TransTools-Windows-Portable.zip
+
+  publish-release:
+    name: Publish Release (GitHub & Vercel)
+    needs: [build-macos, build-windows]
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download macOS Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-release-artifacts
+          path: build
+
+      - name: Download Windows Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-release-artifacts
+          path: windows/build
+
       - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
@@ -39,7 +113,10 @@ jobs:
             build/TransTools.zip.sha256
             build/TransTools.dmg
             build/TransTools.dmg.sha256
-          fail_on_unmatched_files: true
+            windows/build/TransTools.exe
+            windows/build/TransTools-Setup.exe
+            windows/build/TransTools-Windows-Portable.zip
+          fail_on_unmatched_files: false
           draft: false
           prerelease: false
           generate_release_notes: true
@@ -58,7 +135,7 @@ jobs:
           npm run test:updates
           zsh scripts/test-update-manifest.sh
 
-      - name: Publish ZIP, DMG and latest manifest to Vercel Blob
+      - name: Publish all assets (macOS & Windows) to Vercel Blob
         if: startsWith(github.ref, 'refs/tags/')
         env:
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
