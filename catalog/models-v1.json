@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "revision": 1,
+  "models": [
+    {
+      "id": "supertonic-3",
+      "engineID": "supertonic",
+      "version": "3.0.0",
+      "name": "Supertonic 3",
+      "summary": "Giọng đọc đa ngôn ngữ, chạy trên thiết bị.",
+      "recommended": true
+    },
+    {
+      "id": "vieneu-v3-turbo",
+      "engineID": "vieneu",
+      "version": "v3-turbo-native-1",
+      "name": "VieNeu-TTS v3 Turbo",
+      "summary": "Tiếng Việt tự nhiên, hỗ trợ hồ sơ giọng từ mẫu.",
+      "recommended": true
+    }
+  ]
+}
