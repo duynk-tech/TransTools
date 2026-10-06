@@ -5,3 +5,8 @@
 #downloads{scroll-margin-top:100px}.platform-downloads{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}.platform-download{padding:20px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.65)}.platform-download strong{font-size:20px}.platform-download p{font-size:12px;line-height:1.6;margin:10px 0 16px}.platform-status{display:inline-flex;align-items:center;padding:12px 18px;border-radius:10px;background:#e1eee6;color:#287568;font-size:13px;font-weight:600}.platform-download.upcoming{background:rgba(225,238,230,.4)}@media(max-width:640px){.platform-downloads{grid-template-columns:1fr}.download-card{align-items:flex-start}.platform-download{padding:16px}}
 
 .platform-heading{display:flex;align-items:center;gap:12px}.platform-icon{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;flex-shrink:0;border-radius:12px;background:#e1eee6;color:#287568;border:1px solid rgba(40,117,104,.12)}.platform-icon svg{width:25px;height:25px}.download-icon{width:17px;height:17px;flex-shrink:0}.platform-download .button{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+/* Keep every feature visible without a long horizontal tab strip. */
+.showcase .tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;overflow:visible}
+.showcase .tabs button{min-width:0;white-space:normal;text-align:center;padding:12px 8px}
+@media(max-width:900px){.showcase .tabs{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:600px){.showcase .tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
