@@ -144,11 +144,13 @@ public partial class SettingsViewModel : ObservableObject
     {
         if (IsLoadingModels) return; IsLoadingModels = true;
         try {
-            var key = ActiveProvider switch { "gemini" => GeminiKey, "claude" => ClaudeKey, "deepseek" => DeepSeekKey, _ => OpenAiKey };
-            var models = await new ModelCatalogService().FetchAsync(ActiveProvider, key);
+            var provider = ActiveProvider;
+            var key = provider switch { "gemini" => GeminiKey, "claude" => ClaudeKey, "deepseek" => DeepSeekKey, _ => OpenAiKey };
+            var models = await new ModelCatalogService().FetchAsync(provider, key);
+            if (ActiveProvider != provider) { Status = "Nhà cung cấp đã thay đổi; hãy tải lại danh sách mô hình."; return; }
             AvailableModels.Clear(); foreach (var model in models) AvailableModels.Add(model);
-            Status = $"Đã tải {models.Count} model; chọn model hỗ trợ trò chuyện.";
-        } catch (Exception ex) { Status = "Không tải được model: " + ex.Message; }
+            Status = $"Đã tải {models.Count} mô hình; chọn mô hình hỗ trợ trò chuyện.";
+        } catch (Exception ex) { Status = "Không tải được danh sách mô hình: " + ex.Message; }
         finally { IsLoadingModels = false; }
     }
     partial void OnCatalogModelChanged(string value)

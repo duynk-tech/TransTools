@@ -8,14 +8,17 @@ public partial class TextReaderViewModel : ObservableObject
 {
     public string[] Languages { get; } = { "vi", "en", "ja", "zh", "ko" };
     public string[] Engines => Language == "zh" ? new[] { "Edge", "Giọng cơ bản" } : Language == "vi" && VoiceService.HasVieNeuProcessor ? new[] { "Edge", "Supertonic 3", "VieNeu v3 Turbo", "Giọng cơ bản" } : new[] { "Edge", "Supertonic 3", "Giọng cơ bản" };
-    public bool CanChangeRate => Engine != "VieNeu v3 Turbo";
+    public bool CanChangeRate => !IsBusy && Engine != "VieNeu v3 Turbo";
+    public bool CanConfigureReader => !IsBusy;
     [ObservableProperty] private string _text = "";
     [ObservableProperty] private string _language = "vi";
     [ObservableProperty] private string _engine = "Edge";
     [ObservableProperty] private double _rate = 1;
     [ObservableProperty] private string _status = "Nhập đoạn văn để nghe hoặc lưu audio";
-    [ObservableProperty] private bool _isBusy;
-    public bool CanExport => Engine != "Giọng cơ bản";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanChangeRate), nameof(CanExport), nameof(CanConfigureReader))]
+    private bool _isBusy;
+    public bool CanExport => !IsBusy && Engine != "Giọng cơ bản";
     [ObservableProperty] private bool _normalizeReading = true;
     private CancellationTokenSource? _preparation;
     private bool _loadingPreference;
