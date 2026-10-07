@@ -57,7 +57,7 @@
                     </ComboBox>
                 </WrapPanel>
 
-                <CheckBox Grid.Column="1" Content="Tự động đọc câu trả lời bằng giọng AI" IsChecked="{Binding AutoSpeakResponse}" Foreground="#334B43" VerticalAlignment="Center"/>
+                <CheckBox Grid.Column="1" Content="Đọc câu trả lời" IsChecked="{Binding AutoSpeakResponse}" Foreground="#334B43" VerticalAlignment="Center"/>
             </Grid>
         </Border>
 

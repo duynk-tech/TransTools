@@ -35,17 +35,17 @@
                 <!-- Detail Header -->
                 <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
                     <StackPanel>
-                        <TextBlock Text="{Binding SelectedSession.Title}" FontSize="18" FontWeight="Bold" Foreground="#243D35"/>
+                        <TextBlock Text="{Binding SelectedSession.Title}" FontSize="18" FontWeight="Bold" Foreground="#243D35" TextWrapping="Wrap"/>
                         <TextBlock Text="{Binding SelectedSession.FormattedDate}" FontSize="12" Foreground="#65756F" Margin="0,2,0,0"/>
                     </StackPanel>
 
                     <!-- Export Actions -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,12,0,0">
+                    <WrapPanel HorizontalAlignment="Left" Margin="0,12,0,0">
                         <Button Content="Ghi chú" Command="{Binding OpenNotesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
                         <Button Content="✨ Tóm tắt AI" Command="{Binding GenerateSummaryCommand}" Background="#059669" Foreground="White" Margin="0,0,8,0" Padding="12,6" Cursor="Hand"/>
                         <Button Content="📄 Xuất Word (.docx)" Command="{Binding ExportDocxCommand}" Background="#287568" Foreground="White" Margin="0,0,8,0" Padding="12,6" Cursor="Hand"/>
                         <Button Content="🎬 Xuất SRT" Command="{Binding ExportSrtCommand}" Background="#D8E5E1" Foreground="#243D35" Padding="12,6" Cursor="Hand"/>
-                    </StackPanel>
+                    </WrapPanel>
                 </StackPanel>
 
                 <!-- AI Summary Card if available -->
