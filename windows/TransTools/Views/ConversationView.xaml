@@ -16,7 +16,7 @@
                 <Button Content="Bắt đầu trò chuyện" Command="{Binding StartConversationCommand}" Margin="0,0,8,8"/>
                 <Button Content="Tạo mới" Command="{Binding NewConversationCommand}" Margin="0,0,8,8"/>
                 <Button Content="Lưu" Command="{Binding SaveConversationCommand}" Margin="0,0,8,8"/>
-                <Button Content="Xóa" Command="{Binding DeleteConversationCommand}" Foreground="#EF4444" Margin="0,0,8,8"/>
+                <Button Content="Xóa" Style="{StaticResource DestructiveButton}" Command="{Binding DeleteConversationCommand}" Foreground="#EF4444" Margin="0,0,8,8"/>
                 <CheckBox Content="Dịch Tiếng Việt" IsChecked="{Binding ShowVietnameseTranslation}" Visibility="{Binding CanShowTranslation, Converter={StaticResource BoolVisibility}}" Foreground="#65756F" Margin="8"/>
             </WrapPanel>
             <WrapPanel Margin="0,0,0,8">
@@ -101,7 +101,7 @@
                                 </Border.Style>
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                        <Border Background="#DCEEE8" CornerRadius="16" Padding="4" Margin="0,0,8,0"><Image Source="/Resources/Mascot/MascotWalking.png" Width="28" Height="28"/></Border><TextBlock Text="Chip Chip · AI" FontSize="12" VerticalAlignment="Center" FontWeight="Bold" Foreground="#75BBAE"/>
+                                        <Border Background="#DCEEE8" CornerRadius="16" Padding="4" Margin="0,0,8,0"><Image Source="/TransTools;component/Resources/Mascot/MascotWalking.png" Width="28" Height="28"/></Border><TextBlock Text="Chip Chip · AI" FontSize="12" VerticalAlignment="Center" FontWeight="Bold" Foreground="#75BBAE"/>
                                         <TextBlock Text="{Binding TimeString}" FontSize="10" Foreground="#73827C" Margin="8,0,0,0"/>
                                     </StackPanel>
                                     <TextBlock Text="{Binding Text}" FontSize="14" Foreground="#243D35" TextWrapping="Wrap"/>

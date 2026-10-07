@@ -9,7 +9,7 @@
  <TextBlock Grid.Row="1" x:Name="TranscriptionLabel" HorizontalAlignment="Center" FontSize="24" Foreground="#26776B" Margin="0,10"/>
  <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="16"><TextBlock x:Name="TipLabel" TextWrapping="Wrap" Foreground="#243D37" FontSize="17"/></ScrollViewer>
  </Grid>
- <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12"><Image Source="/Resources/Mascot/MascotSprites/angles/angle_front.png" Height="170" Stretch="Uniform"/><TextBlock Text="Nghe · Nhắc lại · Viết" TextWrapping="Wrap" TextAlignment="Center" Foreground="#26776B" FontSize="18" Margin="0,16"/><Button Content="Viết lại" Click="ClearWriting"/></StackPanel></Grid>
+ <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12"><Image Source="/TransTools;component/Resources/Mascot/MascotSprites/angles/angle_front.png" Height="170" Stretch="Uniform"/><TextBlock Text="Nghe · Nhắc lại · Viết" TextWrapping="Wrap" TextAlignment="Center" Foreground="#26776B" FontSize="18" Margin="0,16"/><Button Content="Viết lại" Click="ClearWriting"/></StackPanel></Grid>
  <DockPanel Grid.Row="2" Margin="0,18,0,0"><TextBlock Text="{Binding Status}" Foreground="#26776B" DockPanel.Dock="Right" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="330"/><StackPanel Orientation="Horizontal"><Button x:Name="PreviousButton" Content="←" Click="Previous" Margin="0,0,8,0"/><Button Content="Nghe mẫu" Click="Read" Margin="0,0,8,0"/><Button Content="Dừng" Command="{Binding StopPronunciationCommand}" Margin="0,0,8,0"/><Button x:Name="NextButton" Content="→" Click="Next"/></StackPanel></DockPanel>
  </Grid></Border>
 </Window>

@@ -6,7 +6,7 @@ public static class VieNeuTests
         var folder = Environment.GetEnvironmentVariable("VIENEU_TEST_MODEL");
         var resources = Environment.GetEnvironmentVariable("VIENEU_TEST_RESOURCES");
         var golden = Environment.GetEnvironmentVariable("VIENEU_TEST_GOLDEN");
-        if (folder == null || resources == null || golden == null) { Console.WriteLine("SKIP: VieNeu real model (set VIENEU_TEST_MODEL/RESOURCES/GOLDEN)"); return; }
+        if (string.IsNullOrWhiteSpace(folder) || string.IsNullOrWhiteSpace(resources) || string.IsNullOrWhiteSpace(golden)) { Console.WriteLine("SKIP: VieNeu real model (set VIENEU_TEST_MODEL/RESOURCES/GOLDEN)"); return; }
         var library = Path.Combine(resources, OperatingSystem.IsWindows() ? "sea_g2p_rs.dll" : "libsea_g2p_rs.dylib");
         using var phonemizer = new VieNeuPhonemizer(library, Path.Combine(folder, "sea_g2p.bin"));
         var tokenizer = new VieNeuTokenizer(Path.Combine(folder, "assets/VieNeu-TTS-v3-Turbo/onnx_update/tokenizer.json"));

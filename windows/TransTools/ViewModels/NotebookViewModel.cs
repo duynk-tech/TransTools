@@ -21,6 +21,18 @@ public partial class NotebookViewModel : ObservableObject
     private readonly LLMTranslationService _llmService = new();
 
     public ObservableCollection<MeetingSession> Sessions { get; } = new();
+    public System.ComponentModel.ICollectionView SessionsView { get; private set; } = null!;
+    partial void OnSearchKeywordChanged(string value) => SessionsView?.Refresh();
+    [RelayCommand] private async Task OpenNotesAsync()
+    {
+        if (SelectedSession == null) return;
+        var session = SelectedSession;
+        var editor = new TransTools.Views.MeetingNotesWindow(session.Notes, session.Summary ?? "") { Owner = System.Windows.Application.Current.MainWindow };
+        if (editor.ShowDialog() != true) return;
+        session.Notes = editor.Notes;
+        await _sessionStore.SaveSessionsAsync(Sessions.ToList());
+        OnPropertyChanged(nameof(SelectedSession)); Status = "Đã lưu ghi chú";
+    }
 
     [ObservableProperty]
     private MeetingSession? _selectedSession;
@@ -36,6 +48,10 @@ public partial class NotebookViewModel : ObservableObject
 
     public NotebookViewModel()
     {
+        SessionsView = System.Windows.Data.CollectionViewSource.GetDefaultView(Sessions);
+        SessionsView.Filter = item => item is MeetingSession session && (string.IsNullOrWhiteSpace(SearchKeyword) ||
+            session.Title.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) || session.Notes.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) ||
+            session.Captions.Any(c => c.Original.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) || c.Vietnamese.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase)));
         _ = LoadSafelyAsync();
     }
 
@@ -47,13 +63,14 @@ public partial class NotebookViewModel : ObservableObject
 
     public async Task LoadSessionsAsync()
     {
+        var previousId = SelectedSession?.Id;
         var list = await _sessionStore.LoadSessionsAsync();
         Sessions.Clear();
         foreach (var s in list.OrderByDescending(x => x.CreatedAt))
         {
             Sessions.Add(s);
         }
-        SelectedSession = Sessions.FirstOrDefault();
+        SelectedSession = Sessions.FirstOrDefault(s => s.Id == previousId) ?? Sessions.FirstOrDefault();
     }
 
     [RelayCommand]

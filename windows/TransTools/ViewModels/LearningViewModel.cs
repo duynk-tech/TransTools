@@ -137,7 +137,7 @@ public partial class LearningViewModel : ObservableObject
         switch (SelectedLanguage)
         {
             case "ja":
-                using (var resource = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/Resources/Learning/japanese.json"))!.Stream) {
+                using (var resource = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/TransTools;component/Resources/Learning/japanese.json"))!.Stream) {
                     using var document = JsonDocument.Parse(resource);
                     foreach (var item in document.RootElement.EnumerateArray()) AlphabetList.Add(new AlphabetItem {
                         Character = item.GetProperty(IsKatakana ? "Katakana" : "Hiragana").GetString()!,
@@ -147,7 +147,7 @@ public partial class LearningViewModel : ObservableObject
                 }
                 break;
             case "zh":
-                using (var resource = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/Resources/Learning/chinese.json"))!.Stream) {
+                using (var resource = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/TransTools;component/Resources/Learning/chinese.json"))!.Stream) {
                     var items = JsonSerializer.Deserialize<System.Collections.Generic.List<AlphabetItem>>(resource);
                     if (items != null) foreach (var item in items) AlphabetList.Add(item);
                 }

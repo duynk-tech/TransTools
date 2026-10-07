@@ -14,6 +14,17 @@
                  <ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chrome" Property="Opacity" Value="0.88"/></Trigger><Trigger Property="IsPressed" Value="True"><Setter TargetName="Chrome" Property="Opacity" Value="0.72"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Chrome" Property="BorderBrush" Value="#194F45"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter TargetName="Chrome" Property="Opacity" Value="0.45"/></Trigger></ControlTemplate.Triggers>
              </ControlTemplate></Setter.Value></Setter>
          </Style>
+         <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+             <Setter Property="Background" Value="#EFF6F3"/><Setter Property="Foreground" Value="#287568"/><Setter Property="BorderBrush" Value="#B5D2C9"/>
+         </Style>
+         <Style x:Key="DestructiveButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+             <Setter Property="Background" Value="#FFF1F2"/><Setter Property="Foreground" Value="#DC2626"/><Setter Property="BorderBrush" Value="#FECDD3"/>
+         </Style>
+         <Style x:Key="TranscriptCard" TargetType="Border">
+             <Setter Property="Background" Value="White"/><Setter Property="BorderBrush" Value="#C2DDD5"/><Setter Property="BorderThickness" Value="1"/>
+             <Setter Property="CornerRadius" Value="10"/><Setter Property="Padding" Value="12"/>
+             <Style.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter Property="BorderBrush" Value="#75BBAE"/></Trigger></Style.Triggers>
+         </Style>
          <Style TargetType="ComboBox"><Setter Property="Background" Value="White"/><Setter Property="Foreground" Value="#243D35"/><Setter Property="BorderBrush" Value="#D8E5E1"/><Setter Property="MinHeight" Value="34"/><Setter Property="Padding" Value="8,4"/></Style>
          <Style TargetType="TextBox"><Setter Property="Background" Value="White"/><Setter Property="Foreground" Value="#243D35"/><Setter Property="BorderBrush" Value="#D8E5E1"/><Setter Property="Padding" Value="10,6"/></Style>
          <Style TargetType="CheckBox">

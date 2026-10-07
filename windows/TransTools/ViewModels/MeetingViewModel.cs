@@ -29,6 +29,8 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     private double _offset;
     private bool _overflow;
     private DateTime _started;
+    private Guid _sessionId = Guid.NewGuid();
+    private bool _sessionSystemAudio = true;
     private string _sessionSource = "en", _sessionTarget = "vi", _sessionTranslationMode = "Google";
     private AIProviderConfig? _sessionAi;
     private bool _preparing;
@@ -82,11 +84,13 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         _preparing = true;
         try {
             if (CaptureSystemAudio == CaptureMicrophone) throw new InvalidOperationException("Chọn một nguồn âm thanh.");
+            // Persist the stopped session before a new recognition session clears the screen.
+            if (Captions.Count > 0) await PersistCurrentSessionAsync();
             _sessionSource = SourceLanguage; _sessionTarget = TargetLanguage; _sessionTranslationMode = TranslationMode;
             _sessionAi = _sessionTranslationMode == "AI" ? _credentials.LoadConfiguredProvider() ?? throw new InvalidOperationException("Chọn AI và model trong Cài đặt.") : null;
             Status = "Đang chuẩn bị nhận diện...";
             await _stt.InitializeModelAsync(language: _sessionSource);
-            _cts?.Dispose(); _cts = new(); _offset = 0; _overflow = false; _started = DateTime.Now;
+            _cts?.Dispose(); _cts = new(); _sessionId = Guid.NewGuid(); _sessionSystemAudio = CaptureSystemAudio; _offset = 0; _overflow = false; _started = DateTime.Now;
             _flushPresentation = false; Captions.Clear(); CurrentLiveOriginal = ""; CurrentLiveVietnamese = "";
             _audioQueue = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(8) { SingleReader = true, FullMode = BoundedChannelFullMode.Wait });
             _translationQueue = Channel.CreateBounded<Caption>(new BoundedChannelOptions(64) { SingleReader = true, SingleWriter = true });
@@ -123,10 +127,20 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     {
         if (IsStopping || _preparing) { Status = "Chờ hoàn tất âm thanh cuối trước khi lưu."; return; }
         await StopRecordingAsync(); if (Captions.Count == 0) return;
+        await PersistCurrentSessionAsync(); Status = "Đã lưu Sổ tay";
+    }
+    private async Task PersistCurrentSessionAsync()
+    {
+        if (Captions.Count == 0) return;
         var store = new SessionStore(); var sessions = await store.LoadSessionsAsync();
-        var session = new MeetingSession { Title = "Cuộc họp · " + _started.ToString("dd/MM HH:mm"), CreatedAt = _started,
-            Captions = Captions.ToList(), DurationSeconds = Captions.Max(c => c.End), AudioSource = CaptureSystemAudio ? "Âm thanh hệ thống" : "Microphone" };
-        sessions.Insert(0, session); await store.SaveSessionsAsync(sessions); OnSessionSaved?.Invoke(session); Status = "Đã lưu Sổ tay";
+        var session = sessions.FirstOrDefault(s => s.Id == _sessionId);
+        if (session == null) {
+            session = new MeetingSession { Id = _sessionId, Title = "Cuộc họp · " + _started.ToString("dd/MM HH:mm"), CreatedAt = _started };
+            sessions.Insert(0, session);
+        }
+        session.Captions = Captions.ToList(); session.DurationSeconds = Captions.Max(c => c.End);
+        session.AudioSource = _sessionSystemAudio ? "Âm thanh hệ thống" : "Microphone";
+        await store.SaveSessionsAsync(sessions); OnSessionSaved?.Invoke(session);
     }
     private async Task RecognizeAsync(CancellationToken token)
     {

@@ -4,7 +4,7 @@ public static class SupertonicTests
  public static void Run() {
   if (SupertonicEngine.Preprocess("Hello", "en") != "<en>Hello.</en>") throw new Exception("language wrapping");
   var folder = Environment.GetEnvironmentVariable("SUPERtonic_TEST_MODEL");
-  if (folder == null) { Console.WriteLine("SKIP: real Supertonic inference (set SUPERtonic_TEST_MODEL)"); return; }
+  if (string.IsNullOrWhiteSpace(folder)) { Console.WriteLine("SKIP: real Supertonic inference (set SUPERtonic_TEST_MODEL)"); return; }
   using var engine = new SupertonicEngine(folder);
   foreach (var (lang,text) in new[] { ("vi","Xin chào bạn."), ("en","Hello, welcome."), ("ja","こんにちは。"), ("ko","안녕하세요.") }) {
    var samples = engine.Synthesize(text, lang, 1f, CancellationToken.None);

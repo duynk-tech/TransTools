@@ -40,6 +40,12 @@ jobs:
         run: |
           ./windows/scripts/test-windows-contracts.ps1
 
+      - name: Render and validate WPF screens
+        shell: pwsh
+        run: |
+          dotnet run --project windows/tests/UiSmoke -c Release -- windows/test-results/ui
+          if ($LASTEXITCODE -ne 0) { throw 'Windows UI smoke tests failed.' }
+
       - name: Upload test evidence
         if: always()
         uses: actions/upload-artifact@v4

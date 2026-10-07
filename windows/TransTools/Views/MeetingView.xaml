@@ -73,7 +73,7 @@
                 <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
                     <TextBlock Text="Bản ghi cuộc họp" FontSize="14" FontWeight="Bold" Foreground="#243D35"/>
                     <Button Content="Lưu Sổ tay" Command="{Binding SaveSessionCommand}" HorizontalAlignment="Center"/>
-                    <Button Content="Xóa danh sách" Command="{Binding ClearCaptionsCommand}" HorizontalAlignment="Right" Background="Transparent" Foreground="#65756F" BorderThickness="0" Cursor="Hand"/>
+                    <Button Content="Xóa danh sách" Style="{StaticResource DestructiveButton}" Command="{Binding ClearCaptionsCommand}" HorizontalAlignment="Right" Background="Transparent" Foreground="#65756F" BorderThickness="0" Cursor="Hand"/>
                 </Grid>
 
                 <ListBox x:Name="CaptionList" ItemsSource="{Binding Captions}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">

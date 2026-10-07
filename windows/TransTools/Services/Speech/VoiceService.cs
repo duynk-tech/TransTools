@@ -17,7 +17,7 @@ public sealed class VoiceService
     public static string VieNeuLibrary => Path.Combine(AppContext.BaseDirectory, "SpeechNative", "sea_g2p_rs.dll");
     public static bool HasVieNeuProcessor => File.Exists(VieNeuLibrary);
     public bool IsVieNeuInstalled => !_installing && HasVieNeuProcessor && File.Exists(Path.Combine(VieNeuFolder, "installed.json"));
-    public static string ResourceText(string path) { using var stream = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/Resources/" + path))!.Stream; using var reader = new StreamReader(stream); return reader.ReadToEnd(); }
+    public static string ResourceText(string path) { using var stream = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/TransTools;component/Resources/" + path))!.Stream; using var reader = new StreamReader(stream); return reader.ReadToEnd(); }
     private void ReleaseEngines() { _engine?.Dispose(); _engine = null; _vieNeu?.Dispose(); _vieNeu = null; }
     private void LoadEngine(string engine, CancellationToken token) {
         if (_installing) throw new InvalidOperationException("Đang cài mô hình; hãy chờ tải hoàn tất trước khi đọc.");
@@ -48,7 +48,7 @@ public sealed class VoiceService
         try {
         await _gate.WaitAsync(token);
         try { ReleaseEngines(); } finally { _gate.Release(); }
-        var resource = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/Resources/" + (vieNeu ? "SpeechNative/vieneu-native-manifest.json" : "Models/supertonic.json") + ""))!;
+        var resource = System.Windows.Application.GetResourceStream(new Uri("pack://application:,,,/TransTools;component/Resources/" + (vieNeu ? "SpeechNative/vieneu-native-manifest.json" : "Models/supertonic.json") + ""))!;
         using var resourceStream = resource.Stream;
         using var manifest = await JsonDocument.ParseAsync(resourceStream, cancellationToken: token);
         var revision = manifest.RootElement.TryGetProperty("revision", out var revisionValue) ? revisionValue.GetString() : null;

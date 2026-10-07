@@ -13,10 +13,11 @@
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" Text="Danh sách cuộc họp" FontSize="16" FontWeight="Bold" Foreground="#243D35" Margin="0,0,0,12"/>
 
-                <ListBox ItemsSource="{Binding Sessions}" SelectedItem="{Binding SelectedSession}" Background="Transparent" BorderThickness="0">
+                <TextBox DockPanel.Dock="Top" Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}" ToolTip="Tìm tiêu đề và nội dung" Margin="0,0,0,12"/>
+                <ListBox ItemsSource="{Binding SessionsView}" SelectedItem="{Binding SelectedSession}" Background="Transparent" BorderThickness="0">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="#F5F8F7" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,0,0,6">
+                            <Border Style="{StaticResource TranscriptCard}" Margin="0,0,0,6">
                                 <StackPanel>
                                     <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" Foreground="#243D35" TextTrimming="CharacterEllipsis"/>
                                     <TextBlock Text="{Binding FormattedDate}" FontSize="11" Foreground="#73827C" Margin="0,2,0,0"/>
@@ -40,6 +41,7 @@
 
                     <!-- Export Actions -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,12,0,0">
+                        <Button Content="Ghi chú" Command="{Binding OpenNotesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
                         <Button Content="✨ Tóm tắt AI" Command="{Binding GenerateSummaryCommand}" Background="#059669" Foreground="White" Margin="0,0,8,0" Padding="12,6" Cursor="Hand"/>
                         <Button Content="📄 Xuất Word (.docx)" Command="{Binding ExportDocxCommand}" Background="#287568" Foreground="White" Margin="0,0,8,0" Padding="12,6" Cursor="Hand"/>
                         <Button Content="🎬 Xuất SRT" Command="{Binding ExportSrtCommand}" Background="#D8E5E1" Foreground="#243D35" Padding="12,6" Cursor="Hand"/>
@@ -74,7 +76,7 @@
                 <ListBox ItemsSource="{Binding SelectedSession.Captions}" Background="Transparent" BorderThickness="0">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="#F5F8F7" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,0,0,6">
+                            <Border Style="{StaticResource TranscriptCard}" Margin="0,0,0,6">
                                 <StackPanel>
                                     <TextBlock Text="{Binding FormattedTimestamp}" FontSize="10" FontWeight="Bold" Foreground="#73827C"/>
                                     <TextBlock Text="{Binding Original}" TextWrapping="Wrap" FontSize="14" Foreground="#334B43" Margin="0,2,0,0"/>
