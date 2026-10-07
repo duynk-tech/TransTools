@@ -20,6 +20,7 @@
                 <Button Content="Xóa" Style="{StaticResource DestructiveButton}" Command="{Binding DeleteConversationCommand}" Foreground="#EF4444" Margin="0,0,8,8"/>
                 <CheckBox Content="Dịch Tiếng Việt" IsChecked="{Binding ShowVietnameseTranslation}" Visibility="{Binding CanShowTranslation, Converter={StaticResource BoolVisibility}}" Foreground="#65756F" Margin="8"/>
             </WrapPanel>
+            <Expander Header="Tùy chỉnh cuộc trò chuyện" Foreground="#287568" Margin="0,0,0,6"><StackPanel Margin="0,8,0,0">
             <WrapPanel Margin="0,0,0,8">
                 <TextBlock Text="Chờ gửi sau khi ngừng nói" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <ComboBox ItemsSource="{Binding SendDelays}" SelectedItem="{Binding SendDelaySeconds}" Width="65"/>
@@ -27,6 +28,7 @@
                 <CheckBox Content="Tự gửi câu đã nhận diện" IsChecked="{Binding SendRecognizedSpeechAutomatically}" VerticalAlignment="Center"/>
             </WrapPanel>
             <TextBox IsEnabled="{Binding CanChangeSession}" Text="{Binding CustomPrompt, UpdateSourceTrigger=PropertyChanged}" ToolTip="Hướng dẫn riêng cho chủ đề hoặc vai trò" Padding="8" Margin="0,0,0,8"/>
+            </StackPanel></Expander>
             <DockPanel><Button DockPanel.Dock="Right" Content="Hủy nhận diện" Command="{Binding CancelRecognitionCommand}" Visibility="{Binding IsThinking, Converter={StaticResource BoolVisibility}}"/><TextBlock Text="{Binding Status}" Foreground="#287568" TextWrapping="Wrap" VerticalAlignment="Center"/></DockPanel>
         </StackPanel>
         <!-- Topic & Controls Bar -->

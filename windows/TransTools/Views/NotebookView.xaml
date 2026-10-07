@@ -14,7 +14,7 @@
                 <TextBlock DockPanel.Dock="Top" Text="Danh sách cuộc họp" FontSize="16" FontWeight="Bold" Foreground="#243D35" Margin="0,0,0,12"/>
 
                 <TextBox DockPanel.Dock="Top" Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}" ToolTip="Tìm tiêu đề và nội dung" Margin="0,0,0,12"/>
-                <ListBox ItemsSource="{Binding SessionsView}" SelectedItem="{Binding SelectedSession}" Background="Transparent" BorderThickness="0">
+                <ListBox ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemsSource="{Binding SessionsView}" SelectedItem="{Binding SelectedSession}" Background="Transparent" BorderThickness="0">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <Border Style="{StaticResource TranscriptCard}" Margin="0,0,0,6">
@@ -73,7 +73,7 @@
                 <TextBlock DockPanel.Dock="Bottom" Text="{Binding Status}" FontSize="11" Foreground="#73827C" Margin="0,8,0,0"/>
 
                 <!-- Captions inside selected session -->
-                <ListBox ItemsSource="{Binding SelectedSession.Captions}" Background="Transparent" BorderThickness="0">
+                <ListBox ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemsSource="{Binding SelectedSession.Captions}" Background="Transparent" BorderThickness="0">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <Border Style="{StaticResource TranscriptCard}" Margin="0,0,0,6">

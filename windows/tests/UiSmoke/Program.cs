@@ -41,13 +41,17 @@ internal static class Program
                     }
                     Pump(); window.UpdateLayout();
                     if (button.ActualHeight < 30 || button.ActualWidth < 60) throw new Exception("Navigation collapsed: " + route);
-                    var root = (FrameworkElement)window.Content;
-                    var bitmap = new RenderTargetBitmap((int)Math.Ceiling(root.ActualWidth), (int)Math.Ceiling(root.ActualHeight), 96, 96, PixelFormats.Pbgra32);
-                    bitmap.Render(root);
-                    var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(bitmap));
                     var filename = $"{width}-{Array.IndexOf(new[] { "Cuộc họp", "Sổ tay", "Dịch nhanh", "Học ngôn ngữ", "Trò chuyện", "Cài đặt" }, route)}.png";
-                    using var file = File.Create(Path.Combine(output, filename)); png.Save(file);
+                    Capture(window, output, filename);
                     Console.WriteLine($"PASS: rendered {route} at {width}x{height}");
+                    if (route == "Cài đặt") {
+                        var sections = Descendants(window).OfType<TabControl>().First();
+                        for (var i = 0; i < sections.Items.Count; i++) {
+                            sections.SelectedIndex = i; Pump(); window.UpdateLayout();
+                            Capture(window, output, $"{width}-settings-{i}.png");
+                            Console.WriteLine($"PASS: settings section {i} at {width}x{height}");
+                        }
+                    }
                 }
             }
             var chatModel = Descendants(window).OfType<ConversationView>().FirstOrDefault()?.DataContext as ConversationViewModel;
@@ -65,7 +69,15 @@ internal static class Program
     private static void Capture(Window window, string output, string name)
     {
         window.UpdateLayout(); var root = (FrameworkElement)window.Content;
-        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(root.ActualWidth), (int)Math.Ceiling(root.ActualHeight), 96, 96, PixelFormats.Pbgra32); bitmap.Render(root);
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(root.ActualWidth), (int)Math.Ceiling(root.ActualHeight), 96, 96, PixelFormats.Pbgra32);
+        // VisualBrush removes the content's layout offset; include the Window background.
+        var drawing = new DrawingVisual();
+        using (var context = drawing.RenderOpen()) {
+            var bounds = new Rect(0, 0, root.ActualWidth, root.ActualHeight);
+            context.DrawRectangle(window.Background, null, bounds);
+            context.DrawRectangle(new VisualBrush(root) { Stretch = Stretch.Fill }, null, bounds);
+        }
+        bitmap.Render(drawing);
         var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(bitmap));
         using var file = File.Create(Path.Combine(output, name)); png.Save(file);
     }
