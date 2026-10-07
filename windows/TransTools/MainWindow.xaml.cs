@@ -18,6 +18,9 @@ public partial class MainWindow : Window
     private TransTools.Services.HotkeyService? _hotkeys;
     private FloatingSubtitleWindow? _subtitleWindow;
     private ChipChipMascotWindow? _mascotWindow;
+    private ConversationMiniWindow? _miniChat;
+    private bool _closeAllowed;
+    private bool _savingForClose;
 
     public MainWindow()
     {
@@ -176,15 +179,37 @@ public partial class MainWindow : Window
         _mascotWindow.ShowReminder("Nghỉ một chút nhé! Chớp mắt, uống nước và thư giãn vai.");
     }
 
-    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    protected override async void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        if ((_meetingViewModel.IsRecording || _meetingViewModel.IsStopping) && _subtitleWindow?.IsVisible == true) { e.Cancel = true; Hide(); }
+        if (_closeAllowed) { base.OnClosing(e); return; }
+        if ((_meetingViewModel.IsRecording || _meetingViewModel.IsStopping) && _subtitleWindow?.IsVisible == true) {
+            e.Cancel = true; Hide(); base.OnClosing(e); return;
+        }
+        if (_meetingViewModel.IsStopping || (_meetingViewModel.IsBusy && !_meetingViewModel.IsRecording)) {
+            e.Cancel = true; _meetingViewModel.Status = "Chờ hoàn tất phiên cuộc họp trước khi đóng."; base.OnClosing(e); return;
+        }
+        if (_conversationViewModel.IsConversationActive) {
+            e.Cancel = true; _miniChat ??= new ConversationMiniWindow(_conversationViewModel); _miniChat.Show(); Hide(); base.OnClosing(e); return;
+        }
+        if (_meetingViewModel.IsRecording || _meetingViewModel.Captions.Count > 0) {
+            e.Cancel = true;
+            if (_savingForClose) { base.OnClosing(e); return; }
+            _savingForClose = true;
+            base.OnClosing(e);
+            try {
+                await _meetingViewModel.StopRecordingAsync();
+                await _meetingViewModel.SaveSessionAsync();
+                _closeAllowed = true; Close();
+            } catch (Exception ex) { _meetingViewModel.Status = "Chưa lưu được cuộc họp: " + ex.Message; _savingForClose = false; }
+            return;
+        }
         base.OnClosing(e);
     }
 
     protected override void OnClosed(System.EventArgs e)
     {
         base.OnClosed(e);
+        _miniChat?.CloseForExit();
         _subtitleWindow?.Close();
         _mascotWindow?.Close();
         _hotkeys?.Dispose();

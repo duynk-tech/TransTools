@@ -2,6 +2,11 @@ name: Build TransTools Windows (.exe)
 
 on:
   workflow_dispatch:
+    inputs:
+      test_models:
+        description: Run real Supertonic and VieNeu inference on Windows
+        type: boolean
+        default: true
   push:
     branches:
       - main
@@ -35,10 +40,26 @@ jobs:
         run: |
           dotnet restore windows/TransTools/TransTools.csproj
 
+      - name: Cache verified TTS test models
+        if: github.event_name == 'workflow_dispatch' && inputs.test_models
+        uses: actions/cache@v4
+        with:
+          path: windows/test-models
+          key: windows-tts-${{ hashFiles('windows/TransTools/Resources/Models/supertonic.json', 'windows/TransTools/Resources/SpeechNative/vieneu-native-manifest.json') }}
+
+      - name: Download pinned TTS test models
+        if: github.event_name == 'workflow_dispatch' && inputs.test_models
+        shell: pwsh
+        run: ./windows/scripts/download-test-models.ps1
+
       - name: Run contracts on native Windows
         shell: pwsh
         run: |
-          ./windows/scripts/test-windows-contracts.ps1
+          if ('${{ github.event_name }}' -eq 'workflow_dispatch' -and '${{ inputs.test_models }}' -eq 'true') {
+            ./windows/scripts/test-windows-contracts.ps1 -SupertonicModel windows/test-models/supertonic -VieNeuModel windows/test-models/vieneu -RequireModels
+          } else {
+            ./windows/scripts/test-windows-contracts.ps1
+          }
 
       - name: Render and validate WPF screens
         shell: pwsh
@@ -83,6 +104,14 @@ jobs:
         shell: pwsh
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" windows/installer/installer.iss
+
+      - name: Verify package contains no build SDK or source tree
+        shell: pwsh
+        run: |
+          foreach ($name in @('sea-g2p-native-source','native-build','test-models','.git','Cargo.toml','Cargo.lock')) {
+            if (Get-ChildItem windows/build -Recurse -Force | Where-Object Name -eq $name) { throw "Unexpected build resource packaged: $name" }
+          }
+          if (!(Test-Path windows/build/SpeechNative/sea_g2p_rs.dll)) { throw 'Native VieNeu processor missing from package.' }
 
       - name: Create Portable ZIP
         shell: pwsh

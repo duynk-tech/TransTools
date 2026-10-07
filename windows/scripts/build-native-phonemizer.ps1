@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$source = Join-Path $repo 'windows\build\sea-g2p-native-source'
+$source = Join-Path $repo 'windows\native-build\sea-g2p-native-source'
 $revision = 'e825173f235d08ea19315b2b279fb11153b44cea'
 if (!(Test-Path (Join-Path $source '.git'))) {
     git clone https://github.com/pnnbao97/sea-g2p.git $source

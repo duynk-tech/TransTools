@@ -1,95 +1,32 @@
-<UserControl x:Class="TransTools.Views.MeetingView"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="clr-namespace:TransTools.ViewModels">
-
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-
-        <!-- Top Header & Audio Source Selection -->
-        <Border Grid.Row="0" Background="#FFFFFF" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,0,16">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="Dịch cuộc họp thời gian thực" FontSize="18" FontWeight="Bold" Foreground="#243D35"/>
-                    <TextBlock Text="{Binding Status}" FontSize="12" Foreground="#65756F" Margin="0,4,0,0"/>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                        <CheckBox Content="Âm thanh hệ thống" IsChecked="{Binding CaptureSystemAudio}" Foreground="#334B43" Margin="0,0,16,0"/>
-                        <CheckBox Content="Thu âm Micro" IsChecked="{Binding CaptureMicrophone}" Foreground="#334B43"/>
-                    </StackPanel>
-                </StackPanel>
-
-                <!-- Start / Stop Button -->
-                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <Button Foreground="White" FontWeight="Bold"
-                            FontSize="14" Padding="20,10" Cursor="Hand">
-                        <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                                <Setter Property="Content" Value="▶  Bắt đầu"/>
-                                <Setter Property="Command" Value="{Binding StartRecordingCommand}"/>
-                                <Setter Property="Background" Value="#287568"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsRecording}" Value="True">
-                                        <Setter Property="Content" Value="⏹  Dừng lại"/>
-                                        <Setter Property="Background" Value="#DC2626"/>
-                                        <Setter Property="Command" Value="{Binding StopRecordingCommand}"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <!-- Live Caption Current Line -->
-        <Border Grid.Row="1" Background="#FFFFFF" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="10" Padding="16,12" Margin="0,0,0,16">
-            <StackPanel>
-                <WrapPanel Margin="0,0,0,8">
-                    <TextBlock Text="Từ" Foreground="#65756F" Margin="0,8"/>
-                    <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding SourceLanguage}" Width="80" Margin="8,0"/>
-                    <TextBlock Text="Sang" Foreground="#65756F" Margin="0,8"/>
-                    <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding TargetLanguage}" Width="80" Margin="8,0"/>
-                    <ComboBox ItemsSource="{Binding TranslationModes}" SelectedItem="{Binding TranslationMode}" Width="120"/>
-                </WrapPanel>
-                <TextBlock Text="Đang nghe:" FontSize="11" FontWeight="Bold" Foreground="#73827C"/>
-                <TextBlock Text="{Binding CurrentLiveOriginal}" TextWrapping="Wrap" FontSize="14" Foreground="#65756F" Margin="0,2,0,4"/>
-                <TextBlock Text="{Binding CurrentLiveVietnamese}" TextWrapping="Wrap" FontSize="16" FontWeight="Bold" Foreground="#287568"/>
-            </StackPanel>
-        </Border>
-
-        <!-- Caption History List -->
-        <Border Grid.Row="2" Background="#FFFFFF" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="12" Padding="16">
-            <DockPanel>
-                <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
-                    <TextBlock Text="Bản ghi cuộc họp" FontSize="14" FontWeight="Bold" Foreground="#243D35"/>
-                    <Button Content="Lưu Sổ tay" Command="{Binding SaveSessionCommand}" HorizontalAlignment="Center"/>
-                    <Button Content="Xóa danh sách" Style="{StaticResource DestructiveButton}" Command="{Binding ClearCaptionsCommand}" HorizontalAlignment="Right" Background="Transparent" Foreground="#65756F" BorderThickness="0" Cursor="Hand"/>
-                </Grid>
-
-                <ListBox x:Name="CaptionList" ItemsSource="{Binding Captions}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Border Background="#F5F8F7" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8">
-                                <StackPanel>
-                                    <TextBlock Text="{Binding FormattedTimestamp}" FontSize="10" FontWeight="Bold" Foreground="#73827C" Margin="0,0,0,2"/>
-                                    <TextBlock Text="{Binding Original}" FontSize="13" Foreground="#334B43" TextWrapping="Wrap"/>
-                                    <TextBlock Text="{Binding Vietnamese}" FontSize="14" FontWeight="Medium" Foreground="#287568" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </DockPanel>
-        </Border>
-    </Grid>
+<UserControl x:Class="TransTools.Views.MeetingView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:TransTools.Views">
+ <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="12" Padding="12">
+   <DockPanel><StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="12,0,0,0"><TextBlock Text="{Binding Status}" VerticalAlignment="Center" Foreground="#65756F" Margin="0,0,12,0"/>
+    <Button FontWeight="SemiBold" IsEnabled="{Binding CanToggleRecording}"><Button.Style><Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="Content" Value="▶ Bắt đầu"/><Setter Property="Command" Value="{Binding StartRecordingCommand}"/><Style.Triggers><DataTrigger Binding="{Binding IsPreparing}" Value="True"><Setter Property="Content" Value="Hủy chuẩn bị"/><Setter Property="Command" Value="{Binding CancelPreparationCommand}"/></DataTrigger><DataTrigger Binding="{Binding IsRecording}" Value="True"><Setter Property="Content" Value="Dừng cuộc họp"/><Setter Property="Background" Value="#FFF1F2"/><Setter Property="Foreground" Value="#DC2626"/><Setter Property="BorderBrush" Value="#FECDD3"/><Setter Property="Command" Value="{Binding StopRecordingCommand}"/></DataTrigger></Style.Triggers></Style></Button.Style></Button>
+   </StackPanel>
+   <WrapPanel VerticalAlignment="Center" IsEnabled="{Binding CanConfigureMeeting}">
+    <ComboBox ItemsSource="{Binding CaptureSources}" SelectedItem="{Binding CaptureSource}" Width="175" Margin="0,0,8,0"/>
+    <ComboBox ItemsSource="{Binding Languages}" ItemTemplate="{StaticResource LanguageItem}" SelectedItem="{Binding SourceLanguage}" Width="110" Margin="0,0,8,0"/>
+    <Button Content="⇄" Command="{Binding SwapLanguagesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
+    <ComboBox ItemsSource="{Binding TargetLanguages}" ItemTemplate="{StaticResource LanguageItem}" SelectedItem="{Binding TargetLanguage}" Width="110" Margin="0,0,8,0"/>
+    <ComboBox ItemsSource="{Binding TranslationModes}" SelectedItem="{Binding TranslationMode}" Width="120"/>
+   </WrapPanel></DockPanel>
+  </Border>
+  <Border Grid.Row="1" Background="#F9FCFA" BorderBrush="#D8E5E1" BorderThickness="1" CornerRadius="10" Padding="12,8" Margin="0,12,0,12"><TextBlock Text="Ctrl + Alt + D · Dịch văn bản đã chọn       Ctrl + Alt + T · Mở dịch nhanh" Foreground="#65756F" TextWrapping="Wrap"/></Border>
+  <Border Grid.Row="2" CornerRadius="16" BorderBrush="#C2DDD5" BorderThickness="1" ClipToBounds="True"><Grid>
+   <local:GardenBackground/>
+   <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"><StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding Captions.Count}" Value="0"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+    <Image Source="/TransTools;component/Resources/Mascot/MascotSprites/angles/angle_front.png" Width="110" Height="130" Stretch="Uniform"/>
+    <TextBlock Text="Sẵn sàng nghe &amp; phiên dịch" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,12,0,6"/>
+    <TextBlock Text="Chọn nguồn âm để bắt đầu" FontSize="14" Foreground="#65756F" HorizontalAlignment="Center"/>
+   </StackPanel>
+   <ListBox x:Name="CaptionList" ItemsSource="{Binding Captions}" Background="Transparent" BorderThickness="0" Margin="16" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+    <ListBox.Style><Style TargetType="ListBox"><Style.Triggers><DataTrigger Binding="{Binding Captions.Count}" Value="0"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></ListBox.Style>
+    <ListBox.ItemTemplate><DataTemplate><Border Style="{StaticResource TranscriptCard}" Margin="0,0,0,10"><StackPanel><TextBlock Text="{Binding FormattedTimestamp}" Foreground="#73827C" FontSize="11" Margin="0,0,0,6"/><TextBlock Text="{Binding Original}" TextWrapping="Wrap" FontSize="14"/><TextBlock Text="{Binding Vietnamese}" TextWrapping="Wrap" FontSize="14" Foreground="#287568" Margin="0,6,0,0"/></StackPanel></Border></DataTemplate></ListBox.ItemTemplate>
+   </ListBox>
+  </Grid></Border>
+  <DockPanel Grid.Row="3" Margin="0,12,0,0"><TextBlock Text="{Binding Captions.Count,StringFormat={}{0} đoạn phụ đề}" VerticalAlignment="Center" Foreground="#65756F"/>
+   <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button Content="Lưu Sổ tay" Command="{Binding SaveSessionCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button Content="Xóa nội dung" Command="{Binding ClearCaptionsCommand}" Style="{StaticResource DestructiveButton}"/></StackPanel>
+  </DockPanel>
+ </Grid>
 </UserControl>

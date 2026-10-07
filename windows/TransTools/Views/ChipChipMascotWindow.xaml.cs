@@ -19,13 +19,13 @@ public partial class ChipChipMascotWindow : Window
         _reminderTimer.Stop(); _reminderTimer.Start();
     }
     public ChipChipMascotWindow() {
-        InitializeComponent(); Left = SystemParameters.WorkArea.Right - Width - 30; Top = SystemParameters.WorkArea.Bottom - Height - 30;
+        InitializeComponent(); SetBinding(TitleProperty, new System.Windows.Data.Binding("DisplayName") { Source = TransTools.Services.Experience.AssistantIdentity.Shared }); Left = SystemParameters.WorkArea.Right - Width - 30; Top = SystemParameters.WorkArea.Bottom - Height - 30;
         IsVisibleChanged += (_, _) => { if (!IsVisible) ResetAnimation(); };
         _reminderTimer.Tick += (_, _) => { _reminderTimer.Stop(); _reminding = false; ResetAnimation(); if (!_wasVisible) Hide(); };
         Closed += (_, _) => { _reminderTimer.Stop(); ResetAnimation(); };
     }
     private void MascotEnter(object sender, MouseEventArgs e) {
-        if (!_reminding) BubbleText.Text = "Cùng học nhé!";
+        if (!_reminding) BubbleText.Text = "Cùng học với " + TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName + " nhé!";
         SpeechBubble.Visibility = Visibility.Visible;
         if (SystemParameters.ClientAreaAnimation) MascotRotation.BeginAnimation(System.Windows.Media.RotateTransform.AngleProperty,
             new DoubleAnimation(-5, 5, TimeSpan.FromMilliseconds(250)) { AutoReverse = true, RepeatBehavior = new RepeatBehavior(2), FillBehavior = FillBehavior.Stop });

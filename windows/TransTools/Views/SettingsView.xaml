@@ -6,6 +6,15 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel MaxWidth="800" HorizontalAlignment="Left">
+            <Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,0,0,16">
+                <StackPanel><TextBlock Text="Trợ lý của bạn" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="180"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBlock Text="Tên trợ lý" VerticalAlignment="Center"/>
+                <TextBox Grid.Column="1" Text="{Binding AssistantName}" MaxLength="40" MinHeight="40" ToolTip="Để trống để dùng Chip Chip" Margin="0,0,12,0"/>
+                <Button Grid.Column="2" Content="Lưu" Command="{Binding SaveAssistantNameCommand}"/></Grid>
+                <TextBlock Text="Tên này dùng trong trò chuyện, phụ đề và trợ lý trên màn hình." Foreground="#65756F" Margin="0,10,0,0" TextWrapping="Wrap"/></StackPanel>
+            </Border>
+
             <!-- Header -->
             <TextBlock Text="Cài đặt hệ thống &amp; Dịch vụ AI" FontSize="20" FontWeight="Bold" Foreground="#243D35" Margin="0,0,0,16"/>
 

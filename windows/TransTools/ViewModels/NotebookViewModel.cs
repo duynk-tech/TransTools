@@ -29,8 +29,9 @@ public partial class NotebookViewModel : ObservableObject
         var session = SelectedSession;
         var editor = new TransTools.Views.MeetingNotesWindow(session.Notes, session.Summary ?? "") { Owner = System.Windows.Application.Current.MainWindow };
         if (editor.ShowDialog() != true) return;
-        session.Notes = editor.Notes;
-        await _sessionStore.SaveSessionsAsync(Sessions.ToList());
+        var notes = editor.Notes;
+        await _sessionStore.UpdateSessionAsync(session.Id, () => session, stored => stored.Notes = notes);
+        var visible = Sessions.FirstOrDefault(s => s.Id == session.Id); if (visible != null) visible.Notes = notes;
         OnPropertyChanged(nameof(SelectedSession)); Status = "Đã lưu ghi chú";
     }
 
@@ -110,12 +111,12 @@ public partial class NotebookViewModel : ObservableObject
             var prompt = "Bạn là trợ lý thư ký cuộc họp chuyên nghiệp. Hãy tóm tắt nội dung cuộc họp sau bằng tiếng Việt với định dạng:\n1. Tóm tắt tổng quan (2-3 câu)\n2. Các quyết định & ý chính đã thống nhất (gạch đầu dòng)\n3. Việc cần làm tiếp theo (Action items, nếu có)\n\nNội dung cuộc họp:\n" + transcriptBuilder.ToString();
 
             var summaryResult = await _llmService.GenerateAsync(transcriptBuilder.ToString(), "Tóm tắt bằng tiếng Việt: tổng quan, quyết định và việc cần làm. Không tự thêm thông tin.", config);
-            targetSession.Summary = summaryResult;
+            await _sessionStore.UpdateSessionAsync(targetSession.Id, () => targetSession, stored => stored.Summary = summaryResult);
+            var visible = Sessions.FirstOrDefault(s => s.Id == targetSession.Id); if (visible != null) visible.Summary = summaryResult;
 
             // Trigger UI property changed notification
             OnPropertyChanged(nameof(SelectedSession));
 
-            await _sessionStore.SaveSessionsAsync(Sessions.ToList());
             Status = "Đã tạo bản tóm tắt cuộc họp thành công!";
         }
         catch (Exception ex)

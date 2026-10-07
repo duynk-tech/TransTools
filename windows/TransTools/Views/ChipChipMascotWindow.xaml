@@ -1,11 +1,11 @@
 <Window x:Class="TransTools.Views.ChipChipMascotWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Chip Chip" Height="220" Width="200" WindowStyle="None" AllowsTransparency="True" Background="Transparent" Topmost="True" ShowInTaskbar="False">
  <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
  <Border x:Name="SpeechBubble" Background="White" CornerRadius="16" BorderBrush="#79B8AA" BorderThickness="2" Padding="10" Visibility="Collapsed"><TextBlock x:Name="BubbleText" Text="Cùng học nhé!" TextWrapping="Wrap" FontSize="14" Foreground="#26776B"/></Border>
- <Image x:Name="MascotImage" Grid.Row="1" Source="/TransTools;component/Resources/Mascot/MascotSprites/angles/angle_front.png" Stretch="Uniform" Cursor="Hand" RenderTransformOrigin="0.5,0.7" MouseEnter="MascotEnter" MouseLeave="MascotLeave" MouseLeftButtonDown="MascotDown" ToolTip="Kéo để di chuyển · Nhấp đúp để học cùng Chip Chip"><Image.ContextMenu><ContextMenu>
+ <Image x:Name="MascotImage" Grid.Row="1" Source="/TransTools;component/Resources/Mascot/MascotSprites/angles/angle_front.png" Stretch="Uniform" Cursor="Hand" RenderTransformOrigin="0.5,0.7" MouseEnter="MascotEnter" MouseLeave="MascotLeave" MouseLeftButtonDown="MascotDown" ToolTip="Kéo để di chuyển · Nhấp đúp để học cùng trợ lý"><Image.ContextMenu><ContextMenu>
   <MenuItem Header="Bắt đầu cuộc họp" Click="StartMeeting_Click"/>
   <MenuItem Header="Mở phụ đề nổi" Click="OpenSubtitle_Click"/>
   <MenuItem Header="Mở ứng dụng" Click="OpenApplication_Click"/>
-  <Separator/><MenuItem Header="Học cùng Chip Chip" Click="StartLearning_Click"/>
+  <Separator/><MenuItem Header="Học cùng trợ lý" Click="StartLearning_Click"/>
  </ContextMenu></Image.ContextMenu><Image.RenderTransform><RotateTransform x:Name="MascotRotation"/></Image.RenderTransform></Image>
  </Grid>
 </Window>

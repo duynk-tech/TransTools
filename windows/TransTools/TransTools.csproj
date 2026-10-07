@@ -9,6 +9,7 @@
     <RootNamespace>TransTools</RootNamespace>
     <AssemblyName>TransTools</AssemblyName>
     <ApplicationTitle>Trans Tools</ApplicationTitle>
+    <ApplicationIcon>Resources\AppIcon.ico</ApplicationIcon>
     <Company>DuyNK-Tech</Company>
     <Product>Trans Tools for Windows</Product>
     <Version>1.4.2</Version>

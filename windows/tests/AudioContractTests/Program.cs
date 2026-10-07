@@ -63,3 +63,17 @@ Check(!endpoint.Accept(voice), "speech does not trigger premature send");
 Check(!endpoint.Accept(silence), "one-second hesitation preserves utterance with two-second delay");
 Check(!endpoint.Accept(voice), "resumed speech resets pause counter");
 Check(!endpoint.Accept(silence) && endpoint.Accept(silence), "utterance ends only after full configured pause");
+
+var sessionFolder = Path.Combine(Path.GetTempPath(), "trans-tools-session-contract-" + Guid.NewGuid());
+try {
+    var sessionStore = new TransTools.Services.Storage.SessionStore(sessionFolder);
+    var sessionId = Guid.NewGuid();
+    await Task.WhenAll(
+        sessionStore.UpdateSessionAsync(sessionId, () => new TransTools.Models.MeetingSession(), s => s.Notes = "My notes"),
+        sessionStore.UpdateSessionAsync(sessionId, () => new TransTools.Models.MeetingSession(), s => s.Summary = "AI summary"),
+        sessionStore.UpdateSessionAsync(sessionId, () => new TransTools.Models.MeetingSession(), s => s.Captions = [new TransTools.Models.Caption { Original = "Keep all words", Vietnamese = "Giữ đủ chữ" }]));
+    var stored = (await sessionStore.LoadSessionsAsync()).Single();
+    Check(stored.Notes == "My notes" && stored.Summary == "AI summary" && stored.Captions.Count == 1, "concurrent meeting, notes and summary updates preserve all fields");
+    await sessionStore.UpdateSessionAsync(sessionId, () => throw new Exception("Must reuse ID"), s => s.DurationSeconds = 5);
+    Check((await sessionStore.LoadSessionsAsync()).Count == 1, "saving an existing session does not duplicate it");
+} finally { if (Directory.Exists(sessionFolder)) Directory.Delete(sessionFolder, true); }

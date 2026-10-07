@@ -13,6 +13,12 @@ namespace TransTools.ViewModels;
 
 public partial class SettingsViewModel : ObservableObject
 {
+    [ObservableProperty] private string _assistantName = TransTools.Services.Experience.AssistantIdentity.Shared.CustomName;
+    [RelayCommand] private void SaveAssistantName()
+    {
+        try { TransTools.Services.Experience.AssistantIdentity.Shared.Save(AssistantName); Status = "Đã lưu tên trợ lý"; }
+        catch (Exception ex) { Status = ex.Message; }
+    }
     private TransTools.Services.Updates.WindowsRelease? _release;
     private CancellationTokenSource? _updateDownload;
     [ObservableProperty] private string _updateStatus = "Kiểm tra phiên bản mới khi bạn cần.";

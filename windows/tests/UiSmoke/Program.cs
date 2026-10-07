@@ -24,8 +24,9 @@ internal static class Program
                     var button = Descendants(window).OfType<RadioButton>().First(b => Equals(b.Content, route));
                     button.IsChecked = true; Pump(); window.UpdateLayout();
                     if (button.ActualHeight < 30 || button.ActualWidth < 60) throw new Exception("Navigation collapsed: " + route);
-                    var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight, 96, 96, PixelFormats.Pbgra32);
-                    bitmap.Render(window);
+                    var root = (FrameworkElement)window.Content;
+                    var bitmap = new RenderTargetBitmap((int)Math.Ceiling(root.ActualWidth), (int)Math.Ceiling(root.ActualHeight), 96, 96, PixelFormats.Pbgra32);
+                    bitmap.Render(root);
                     var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(bitmap));
                     var filename = $"{width}-{Array.IndexOf(new[] { "Cuộc họp", "Sổ tay", "Dịch nhanh", "Học ngôn ngữ", "Trò chuyện", "Cài đặt" }, route)}.png";
                     using var file = File.Create(Path.Combine(output, filename)); png.Save(file);
