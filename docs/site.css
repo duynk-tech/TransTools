@@ -10,3 +10,17 @@
 .showcase .tabs button{min-width:0;white-space:normal;text-align:center;padding:12px 8px}
 @media(max-width:900px){.showcase .tabs{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:600px){.showcase .tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Mint controls share the app palette; borders never alter layout on hover. */
+:root{--accent:#287568;--line:#cbded8;--ink:#263c37;--mint:#e1eee6}
+.button{min-height:44px;padding:12px 20px;gap:14px;border:1px solid #b5d2c9;transition:background .18s,border-color .18s,box-shadow .18s}
+.button:hover{transform:none;box-shadow:0 3px 12px #28756818}
+.button.dark{background:var(--accent);border-color:var(--accent);color:#fff}.button.dark:hover{background:#206358;border-color:#206358}
+.button.small{min-height:40px;padding:10px 16px}.brand img{border-radius:9px}
+.showcase,.experience>img{border:1px solid var(--line);border-radius:20px;background:#fff}.experience>img{display:block;width:100%;height:auto}
+.tabs button{border:1px solid transparent;border-radius:10px;color:var(--accent)}.tabs button:hover{border-color:#b5d2c9;background:#edf5f1}.tabs button[aria-selected=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.activity-pills button,.time-control button,.dialog-close{border:1px solid #b5d2c9;color:var(--accent);background:#f7fbf9;min-height:38px}
+.activity-pills button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:white}.download-card{background:var(--mint)}
+.hero h1 span,.tag,.feature-grid .icon{color:var(--accent)}.pet-section{background:#e1eee6}.pet-scene{border:1px solid #b5d2c9}
+
+.time-control button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
