@@ -25,6 +25,9 @@ public partial class ConversationView : UserControl
         }));
     }
 
+    private void ShowLibrary_Click(object sender, System.Windows.RoutedEventArgs e) => LibraryPopup.IsOpen = true;
+    private void ShowTopic_Click(object sender, System.Windows.RoutedEventArgs e) => TopicPopup.IsOpen = true;
+
     private void InputTextBox_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)

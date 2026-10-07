@@ -30,6 +30,12 @@ public partial class QuickTranslateView : UserControl
         TranslationContent.Visibility = Visibility.Collapsed; ReaderContent.Visibility = Visibility.Visible;
     }
 
+    private void ShowContext_Click(object sender, RoutedEventArgs e) => ContextPopup.IsOpen = true;
+    private void SwapLanguages_Click(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.SourceLanguage == "auto") return;
+        (_viewModel.SourceLanguage, _viewModel.TargetLanguage) = (_viewModel.TargetLanguage, _viewModel.SourceLanguage);
+    }
     private void ClearSource_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.SourceText = string.Empty;
