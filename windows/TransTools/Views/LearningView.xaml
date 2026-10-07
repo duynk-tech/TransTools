@@ -15,10 +15,10 @@
                     <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding SelectedLanguage}" Width="160" Margin="0,0,16,8" SelectionChanged="Language_SelectionChanged">
                         <ComboBoxItem Content="Tiếng Anh" Tag="en"/><ComboBoxItem Content="Tiếng Nhật" Tag="ja"/><ComboBoxItem Content="Tiếng Trung" Tag="zh"/><ComboBoxItem Content="Tiếng Hàn" Tag="ko"/>
                     </ComboBox>
-                    <RadioButton Content="Hôm nay · Ôn tập" Style="{StaticResource SegmentedOption}" IsChecked="True" Foreground="#243D35" Margin="8" Checked="TodayTab_Checked"/>
-                    <RadioButton x:Name="VocabularyTab" Content="Từ vựng của tôi" Style="{StaticResource SegmentedOption}" Foreground="#243D35" Margin="8" Checked="VocabTab_Checked"/>
-                    <RadioButton Content="Luyện giao tiếp" Style="{StaticResource SegmentedOption}" Foreground="#243D35" Margin="8" Checked="PracticeTab_Checked"/>
-                    <RadioButton Content="Chữ &amp; Viết" Style="{StaticResource SegmentedOption}" Foreground="#243D35" Margin="8" Checked="AlphabetTab_Checked"/>
+                    <RadioButton Content="Hôm nay · Ôn tập" Style="{StaticResource SegmentedOption}" IsChecked="True" Margin="8" Checked="TodayTab_Checked"/>
+                    <RadioButton x:Name="VocabularyTab" Content="Từ vựng của tôi" Style="{StaticResource SegmentedOption}" Margin="8" Checked="VocabTab_Checked"/>
+                    <RadioButton Content="Luyện giao tiếp" Style="{StaticResource SegmentedOption}" Margin="8" Checked="PracticeTab_Checked"/>
+                    <RadioButton Content="Chữ &amp; Viết" Style="{StaticResource SegmentedOption}" Margin="8" Checked="AlphabetTab_Checked"/>
                 </WrapPanel>
                 <WrapPanel VerticalAlignment="Center">
                     <TextBlock Text="{Binding DailyStreak, StringFormat='Chuỗi học: {0} ngày'}" Foreground="#65756F" Margin="0,8,18,0"/>
