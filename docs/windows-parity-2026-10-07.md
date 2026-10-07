@@ -7,7 +7,7 @@ The goal is the same six main screens, controls, readable mint styling and saved
 - The executable and installer use the current mint application icon. The native phonemizer build tree lives outside the publish folder; package validation rejects build SDK/source folders.
 - Six tabs in the top header match Mac: Meeting, Notebook, Quick Translate, Language Learning, Conversation and Settings. Text Reader lives inside Quick Translate.
 - Views are created once and reused, so switching tabs preserves local controls and scroll state.
-- Buttons share mint styling, fixed border width and predictable heights; deletion controls use red. Transcript cards have a mint border even when not hovered.
+- Buttons and selection menus share mint styling, fixed border width and predictable heights; deletion controls use red. Transcript cards have a mint border even when not hovered.
 - Meeting starts with system audio selected. A stopped transcript is saved before starting the next meeting. Saving the same session again updates its existing ID. Explicit clearing requires confirmation.
 - Floating captions retain the last readable pair during empty updates, scroll after layout, and offer Stop Meeting and Open App. Mascot context menu can start a meeting, open captions and hide the main window only after capture starts successfully.
 - Conversation can generate a personalized opening, stop recording after an integer silence delay, automatically send recognized speech, and scroll to the newest message. Initial silence does not submit empty speech; resumed speech resets the pause counter. One recording remains capped at sixty seconds.
@@ -17,9 +17,9 @@ The goal is the same six main screens, controls, readable mint styling and saved
 
 ## Validation
 
-Cross-target Release build on Mac has passed without compiler warnings or errors. Contract tests cover PCM format/resampling, subtitle word preservation, model checksums, storage inventory, GitHub update validation, learning migration/SRS and speech endpoint timing. Actual model inference is explicitly skipped unless its required model paths are supplied.
+Cross-target Release build on Mac has passed without compiler warnings or errors. Contract tests cover PCM format/resampling, subtitle word preservation, model checksums, storage inventory, GitHub update validation, learning migration/SRS and speech endpoint timing. The native Windows run [37585741860](https://github.com/duynk-tech/TransTools/actions/runs/37585741860) passed 55 checks with zero skipped checks on Windows x64 build 26100, including real Supertonic and VieNeu inference and pinned phonemizer golden output. This run also produced the installer and portable package after the package-content checks. Interactive audio capture was not performed.
 
-Windows CI builds the native VieNeu phonemizer, runs the contracts, renders all six WPF routes at 1280×820 and 1000×600 while checking binding errors, then builds the installer and portable ZIP. Screenshots and logs are artifacts, not a claim that interactive Windows 10/11 tests passed.
+Windows CI builds the native VieNeu phonemizer, runs the contracts, renders all six WPF routes at 1280×820 and 1000×600 while checking binding errors, with long-text meeting/conversation/notebook fixtures and separate mini-chat/subtitle captures in the newer harness, then builds the installer and portable ZIP. Screenshots and logs are artifacts, not a claim that interactive Windows 10/11 tests passed.
 
 ## Remaining differences requiring work or direct verification
 

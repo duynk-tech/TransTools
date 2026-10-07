@@ -12,7 +12,7 @@
    </ControlTemplate></Setter.Value></Setter>
   </Style>
  </Window.Resources>
- <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+ <Grid Background="{Binding Background,RelativeSource={RelativeSource AncestorType=Window}}"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
   <Border Background="#F8FBFA" BorderBrush="#D8E5E1" BorderThickness="0,0,0,1" Padding="20,14">
    <DockPanel LastChildFill="False">
     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
