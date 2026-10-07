@@ -17,9 +17,16 @@ $OutputDir = Join-Path $PSScriptRoot "..\build"
 Write-Host "Building project at: $ProjectDir" -ForegroundColor Yellow
 Write-Host "Output destination:  $OutputDir" -ForegroundColor Yellow
 
+# Remove stale binaries so a failed build cannot be reported as successful.
+if (Test-Path $OutputDir) { Remove-Item $OutputDir -Recurse -Force }
+
+# Build the pinned native processor into the app; no user-side Rust/Python install.
+& (Join-Path $PSScriptRoot "build-native-phonemizer.ps1")
+
 # 2. Restore NuGet Packages
 Write-Host "`n[1/3] Đang tải gói thư viện NuGet..." -ForegroundColor Green
 dotnet restore "$ProjectDir\TransTools.csproj"
+if ($LASTEXITCODE -ne 0) { throw "NuGet restore failed ($LASTEXITCODE)." }
 
 # 3. Publish Single-File Executable
 Write-Host "`n[2/3] Đang biên dịch TransTools.exe (win-x64 Self-Contained)..." -ForegroundColor Green
@@ -30,6 +37,8 @@ dotnet publish "$ProjectDir\TransTools.csproj" `
     -p:PublishSingleFile=true `
     -p:EnableCompressionInSingleFile=true `
     -o "$OutputDir"
+
+if ($LASTEXITCODE -ne 0) { throw "Publish failed ($LASTEXITCODE)." }
 
 # 4. Verification
 $ExePath = Join-Path $OutputDir "TransTools.exe"

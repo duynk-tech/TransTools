@@ -6,7 +6,10 @@ namespace TransTools.Views;
 
 public partial class FloatingSubtitleWindow : Window
 {
+    public event Action? StopRequested;
     private double _baseFontSize = 16;
+    private string _original = "";
+    private string _translation = "";
     private int _displayMode = 0; // 0: Bilingual, 1: Original Only, 2: Translation Only
 
     public FloatingSubtitleWindow()
@@ -20,6 +23,10 @@ public partial class FloatingSubtitleWindow : Window
     {
         Dispatcher.Invoke(() =>
         {
+
+            // An empty transient recognition update must not erase the last readable caption.
+            if (string.IsNullOrWhiteSpace(original) && string.IsNullOrWhiteSpace(vietnamese)) return;
+            _original = original; _translation = vietnamese;
             switch (_displayMode)
             {
                 case 1: // Original Only
@@ -29,24 +36,28 @@ public partial class FloatingSubtitleWindow : Window
                     break;
                 case 2: // Translation Only
                     OriginalText.Visibility = Visibility.Collapsed;
-                    TranslatedText.Visibility = Visibility.Visible;
+                    TranslatedText.Visibility = string.IsNullOrWhiteSpace(vietnamese) ? Visibility.Collapsed : Visibility.Visible;
                     TranslatedText.Text = vietnamese;
                     break;
                 default: // Bilingual
                     OriginalText.Visibility = Visibility.Visible;
                     OriginalText.Text = original;
-                    TranslatedText.Visibility = Visibility.Visible;
+                    TranslatedText.Visibility = string.IsNullOrWhiteSpace(vietnamese) ? Visibility.Collapsed : Visibility.Visible;
                     TranslatedText.Text = vietnamese;
                     break;
             }
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() => CaptionScroll.ScrollToEnd()));
         });
     }
+    public void SetMeetingState(bool running) => StopButton.IsEnabled = running;
+    private void StopMeeting_Click(object sender, RoutedEventArgs e) => StopRequested?.Invoke();
 
     private void Mode_Checked(object sender, RoutedEventArgs e)
     {
         if (ModeOriginal?.IsChecked == true) _displayMode = 1;
         else if (ModeTranslation?.IsChecked == true) _displayMode = 2;
         else _displayMode = 0;
+        if (OriginalText != null) UpdateSubtitle(_original, _translation);
     }
 
     private void FontIncrease_Click(object sender, RoutedEventArgs e)
@@ -74,6 +85,8 @@ public partial class FloatingSubtitleWindow : Window
             DragMove();
         }
     }
+
+    private void OpenMain_Click(object sender, RoutedEventArgs e) { Application.Current.MainWindow.Show(); Application.Current.MainWindow.Activate(); }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {

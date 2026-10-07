@@ -3,7 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:TransTools.ViewModels">
 
-    <Grid>
+    <DockPanel>
+ <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,16">
+  <RadioButton Content="Dịch &amp; Ngữ pháp" IsChecked="True" GroupName="QuickTool" Checked="TranslationTool_Checked" Margin="0,0,20,0" Cursor="Hand"/>
+  <RadioButton Content="Đọc văn bản" GroupName="QuickTool" Checked="ReadingTool_Checked" Cursor="Hand"/>
+ </StackPanel>
+ <Grid>
+ <ContentControl x:Name="ReaderContent" Visibility="Collapsed"/>
+ <Grid x:Name="TranslationContent">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -11,16 +18,16 @@
         </Grid.RowDefinitions>
 
         <!-- Top Controls: Domain & Languages -->
-        <Border Grid.Row="0" Background="#1E293B" CornerRadius="12" Padding="16" Margin="0,0,0,16">
+        <Border Grid.Row="0" Background="#FFFFFF" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,0,16">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Chuyên ngành:" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <ComboBox SelectedValue="{Binding SelectedDomain}" Width="160" Background="#0F172A" Foreground="#F8FAFC" Margin="0,0,20,0">
+                <WrapPanel VerticalAlignment="Center" Margin="0,0,0,50">
+                    <TextBlock Text="Chuyên ngành:" FontWeight="SemiBold" Foreground="#65756F" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox SelectedValuePath="Content" SelectedValue="{Binding SelectedDomain}" Width="160" Background="#F5F8F7" Foreground="#243D35" Margin="0,0,20,0">
                         <ComboBoxItem Content="Thông dụng" IsSelected="True"/>
                         <ComboBoxItem Content="Công nghệ thông tin"/>
                         <ComboBoxItem Content="Y tế &amp; Sinh học"/>
@@ -29,8 +36,8 @@
                         <ComboBoxItem Content="Pháp luật"/>
                     </ComboBox>
 
-                    <TextBlock Text="Ngôn ngữ:" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <ComboBox SelectedValue="{Binding SourceLanguage}" Width="120" Background="#0F172A" Foreground="#F8FAFC" Margin="0,0,8,0">
+                    <TextBlock Text="Ngôn ngữ:" FontWeight="SemiBold" Foreground="#65756F" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding SourceLanguage}" Width="120" Background="#F5F8F7" Foreground="#243D35" Margin="0,0,8,0">
                         <ComboBoxItem Content="Tự động" Tag="auto" IsSelected="True"/>
                         <ComboBoxItem Content="Tiếng Anh" Tag="en"/>
                         <ComboBoxItem Content="Tiếng Việt" Tag="vi"/>
@@ -39,29 +46,29 @@
                         <ComboBoxItem Content="Tiếng Hàn" Tag="ko"/>
                     </ComboBox>
 
-                    <TextBlock Text="➔" Foreground="#64748B" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock Text="➔" Foreground="#73827C" VerticalAlignment="Center" Margin="0,0,8,0"/>
 
-                    <ComboBox SelectedValue="{Binding TargetLanguage}" Width="120" Background="#0F172A" Foreground="#F8FAFC">
+                    <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding TargetLanguage}" Width="120" Background="#F5F8F7" Foreground="#243D35">
                         <ComboBoxItem Content="Tiếng Việt" Tag="vi" IsSelected="True"/>
                         <ComboBoxItem Content="Tiếng Anh" Tag="en"/>
                         <ComboBoxItem Content="Tiếng Nhật" Tag="ja"/>
                         <ComboBoxItem Content="Tiếng Trung" Tag="zh"/>
                         <ComboBoxItem Content="Tiếng Hàn" Tag="ko"/>
                     </ComboBox>
-                    <TextBlock Text="Phong cách:" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center" Margin="16,0,8,0"/>
-                    <ComboBox SelectedValue="{Binding SelectedStyle}" Width="120" Background="#0F172A" Foreground="#F8FAFC">
+                    <TextBlock Text="Phong cách:" FontWeight="SemiBold" Foreground="#65756F" VerticalAlignment="Center" Margin="16,0,8,0"/>
+                    <ComboBox SelectedValuePath="Content" SelectedValue="{Binding SelectedStyle}" Width="120" Background="#F5F8F7" Foreground="#243D35">
                         <ComboBoxItem Content="Tự nhiên" IsSelected="True"/>
                         <ComboBoxItem Content="Trang trọng"/>
                         <ComboBoxItem Content="Học thuật"/>
                         <ComboBoxItem Content="Ngắn gọn"/>
                     </ComboBox>
-                </StackPanel>
+                </WrapPanel>
 
                 <!-- Actions -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button Content="✍️ Sửa ngữ pháp" Command="{Binding CheckGrammarCommand}" Background="#334155" Foreground="White" Margin="0,0,8,0" Padding="12,8" Cursor="Hand"/>
-                    <Button Content="📷 Chụp OCR" Click="CaptureOcr_Click" Background="#334155" Foreground="White" Margin="0,0,8,0" Padding="12,8" Cursor="Hand"/>
-                    <Button Content="⚡ Dịch ngay" Command="{Binding TranslateCommand}" Background="#2563EB" Foreground="White" FontWeight="Bold" Padding="16,8" Cursor="Hand"/>
+                <StackPanel Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                    <Button Content="✍️ Sửa ngữ pháp" Command="{Binding CheckGrammarCommand}" Background="#D8E5E1" Foreground="#243D35" Margin="0,0,8,0" Padding="12,8" Cursor="Hand"/>
+                    <Button Content="📷 Chụp OCR" Click="CaptureOcr_Click" Background="#D8E5E1" Foreground="#243D35" Margin="0,0,8,0" Padding="12,8" Cursor="Hand"/>
+                    <Button Content="⚡ Dịch ngay" Command="{Binding TranslateCommand}" Background="#287568" Foreground="White" FontWeight="Bold" Padding="16,8" Cursor="Hand"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -74,31 +81,31 @@
             </Grid.ColumnDefinitions>
 
             <!-- Source Input -->
-            <Border Grid.Column="0" Background="#1E293B" CornerRadius="12" Padding="16" Margin="0,0,8,0">
+            <Border Grid.Column="0" Background="#FFFFFF" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,8,0">
                 <DockPanel>
                     <Grid DockPanel.Dock="Bottom" Margin="0,12,0,0">
-                        <Button Content="🔊 Đọc văn bản gốc" Command="{Binding SpeakSourceCommand}" Background="#334155" Foreground="White" HorizontalAlignment="Left" Padding="10,6" Cursor="Hand"/>
-                        <Button Content="Xóa" Click="ClearSource_Click" Background="Transparent" Foreground="#94A3B8" BorderThickness="0" HorizontalAlignment="Right" Cursor="Hand"/>
+                        <Button Content="🔊 Đọc văn bản gốc" Command="{Binding SpeakSourceCommand}" Background="#D8E5E1" Foreground="#243D35" HorizontalAlignment="Left" Padding="10,6" Cursor="Hand"/>
+                        <Button Content="Xóa" Click="ClearSource_Click" Background="Transparent" Foreground="#65756F" BorderThickness="0" HorizontalAlignment="Right" Cursor="Hand"/>
                     </Grid>
 
                     <TextBox Text="{Binding SourceText, UpdateSourceTrigger=PropertyChanged}"
-                             Background="Transparent" Foreground="#F8FAFC" BorderThickness="0"
+                             Background="Transparent" Foreground="#243D35" BorderThickness="0"
                              FontSize="14" AcceptsReturn="True" TextWrapping="Wrap"
                              VerticalScrollBarVisibility="Auto"/>
                 </DockPanel>
             </Border>
 
             <!-- Translated Output -->
-            <Border Grid.Column="1" Background="#1E293B" CornerRadius="12" Padding="16" Margin="8,0,0,0">
+            <Border Grid.Column="1" Background="#FFFFFF" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="12" Padding="16" Margin="8,0,0,0">
                 <DockPanel>
                     <Grid DockPanel.Dock="Bottom" Margin="0,12,0,0">
-                        <Button Content="🔊 Đọc bản dịch" Command="{Binding SpeakTranslatedCommand}" Background="#2563EB" Foreground="White" HorizontalAlignment="Left" Padding="10,6" Cursor="Hand"/>
-                        <Button Content="📋 Sao chép" Click="CopyTranslated_Click" Background="#334155" Foreground="White" HorizontalAlignment="Right" Padding="10,6" Cursor="Hand"/>
+                        <Button Content="🔊 Đọc bản dịch" Command="{Binding SpeakTranslatedCommand}" Background="#287568" Foreground="White" HorizontalAlignment="Left" Padding="10,6" Cursor="Hand"/>
+                        <Button Content="📋 Sao chép" Click="CopyTranslated_Click" Background="#D8E5E1" Foreground="#243D35" HorizontalAlignment="Right" Padding="10,6" Cursor="Hand"/>
                     </Grid>
 
                     <TextBox Text="{Binding TranslatedText}"
                              IsReadOnly="True"
-                             Background="Transparent" Foreground="#38BDF8" BorderThickness="0"
+                             Background="Transparent" Foreground="#287568" BorderThickness="0"
                              FontSize="14" AcceptsReturn="True" TextWrapping="Wrap"
                              VerticalScrollBarVisibility="Auto"/>
                 </DockPanel>
@@ -107,7 +114,9 @@
 
         <!-- Status Footer -->
         <Border Grid.Row="2" Margin="0,12,0,0">
-            <TextBlock Text="{Binding Status}" FontSize="12" Foreground="#64748B"/>
+            <TextBlock Text="{Binding Status}" FontSize="12" Foreground="#73827C"/>
         </Border>
     </Grid>
+ </Grid>
+</DockPanel>
 </UserControl>

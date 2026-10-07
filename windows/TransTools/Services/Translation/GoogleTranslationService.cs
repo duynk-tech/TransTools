@@ -2,15 +2,15 @@ using System;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
-using System.Web;
+using System.Threading;
 
 namespace TransTools.Services.Translation;
 
 public class GoogleTranslationService
 {
-    private static readonly HttpClient _httpClient = new();
+    private static readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(30) };
 
-    public async Task<string> TranslateAsync(string text, string sourceLang = "auto", string targetLang = "vi")
+    public async Task<string> TranslateAsync(string text, string sourceLang = "auto", string targetLang = "vi", CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(text)) return string.Empty;
 
@@ -18,7 +18,7 @@ public class GoogleTranslationService
 
         try
         {
-            var response = await _httpClient.GetStringAsync(url);
+            var response = await _httpClient.GetStringAsync(url, cancellationToken);
             using var doc = JsonDocument.Parse(response);
             var root = doc.RootElement;
             if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() > 0)
@@ -35,11 +35,12 @@ public class GoogleTranslationService
                 return translatedBuilder.ToString();
             }
         }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Google Translate error: {ex.Message}");
         }
 
-        return text;
+        throw new InvalidOperationException("Không thể dịch văn bản. Kiểm tra kết nối và thử lại.");
     }
 }

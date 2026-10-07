@@ -21,6 +21,15 @@ public class LLMTranslationService
 
         var systemPrompt = $"You are an expert translator. Translate the given text accurately into {targetLanguage}. Maintain natural tone with style: {style}. Return ONLY the direct translation without extra quotes or commentary.";
 
+        return await GenerateAsync(text, systemPrompt, config);
+    }
+
+    public async Task<string> GenerateAsync(string text, string systemPrompt, AIProviderConfig config)
+    {
+        if (string.IsNullOrWhiteSpace(config.SelectedModel))
+            throw new InvalidOperationException("Chọn model AI trong Cài đặt trước khi sử dụng.");
+        if (string.IsNullOrWhiteSpace(config.ApiKey) && config.ProviderId != "ollama")
+            throw new InvalidOperationException("Chưa cấu hình API key.");
         return config.ProviderId.ToLowerInvariant() switch
         {
             "gemini" => await CallGeminiAsync(text, systemPrompt, config),
@@ -57,7 +66,7 @@ public class LLMTranslationService
 
         request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.SendAsync(request);
+        using var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync();
@@ -67,7 +76,7 @@ public class LLMTranslationService
 
     private static async Task<string> CallGeminiAsync(string text, string systemPrompt, AIProviderConfig config)
     {
-        var model = string.IsNullOrWhiteSpace(config.SelectedModel) ? "gemini-1.5-flash" : config.SelectedModel;
+        var model = config.SelectedModel;
         var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={config.ApiKey}";
 
         var payload = new
@@ -82,7 +91,7 @@ public class LLMTranslationService
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
         request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.SendAsync(request);
+        using var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync();
@@ -99,7 +108,7 @@ public class LLMTranslationService
 
         var payload = new
         {
-            model = string.IsNullOrWhiteSpace(config.SelectedModel) ? "claude-3-5-sonnet-20241022" : config.SelectedModel,
+            model = config.SelectedModel,
             max_tokens = 1024,
             system = systemPrompt,
             messages = new[]
@@ -109,7 +118,7 @@ public class LLMTranslationService
         };
 
         request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-        var response = await _httpClient.SendAsync(request);
+        using var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync();
@@ -122,7 +131,7 @@ public class LLMTranslationService
         var endpoint = string.IsNullOrWhiteSpace(config.CustomEndpoint) ? "http://localhost:11434/api/generate" : config.CustomEndpoint;
         var payload = new
         {
-            model = string.IsNullOrWhiteSpace(config.SelectedModel) ? "qwen2.5:7b" : config.SelectedModel,
+            model = config.SelectedModel,
             system = systemPrompt,
             prompt = text,
             stream = false
@@ -131,7 +140,7 @@ public class LLMTranslationService
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
         request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.SendAsync(request);
+        using var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync();

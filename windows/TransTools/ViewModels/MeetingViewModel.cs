@@ -1,173 +1,192 @@
-using System;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Threading.Channels;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using NAudio.Wave;
 using TransTools.Models;
 using TransTools.Services.Audio;
 using TransTools.Services.Speech;
+using TransTools.Services.Storage;
 using TransTools.Services.Translation;
-
 namespace TransTools.ViewModels;
 
-public partial class MeetingViewModel : ObservableObject
+public partial class MeetingViewModel : ObservableObject, IDisposable
 {
-    private readonly WasapiAudioCaptureService _audioService = new();
-    private readonly WhisperSttService _sttService = new();
-    private readonly GoogleTranslationService _translationService = new();
-
-    private readonly MemoryStream _accumulatedBuffer = new();
-    private readonly object _bufferLock = new();
-    private CancellationTokenSource? _processingCts;
-
-    [ObservableProperty]
-    private bool _isRecording;
-
-    [ObservableProperty]
-    private string _status = "Sẵn sàng ghi âm cuộc họp";
-
-    [ObservableProperty]
-    private float _audioLevel;
-
-    [ObservableProperty]
-    private string _currentLiveOriginal = string.Empty;
-
-    [ObservableProperty]
-    private string _currentLiveVietnamese = string.Empty;
-
-    [ObservableProperty]
-    private bool _captureSystemAudio = true;
-
-    [ObservableProperty]
-    private bool _captureMicrophone = false;
-
+    private readonly WasapiAudioCaptureService _audio = new();
+    private readonly WhisperSttService _stt = new();
+    private readonly GoogleTranslationService _google = new();
+    private readonly SecureCredentialStore _credentials = new();
+    private readonly object _lock = new();
+    private readonly MemoryStream _buffer = new();
+    private readonly List<(string Text, double Start, double End)> _segments = new();
+    private Channel<byte[]>? _audioQueue;
+    private Channel<Caption>? _translationQueue;
+    private Channel<Caption>? _displayQueue;
+    private CancellationTokenSource? _cts;
+    private Task? _processing;
+    private DateTime _lastVoice;
+    private double _offset;
+    private bool _overflow;
+    private DateTime _started;
+    private string _sessionSource = "en", _sessionTarget = "vi", _sessionTranslationMode = "Google";
+    private AIProviderConfig? _sessionAi;
+    private bool _preparing;
+    private volatile bool _flushPresentation;
+    public Func<bool>? OtherAudioBusy { get; set; }
+    public bool IsBusy => IsRecording || IsStopping || _preparing;
+    [ObservableProperty] private bool _isRecording;
+    [ObservableProperty] private bool _isStopping;
+    [ObservableProperty] private string _status = "Sẵn sàng";
+    [ObservableProperty] private float _audioLevel;
+    [ObservableProperty] private string _currentLiveOriginal = "";
+    [ObservableProperty] private string _currentLiveVietnamese = "";
+    [ObservableProperty] private bool _captureSystemAudio = true;
+    [ObservableProperty] private bool _captureMicrophone;
+    [ObservableProperty] private string _sourceLanguage = "en";
+    [ObservableProperty] private string _targetLanguage = "vi";
+    [ObservableProperty] private string _translationMode = "Google";
+    public string[] Languages { get; } = { "en", "vi", "ja", "zh", "ko", "auto" };
+    public string[] TranslationModes { get; } = { "Google", "AI", "Tiếng gốc" };
     public ObservableCollection<Caption> Captions { get; } = new();
-
     public event Action<string, string>? OnSubtitleUpdated;
-
+    public event Action<MeetingSession>? OnSessionSaved;
     public MeetingViewModel()
     {
-        _audioService.OnAudioLevelChanged += level => AudioLevel = level;
-        
-        // Feed captured 16kHz PCM audio chunks to buffer
-        _audioService.OnAudio16kHzMonoChunk += chunk =>
-        {
-            if (!_isRecording) return;
-            lock (_bufferLock)
-            {
-                _accumulatedBuffer.Write(chunk, 0, chunk.Length);
+        _audio.OnAudioLevelChanged += level => Ui(() => AudioLevel = level);
+        _audio.OnAudio16kHzMonoChunk += AcceptAudio;
+        _stt.OnSegmentTranscribed += (text, start, end) => _segments.Add((text, start, end));
+    }
+    private static void Ui(Action action) => System.Windows.Application.Current?.Dispatcher.BeginInvoke(action);
+    private void AcceptAudio(byte[] chunk)
+    {
+        lock (_lock) {
+            if (!IsRecording || _audioQueue == null) return;
+            _buffer.Write(chunk);
+            double sum = 0;
+            for (var i = 0; i + 1 < chunk.Length; i += 2) { var v = BitConverter.ToInt16(chunk, i) / 32768.0; sum += v * v; }
+            if (Math.Sqrt(sum / Math.Max(1, chunk.Length / 2)) > .008) _lastVoice = DateTime.UtcNow;
+            // Preserve utterances across callbacks, close on silence or at 8 seconds.
+            if ((_buffer.Length >= 16000 && (DateTime.UtcNow - _lastVoice).TotalSeconds >= .8) || _buffer.Length >= 256000) {
+                if (!_audioQueue.Writer.TryWrite(_buffer.ToArray())) {
+                    _overflow = true; Ui(() => StopRecordingCommand.Execute(null));
+                }
+                _buffer.SetLength(0);
             }
-        };
-
-        _sttService.OnSegmentTranscribed += async (text, start, end) =>
-        {
-            if (string.IsNullOrWhiteSpace(text)) return;
-
-            CurrentLiveOriginal = text;
-            var vi = await _translationService.TranslateAsync(text, "auto", "vi");
-            CurrentLiveVietnamese = vi;
-
-            var caption = new Caption
-            {
-                Start = start,
-                End = end,
-                Original = text,
-                Vietnamese = vi
-            };
-
-            System.Windows.Application.Current?.Dispatcher.Invoke(() =>
-            {
-                Captions.Insert(0, caption);
-                OnSubtitleUpdated?.Invoke(text, vi);
+        }
+    }
+    [RelayCommand] public async Task StartRecordingAsync()
+    {
+        if (IsRecording || IsStopping || _preparing) return;
+        if (OtherAudioBusy?.Invoke() == true) { Status = "Kết thúc luyện nói trước khi bắt đầu cuộc họp."; return; }
+        _preparing = true;
+        try {
+            if (CaptureSystemAudio == CaptureMicrophone) throw new InvalidOperationException("Chọn một nguồn âm thanh.");
+            _sessionSource = SourceLanguage; _sessionTarget = TargetLanguage; _sessionTranslationMode = TranslationMode;
+            _sessionAi = _sessionTranslationMode == "AI" ? _credentials.LoadConfiguredProvider() ?? throw new InvalidOperationException("Chọn AI và model trong Cài đặt.") : null;
+            Status = "Đang chuẩn bị nhận diện...";
+            await _stt.InitializeModelAsync(language: _sessionSource);
+            _cts?.Dispose(); _cts = new(); _offset = 0; _overflow = false; _started = DateTime.Now;
+            _flushPresentation = false; Captions.Clear(); CurrentLiveOriginal = ""; CurrentLiveVietnamese = "";
+            _audioQueue = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(8) { SingleReader = true, FullMode = BoundedChannelFullMode.Wait });
+            _translationQueue = Channel.CreateBounded<Caption>(new BoundedChannelOptions(64) { SingleReader = true, SingleWriter = true });
+            // Only the visible overlay may skip a stale backlog. The transcript retains every caption.
+            _displayQueue = Channel.CreateBounded<Caption>(new BoundedChannelOptions(3) { SingleReader = true, SingleWriter = true, FullMode = BoundedChannelFullMode.DropOldest });
+            lock (_lock) { _buffer.SetLength(0); _lastVoice = DateTime.UtcNow; }
+            var token = _cts.Token;
+            _processing = Task.WhenAll(Task.Run(() => RecognizeAsync(token)), Task.Run(() => TranslateAsync(token)), Task.Run(() => PresentAsync(token)));
+            IsRecording = true; _audio.StartCapture(CaptureSystemAudio, CaptureMicrophone); Status = "Đang nghe...";
+        } catch (Exception ex) {
+            _audio.StopCapture(); _audioQueue?.Writer.TryComplete(); _cts?.Cancel(); IsRecording = false;
+            if (_processing != null) { try { await _processing; } catch { } }
+            _stt.Dispose(); Status = ex.Message;
+        }
+        finally { _preparing = false; }
+    }
+    [RelayCommand] public async Task StopRecordingAsync()
+    {
+        if (!IsRecording || IsStopping) return;
+        _flushPresentation = true; IsStopping = true; IsRecording = false; _audio.StopCapture(); Status = "Đang hoàn tất phần âm thanh cuối...";
+        try {
+            byte[]? final;
+            lock (_lock) { final = _buffer.Length > 0 ? _buffer.ToArray() : null; _buffer.SetLength(0); }
+            if (final != null && _audioQueue != null) await _audioQueue.Writer.WriteAsync(final);
+            _audioQueue?.Writer.TryComplete();
+            // Drain the last utterance instead of silently throwing it away.
+            if (_processing != null) await _processing;
+            Status = _overflow ? "Đã dừng vì xử lý không theo kịp. Một đoạn âm thanh chưa được xử lý." : "Đã dừng; có thể lưu Sổ tay.";
+        } catch (Exception ex) { Status = "Lỗi hoàn tất: " + ex.Message; }
+        finally { if (_processing?.IsCompleted == true) _stt.Dispose(); IsStopping = false; AudioLevel = 0; }
+    }
+    [RelayCommand] public async Task ClearCaptionsAsync() { if (IsStopping || _preparing) return; if (System.Windows.MessageBox.Show("Xóa toàn bộ nội dung cuộc họp hiện tại?", "Xóa nội dung", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning, System.Windows.MessageBoxResult.No) != System.Windows.MessageBoxResult.Yes) return; await StopRecordingAsync(); _flushPresentation = false; Captions.Clear(); CurrentLiveOriginal = ""; CurrentLiveVietnamese = ""; }
+    [RelayCommand] public async Task SaveSessionAsync()
+    {
+        if (IsStopping || _preparing) { Status = "Chờ hoàn tất âm thanh cuối trước khi lưu."; return; }
+        await StopRecordingAsync(); if (Captions.Count == 0) return;
+        var store = new SessionStore(); var sessions = await store.LoadSessionsAsync();
+        var session = new MeetingSession { Title = "Cuộc họp · " + _started.ToString("dd/MM HH:mm"), CreatedAt = _started,
+            Captions = Captions.ToList(), DurationSeconds = Captions.Max(c => c.End), AudioSource = CaptureSystemAudio ? "Âm thanh hệ thống" : "Microphone" };
+        sessions.Insert(0, session); await store.SaveSessionsAsync(sessions); OnSessionSaved?.Invoke(session); Status = "Đã lưu Sổ tay";
+    }
+    private async Task RecognizeAsync(CancellationToken token)
+    {
+        try {
+            await foreach (var pcm in _audioQueue!.Reader.ReadAllAsync(token)) {
+                var duration = pcm.Length / 32000.0;
+                try {
+                    using var output = new MemoryStream(); byte[] wav;
+                    using (var writer = new WaveFileWriter(output, new WaveFormat(16000, 16, 1))) { writer.Write(pcm); writer.Flush(); wav = output.ToArray(); }
+                    _segments.Clear(); using var stream = new MemoryStream(wav); await _stt.ProcessAudioAsync(stream, token);
+                    foreach (var segment in _segments) {
+                        var pieces = CaptionTextSegmenter.Split(segment.Text);
+                        var chars = Math.Max(1, pieces.Sum(t => t.Length)); var consumed = 0;
+                        foreach (var text in pieces) {
+                            var caption = new Caption { Original = text, Start = _offset + segment.Start + (segment.End - segment.Start) * consumed / chars,
+                                End = _offset + segment.Start + (segment.End - segment.Start) * (consumed + text.Length) / chars };
+                            consumed += text.Length;
+                            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => { Captions.Add(caption); });
+                            await _translationQueue!.Writer.WriteAsync(caption, token);
+                        }
+                    }
+                } catch (OperationCanceledException) { throw; }
+                catch (Exception ex) { Ui(() => Status = "Lỗi nhận diện: " + ex.Message); }
+                finally { _offset += duration; }
+            }
+        } finally { _translationQueue?.Writer.TryComplete(); }
+    }
+    private async Task TranslateAsync(CancellationToken token)
+    {
+        try {
+        await foreach (var caption in _translationQueue!.Reader.ReadAllAsync(token)) {
+            try {
+                if (_sessionTranslationMode == "Tiếng gốc") { await _displayQueue!.Writer.WriteAsync(caption,token); continue; }
+                string translated;
+                if (_sessionTranslationMode == "AI") {
+                    var config = _sessionAi ?? throw new InvalidOperationException("Cấu hình AI không còn khả dụng.");
+                    translated = await new LLMTranslationService().TranslateWithAIAsync(caption.Original, _sessionTarget, "Tự nhiên, không thêm nội dung", config);
+                } else translated = await _google.TranslateAsync(caption.Original, _sessionSource, _sessionTarget, token);
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
+                    caption.Vietnamese = translated;
+                });
+                await _displayQueue!.Writer.WriteAsync(caption,token);
+            } catch (OperationCanceledException) { throw; }
+            catch (Exception ex) { Ui(() => Status = "Lỗi dịch: " + ex.Message); await _displayQueue!.Writer.WriteAsync(caption,token); }
+        }
+        } finally { _displayQueue?.Writer.TryComplete(); }
+    }
+    private async Task PresentAsync(CancellationToken token) {
+        await foreach (var caption in _displayQueue!.Reader.ReadAllAsync(token)) {
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
+                CurrentLiveOriginal = caption.Original; CurrentLiveVietnamese = caption.Vietnamese;
+                OnSubtitleUpdated?.Invoke(caption.Original,caption.Vietnamese);
             });
-        };
-    }
-
-    [RelayCommand]
-    public async Task StartRecordingAsync()
-    {
-        if (IsRecording) return;
-
-        try
-        {
-            Status = "Đang khởi tạo bộ giải mã Whisper...";
-            await _sttService.InitializeModelAsync();
-
-            lock (_bufferLock)
-            {
-                _accumulatedBuffer.SetLength(0);
-            }
-
-            _processingCts = new CancellationTokenSource();
-            _audioService.StartCapture(CaptureSystemAudio, CaptureMicrophone);
-            IsRecording = true;
-            Status = "Đang lắng nghe và dịch thời gian thực...";
-
-            // Background loop to slice and process accumulated audio
-            _ = Task.Run(() => AudioProcessingLoopAsync(_processingCts.Token));
-        }
-        catch (Exception ex)
-        {
-            Status = $"Lỗi: {ex.Message}";
+            var until = DateTime.UtcNow.AddSeconds(TransTools.Services.Speech.CaptionDisplayTiming.HoldSeconds(caption.Original,caption.Vietnamese));
+            while (!_flushPresentation && DateTime.UtcNow < until) await Task.Delay(100,token);
         }
     }
-
-    [RelayCommand]
-    public void StopRecording()
-    {
-        if (!IsRecording) return;
-        _processingCts?.Cancel();
-        _audioService.StopCapture();
-        IsRecording = false;
-        Status = "Đã dừng phiên họp.";
-    }
-
-    [RelayCommand]
-    public void ClearCaptions()
-    {
-        Captions.Clear();
-        CurrentLiveOriginal = string.Empty;
-        CurrentLiveVietnamese = string.Empty;
-    }
-
-    private async Task AudioProcessingLoopAsync(CancellationToken token)
-    {
-        // 16000 samples/sec * 2 bytes = 32000 bytes/sec
-        // Process in ~2.5-second chunks = 80,000 bytes
-        const int thresholdBytes = 80000;
-
-        while (!token.IsCancellationRequested)
-        {
-            byte[]? chunkToProcess = null;
-            lock (_bufferLock)
-            {
-                if (_accumulatedBuffer.Length >= thresholdBytes)
-                {
-                    chunkToProcess = _accumulatedBuffer.ToArray();
-                    _accumulatedBuffer.SetLength(0);
-                }
-            }
-
-            if (chunkToProcess != null && chunkToProcess.Length > 0)
-            {
-                using var stream = new MemoryStream(chunkToProcess);
-                try
-                {
-                    await _sttService.ProcessAudioAsync(stream, token);
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Lỗi giải mã audio Whisper: {ex.Message}");
-                }
-            }
-
-            await Task.Delay(500, token).ConfigureAwait(false);
-        }
+    public void Dispose() {
+        _cts?.Cancel(); _audio.Dispose();
+        var pending = _processing ?? Task.CompletedTask;
+        _ = pending.ContinueWith(_ => { _stt.Dispose(); _cts?.Dispose(); _buffer.Dispose(); }, TaskScheduler.Default);
     }
 }

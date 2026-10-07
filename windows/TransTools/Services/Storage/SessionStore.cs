@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Threading;
 using TransTools.Models;
 
 namespace TransTools.Services.Storage;
@@ -10,6 +11,7 @@ namespace TransTools.Services.Storage;
 public class SessionStore
 {
     private readonly string _filePath;
+    private static readonly SemaphoreSlim WriteLock = new(1, 1);
 
     public SessionStore()
     {
@@ -27,15 +29,22 @@ public class SessionStore
             var json = await File.ReadAllTextAsync(_filePath);
             return JsonSerializer.Deserialize<List<MeetingSession>>(json) ?? new List<MeetingSession>();
         }
-        catch
+        catch (JsonException ex)
         {
-            return new List<MeetingSession>();
+            throw new InvalidDataException("Dữ liệu sổ tay bị lỗi; giữ nguyên tệp để khôi phục.", ex);
         }
     }
 
     public async Task SaveSessionsAsync(List<MeetingSession> sessions)
     {
         var json = JsonSerializer.Serialize(sessions, new JsonSerializerOptions { WriteIndented = true });
-        await File.WriteAllTextAsync(_filePath, json);
+        await WriteLock.WaitAsync();
+        try
+        {
+            var temporary = _filePath + ".tmp";
+            await File.WriteAllTextAsync(temporary, json);
+            File.Move(temporary, _filePath, overwrite: true);
+        }
+        finally { WriteLock.Release(); }
     }
 }

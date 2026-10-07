@@ -36,7 +36,13 @@ public partial class NotebookViewModel : ObservableObject
 
     public NotebookViewModel()
     {
-        _ = LoadSessionsAsync();
+        _ = LoadSafelyAsync();
+    }
+
+    private async Task LoadSafelyAsync()
+    {
+        try { await LoadSessionsAsync(); }
+        catch (Exception ex) { Status = ex.Message; }
     }
 
     public async Task LoadSessionsAsync()
@@ -62,24 +68,15 @@ public partial class NotebookViewModel : ObservableObject
     [RelayCommand]
     public async Task GenerateSummaryAsync()
     {
-        if (SelectedSession == null || SelectedSession.Captions.Count == 0) return;
+        if (IsSummarizing || SelectedSession == null || SelectedSession.Captions.Count == 0) return;
+        var targetSession = SelectedSession;
 
         IsSummarizing = true;
         Status = "Đang tổng hợp và tóm tắt cuộc họp bằng AI...";
 
         try
         {
-            var openAiKey = _credentialStore.LoadApiKey("openai");
-            var geminiKey = _credentialStore.LoadApiKey("gemini");
-            var deepSeekKey = _credentialStore.LoadApiKey("deepseek");
-
-            AIProviderConfig? config = null;
-            if (!string.IsNullOrWhiteSpace(openAiKey))
-                config = new AIProviderConfig { ProviderId = "openai", ApiKey = openAiKey, SelectedModel = "gpt-4o-mini" };
-            else if (!string.IsNullOrWhiteSpace(geminiKey))
-                config = new AIProviderConfig { ProviderId = "gemini", ApiKey = geminiKey, SelectedModel = "gemini-1.5-flash" };
-            else if (!string.IsNullOrWhiteSpace(deepSeekKey))
-                config = new AIProviderConfig { ProviderId = "deepseek", ApiKey = deepSeekKey, SelectedModel = "deepseek-chat" };
+            var config = _credentialStore.LoadConfiguredProvider();
 
             if (config == null)
             {
@@ -88,15 +85,15 @@ public partial class NotebookViewModel : ObservableObject
             }
 
             var transcriptBuilder = new StringBuilder();
-            foreach (var cap in SelectedSession.Captions)
+            foreach (var cap in targetSession.Captions)
             {
                 transcriptBuilder.AppendLine($"[{cap.FormattedTimestamp}] {cap.Original} -> {cap.Vietnamese}");
             }
 
             var prompt = "Bạn là trợ lý thư ký cuộc họp chuyên nghiệp. Hãy tóm tắt nội dung cuộc họp sau bằng tiếng Việt với định dạng:\n1. Tóm tắt tổng quan (2-3 câu)\n2. Các quyết định & ý chính đã thống nhất (gạch đầu dòng)\n3. Việc cần làm tiếp theo (Action items, nếu có)\n\nNội dung cuộc họp:\n" + transcriptBuilder.ToString();
 
-            var summaryResult = await _llmService.TranslateWithAIAsync(prompt, "Vietnamese", "Thư ký cuộc họp chuyên nghiệp", config);
-            SelectedSession.Summary = summaryResult;
+            var summaryResult = await _llmService.GenerateAsync(transcriptBuilder.ToString(), "Tóm tắt bằng tiếng Việt: tổng quan, quyết định và việc cần làm. Không tự thêm thông tin.", config);
+            targetSession.Summary = summaryResult;
 
             // Trigger UI property changed notification
             OnPropertyChanged(nameof(SelectedSession));

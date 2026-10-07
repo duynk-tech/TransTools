@@ -11,7 +11,7 @@
         </Grid.RowDefinitions>
 
         <!-- Top Header & Audio Source Selection -->
-        <Border Grid.Row="0" Background="#1E293B" CornerRadius="12" Padding="16" Margin="0,0,0,16">
+        <Border Grid.Row="0" Background="#FFFFFF" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,0,16">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -19,12 +19,12 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="Dịch cuộc họp thời gian thực" FontSize="18" FontWeight="Bold" Foreground="#F8FAFC"/>
-                    <TextBlock Text="{Binding Status}" FontSize="12" Foreground="#94A3B8" Margin="0,4,0,0"/>
+                    <TextBlock Text="Dịch cuộc họp thời gian thực" FontSize="18" FontWeight="Bold" Foreground="#243D35"/>
+                    <TextBlock Text="{Binding Status}" FontSize="12" Foreground="#65756F" Margin="0,4,0,0"/>
 
                     <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                        <CheckBox Content="Bắt âm thanh máy tính (Loopback)" IsChecked="{Binding CaptureSystemAudio}" Foreground="#E2E8F0" Margin="0,0,16,0"/>
-                        <CheckBox Content="Thu âm Micro" IsChecked="{Binding CaptureMicrophone}" Foreground="#E2E8F0"/>
+                        <CheckBox Content="Âm thanh hệ thống" IsChecked="{Binding CaptureSystemAudio}" Foreground="#334B43" Margin="0,0,16,0"/>
+                        <CheckBox Content="Thu âm Micro" IsChecked="{Binding CaptureMicrophone}" Foreground="#334B43"/>
                     </StackPanel>
                 </StackPanel>
 
@@ -33,10 +33,10 @@
                     <Button Foreground="White" FontWeight="Bold"
                             FontSize="14" Padding="20,10" Cursor="Hand">
                         <Button.Style>
-                            <Style TargetType="Button">
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                                 <Setter Property="Content" Value="▶  Bắt đầu"/>
                                 <Setter Property="Command" Value="{Binding StartRecordingCommand}"/>
-                                <Setter Property="Background" Value="#2563EB"/>
+                                <Setter Property="Background" Value="#287568"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsRecording}" Value="True">
                                         <Setter Property="Content" Value="⏹  Dừng lại"/>
@@ -52,30 +52,38 @@
         </Border>
 
         <!-- Live Caption Current Line -->
-        <Border Grid.Row="1" Background="#1E293B" CornerRadius="10" Padding="16,12" Margin="0,0,0,16">
+        <Border Grid.Row="1" Background="#FFFFFF" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="10" Padding="16,12" Margin="0,0,0,16">
             <StackPanel>
-                <TextBlock Text="Đang nghe:" FontSize="11" FontWeight="Bold" Foreground="#64748B"/>
-                <TextBlock Text="{Binding CurrentLiveOriginal}" FontSize="14" Foreground="#94A3B8" Margin="0,2,0,4"/>
-                <TextBlock Text="{Binding CurrentLiveVietnamese}" FontSize="16" FontWeight="Bold" Foreground="#38BDF8"/>
+                <WrapPanel Margin="0,0,0,8">
+                    <TextBlock Text="Từ" Foreground="#65756F" Margin="0,8"/>
+                    <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding SourceLanguage}" Width="80" Margin="8,0"/>
+                    <TextBlock Text="Sang" Foreground="#65756F" Margin="0,8"/>
+                    <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding TargetLanguage}" Width="80" Margin="8,0"/>
+                    <ComboBox ItemsSource="{Binding TranslationModes}" SelectedItem="{Binding TranslationMode}" Width="120"/>
+                </WrapPanel>
+                <TextBlock Text="Đang nghe:" FontSize="11" FontWeight="Bold" Foreground="#73827C"/>
+                <TextBlock Text="{Binding CurrentLiveOriginal}" TextWrapping="Wrap" FontSize="14" Foreground="#65756F" Margin="0,2,0,4"/>
+                <TextBlock Text="{Binding CurrentLiveVietnamese}" TextWrapping="Wrap" FontSize="16" FontWeight="Bold" Foreground="#287568"/>
             </StackPanel>
         </Border>
 
         <!-- Caption History List -->
-        <Border Grid.Row="2" Background="#1E293B" CornerRadius="12" Padding="16">
+        <Border Grid.Row="2" Background="#FFFFFF" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="12" Padding="16">
             <DockPanel>
                 <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
-                    <TextBlock Text="Biên bản phụ đề" FontSize="14" FontWeight="Bold" Foreground="#F8FAFC"/>
-                    <Button Content="Xóa danh sách" Command="{Binding ClearCaptionsCommand}" HorizontalAlignment="Right" Background="Transparent" Foreground="#94A3B8" BorderThickness="0" Cursor="Hand"/>
+                    <TextBlock Text="Bản ghi cuộc họp" FontSize="14" FontWeight="Bold" Foreground="#243D35"/>
+                    <Button Content="Lưu Sổ tay" Command="{Binding SaveSessionCommand}" HorizontalAlignment="Center"/>
+                    <Button Content="Xóa danh sách" Command="{Binding ClearCaptionsCommand}" HorizontalAlignment="Right" Background="Transparent" Foreground="#65756F" BorderThickness="0" Cursor="Hand"/>
                 </Grid>
 
-                <ListBox ItemsSource="{Binding Captions}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox x:Name="CaptionList" ItemsSource="{Binding Captions}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="#0F172A" CornerRadius="8" Padding="12" Margin="0,0,0,8">
+                            <Border Background="#F5F8F7" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8">
                                 <StackPanel>
-                                    <TextBlock Text="{Binding FormattedTimestamp}" FontSize="10" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,2"/>
-                                    <TextBlock Text="{Binding Original}" FontSize="13" Foreground="#E2E8F0" TextWrapping="Wrap"/>
-                                    <TextBlock Text="{Binding Vietnamese}" FontSize="14" FontWeight="Medium" Foreground="#38BDF8" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                    <TextBlock Text="{Binding FormattedTimestamp}" FontSize="10" FontWeight="Bold" Foreground="#73827C" Margin="0,0,0,2"/>
+                                    <TextBlock Text="{Binding Original}" FontSize="13" Foreground="#334B43" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding Vietnamese}" FontSize="14" FontWeight="Medium" Foreground="#287568" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>
                         </DataTemplate>

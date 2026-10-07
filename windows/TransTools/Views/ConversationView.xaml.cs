@@ -13,6 +13,16 @@ public partial class ConversationView : UserControl
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = viewModel;
+        Loaded += (_, _) => { _viewModel.Messages.CollectionChanged -= MessagesChanged; _viewModel.Messages.CollectionChanged += MessagesChanged; ScrollLatest(); };
+        Unloaded += (_, _) => _viewModel.Messages.CollectionChanged -= MessagesChanged;
+    }
+
+    private void MessagesChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) => ScrollLatest();
+    private void ScrollLatest()
+    {
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() => {
+            if (MessageList.Items.Count > 0) MessageList.ScrollIntoView(MessageList.Items[^1]);
+        }));
     }
 
     private void InputTextBox_KeyDown(object sender, KeyEventArgs e)

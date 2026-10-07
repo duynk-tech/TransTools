@@ -10,7 +10,7 @@ on:
       - '.github/workflows/build-windows.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-windows:
@@ -26,10 +26,41 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
+      - name: Build native VieNeu phonemizer (no Python runtime)
+        shell: pwsh
+        run: ./windows/scripts/build-native-phonemizer.ps1
+
       - name: Restore NuGet Packages
         shell: pwsh
         run: |
           dotnet restore windows/TransTools/TransTools.csproj
+
+      - name: Run contracts on native Windows
+        shell: pwsh
+        run: |
+          ./windows/scripts/test-windows-contracts.ps1
+
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-contract-evidence
+          path: windows/test-results/**
+          if-no-files-found: warn
+
+      - name: Build Microsoft local translation compatibility probe
+        shell: pwsh
+        run: |
+          node --test windows/tests/EdgeTranslationProbe/probe.test.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Translation probe contract tests failed.' }
+          dotnet publish windows/tests/EdgeTranslationProbe -c Release -r win-x64 --self-contained true -o windows/probe-build
+          if ($LASTEXITCODE -ne 0) { throw 'Translation probe build failed.' }
+
+      - name: Upload compatibility probe (test tool only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-Local-Translation-Probe
+          path: windows/probe-build/**
 
       - name: Publish Single-File Executable
         shell: pwsh
@@ -50,7 +81,8 @@ jobs:
       - name: Create Portable ZIP
         shell: pwsh
         run: |
-          Compress-Archive -Path windows/build/TransTools.exe -DestinationPath windows/build/TransTools-Windows-Portable.zip
+          $files = Get-ChildItem windows/build -Exclude 'TransTools-Setup.exe','TransTools-Windows-Portable.zip','*.pdb'
+          Compress-Archive -Path $files.FullName -DestinationPath windows/build/TransTools-Windows-Portable.zip
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
@@ -58,5 +90,7 @@ jobs:
           name: TransTools-Windows-Release
           path: |
             windows/build/TransTools.exe
+            windows/build/runtimes/**
+            windows/build/SpeechNative/**
             windows/build/TransTools-Setup.exe
             windows/build/TransTools-Windows-Portable.zip

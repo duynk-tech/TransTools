@@ -5,21 +5,40 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <WrapPanel>
+                <ComboBox ItemsSource="{Binding Sessions}" DisplayMemberPath="Title" SelectedItem="{Binding SelectedSession}" IsEnabled="{Binding CanChangeSession}" Width="260" Margin="0,0,8,8"/>
+                <Button Content="Bắt đầu trò chuyện" Command="{Binding StartConversationCommand}" Margin="0,0,8,8"/>
+                <Button Content="Tạo mới" Command="{Binding NewConversationCommand}" Margin="0,0,8,8"/>
+                <Button Content="Lưu" Command="{Binding SaveConversationCommand}" Margin="0,0,8,8"/>
+                <Button Content="Xóa" Command="{Binding DeleteConversationCommand}" Foreground="#EF4444" Margin="0,0,8,8"/>
+                <CheckBox Content="Dịch Tiếng Việt" IsChecked="{Binding ShowVietnameseTranslation}" Visibility="{Binding CanShowTranslation, Converter={StaticResource BoolVisibility}}" Foreground="#65756F" Margin="8"/>
+            </WrapPanel>
+            <WrapPanel Margin="0,0,0,8">
+                <TextBlock Text="Chờ gửi sau khi ngừng nói" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox ItemsSource="{Binding SendDelays}" SelectedItem="{Binding SendDelaySeconds}" Width="65"/>
+                <TextBlock Text="giây" VerticalAlignment="Center" Margin="8,0,16,0"/>
+                <CheckBox Content="Tự gửi câu đã nhận diện" IsChecked="{Binding SendRecognizedSpeechAutomatically}" VerticalAlignment="Center"/>
+            </WrapPanel>
+            <TextBox Text="{Binding CustomPrompt, UpdateSourceTrigger=PropertyChanged}" ToolTip="Hướng dẫn riêng cho chủ đề hoặc vai trò" Padding="8" Margin="0,0,0,8"/>
+            <DockPanel><Button DockPanel.Dock="Right" Content="Hủy nhận diện" Command="{Binding CancelRecognitionCommand}" Visibility="{Binding IsThinking, Converter={StaticResource BoolVisibility}}"/><TextBlock Text="{Binding Status}" Foreground="#287568" TextWrapping="Wrap" VerticalAlignment="Center"/></DockPanel>
+        </StackPanel>
         <!-- Topic & Controls Bar -->
-        <Border Grid.Row="0" Background="#1E293B" CornerRadius="12" Padding="16" Margin="0,0,0,16">
+        <Border Grid.Row="1" Background="#FFFFFF" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,0,16">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Chủ đề luyện nói:" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <ComboBox SelectedValue="{Binding CurrentTopic}" Width="240" Background="#0F172A" Foreground="#F8FAFC" Margin="0,0,16,0">
+                <WrapPanel VerticalAlignment="Center">
+                    <TextBlock Text="Chủ đề luyện nói:" FontWeight="SemiBold" Foreground="#65756F" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox SelectedValuePath="Content" SelectedValue="{Binding CurrentTopic}" Width="240" Background="#F5F8F7" Foreground="#243D35" Margin="0,0,16,0">
                         <ComboBoxItem Content="Phỏng vấn xin việc (Job Interview)" IsSelected="True"/>
                         <ComboBoxItem Content="Du lịch &amp; Nhận phòng khách sạn"/>
                         <ComboBoxItem Content="Công nghệ &amp; Lập trình viên"/>
@@ -27,27 +46,28 @@
                         <ComboBoxItem Content="Thuyết trình dự án"/>
                     </ComboBox>
 
-                    <TextBlock Text="Ngôn ngữ luyện:" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <ComboBox SelectedValue="{Binding TargetLanguage}" Width="150" Background="#0F172A" Foreground="#F8FAFC">
+                    <TextBlock Text="Ngôn ngữ luyện:" FontWeight="SemiBold" Foreground="#65756F" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox SelectedValuePath="Content" SelectedValue="{Binding TargetLanguage}" Width="150" Background="#F5F8F7" Foreground="#243D35">
                         <ComboBoxItem Content="Tiếng Anh (English)" IsSelected="True"/>
                         <ComboBoxItem Content="Tiếng Nhật (日本語)"/>
                         <ComboBoxItem Content="Tiếng Trung (中文)"/>
                         <ComboBoxItem Content="Tiếng Hàn (한국어)"/>
+                        <ComboBoxItem Content="Tiếng Việt"/>
                     </ComboBox>
-                </StackPanel>
+                </WrapPanel>
 
-                <CheckBox Grid.Column="1" Content="Tự động đọc câu trả lời bằng giọng AI" IsChecked="{Binding AutoSpeakResponse}" Foreground="#E2E8F0" VerticalAlignment="Center"/>
+                <CheckBox Grid.Column="1" Content="Tự động đọc câu trả lời bằng giọng AI" IsChecked="{Binding AutoSpeakResponse}" Foreground="#334B43" VerticalAlignment="Center"/>
             </Grid>
         </Border>
 
         <!-- Chat History -->
-        <Border Grid.Row="1" Background="#1E293B" CornerRadius="12" Padding="16">
-            <ListBox ItemsSource="{Binding Messages}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+        <Border Grid.Row="2" Background="#FFFFFF" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="12" Padding="16">
+            <ListBox x:Name="MessageList" ItemsSource="{Binding Messages}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <Grid Margin="0,4,0,8">
                             <!-- User Message -->
-                            <Border Background="#2563EB" CornerRadius="12,12,2,12" Padding="14,10"
+                            <Border Background="#DCEEE8" CornerRadius="12,12,2,12" Padding="14,10"
                                     HorizontalAlignment="Right" MaxWidth="500">
                                 <Border.Style>
                                     <Style TargetType="Border">
@@ -60,13 +80,13 @@
                                     </Style>
                                 </Border.Style>
                                 <StackPanel>
-                                    <TextBlock Text="{Binding Text}" FontSize="14" Foreground="White" TextWrapping="Wrap"/>
-                                    <TextBlock Text="{Binding TimeString}" FontSize="10" Foreground="#BFDBFE" HorizontalAlignment="Right" Margin="0,2,0,0"/>
+                                    <TextBlock Text="{Binding Text}" FontSize="14" Foreground="#243D35" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding TimeString}" FontSize="10" Foreground="#65756F" HorizontalAlignment="Right" Margin="0,2,0,0"/>
                                 </StackPanel>
                             </Border>
 
                             <!-- AI Message -->
-                            <Border Background="#0F172A" BorderBrush="#334155" BorderThickness="1"
+                            <Border Background="#F5F8F7" BorderBrush="#D8E5E1" BorderThickness="1"
                                     CornerRadius="12,12,12,2" Padding="14,10"
                                     HorizontalAlignment="Left" MaxWidth="540">
                                 <Border.Style>
@@ -81,11 +101,11 @@
                                 </Border.Style>
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                        <TextBlock Text="🐣 Chip Chip AI" FontSize="11" FontWeight="Bold" Foreground="#F59E0B"/>
-                                        <TextBlock Text="{Binding TimeString}" FontSize="10" Foreground="#64748B" Margin="8,0,0,0"/>
+                                        <Border Background="#DCEEE8" CornerRadius="16" Padding="4" Margin="0,0,8,0"><Image Source="/Resources/Mascot/MascotWalking.png" Width="28" Height="28"/></Border><TextBlock Text="Chip Chip · AI" FontSize="12" VerticalAlignment="Center" FontWeight="Bold" Foreground="#75BBAE"/>
+                                        <TextBlock Text="{Binding TimeString}" FontSize="10" Foreground="#73827C" Margin="8,0,0,0"/>
                                     </StackPanel>
-                                    <TextBlock Text="{Binding Text}" FontSize="14" Foreground="#F8FAFC" TextWrapping="Wrap"/>
-                                    <TextBlock Text="{Binding Translation}" FontSize="12" Foreground="#38BDF8" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                    <TextBlock Text="{Binding Text}" FontSize="14" Foreground="#243D35" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding Translation}" FontSize="12" Foreground="#287568" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>
                         </Grid>
@@ -95,7 +115,7 @@
         </Border>
 
         <!-- Input Bar -->
-        <Border Grid.Row="2" Background="#1E293B" CornerRadius="12" Padding="12" Margin="0,16,0,0">
+        <Border Grid.Row="3" Background="#FFFFFF" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,16,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -103,13 +123,16 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBox Text="{Binding UserInput, UpdateSourceTrigger=PropertyChanged}"
-                         Background="Transparent" Foreground="#F8FAFC" BorderThickness="0"
+                         Background="Transparent" Foreground="#243D35" BorderThickness="0"
                          FontSize="14" Padding="8,4" VerticalAlignment="Center"
                          KeyDown="InputTextBox_KeyDown"/>
 
-                <Button Grid.Column="1" Content="Gửi ➔" Command="{Binding SendMessageCommand}"
-                        Background="#2563EB" Foreground="White" FontWeight="Bold"
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button Content="{Binding MicrophoneLabel}" Command="{Binding ToggleMicrophoneCommand}" Margin="0,0,8,0"/>
+                <Button Content="Gửi ➔" Command="{Binding SendMessageCommand}"
+                        Background="#287568" Foreground="White" FontWeight="Bold"
                         Padding="20,10" Cursor="Hand"/>
+                </StackPanel>
             </Grid>
         </Border>
     </Grid>

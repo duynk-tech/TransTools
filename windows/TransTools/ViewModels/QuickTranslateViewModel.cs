@@ -13,7 +13,7 @@ public partial class QuickTranslateViewModel : ObservableObject
 {
     private readonly GoogleTranslationService _googleTranslate = new();
     private readonly LLMTranslationService _llmTranslate = new();
-    private readonly EdgeTtsService _edgeTts = new();
+
     private readonly SecureCredentialStore _credentialStore = new();
 
     [ObservableProperty]
@@ -54,25 +54,10 @@ public partial class QuickTranslateViewModel : ObservableObject
 
         try
         {
-            // If OpenAI/Gemini/DeepSeek key is available, translate with style; otherwise fast Google Translate
-            var openAiKey = _credentialStore.LoadApiKey("openai");
-            var geminiKey = _credentialStore.LoadApiKey("gemini");
-            var deepSeekKey = _credentialStore.LoadApiKey("deepseek");
-
-            if (!string.IsNullOrWhiteSpace(openAiKey))
-            {
-                var config = new AIProviderConfig { ProviderId = "openai", ApiKey = openAiKey, SelectedModel = "gpt-4o-mini" };
-                TranslatedText = await _llmTranslate.TranslateWithAIAsync(SourceText, TargetLanguage, $"{SelectedDomain} • {SelectedStyle}", config);
-            }
-            else if (!string.IsNullOrWhiteSpace(geminiKey))
-            {
-                var config = new AIProviderConfig { ProviderId = "gemini", ApiKey = geminiKey, SelectedModel = "gemini-1.5-flash" };
-                TranslatedText = await _llmTranslate.TranslateWithAIAsync(SourceText, TargetLanguage, $"{SelectedDomain} • {SelectedStyle}", config);
-            }
-            else
-            {
-                TranslatedText = await _googleTranslate.TranslateAsync(SourceText, SourceLanguage, TargetLanguage);
-            }
+            var config = _credentialStore.LoadConfiguredProvider();
+            TranslatedText = config != null
+                ? await _llmTranslate.TranslateWithAIAsync(SourceText, TargetLanguage, $"{SelectedDomain} • {SelectedStyle}", config)
+                : await _googleTranslate.TranslateAsync(SourceText, SourceLanguage, TargetLanguage);
 
             Status = "Hoàn tất dịch thuật";
         }
@@ -96,17 +81,11 @@ public partial class QuickTranslateViewModel : ObservableObject
 
         try
         {
-            var openAiKey = _credentialStore.LoadApiKey("openai");
-            var geminiKey = _credentialStore.LoadApiKey("gemini");
-
-            if (!string.IsNullOrWhiteSpace(openAiKey) || !string.IsNullOrWhiteSpace(geminiKey))
+            var config = _credentialStore.LoadConfiguredProvider();
+            if (config != null)
             {
-                var config = !string.IsNullOrWhiteSpace(openAiKey)
-                    ? new AIProviderConfig { ProviderId = "openai", ApiKey = openAiKey, SelectedModel = "gpt-4o-mini" }
-                    : new AIProviderConfig { ProviderId = "gemini", ApiKey = geminiKey, SelectedModel = "gemini-1.5-flash" };
-
                 var prompt = "Review this text for grammar, spelling and phrasing. Provide the corrected version followed by brief explanations in Vietnamese.";
-                TranslatedText = await _llmTranslate.TranslateWithAIAsync(SourceText, "English", prompt, config);
+                TranslatedText = await _llmTranslate.GenerateAsync(SourceText, prompt, config);
                 Status = "Đã hoàn thành sửa ngữ pháp!";
             }
             else
@@ -128,17 +107,16 @@ public partial class QuickTranslateViewModel : ObservableObject
     public async Task SpeakSourceAsync()
     {
         if (string.IsNullOrWhiteSpace(SourceText)) return;
-        Status = "Đang đọc văn bản gốc...";
-        await _edgeTts.SpeakAsync(SourceText, "en-US-JennyNeural");
-        Status = "Hoàn tất";
+        if (SourceLanguage == "auto") { Status = "Chọn ngôn ngữ gốc trước khi đọc để dùng đúng giọng."; return; }
+        try { Status = "Đang đọc văn bản gốc..."; await VoicePreferences.SpeakAsync(SourceText, SourceLanguage); Status = "Hoàn tất"; }
+        catch (Exception ex) { Status = ex.Message; }
     }
 
     [RelayCommand]
     public async Task SpeakTranslatedAsync()
     {
         if (string.IsNullOrWhiteSpace(TranslatedText)) return;
-        Status = "Đang đọc bản dịch...";
-        await _edgeTts.SpeakAsync(TranslatedText, "vi-VN-HoaiMyNeural");
-        Status = "Hoàn tất";
+        try { Status = "Đang đọc bản dịch..."; await VoicePreferences.SpeakAsync(TranslatedText, TargetLanguage); Status = "Hoàn tất"; }
+        catch (Exception ex) { Status = ex.Message; }
     }
 }
