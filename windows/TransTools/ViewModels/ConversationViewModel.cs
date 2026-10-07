@@ -40,11 +40,12 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _sendRecognizedSpeechAutomatically = true;
     public string GreetingName => Environment.UserName;
     private int _conversationGeneration;
+    private CancellationTokenSource? _replyCancellation;
     [ObservableProperty] private bool _isConversationActive;
     [RelayCommand] private void EndConversation()
     {
         ++_conversationGeneration; IsConversationActive = false;
-        _recognition?.Cancel();
+        _replyCancellation?.Cancel(); _recognition?.Cancel();
         if (IsListening) { _recorder?.Dispose(); _recorder = null; IsListening = false; }
         VoiceService.Shared.Stop(); Status = "Đã kết thúc trò chuyện";
     }
@@ -54,19 +55,21 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         if (Messages.Count != 0) { IsConversationActive = true; Status = "Đến lượt bạn"; return; }
         IsThinking = true; IsConversationActive = true;
         var generation = _conversationGeneration;
+        using var replyCancellation = new CancellationTokenSource(); _replyCancellation = replyCancellation;
         try {
             var config = _credentials.LoadConfiguredProvider() ?? throw new InvalidOperationException("Nhập API key và chọn mô hình trong Cài đặt để trò chuyện.");
             Status = "Đang chuẩn bị lời chào...";
             var reply = await _llmService.GenerateAsync("Begin the conversation with a warm greeting and one opening question.",
-                $"Your name is {TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName}. You are my language practice partner. Speak in {TargetLanguage}. Topic: {CurrentTopic}. Address me as {GreetingName} naturally if appropriate. Keep it to 1–2 sentences. {CustomPrompt}", config);
-            var translation = CanShowTranslation && ShowVietnameseTranslation ? await _googleService.TranslateAsync(reply, "auto", "vi") : "";
+                $"Your name is {TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName}. You are my language practice partner. Speak in {TargetLanguage}. Topic: {CurrentTopic}. Address me as {GreetingName} naturally if appropriate. Keep it to 1–2 sentences. {CustomPrompt}", config, replyCancellation.Token);
+            var translation = CanShowTranslation && ShowVietnameseTranslation ? await _googleService.TranslateAsync(reply, "auto", "vi", replyCancellation.Token) : "";
             if (generation != _conversationGeneration) return;
             Messages.Add(new ChatMessageItem { Text = reply, Translation = translation });
             await SaveConversationAsync();
+            replyCancellation.Token.ThrowIfCancellationRequested();
             if (AutoSpeakResponse) await VoicePreferences.SpeakAsync(reply, TargetLanguage);
             Status = "Đến lượt bạn";
-        } catch (Exception ex) { IsConversationActive = false; Status = ex.Message; }
-        finally { IsThinking = false; }
+        } catch (Exception ex) { if (generation == _conversationGeneration) { IsConversationActive = false; Status = ex.Message; } }
+        finally { _replyCancellation = null; IsThinking = false; if (generation != _conversationGeneration) Status = "Đã kết thúc trò chuyện"; }
     }
     private ConversationRecorder? _recorder;
     private CancellationTokenSource? _recognition;
@@ -98,7 +101,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         if (IsConversationActive && SendRecognizedSpeechAutomatically && !string.IsNullOrWhiteSpace(UserInput)) await SendMessageAsync();
     }
     [RelayCommand] private void CancelRecognition() => _recognition?.Cancel();
-    public void Dispose() { _recognition?.Cancel(); if (IsListening) { _recorder?.Dispose(); _recorder = null; IsListening = false; } }
+    public void Dispose() { _replyCancellation?.Cancel(); _recognition?.Cancel(); if (IsListening) { _recorder?.Dispose(); _recorder = null; IsListening = false; } }
 
     partial void OnIsThinkingChanged(bool value) => OnPropertyChanged(nameof(CanChangeSession));
     public bool CanShowTranslation => !TargetLanguage.Contains("Việt", StringComparison.OrdinalIgnoreCase);
@@ -167,23 +170,26 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
 
         IsThinking = true; IsConversationActive = true;
         var generation = _conversationGeneration;
+        using var replyCancellation = new CancellationTokenSource(); _replyCancellation = replyCancellation;
         try
         {
             await SaveConversationAsync();
+            replyCancellation.Token.ThrowIfCancellationRequested();
             var prompt = $"Your name is {TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName}. We are roleplaying: {CurrentTopic}. Reply naturally in {TargetLanguage} as my conversation partner. Keep reply concise (1-3 sentences) suitable for language learning practice. {CustomPrompt}";
 
             var config = _credentials.LoadConfiguredProvider()
                 ?? throw new InvalidOperationException("Nhập API key và model trong Cài đặt để trò chuyện.");
             var history = string.Join("\n", Messages.TakeLast(20).Select(m =>
                 $"{(m.IsUser ? "User" : "Assistant")}: {m.Text}"));
-            var aiReply = await _llmService.GenerateAsync(history, prompt, config);
-            var aiVi = CanShowTranslation && ShowVietnameseTranslation ? await _googleService.TranslateAsync(aiReply, "auto", "vi") : "";
+            var aiReply = await _llmService.GenerateAsync(history, prompt, config, replyCancellation.Token);
+            var aiVi = CanShowTranslation && ShowVietnameseTranslation ? await _googleService.TranslateAsync(aiReply, "auto", "vi", replyCancellation.Token) : "";
 
             if (generation != _conversationGeneration) return;
             var aiMsg = new ChatMessageItem { IsUser = false, Text = aiReply, Translation = aiVi };
             Messages.Add(aiMsg);
 
             await SaveConversationAsync();
+            replyCancellation.Token.ThrowIfCancellationRequested();
             if (AutoSpeakResponse)
             {
                 await VoicePreferences.SpeakAsync(aiReply, TargetLanguage);
@@ -195,7 +201,8 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         }
         finally
         {
-            IsThinking = false;
+            _replyCancellation = null; IsThinking = false;
+            if (generation != _conversationGeneration) Status = "Đã kết thúc trò chuyện";
         }
     }
 }

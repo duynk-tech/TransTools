@@ -77,3 +77,12 @@ try {
     await sessionStore.UpdateSessionAsync(sessionId, () => throw new Exception("Must reuse ID"), s => s.DurationSeconds = 5);
     Check((await sessionStore.LoadSessionsAsync()).Count == 1, "saving an existing session does not duplicate it");
 } finally { if (Directory.Exists(sessionFolder)) Directory.Delete(sessionFolder, true); }
+
+var readSource = "CPU 80%, RAM 16GB. Ngày hôm nay vẫn đẹp.";
+var readTokens = SpeechReadingPreparation.Tokens(readSource);
+var spokenCopy = SpeechReadingPreparation.Apply(readSource, readTokens, [new(1, "tám mươi phần trăm")]);
+Check(spokenCopy == "CPU tám mươi phần trăm, RAM 16GB. Ngày hôm nay vẫn đẹp.", "AI reading changes only the enumerated token span");
+foreach (var invalidReading in new[] { new SpeechReadingPreparation.Reading(99, "rewrite"), new SpeechReadingPreparation.Reading(0, "line\nbreak") }) {
+    bool rejected = false; try { SpeechReadingPreparation.Apply(readSource, readTokens, [invalidReading]); } catch (InvalidDataException) { rejected = true; }
+    Check(rejected, "AI reading rejects unknown spans and control characters");
+}

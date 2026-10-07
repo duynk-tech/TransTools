@@ -11,7 +11,7 @@ foreach ($name in @('supertonic','vieneu')) {
         if (!$destination.StartsWith($folder + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Unsafe model path.' }
         $url = if ($name -eq 'supertonic') { "https://huggingface.co/supertone-oss-archive/supertonic-3/resolve/$($manifest.revision)/$($file.path)" } else { $file.url }
         $uri = [Uri]$url
-        if ($uri.Scheme -ne 'https' -or $uri.Host -ne 'huggingface.co') { throw 'Untrusted model host.' }
+        if ($uri.Scheme -ne 'https' -or $uri.Host -notin @('huggingface.co','raw.githubusercontent.com')) { throw 'Untrusted model host.' }
         if ((Test-Path -LiteralPath $destination) -and ((Get-Item -LiteralPath $destination).Length -eq $file.size) -and ((Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash -eq $file.sha256)) { continue }
         New-Item -ItemType Directory -Force -Path (Split-Path $destination) | Out-Null
         Write-Host "Downloading $name/$($file.path)"

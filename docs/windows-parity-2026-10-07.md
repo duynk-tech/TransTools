@@ -12,6 +12,7 @@ The goal is the same six main screens, controls, readable mint styling and saved
 - Floating captions retain the last readable pair during empty updates, scroll after layout, and offer Stop Meeting and Open App. Mascot context menu can start a meeting, open captions and hide the main window only after capture starts successfully.
 - Conversation can generate a personalized opening, stop recording after an integer silence delay, automatically send recognized speech, and scroll to the newest message. Initial silence does not submit empty speech; resumed speech resets the pause counter. One recording remains capped at sixty seconds.
 - Mini chat shares the conversation state when the main window closes during an active conversation. Ending the session invalidates in-flight replies. The floating caption window can show the assistant in its own first column. Assistant naming is saved and applied to the header and conversation identity.
+- Vietnamese Text Reader can request token-only pronunciation suggestions from configured AI for numbers, dates and acronyms. Only enumerated spans are replaced in a separate spoken copy; the source text is unchanged. The request is cancellable, has a 15-second deadline and falls back to the source if the response is invalid.
 - Notebook can search titles and transcript content. Notes have a separate editor and preview for headings, bullets and bold. AI summaries update the session that requested them even if selection changes meanwhile.
 
 ## Validation
@@ -27,7 +28,7 @@ This build is **not 100% feature or visual parity** with the newest Mac app:
 - The richer Mac mascot popup and topic-specific scenery still need Windows equivalents; the Windows meeting garden uses static time-of-day colors and native vector shapes.
 - Notebook does not yet combine meeting and conversation sessions or include the full vocabulary/AI action checklist workflow.
 - Windows does not yet include the new personal voice recorder/dataset workflow or the dynamic GitHub model registry screen.
-- The newest speech-reading token normalization/AI preparation and adaptive learning features require a Windows port and output-quality tests.
+- The full speech pause controls, pronunciation verification/retry policy and adaptive learning features still require a Windows port and output-quality tests.
 - Offline translation remains a platform gap. The Microsoft compatibility probe is a test tool, not an implemented translation provider. Online Google/AI translation does not imply offline support.
 - Loopback/microphone, OCR region selection, caption placement across multiple displays, 125–200% DPI, output audio, installer upgrade/uninstall, and long sessions require Windows 10 and 11 tests. Neither the Mac compiler nor Windows CI screenshots establish those results.
 

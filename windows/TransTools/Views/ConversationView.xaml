@@ -26,7 +26,7 @@
                 <TextBlock Text="giây" VerticalAlignment="Center" Margin="8,0,16,0"/>
                 <CheckBox Content="Tự gửi câu đã nhận diện" IsChecked="{Binding SendRecognizedSpeechAutomatically}" VerticalAlignment="Center"/>
             </WrapPanel>
-            <TextBox Text="{Binding CustomPrompt, UpdateSourceTrigger=PropertyChanged}" ToolTip="Hướng dẫn riêng cho chủ đề hoặc vai trò" Padding="8" Margin="0,0,0,8"/>
+            <TextBox IsEnabled="{Binding CanChangeSession}" Text="{Binding CustomPrompt, UpdateSourceTrigger=PropertyChanged}" ToolTip="Hướng dẫn riêng cho chủ đề hoặc vai trò" Padding="8" Margin="0,0,0,8"/>
             <DockPanel><Button DockPanel.Dock="Right" Content="Hủy nhận diện" Command="{Binding CancelRecognitionCommand}" Visibility="{Binding IsThinking, Converter={StaticResource BoolVisibility}}"/><TextBlock Text="{Binding Status}" Foreground="#287568" TextWrapping="Wrap" VerticalAlignment="Center"/></DockPanel>
         </StackPanel>
         <!-- Topic & Controls Bar -->
@@ -39,7 +39,7 @@
 
                 <WrapPanel VerticalAlignment="Center">
                     <TextBlock Text="Chủ đề luyện nói:" FontWeight="SemiBold" Foreground="#65756F" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <ComboBox SelectedValuePath="Content" SelectedValue="{Binding CurrentTopic}" Width="240" Background="#F5F8F7" Foreground="#243D35" Margin="0,0,16,0">
+                    <ComboBox IsEnabled="{Binding CanChangeSession}" SelectedValuePath="Content" SelectedValue="{Binding CurrentTopic}" Width="240" Background="#F5F8F7" Foreground="#243D35" Margin="0,0,16,0">
                         <ComboBoxItem Content="Phỏng vấn xin việc (Job Interview)" IsSelected="True"/>
                         <ComboBoxItem Content="Du lịch &amp; Nhận phòng khách sạn"/>
                         <ComboBoxItem Content="Công nghệ &amp; Lập trình viên"/>
@@ -48,7 +48,7 @@
                     </ComboBox>
 
                     <TextBlock Text="Ngôn ngữ luyện:" FontWeight="SemiBold" Foreground="#65756F" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <ComboBox SelectedValuePath="Content" SelectedValue="{Binding TargetLanguage}" Width="150" Background="#F5F8F7" Foreground="#243D35">
+                    <ComboBox IsEnabled="{Binding CanChangeSession}" SelectedValuePath="Content" SelectedValue="{Binding TargetLanguage}" Width="150" Background="#F5F8F7" Foreground="#243D35">
                         <ComboBoxItem Content="Tiếng Anh (English)" IsSelected="True"/>
                         <ComboBoxItem Content="Tiếng Nhật (日本語)"/>
                         <ComboBoxItem Content="Tiếng Trung (中文)"/>
