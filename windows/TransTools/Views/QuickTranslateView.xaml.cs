@@ -16,18 +16,6 @@ public partial class QuickTranslateView : UserControl
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = viewModel;
-        ReaderContent.Content = new TextReaderView(reader ?? new TextReaderViewModel());
-    }
-
-    private void TranslationTool_Checked(object sender, RoutedEventArgs e)
-    {
-        if (TranslationContent == null || ReaderContent == null) return;
-        TranslationContent.Visibility = Visibility.Visible; ReaderContent.Visibility = Visibility.Collapsed;
-    }
-    private void ReadingTool_Checked(object sender, RoutedEventArgs e)
-    {
-        if (TranslationContent == null || ReaderContent == null) return;
-        TranslationContent.Visibility = Visibility.Collapsed; ReaderContent.Visibility = Visibility.Visible;
     }
 
     private void ShowContext_Click(object sender, RoutedEventArgs e) => ContextPopup.IsOpen = true;

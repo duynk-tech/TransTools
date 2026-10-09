@@ -25,13 +25,13 @@
     </Style>
   </UserControl.Resources>
   <DockPanel>
-    <TextBlock DockPanel.Dock="Bottom" Text="{Binding Status}" Foreground="#287568" TextWrapping="Wrap" Margin="220,8,0,0" />
+    <TextBlock DockPanel.Dock="Bottom" Text="{Binding Status}" Foreground="#287568" TextWrapping="Wrap" Margin="308,8,28,0" />
     <TabControl TabStripPlacement="Left" Background="Transparent" BorderThickness="0" ItemContainerStyle="{StaticResource SettingsSection}">
       <TabControl.Template>
         <ControlTemplate TargetType="TabControl">
           <Grid>
             <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="200" />
+              <ColumnDefinition Width="280" />
               <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <StackPanel>
@@ -40,7 +40,7 @@
                 <TabPanel IsItemsHost="True" />
               </ScrollViewer>
             </StackPanel>
-            <ContentPresenter Grid.Column="1" ContentSource="SelectedContent" Margin="20,0,0,0" />
+            <ContentPresenter Grid.Column="1" ContentSource="SelectedContent" Margin="28,20,28,20" />
           </Grid>
         </ControlTemplate>
       </TabControl.Template>
@@ -74,7 +74,7 @@
                 <PasswordBox ui:KeyBinding.Value="{Binding DeepSeekKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" BorderBrush="#D8E5E1" Padding="8,6" Margin="0,0,0,16" />
                 <TextBlock Text="Mô hình muốn sử dụng" Foreground="#65756F" />
                 <TextBox Text="{Binding DeepSeekModel, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" Padding="8,6" Margin="0,4,0,12" />
-                <Button Content="Lưu cấu hình AI" Command="{Binding SaveAllKeysCommand}" Background="#287568" Foreground="White" FontWeight="Bold" Padding="16,8" HorizontalAlignment="Left" Cursor="Hand" />
+                <Button Content="Lưu cấu hình AI" Command="{Binding SaveAllKeysCommand}" Background="#287568" Foreground="White" FontWeight="Bold" Padding="16,8" HorizontalAlignment="Right" Cursor="Hand" />
               </StackPanel>
             </Border>
           </StackPanel>

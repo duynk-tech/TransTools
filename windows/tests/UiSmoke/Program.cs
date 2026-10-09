@@ -21,12 +21,23 @@ internal static class Program
         try {
             var app = new TransTools.App(); app.InitializeComponent();
             var window = new TransTools.MainWindow(); app.MainWindow = window; window.Show();
-            foreach (var (width, height) in new[] { (1280, 820), (1100, 740), (1000, 600) }) {
+            foreach (var (width, height) in new[] { (1280, 820), (1200, 740), (1440, 900) }) {
                 window.Width = width; window.Height = height;
-                foreach (var route in new[] { "Cuộc họp", "Sổ tay", "Dịch nhanh", "Học ngôn ngữ", "Trò chuyện", "Cài đặt" }) {
+                foreach (var route in new[] { "Cuộc họp", "Sổ tay", "Dịch nhanh", "Đọc văn bản", "Học ngôn ngữ", "Trò chuyện", "Cài đặt" }) {
                     var button = Descendants(window).OfType<RadioButton>().First(b => Equals(b.Content, route));
                     button.IsChecked = true; Pump(); window.UpdateLayout();
                     if (width == 1280) Capture(window, output, $"{width}-idle-{route}.png");
+                    var reader = Descendants(window).OfType<TextReaderView>().FirstOrDefault();
+                    if (reader != null) {
+                        var options = (Button)reader.FindName("ReadingOptionsButton");
+                        var popup = (System.Windows.Controls.Primitives.Popup)reader.FindName("ReadingOptionsPopup");
+                        if (popup.IsOpen) throw new InvalidOperationException("Reading options must be collapsed initially");
+                        options.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        if (!popup.IsOpen || popup.Child == null) throw new InvalidOperationException("Reading options did not open");
+                        ValidateControlLayout((FrameworkElement)popup.Child, "Reading options");
+                        Capture(window, output, $"{width}-reader-options.png");
+                        popup.IsOpen = false;
+                    }
                     var meeting = Descendants(window).OfType<MeetingView>().FirstOrDefault()?.DataContext as MeetingViewModel;
                     if (meeting != null && meeting.Captions.Count == 0) {
                         for (var n = 0; n < 12; n++) meeting.Captions.Add(new Caption { Start = n * 8, End = n * 8 + 7, Original = "We should preserve the full conversation, including longer sentences and the context needed to understand the discussion.", Vietnamese = "Cần giữ đầy đủ cuộc hội thoại, bao gồm những câu dài và ngữ cảnh để hiểu đúng nội dung đang thảo luận." });
@@ -42,7 +53,7 @@ internal static class Program
                     }
                     Pump(); window.UpdateLayout();
                     if (button.ActualHeight < 30 || button.ActualWidth < 60) throw new Exception("Navigation collapsed: " + route);
-                    var filename = $"{width}-{Array.IndexOf(new[] { "Cuộc họp", "Sổ tay", "Dịch nhanh", "Học ngôn ngữ", "Trò chuyện", "Cài đặt" }, route)}.png";
+                    var filename = $"{width}-{Array.IndexOf(new[] { "Cuộc họp", "Sổ tay", "Dịch nhanh", "Đọc văn bản", "Học ngôn ngữ", "Trò chuyện", "Cài đặt" }, route)}.png";
                     ValidateControlLayout(window, route);
                     Capture(window, output, filename);
                     Console.WriteLine($"PASS: rendered {route} at {width}x{height}");
@@ -64,13 +75,14 @@ internal static class Program
             var hud = new FloatingSubtitleWindow(); hud.Show(); hud.UpdateSubtitle("The last complete sentence must stay visible until the next caption is ready.", "Câu hoàn chỉnh gần nhất phải được giữ lại cho đến khi phụ đề tiếp theo sẵn sàng."); Pump(); ValidateControlLayout(hud, "Phụ đề nổi"); Capture(hud, output, "subtitles.png"); hud.Hide();
             File.WriteAllLines(Path.Combine(output, "bindings.txt"), errors.Lines);
             if (errors.Lines.Count != 0) throw new Exception("WPF binding errors detected; see bindings.txt.");
-            File.WriteAllText(Path.Combine(output, "result.txt"), "PASS: six routes, three window sizes, no WPF binding errors. Audio, model inference and Windows 10/11 interactive tests remain separate.");
+            File.WriteAllText(Path.Combine(output, "result.txt"), "PASS: seven routes, three window sizes, no WPF binding errors. Audio, model inference and Windows 10/11 interactive tests remain separate.");
             app.Shutdown(); return 0;
         } catch (Exception ex) { File.WriteAllText(Path.Combine(output, "failure.txt"), ex.ToString()); Console.Error.WriteLine(ex); return 1; }
     }
     private static void ValidateControlLayout(Window window, string route)
+        => ValidateControlLayout((FrameworkElement)window.Content, route);
+    private static void ValidateControlLayout(FrameworkElement root, string route)
     {
-        var root = (FrameworkElement)window.Content;
         var viewport = new Rect(0, 0, root.ActualWidth, root.ActualHeight);
         var controls = Descendants(root).OfType<FrameworkElement>().Where(e => e.IsVisible && (e is Button || e is ComboBox || e is RadioButton)).Select(e => (Element: e, Bounds: VisibleBounds(e, root))).Where(e => e.Bounds.Width > 1 && e.Bounds.Height > 1 && viewport.IntersectsWith(e.Bounds)).ToArray();
         for (var i = 0; i < controls.Length; i++) for (var j = i + 1; j < controls.Length; j++) {
