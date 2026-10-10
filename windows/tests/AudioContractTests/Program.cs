@@ -83,14 +83,20 @@ shorterEndpoint.Accept(voice); shorterEndpoint.Accept(silence); shorterEndpoint.
 Check(shorterEndpoint.Accept(new byte[3200]), "Decreasing live delay discarded existing silence");
 shorterEndpoint.Accept(voice); Check(!shorterEndpoint.Accept(new byte[3200]), "Resumed speech did not reset silence after changing delay");
 
+var helpJson = "{\"suggestions\":[{\"text\":\"Could you explain the next step?\",\"vietnamese\":\"Bạn giải thích bước tiếp theo được không?\"},{\"text\":\"Could you explain the next step?\",\"vietnamese\":\"Lặp\"},{\"text\":\"I can review it tomorrow.\",\"vietnamese\":\"Tôi có thể xem lại ngày mai.\"}]}";
+Check(TransTools.Services.Conversation.ConversationHelp.Parse("```json\n" + helpJson + "\n```").Count == 2, "Hint parsing lost Unicode or duplicated suggestions");
+var rejectedHelp = false; try { TransTools.Services.Conversation.ConversationHelp.Parse(new string('x', 16385)); } catch (InvalidDataException) { rejectedHelp = true; }
+Check(rejectedHelp, "Hint response size was not bounded");
+
 var conversationPath = Path.Combine(Path.GetTempPath(), "trans-tools-chat-prefs-" + Guid.NewGuid(), "prefs.json");
 try {
     var preferences = new TransTools.Services.Conversation.ConversationPreferencesStore(conversationPath);
     preferences.Save(new(30, "Duy\n Nguyễn"));
     Check(preferences.Load() == new TransTools.Services.Conversation.ConversationPreferences(30, "Duy Nguyễn"), "Conversation name/delay did not survive reload or control character cleanup");
+    preferences.Save(new(3, "Duy", false, true)); Check(preferences.Load().SuggestionsEnabled, "Suggestion preference did not survive reload");
     preferences.Save(new(3, "Duy", false)); Check(!preferences.Load().ShowMiniTranslation, "Mini translation preference did not survive reload");
     File.WriteAllText(conversationPath, "{\"DelaySeconds\":2,\"LearnerName\":\"Duy\"}");
-    Check(preferences.Load().ShowMiniTranslation, "Existing conversation preferences disabled mini translation by default");
+    Check(preferences.Load().ShowMiniTranslation && !preferences.Load().SuggestionsEnabled, "Existing conversation preferences changed default toggles");
     preferences.Save(new(99, new string('a', 80))); Check(preferences.Load().DelaySeconds == 30 && preferences.Load().LearnerName.Length == 60, "Conversation preferences exceeded Mac limits");
     File.WriteAllText(conversationPath, "{broken"); Check(preferences.Load().DelaySeconds == 2 && File.ReadAllText(conversationPath) == "{broken", "Corrupt preferences prevented conversation or were erased");
 } finally { if (Directory.Exists(Path.GetDirectoryName(conversationPath))) Directory.Delete(Path.GetDirectoryName(conversationPath)!, true); }

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using TransTools.ViewModels;
 using TransTools.Models;
+using TransTools.Services.Conversation;
 using TransTools.Views;
 using System.IO;
 using System.Windows;
@@ -102,6 +103,7 @@ internal static class Program
                 disposedReply.SetResult("An obsolete opening reply"); Await(pendingReply);
                 if (disposedChat.IsConversationActive || disposedChat.Messages.Count != 0 || disposedListenCount != 0 || disposedChat.IsThinking) throw new Exception("Late reply reactivated a disposed conversation");
             }
+            CheckConversationHelp();
             var background = (Button)window.FindName("BackgroundButton");
             foreach (var mode in new[] { "morning", "noon", "afternoon", "night", "mint" }) {
                 var item = background.ContextMenu.Items.OfType<MenuItem>().First(value => Equals(value.Tag, mode));
@@ -252,6 +254,7 @@ internal static class Program
                         list.UpdateLayout(); var chatScroll = Descendants(list).OfType<ScrollViewer>().First();
                         if (chatScroll.ScrollableHeight > .5 && chatScroll.VerticalOffset < chatScroll.ScrollableHeight - .5) throw new Exception("Conversation did not reveal the final line after translation height changed");
                         ValidateControlLayout(chatView, "Conversation bubbles");
+                        CheckConversationHelpLayout(window, output, width, conversation.Messages);
                     }
                     var notebook = Descendants(window).OfType<NotebookView>().FirstOrDefault()?.DataContext as NotebookViewModel;
                     if (notebook != null && notebook.Sessions.Count == 0) {
@@ -500,6 +503,58 @@ internal static class Program
             File.WriteAllText(Path.Combine(output, "result.txt"), "PASS: seven routes, three window sizes, no WPF binding errors. Audio, model inference and Windows 10/11 interactive tests remain separate.");
             app.Shutdown(); return 0;
         } catch (Exception ex) { File.WriteAllText(Path.Combine(output, "failure.txt"), ex.ToString()); Console.Error.WriteLine(ex); return 1; }
+    }
+    private const string HintJson = """{"translations":[],"suggestions":[{"text":"Could you explain the next step?","vietnamese":"Bạn giải thích bước tiếp theo được không?"},{"text":"I can review the proposal tomorrow.","vietnamese":"Tôi có thể xem lại đề xuất vào ngày mai."},{"text":"Let us agree on the deadline first.","vietnamese":"Chúng ta thống nhất thời hạn trước nhé."}]}""";
+    private static void CheckConversationHelp() {
+        var folder = Path.Combine(Path.GetTempPath(), "trans-tools-hints-" + Guid.NewGuid());
+        try {
+            var calls = 0; var history = "";
+            using (var hints = new ConversationViewModel(preferences: new ConversationPreferencesStore(Path.Combine(folder, "current.json")), generateHelp: (input, _, _) => { calls++; history = input; return Task.FromResult(HintJson); })) {
+                hints.SuggestionsEnabled = true;
+                for (var i = 0; i < 8; i++) hints.Messages.Add(new ChatMessageItem { IsUser = i % 2 == 0, Text = "turn-" + i });
+                Await(hints.RefreshHelpCommand.ExecuteAsync(null));
+                if (calls != 1 || hints.Suggestions.Count != 3 || history.Contains("turn-0") || history.Contains("turn-1") || !history.Contains("turn-7")) throw new Exception("Hints did not use exactly the latest six turns");
+                hints.UserInput = "I am still speaking"; hints.IsListening = true; hints.IsConversationActive = true;
+                if (calls != 1 || hints.ListenSuggestionCommand.CanExecute(hints.Suggestions[0])) throw new Exception("Draft changes generated hints or listening allowed sample playback");
+                hints.EndConversationCommand.Execute(null);
+                if (hints.Suggestions.Count != 3 || !hints.ListenSuggestionCommand.CanExecute(hints.Suggestions[0])) throw new Exception("Ending conversation discarded hints or left sample playback disabled");
+            }
+            foreach (var change in new[] { "turn", "off", "end" }) {
+                var completion = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously); var observed = CancellationToken.None;
+                using var staleHints = new ConversationViewModel(preferences: new ConversationPreferencesStore(Path.Combine(folder, change + ".json")), generateHelp: (_, _, token) => { observed = token; return completion.Task; });
+                staleHints.SuggestionsEnabled = true; staleHints.Messages.Add(new ChatMessageItem { Text = "What is the next step?" });
+                var pendingHints = staleHints.RefreshHelpCommand.ExecuteAsync(null);
+                if (!staleHints.IsGeneratingHelp || staleHints.RefreshHelpCommand.CanExecute(null)) throw new Exception("Repeated hint refresh is available during an in-flight request");
+                if (change == "turn") staleHints.Messages.Add(new ChatMessageItem { IsUser = true, Text = "I already replied" });
+                else if (change == "off") staleHints.SuggestionsEnabled = false;
+                else staleHints.EndConversationCommand.Execute(null);
+                if (!observed.IsCancellationRequested) throw new Exception("Stale hints were not canceled");
+                completion.SetResult(HintJson); Await(pendingHints);
+                if (staleHints.Suggestions.Count != 0 || staleHints.IsGeneratingHelp) throw new Exception("Late hints replaced a newer conversation state");
+            }
+            var automaticCalls = 0; var listenCalls = 0;
+            using var automatic = new ConversationViewModel(preferences: new ConversationPreferencesStore(Path.Combine(folder, "auto.json")),
+                generateReply: (_, _, _) => Task.FromResult("What would you like to practice today?"), generateHelp: (_, _, _) => { automaticCalls++; return Task.FromResult(HintJson); }, beginListening: () => { listenCalls++; return Task.CompletedTask; });
+            automatic.SuggestionsEnabled = true; automatic.ShowVietnameseTranslation = false; automatic.AutoSpeakResponse = false;
+            Await(automatic.StartConversationCommand.ExecuteAsync(null));
+            if (automaticCalls != 1 || automatic.Suggestions.Count != 3 || listenCalls != 1 || automatic.Messages.Count != 1) throw new Exception("Opening reply did not create hints once and resume listening");
+        } finally { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
+    }
+    private static void CheckConversationHelpLayout(TransTools.MainWindow window, string output, int width, IEnumerable<ChatMessageItem> messages) {
+        var folder = Path.Combine(Path.GetTempPath(), "trans-tools-hint-layout-" + Guid.NewGuid());
+        var container = (Grid)window.FindName("MainContentGrid"); var original = container.Children.Cast<UIElement>().ToArray();
+        using var model = new ConversationViewModel(preferences: new ConversationPreferencesStore(Path.Combine(folder, "prefs.json")), generateHelp: (_, _, _) => Task.FromResult(HintJson));
+        try {
+            foreach (var message in messages) model.Messages.Add(message);
+            model.SuggestionsEnabled = true;
+            var view = new ConversationView(model); container.Children.Clear(); container.Children.Add(view); Pump();
+            ValidateControlLayout(view, "Conversation suggestions");
+            var panel = (ScrollViewer)view.FindName("ConversationHelpPanel");
+            if (!panel.IsVisible || Math.Abs(panel.ActualWidth - 260) > 1 || model.Suggestions.Count != 3) throw new Exception("Conversation suggestion column is missing or sized differently from Mac");
+            model.IsConversationActive = true; Pump();
+            if (Descendants(panel).OfType<Button>().Where(b => Equals(b.Content, "Nghe mẫu")).Any(b => b.IsEnabled)) throw new Exception("Sample playback is enabled during active conversation");
+            model.IsConversationActive = false; Pump(); Capture(window, output, $"{width}-conversation-help.png");
+        } finally { container.Children.Clear(); foreach (var child in original) container.Children.Add(child); Pump(); if (Directory.Exists(folder)) Directory.Delete(folder, true); }
     }
     private static void Await(Task task)
     {
