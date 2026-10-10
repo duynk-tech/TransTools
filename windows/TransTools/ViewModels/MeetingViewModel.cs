@@ -221,6 +221,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     public event Action<string, string>? OnSubtitleUpdated;
     public event Action<Caption>? OnCaptionPresented;
     public event Action<Caption>? OnCaptionIncoming;
+    public event Action? OnCaptionLayoutChanged;
     public event Action<MeetingSession>? OnSessionSaved;
     public MeetingViewModel(Func<PlaybackDevice[]>? playbackDeviceProvider = null, string? sessionDirectory = null, Func<CaptionReadingRequest, CancellationToken, Task>? readCaption = null)
     {
@@ -252,7 +253,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     }
     private void CaptionChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(Caption.Vietnamese)) SpeakCaptionTranslationCommand.NotifyCanExecuteChanged();
+        if (e.PropertyName == nameof(Caption.Vietnamese)) { SpeakCaptionTranslationCommand.NotifyCanExecuteChanged(); OnCaptionLayoutChanged?.Invoke(); }
     }
     private static void Ui(Action action) => System.Windows.Application.Current?.Dispatcher.BeginInvoke(action);
     private void AcceptAudio(byte[] chunk)

@@ -249,6 +249,16 @@ internal static class Program
                         var translatedText = Descendants(pendingCard).OfType<TextBlock>().First(text => text.Text == pendingCaption.Vietnamese);
                         if (translatedText.FontSize != 15 || translatedText.FontWeight != FontWeights.SemiBold) throw new Exception("Translation lost Mac text emphasis");
                         Capture(window, output, $"{width}-meeting-ready-card.png");
+                        pendingCaption.Vietnamese = string.Join("\n", Enumerable.Range(1, 28).Select(index => $"Dòng bản dịch {index}: nội dung dài cần theo dõi đến cuối.")); Pump();
+                        var meetingScroll = Descendants(captionList).OfType<ScrollViewer>().First();
+                        if (meetingScroll.ScrollableHeight < 1 || meetingScroll.VerticalOffset < meetingScroll.ScrollableHeight - 1) throw new Exception("Meeting did not reach the final pixel after arriving translation reflow");
+                        var finalText = Descendants(captionList).OfType<TextBlock>().First(text => text.Text == pendingCaption.Vietnamese);
+                        var finalBounds = finalText.TransformToAncestor(captionList).TransformBounds(new Rect(finalText.RenderSize));
+                        if (finalBounds.Bottom > captionList.ActualHeight + 1 || finalBounds.Bottom < captionList.ActualHeight - 65) throw new Exception("Meeting final translation line is clipped or leaves excessive trailing space");
+                        Capture(window, output, $"{width}-meeting-final-line.png");
+                        meeting.SelectedDisplayMode = "Tiếng gốc"; Pump();
+                        if (meetingScroll.VerticalOffset < meetingScroll.ScrollableHeight - 1) throw new Exception("Meeting lost end scrolling after display-mode reflow");
+                        meeting.SelectedDisplayMode = "Song ngữ"; Pump();
                         meeting.Captions.Remove(pendingCaption); Pump();
                         meeting.IsRecording = true; Pump();
                         if (((Button)meetingView.FindName("ClearMeetingButton")).IsVisible || ((Button)meetingView.FindName("ExportWordButton")).IsEnabled || !((Button)meetingView.FindName("SaveMeetingButton")).IsEnabled) throw new Exception("Live meeting footer does not match Mac action states");
