@@ -16,6 +16,8 @@ public partial class LearningView : UserControl
         DataContext = viewModel;
     }
 
+    private void ShowGoal_Click(object sender, RoutedEventArgs e) => LearningGoalPopup.IsOpen = true;
+
     private void Flashcard_Click(object sender, MouseButtonEventArgs e)
     {
         var source = e.OriginalSource as System.Windows.DependencyObject;

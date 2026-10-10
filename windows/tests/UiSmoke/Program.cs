@@ -58,6 +58,32 @@ internal static class Program
                     ValidateControlLayout(window, route);
                     Capture(window, output, filename);
                     Console.WriteLine($"PASS: rendered {route} at {width}x{height}");
+                    if (route == "Sổ tay" && width == 1280) {
+                        var copyMenu = Descendants(window).OfType<MenuItem>().First(item => Equals(item.Header, "Sao chép"));
+                        copyMenu.IsSubmenuOpen = true; Pump();
+                        var copy = (MenuItem)copyMenu.Items[2];
+                        if (copy.DataContext is not Caption caption) throw new Exception("Caption copy menu lost its row context");
+                        copy.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump();
+                        if (!Clipboard.ContainsText() || !Clipboard.GetText().Contains(caption.Original) || !Clipboard.GetText().Contains(caption.Vietnamese)) throw new Exception("Bilingual copy did not preserve both texts");
+                        copyMenu.IsSubmenuOpen = false;
+                    }
+                    if (route == "Học ngôn ngữ") {
+                        var learning = Descendants(window).OfType<LearningView>().First();
+                        foreach (var label in new[] { "Hôm nay", "Chữ & Viết", "Từ vựng của tôi", "Luyện giao tiếp" }) {
+                            var section = Descendants(learning).OfType<RadioButton>().First(item => Equals(item.Content, label));
+                            section.IsChecked = true; Pump(); window.UpdateLayout();
+                            ValidateControlLayout(window, "Learning: " + label);
+                            Capture(window, output, $"{width}-learning-{Array.IndexOf(new[] { "Hôm nay", "Chữ & Viết", "Từ vựng của tôi", "Luyện giao tiếp" }, label)}.png");
+                        }
+                        var goal = (Button)learning.FindName("LearningGoalButton");
+                        goal.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        var popup = (System.Windows.Controls.Primitives.Popup)learning.FindName("LearningGoalPopup");
+                        if (!popup.IsOpen || popup.Child == null) throw new Exception("Learning goal popup did not open");
+                        ValidateControlLayout((FrameworkElement)popup.Child, "Learning goal");
+                        CaptureElement((FrameworkElement)popup.Child, output, $"{width}-learning-goal.png");
+                        popup.IsOpen = false;
+                        Descendants(learning).OfType<RadioButton>().First(item => Equals(item.Content, "Hôm nay")).IsChecked = true;
+                    }
                     if (route == "Cài đặt") {
                         var sections = Descendants(window).OfType<TabControl>().First();
                         for (var i = 0; i < sections.Items.Count; i++) {

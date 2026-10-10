@@ -1,146 +1,142 @@
-<UserControl x:Class="TransTools.Views.LearningView"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="clr-namespace:TransTools.ViewModels">
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="TransTools.Views.LearningView">
 
-    <Grid>
+    <UserControl.Resources><Style x:Key="LearningTab" TargetType="RadioButton"><Setter Property="Cursor" Value="Hand" /><Setter Property="Foreground" Value="#65756F" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="MinHeight" Value="40" /><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RadioButton"><Border x:Name="Chrome" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="9" Padding="12,8"><ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" /></Border><ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter TargetName="Chrome" Property="Background" Value="#E5ECE8" /><Setter Property="Foreground" Value="#287568" /></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chrome" Property="BorderBrush" Value="#75BBAE" /></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style></UserControl.Resources><Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0" Background="#E8FFFFFF" BorderBrush="#BDD9D2" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,16">
             <StackPanel>
-                <WrapPanel>
-                    <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding SelectedLanguage}" Width="160" Margin="0,0,16,8" SelectionChanged="Language_SelectionChanged">
-                        <ComboBoxItem Content="Tiếng Anh" Tag="en"/><ComboBoxItem Content="Tiếng Nhật" Tag="ja"/><ComboBoxItem Content="Tiếng Trung" Tag="zh"/><ComboBoxItem Content="Tiếng Hàn" Tag="ko"/>
+                <DockPanel LastChildFill="True"><Button x:Name="LearningGoalButton" DockPanel.Dock="Right" Content="Mục tiêu" Style="{StaticResource SecondaryButton}" Click="ShowGoal_Click" Margin="12,0,0,0" /><WrapPanel>
+                    <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding SelectedLanguage}" Width="160" Margin="0,0,12,0" SelectionChanged="Language_SelectionChanged">
+                        <ComboBoxItem Content="Tiếng Anh" Tag="en" /><ComboBoxItem Content="Tiếng Nhật" Tag="ja" /><ComboBoxItem Content="Tiếng Trung" Tag="zh" /><ComboBoxItem Content="Tiếng Hàn" Tag="ko" />
                     </ComboBox>
-                    <RadioButton Content="Hôm nay · Ôn tập" Style="{StaticResource SegmentedOption}" IsChecked="True" Margin="4,0" Checked="TodayTab_Checked"/>
-                    <RadioButton x:Name="VocabularyTab" Content="Từ vựng của tôi" Style="{StaticResource SegmentedOption}" Margin="4,0" Checked="VocabTab_Checked"/>
-                    <RadioButton Content="Luyện giao tiếp" Style="{StaticResource SegmentedOption}" Margin="4,0" Checked="PracticeTab_Checked"/>
-                    <RadioButton Content="Chữ &amp; Viết" Style="{StaticResource SegmentedOption}" Margin="4,0" Checked="AlphabetTab_Checked"/>
-                </WrapPanel>
-                <WrapPanel VerticalAlignment="Center">
-                    <TextBlock Text="{Binding DailyStreak, StringFormat='Chuỗi học: {0} ngày'}" Foreground="#65756F" Margin="0,8,18,0"/>
-                    <TextBlock Text="{Binding WordsLearnedToday, StringFormat='Đã ôn hôm nay: {0}'}" Foreground="#287568" Margin="0,8,18,0"/>
-                    <TextBlock Text="{Binding DueCount, StringFormat='Đến hạn: {0} từ'}" Foreground="#65756F" Margin="0,8,18,0"/>
-                    <TextBlock Text="Mục tiêu (từ/ngày)" Foreground="#65756F" VerticalAlignment="Center" Margin="0,0,8,0"/><TextBox Text="{Binding DailyGoal}" Width="50" Margin="0,0,8,0"/><Button Content="Lưu" Command="{Binding SaveGoalCommand}"/>
-                </WrapPanel>
-                <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Foreground="#287568" Margin="0,8,0,0"/>
+                    <RadioButton Content="Hôm nay" Style="{StaticResource LearningTab}" IsChecked="True" Margin="4,0" Checked="TodayTab_Checked" GroupName="LearningSections" />
+                    <RadioButton Content="Chữ &amp; Viết" Style="{StaticResource LearningTab}" Margin="4,0" Checked="AlphabetTab_Checked" GroupName="LearningSections" />
+                <RadioButton x:Name="VocabularyTab" Content="Từ vựng của tôi" Style="{StaticResource LearningTab}" Margin="4,0" Checked="VocabTab_Checked" GroupName="LearningSections" />
+                    <RadioButton Content="Luyện giao tiếp" Style="{StaticResource LearningTab}" Margin="4,0" Checked="PracticeTab_Checked" GroupName="LearningSections" />
+                    </WrapPanel>
+                </DockPanel><WrapPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding DailyStreak, StringFormat='Chuỗi học: {0} ngày'}" Foreground="#65756F" Margin="0,8,18,0" />
+                    <TextBlock Text="{Binding WordsLearnedToday, StringFormat='Đã ôn hôm nay: {0}'}" Foreground="#287568" Margin="0,8,18,0" />
+                    <TextBlock Text="{Binding DueCount, StringFormat='Đến hạn: {0} từ'}" Foreground="#65756F" Margin="0,8,18,0" />
+                    </WrapPanel>
+                <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Foreground="#287568" Margin="0,8,0,0" />
             </StackPanel>
         </Border>
 
         <ScrollViewer x:Name="TodayPanel" Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <Border Background="White" BorderBrush="#D8E5E1" BorderThickness="1" CornerRadius="16" Padding="24" Margin="0,0,0,16"><StackPanel>
-                    <TextBlock Text="Hôm nay học gì?" FontSize="22" FontWeight="Bold" Foreground="#243D35"/>
-                    <TextBlock Text="Ôn từ đến hạn, nghe câu mẫu và thực hành một tình huống." Foreground="#65756F" TextWrapping="Wrap" Margin="0,10"/>
-                    <WrapPanel><Button Content="Bắt đầu ôn tập" Click="StartReview_Click" Margin="0,0,8,0"/><Button Content="Thêm từ khởi đầu" Command="{Binding AddStarterWordsCommand}"/></WrapPanel>
+                    <TextBlock Text="Vòng học hằng ngày" FontSize="18" FontWeight="Bold" Foreground="#243D35" />
+                    <TextBlock Text="Ôn từ đến hạn, nghe câu mẫu và thực hành một tình huống." Foreground="#65756F" TextWrapping="Wrap" Margin="0,10" />
+                    <WrapPanel><Button Content="Bắt đầu ôn tập" Click="StartReview_Click" Margin="0,0,8,0" /><Button Content="Thêm từ khởi đầu" Command="{Binding AddStarterWordsCommand}" Style="{StaticResource SecondaryButton}" /></WrapPanel>
                 </StackPanel></Border>
                 <Border Background="White" BorderBrush="#D8E5E1" BorderThickness="1" CornerRadius="16" Padding="24"><StackPanel>
-                    <TextBlock Text="Câu mẫu hôm nay" Foreground="#287568" FontWeight="Bold"/>
-                    <TextBlock Text="{Binding DailySentence.OriginalText}" FontSize="22" Foreground="#243D35" TextWrapping="Wrap" Margin="0,12,0,6"/>
-                    <TextBlock Text="{Binding DailySentence.Reading}" Foreground="#65756F" TextWrapping="Wrap"/>
-                    <TextBlock Text="{Binding DailySentence.VietnameseMeaning}" Foreground="#287568" TextWrapping="Wrap" Margin="0,12"/>
-                    <TextBlock Text="{Binding DailySentence.ContextNote}" Foreground="#65756F" TextWrapping="Wrap"/>
-                    <Button Content="Nghe câu mẫu" Command="{Binding SpeakDailyCommand}" HorizontalAlignment="Left" Margin="0,16,0,0"/>
+                    <TextBlock Text="Câu mẫu hôm nay" Foreground="#287568" FontWeight="Bold" />
+                    <TextBlock Text="{Binding DailySentence.OriginalText}" FontSize="18" Foreground="#243D35" TextWrapping="Wrap" Margin="0,12,0,6" />
+                    <TextBlock Text="{Binding DailySentence.Reading}" Foreground="#65756F" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding DailySentence.VietnameseMeaning}" Foreground="#287568" TextWrapping="Wrap" Margin="0,12" />
+                    <TextBlock Text="{Binding DailySentence.ContextNote}" Foreground="#65756F" TextWrapping="Wrap" />
+                    <Button Content="Nghe câu mẫu" Command="{Binding SpeakDailyCommand}" HorizontalAlignment="Left" Margin="0,16,0,0" Style="{StaticResource SecondaryButton}" />
                 </StackPanel></Border>
             </StackPanel>
         </ScrollViewer>
         <ScrollViewer x:Name="PracticePanel" Grid.Row="1" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
             <ItemsControl ItemsSource="{Binding Scenarios}"><ItemsControl.ItemTemplate><DataTemplate>
                 <Border Background="White" BorderBrush="#D8E5E1" BorderThickness="1" CornerRadius="16" Padding="20" Margin="0,0,0,16"><StackPanel>
-                    <TextBlock Text="{Binding Title}" FontSize="20" FontWeight="Bold" Foreground="#243D35" TextWrapping="Wrap"/>
-                    <TextBlock Text="{Binding Description}" Foreground="#65756F" TextWrapping="Wrap" Margin="0,10"/>
+                    <TextBlock Text="{Binding Title}" FontSize="20" FontWeight="Bold" Foreground="#243D35" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Description}" Foreground="#65756F" TextWrapping="Wrap" Margin="0,10" />
                     <ItemsControl ItemsSource="{Binding Dialogues}"><ItemsControl.ItemTemplate><DataTemplate>
                         <Border Background="#F5F8F7" CornerRadius="10" Padding="14" Margin="0,4"><DockPanel>
-                            <Button DockPanel.Dock="Right" Content="Nghe" Margin="12,0,0,0" VerticalAlignment="Center" Command="{Binding DataContext.SpeakDialogueCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"/>
-                            <StackPanel><TextBlock Text="{Binding Speaker}" Foreground="#287568" FontWeight="Bold"/><TextBlock Text="{Binding Original}" Foreground="#243D35" TextWrapping="Wrap" FontSize="16" Margin="0,6"/><TextBlock Text="{Binding Reading}" Foreground="#65756F" TextWrapping="Wrap"/><TextBlock Text="{Binding Translation}" Foreground="#287568" TextWrapping="Wrap" Margin="0,6,0,0"/></StackPanel>
+                            <Button DockPanel.Dock="Right" Content="Nghe" Margin="12,0,0,0" VerticalAlignment="Center" Command="{Binding DataContext.SpeakDialogueCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Style="{StaticResource SecondaryButton}" />
+                            <StackPanel><TextBlock Text="{Binding Speaker}" Foreground="#287568" FontWeight="Bold" /><TextBlock Text="{Binding Original}" Foreground="#243D35" TextWrapping="Wrap" FontSize="16" Margin="0,6" /><TextBlock Text="{Binding Reading}" Foreground="#65756F" TextWrapping="Wrap" /><TextBlock Text="{Binding Translation}" Foreground="#287568" TextWrapping="Wrap" Margin="0,6,0,0" /></StackPanel>
                         </DockPanel></Border>
                     </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
                 </StackPanel></Border>
             </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
         </ScrollViewer>
 
-        <!-- Main Content Area: Controlled by Tab -->
-        <!-- Tab 1: Flashcard & Vocab List -->
+        
+        
         <Grid x:Name="VocabTabGrid" Grid.Row="1" Visibility="Collapsed">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="380"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="380" />
+                <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <!-- Interactive Flashcard -->
+            
             <Border Grid.Column="0" Background="#FFFFFF" CornerRadius="16" Padding="24" Margin="0,0,16,0" Cursor="Hand" MouseLeftButtonDown="Flashcard_Click">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Text="THẺ TỪ VỰNG (NHẤP ĐỂ LẬT)" FontSize="11" FontWeight="Bold" Foreground="#73827C" HorizontalAlignment="Center"/>
+                    <TextBlock DockPanel.Dock="Top" Text="THẺ TỪ VỰNG (NHẤP ĐỂ LẬT)" FontSize="11" FontWeight="Bold" Foreground="#73827C" HorizontalAlignment="Center" />
 
-                    <!-- Action Buttons -->
+                    
                     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0">
-                        <Button Content="🔊 Phát âm" Command="{Binding SpeakCurrentWordCommand}" Background="#287568" Foreground="White" Padding="14,6" Margin="0,0,8,0" Cursor="Hand"/>
-                        <Button Content="Xóa từ" Style="{StaticResource DestructiveButton}" Command="{Binding DeleteWordCommand}" Foreground="#C84343" Background="#FFF1F1" BorderBrush="#F3BABA" Margin="0,0,8,0"/>
-                        <Button Content="🔄 Lật thẻ" Command="{Binding FlipFlashcardCommand}" Background="#D8E5E1" Foreground="#243D35" Padding="14,6" Cursor="Hand"/>
+                        <Button Content="🔊 Phát âm" Command="{Binding SpeakCurrentWordCommand}" Background="#287568" Foreground="White" Padding="14,6" Margin="0,0,8,0" Cursor="Hand" />
+                        <Button Content="Xóa từ" Style="{StaticResource DestructiveButton}" Command="{Binding DeleteWordCommand}" Foreground="#C84343" Background="#FFF1F1" BorderBrush="#F3BABA" Margin="0,0,8,0" />
+                        <Button Content="🔄 Lật thẻ" Command="{Binding FlipFlashcardCommand}" Background="#D8E5E1" Foreground="#243D35" Padding="14,6" Cursor="Hand" />
                     </StackPanel>
 
                     <WrapPanel DockPanel.Dock="Bottom" HorizontalAlignment="Center" Margin="0,8" IsEnabled="{Binding IsFlashcardFlipped}">
-                        <Button Content="Quên" Command="{Binding GradeReviewCommand}" CommandParameter="Again" Background="#FFF1F1" Foreground="#C84343" BorderBrush="#F3BABA" Margin="2"/>
-                        <Button Content="Khó" Command="{Binding GradeReviewCommand}" CommandParameter="Hard" Margin="2"/>
-                        <Button Content="Nhớ" Command="{Binding GradeReviewCommand}" CommandParameter="Good" Margin="2"/>
-                        <Button Content="Dễ" Command="{Binding GradeReviewCommand}" CommandParameter="Easy" Margin="2"/>
+                        <Button Content="Quên" Command="{Binding GradeReviewCommand}" CommandParameter="Again" Background="#FFF1F1" Foreground="#C84343" BorderBrush="#F3BABA" Margin="2" />
+                        <Button Content="Khó" Command="{Binding GradeReviewCommand}" CommandParameter="Hard" Margin="2" />
+                        <Button Content="Nhớ" Command="{Binding GradeReviewCommand}" CommandParameter="Good" Margin="2" />
+                        <Button Content="Dễ" Command="{Binding GradeReviewCommand}" CommandParameter="Easy" Margin="2" />
                     </WrapPanel>
                     <TextBlock DockPanel.Dock="Top" Text="Thêm từ mới hoặc chọn một từ để bắt đầu ôn tập." TextWrapping="Wrap" Foreground="#65756F" Margin="0,16">
-                        <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding SelectedWord}" Value="{x:Null}"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+                        <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding SelectedWord}" Value="{x:Null}"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
                     </TextBlock>
-                    <!-- Flashcard Center Content -->
+                    
                     <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <!-- Front Face (Word & Phonetic) -->
+                        
                         <StackPanel>
                             <StackPanel.Style>
                                 <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Visibility" Value="Visible" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsFlashcardFlipped}" Value="True">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Setter Property="Visibility" Value="Collapsed" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </StackPanel.Style>
-                            <TextBlock Text="{Binding SelectedWord.Word}" FontSize="28" FontWeight="Bold" Foreground="#243D35" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding SelectedWord.Phonetic}" FontSize="15" Foreground="#65756F" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                            <TextBlock Text="{Binding SelectedWord.Word}" FontSize="28" FontWeight="Bold" Foreground="#243D35" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding SelectedWord.Phonetic}" FontSize="15" Foreground="#65756F" HorizontalAlignment="Center" Margin="0,6,0,0" />
                         </StackPanel>
 
-                        <!-- Back Face (Meaning & Example) -->
+                        
                         <StackPanel>
                             <StackPanel.Style>
                                 <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsFlashcardFlipped}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Setter Property="Visibility" Value="Visible" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </StackPanel.Style>
-                            <TextBlock Text="{Binding SelectedWord.Meaning}" FontSize="20" FontWeight="Bold" Foreground="#287568" HorizontalAlignment="Center" TextWrapping="Wrap"/>
-                            <TextBlock Text="{Binding SelectedWord.ExampleSentence}" FontSize="13" Foreground="#334B43" HorizontalAlignment="Center" TextWrapping="Wrap" Margin="0,10,0,0"/>
+                            <TextBlock Text="{Binding SelectedWord.Meaning}" FontSize="20" FontWeight="Bold" Foreground="#287568" HorizontalAlignment="Center" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding SelectedWord.ExampleSentence}" FontSize="13" Foreground="#334B43" HorizontalAlignment="Center" TextWrapping="Wrap" Margin="0,10,0,0" />
                         </StackPanel>
                     </Grid>
                 </DockPanel>
             </Border>
 
-            <!-- Vocabulary List -->
+            
             <Border Grid.Column="1" Background="#FFFFFF" CornerRadius="16" Padding="16">
                 <DockPanel>
                     <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
-                        <TextBlock Text="Danh sách từ vựng" FontSize="15" FontWeight="Bold" Foreground="#243D35"/>
+                        <TextBlock Text="Danh sách từ vựng" FontSize="15" FontWeight="Bold" Foreground="#243D35" />
                     </Grid>
 
                     <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
-                        <TextBlock Text="Thêm từ vựng" FontWeight="Bold" Foreground="#243D35"/>
-                        <TextBox Text="{Binding NewWord, UpdateSourceTrigger=PropertyChanged}" ToolTip="Từ hoặc cụm từ" Margin="0,8,0,6"/>
-                        <TextBox Text="{Binding NewPhonetic, UpdateSourceTrigger=PropertyChanged}" ToolTip="Phiên âm (không bắt buộc)" Margin="0,0,0,6"/>
-                        <TextBox Text="{Binding NewMeaning, UpdateSourceTrigger=PropertyChanged}" ToolTip="Nghĩa tiếng Việt" Margin="0,0,0,8"/>
-                        <Button Content="Thêm từ" Command="{Binding AddWordCommand}" HorizontalAlignment="Left"/>
+                        <TextBlock Text="Thêm từ vựng" FontWeight="Bold" Foreground="#243D35" />
+                        <TextBox Text="{Binding NewWord, UpdateSourceTrigger=PropertyChanged}" ToolTip="Từ hoặc cụm từ" Margin="0,8,0,6" />
+                        <TextBox Text="{Binding NewPhonetic, UpdateSourceTrigger=PropertyChanged}" ToolTip="Phiên âm (không bắt buộc)" Margin="0,0,0,6" />
+                        <TextBox Text="{Binding NewMeaning, UpdateSourceTrigger=PropertyChanged}" ToolTip="Nghĩa tiếng Việt" Margin="0,0,0,8" />
+                        <Button Content="Thêm từ" Command="{Binding AddWordCommand}" HorizontalAlignment="Left" />
                     </StackPanel>
                     <ListBox ItemsSource="{Binding VisibleVocabulary}" SelectedItem="{Binding SelectedWord}" Background="Transparent" BorderThickness="0">
                         <ListBox.ItemTemplate>
@@ -148,17 +144,17 @@
                                 <Border Background="#F5F8F7" CornerRadius="8" Padding="12" Margin="0,0,0,6">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
 
                                         <StackPanel Grid.Column="0">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding Word}" FontSize="15" FontWeight="Bold" Foreground="#243D35"/>
-                                                <TextBlock Text="{Binding Phonetic}" FontSize="12" Foreground="#73827C" Margin="8,2,0,0"/>
+                                                <TextBlock Text="{Binding Word}" FontSize="15" FontWeight="Bold" Foreground="#243D35" />
+                                                <TextBlock Text="{Binding Phonetic}" FontSize="12" Foreground="#73827C" Margin="8,2,0,0" />
                                             </StackPanel>
-                                            <TextBlock Text="{Binding Meaning}" FontSize="13" Foreground="#287568" Margin="0,2,0,0"/>
-                                            <TextBlock Text="{Binding ExampleSentence}" FontSize="12" Foreground="#65756F" Margin="0,2,0,0"/>
+                                            <TextBlock Text="{Binding Meaning}" FontSize="13" Foreground="#287568" Margin="0,2,0,0" />
+                                            <TextBlock Text="{Binding ExampleSentence}" FontSize="12" Foreground="#65756F" Margin="0,2,0,0" />
                                         </StackPanel>
                                     </Grid>
                                 </Border>
@@ -169,26 +165,26 @@
             </Border>
         </Grid>
 
-        <!-- Tab 2: Alphabet & Pronunciation Grid -->
+        
         <Border x:Name="AlphabetTabBorder" Grid.Row="1" Background="#FFFFFF" CornerRadius="16" Padding="20" Visibility="Collapsed">
             <DockPanel>
-                <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,12"><CheckBox Content="Katakana (tiếng Nhật)" IsChecked="{Binding IsKatakana}" Visibility="{Binding IsJapanese, Converter={StaticResource BoolVisibility}}" Foreground="#243D35" Margin="0,8,16,0"/><Button Content="Cùng Chip Chip" Command="{Binding LearnWithChipChipCommand}"/><Button Content="Dừng" Command="{Binding StopPronunciationCommand}" Margin="8,0"/></WrapPanel>
-                <TextBlock DockPanel.Dock="Bottom" Text="{Binding Status}" Foreground="#9ED9C7" TextWrapping="Wrap"/>
-                <TextBlock DockPanel.Dock="Top" Text="Chữ &amp; Phát âm · Bấm để nghe bản ghi" FontSize="15" FontWeight="Bold" Foreground="#243D35" Margin="0,0,0,14"/>
+                <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,12"><CheckBox Content="Katakana (tiếng Nhật)" IsChecked="{Binding IsKatakana}" Visibility="{Binding IsJapanese, Converter={StaticResource BoolVisibility}}" Foreground="#243D35" Margin="0,8,16,0" /><Button Content="Cùng Chip Chip" Command="{Binding LearnWithChipChipCommand}" /><Button Content="Dừng" Command="{Binding StopPronunciationCommand}" Margin="8,0" /></WrapPanel>
+                <TextBlock DockPanel.Dock="Bottom" Text="{Binding Status}" Foreground="#9ED9C7" TextWrapping="Wrap" />
+                <TextBlock DockPanel.Dock="Top" Text="Chữ &amp; Phát âm · Bấm để nghe bản ghi" FontSize="15" FontWeight="Bold" Foreground="#243D35" Margin="0,0,0,14" />
 
                 <ListBox ItemsSource="{Binding AlphabetList}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal"/>
+                            <WrapPanel Orientation="Horizontal" />
                         </ItemsPanelTemplate>
                     </ListBox.ItemsPanel>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <Border Width="160" Height="100" Background="#F5F8F7" BorderBrush="#D8E5E1" BorderThickness="1" CornerRadius="10" Padding="10" Margin="6" Cursor="Hand" MouseLeftButtonDown="AlphabetItem_Click">
                                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                    <TextBlock Text="{Binding Character}" FontSize="24" FontWeight="Bold" Foreground="#287568" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="{Binding Transcription}" FontSize="12" Foreground="#65756F" HorizontalAlignment="Center" Margin="0,2,0,0"/>
-                                    <TextBlock Text="{Binding Example}" FontSize="10" Foreground="#73827C" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                    <TextBlock Text="{Binding Character}" FontSize="24" FontWeight="Bold" Foreground="#287568" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding Transcription}" FontSize="12" Foreground="#65756F" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                                    <TextBlock Text="{Binding Example}" FontSize="10" Foreground="#73827C" HorizontalAlignment="Center" Margin="0,2,0,0" />
                                 </StackPanel>
                             </Border>
                         </DataTemplate>
@@ -196,5 +192,6 @@
                 </ListBox>
             </DockPanel>
         </Border>
-    </Grid>
+    <Popup x:Name="LearningGoalPopup" PlacementTarget="{Binding ElementName=LearningGoalButton}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True"><Border Width="320" Background="White" BorderBrush="#75BBAE" BorderThickness="1" CornerRadius="12" Padding="20"><StackPanel><TextBlock Text="Mục tiêu học mỗi ngày" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,14" /><TextBlock Text="Mục tiêu (từ/ngày)" Foreground="#65756F" VerticalAlignment="Center" Margin="0,0,8,0" /><TextBox Text="{Binding DailyGoal}" Width="Auto" Margin="0,8,0,12" /><Button Content="Lưu mục tiêu" Command="{Binding SaveGoalCommand}" />
+                </StackPanel></Border></Popup></Grid>
 </UserControl>
