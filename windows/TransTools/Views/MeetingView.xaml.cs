@@ -5,6 +5,12 @@ namespace TransTools.Views;
 
 public partial class MeetingView : UserControl
 {
+    public event Action<string>? VoiceSettingsRequested;
+    private void VoiceSettings_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        EarphonePopup.IsOpen = false; var model = (MeetingViewModel)DataContext;
+        VoiceSettingsRequested?.Invoke(model.ReadTarget == "Tiếng gốc" ? model.SourceLanguage == "auto" ? "en" : model.SourceLanguage : model.TargetLanguage);
+    }
     public MeetingView(MeetingViewModel viewModel)
     {
         InitializeComponent();

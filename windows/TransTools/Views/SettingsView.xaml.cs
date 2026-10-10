@@ -5,6 +5,11 @@ namespace TransTools.Views;
 
 public partial class SettingsView : UserControl
 {
+    public void ShowVoiceSettings(string language)
+    {
+        SettingsSections.SelectedIndex = 4;
+        if (VoiceSettingsHost.Content is VoiceSettingsView voice && voice.DataContext is VoiceSettingsViewModel model && model.CanConfigure) model.Language = language;
+    }
     private void About_Click(object sender, System.Windows.RoutedEventArgs e) { new AboutWindow { Owner = System.Windows.Window.GetWindow(this) }.ShowDialog(); }
     public SettingsView(SettingsViewModel viewModel, System.Func<bool>? audioBusy = null)
     {

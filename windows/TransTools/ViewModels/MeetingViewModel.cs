@@ -66,6 +66,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     public string EarphoneLabel => AutomaticReading ? "Tai nghe: BẬT" : "Tai nghe";
     private MeetingSpeechQueue? _speechQueue;
     private int _readingRevision;
+    [RelayCommand] private void RefreshEarphones() => RefreshPlaybackDevices();
     public void RefreshPlaybackDevices()
     {
         var selected = SelectedPlaybackDevice?.Id;
@@ -175,7 +176,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     [RelayCommand] public async Task StartRecordingAsync()
     {
         if (IsRecording || IsStopping || IsPreparing) return;
-        if (OtherAudioBusy?.Invoke() == true) { Status = "Kết thúc luyện nói trước khi bắt đầu cuộc họp."; return; }
+        if (OtherAudioBusy?.Invoke() == true) { Status = "Dừng đọc văn bản hoặc luyện nói trước khi bắt đầu cuộc họp."; return; }
         IsPreparing = true; _prepareCancellation = new();
         try {
             if (CaptureSystemAudio == CaptureMicrophone) throw new InvalidOperationException("Chọn một nguồn âm thanh.");

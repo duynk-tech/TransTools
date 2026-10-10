@@ -206,6 +206,13 @@ internal static class Program
                     }
                 }
             }
+            Descendants(window).OfType<RadioButton>().First(b => Equals(b.Content, "Cuộc họp")).IsChecked = true; Pump();
+            var routedMeeting = Descendants(window).OfType<MeetingView>().First();
+            ((Button)routedMeeting.FindName("EarphoneButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+            var routedPopup = (System.Windows.Controls.Primitives.Popup)routedMeeting.FindName("EarphonePopup");
+            Descendants(routedPopup.Child).OfType<Button>().First(b => Equals(b.Content, "Giọng & Tốc độ")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+            var routedSettings = Descendants(window).OfType<SettingsView>().First();
+            if (((TabControl)routedSettings.FindName("SettingsSections")).SelectedIndex != 4 || Descendants(routedSettings).OfType<VoiceSettingsView>().First().DataContext is not VoiceSettingsViewModel routedVoice || routedVoice.Language != ((MeetingViewModel)routedMeeting.DataContext).TargetLanguage) throw new Exception("Earphone voice settings route lost the target language");
             var about = new AboutWindow { Owner = window }; about.Show(); Pump(); ValidateControlLayout(about, "About"); Capture(about, output, "about.png"); about.Close();
             var rename = new RenameRecordWindow("Cuộc họp dự án"){ Owner = window }; rename.Show(); Pump(); ValidateControlLayout(rename, "Rename record"); Capture(rename, output, "rename-record.png"); rename.Close();
             var deleteConfirm = new ConfirmDeleteWindow("Cuộc họp dự án") { Owner = window }; deleteConfirm.Show(); Pump(); ValidateControlLayout(deleteConfirm, "Delete confirmation"); Capture(deleteConfirm, output, "delete-record.png"); deleteConfirm.Close();

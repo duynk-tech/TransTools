@@ -42,7 +42,7 @@ public partial class MainWindow : Window
             NavConversation.IsChecked = true;
         };
         _settingsViewModel = new SettingsViewModel(() => _meetingViewModel.IsBusy || !_conversationViewModel.CanChangeSession);
-        _meetingViewModel.OtherAudioBusy = () => !_conversationViewModel.CanChangeSession;
+        _meetingViewModel.OtherAudioBusy = () => !_conversationViewModel.CanChangeSession || _readerViewModel.IsBusy;
         InitializeComponent();
         ApplyBackground();
 
@@ -111,7 +111,14 @@ public partial class MainWindow : Window
     private void ShowMeetingView()
     {
         if (MainContentGrid == null) return;
-        ShowView("meeting", () => new MeetingView(_meetingViewModel));
+        ShowView("meeting", () => {
+            var view = new MeetingView(_meetingViewModel);
+            view.VoiceSettingsRequested += language => {
+                NavSettings.IsChecked = true;
+                if (_views.TryGetValue("settings", out var settings) && settings is SettingsView dashboard) dashboard.ShowVoiceSettings(language);
+            };
+            return view;
+        });
     }
 
     private void NavMeeting_Checked(object sender, RoutedEventArgs e)
