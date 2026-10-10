@@ -239,6 +239,21 @@ public partial class NotebookViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public void ExportTxt()
+    {
+        if (SelectedSession is not { } session) return;
+        var title = string.Concat(session.Title.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '-' : c));
+        var dialog = new SaveFileDialog { Filter = "Văn bản (*.txt)|*.txt", FileName = title + ".txt", DefaultExt = ".txt", AddExtension = true };
+        if (dialog.ShowDialog() != true) return;
+        try {
+            File.WriteAllText(dialog.FileName, TextExportService.Format(session), new UTF8Encoding(false));
+            Status = "Đã xuất file TXT thành công!";
+        } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
+            Status = "Chưa xuất được văn bản: " + ex.Message;
+        }
+    }
+
+    [RelayCommand]
     public void ExportSrt()
     {
         if (SelectedSession is not { IsConversation: false } session) return;

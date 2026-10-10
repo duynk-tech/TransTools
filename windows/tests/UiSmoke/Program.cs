@@ -701,6 +701,11 @@ internal static class Program
         if (conversation.IsThinking || conversation.IsListening) throw new Exception("Resuming saved conversation triggered AI or microphone automatically");
         notebook.SetConversations(conversation.Sessions);
         if (notebook.Sessions.Count(s => s.Id == saved.Id) != 1) throw new Exception("Conversation refresh duplicated a saved session");
+        var exportSource = notebook.Sessions.Single(s => s.Id == saved.Id);
+        exportSource.Notes = "Ghi chú có dấu — 日本語";
+        var exportedText = TransTools.Services.Export.TextExportService.Format(exportSource);
+        if (!exportedText.Contains(exportSource.Notes) || !exportedText.Contains(exportSource.Captions[0].Original) || !exportedText.Contains(exportSource.Captions[0].Vietnamese) || !exportedText.Contains("10:30")) throw new Exception("TXT export lost notes, Unicode transcript or original timestamps");
+        exportSource.Notes = "";
         var beforeRenameText = conversation.Messages[0].Text;
         Await(notebook.RenameRecordTitleAsync(notebook.Sessions.Single(s => s.Id == saved.Id), "Tên riêng của tôi"));
         if (saved.Title != "Tên riêng của tôi" || !saved.HasCustomTitle) throw new Exception("Conversation rename did not update shared source: " + notebook.Status);
