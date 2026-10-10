@@ -245,7 +245,7 @@ internal static class Program
                         if (!Descendants(pendingCard).OfType<TextBlock>().Any(text => text.IsVisible && text.Text == "Đang dịch...") || Descendants(pendingCard).OfType<Button>().Count(button => button.IsVisible) != 2) throw new Exception("Pending caption duplicates source as translation or exposes empty translation actions");
                         Capture(window, output, $"{width}-meeting-pending-card.png");
                         pendingCaption.Vietnamese = "Xin chờ câu đã được dịch."; Pump();
-                        if (Descendants(pendingCard).OfType<Button>().Count(button => button.IsVisible) != 4 || Descendants(pendingCard).OfType<TextBlock>().Any(text => text.IsVisible && text.Text == "Đang dịch...")) throw new Exception("Arriving translation did not update its actions and placeholder");
+                        if (Descendants(pendingCard).OfType<Button>().Count(button => button.IsVisible && button.IsEnabled) != 4 || Descendants(pendingCard).OfType<TextBlock>().Any(text => text.IsVisible && text.Text == "Đang dịch...")) throw new Exception("Arriving translation did not update its actions and placeholder");
                         var translatedText = Descendants(pendingCard).OfType<TextBlock>().First(text => text.Text == pendingCaption.Vietnamese);
                         if (translatedText.FontSize != 15 || translatedText.FontWeight != FontWeights.SemiBold) throw new Exception("Translation lost Mac text emphasis");
                         Capture(window, output, $"{width}-meeting-ready-card.png");

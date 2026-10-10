@@ -21,6 +21,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     private readonly Func<CaptionReadingRequest, CancellationToken, Task>? _readCaption;
     private CancellationTokenSource? _captionSpeechCancellation;
     private bool _disposed;
+    private readonly HashSet<Caption> _observedCaptions = new();
     [ObservableProperty] private Guid? _readingCaptionId;
     [ObservableProperty] private bool _readingTranslation;
     private readonly GoogleTranslationService _google = new();
@@ -225,11 +226,33 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     {
         _playbackDeviceProvider = playbackDeviceProvider ?? TransTools.Services.Audio.PlaybackDevices.List;
         _sessionDirectory = sessionDirectory; _readCaption = readCaption;
-        Captions.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(CanExportMeeting)); ExportMeetingCommand.NotifyCanExecuteChanged(); NotifyMeetingActions(); };
+        Captions.CollectionChanged += CaptionsChanged;
         TransTools.Services.Experience.SubtitlePreferences.Shared.Changed += DisplayPreferencesChanged;
         _audio.OnAudioLevelChanged += level => Ui(() => AudioLevel = level);
         _audio.OnAudio16kHzMonoChunk += AcceptAudio;
         _stt.OnSegmentTranscribed += (text, start, end) => _segments.Add((text, start, end));
+    }
+    private void CaptionsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset) {
+            foreach (var caption in _observedCaptions) caption.PropertyChanged -= CaptionChanged;
+            _observedCaptions.Clear();
+        }
+        if (e.OldItems != null) foreach (Caption caption in e.OldItems) {
+            if (_observedCaptions.Remove(caption)) caption.PropertyChanged -= CaptionChanged;
+        }
+        if (e.NewItems != null) foreach (Caption caption in e.NewItems) {
+            if (_observedCaptions.Add(caption)) caption.PropertyChanged += CaptionChanged;
+        }
+        if (ReadingCaptionId is Guid playing && !_observedCaptions.Any(caption => caption.Id == playing)) {
+            CancelCaptionReading();
+            if (AutomaticReading && IsRecording) StartAutomaticReader();
+        }
+        NotifyMeetingActions();
+    }
+    private void CaptionChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(Caption.Vietnamese)) SpeakCaptionTranslationCommand.NotifyCanExecuteChanged();
     }
     private static void Ui(Action action) => System.Windows.Application.Current?.Dispatcher.BeginInvoke(action);
     private void AcceptAudio(byte[] chunk)
@@ -423,6 +446,9 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     public void Dispose() {
         if (_disposed) return;
         _disposed = true; CancelCaptionReading();
+        Captions.CollectionChanged -= CaptionsChanged;
+        foreach (var caption in _observedCaptions) caption.PropertyChanged -= CaptionChanged;
+        _observedCaptions.Clear();
         TransTools.Services.Experience.SubtitlePreferences.Shared.Changed -= DisplayPreferencesChanged;
         StopAutomaticReader(); _prepareCancellation?.Cancel(); _cts?.Cancel(); _audio.Dispose();
         var pending = _processing ?? Task.CompletedTask;
