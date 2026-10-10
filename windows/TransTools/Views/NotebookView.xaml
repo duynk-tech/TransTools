@@ -23,7 +23,7 @@
           <ListBox.ItemTemplate>
             <DataTemplate>
               <Border Style="{StaticResource TranscriptCard}" Margin="0,0,0,6">
-                <DockPanel><Button DockPanel.Dock="Right" Content="⌫" ToolTip="Xóa bản ghi" Style="{StaticResource DestructiveButton}" MinHeight="30" Width="32" Padding="4" Margin="8,0,0,0" Command="{Binding DataContext.ConfirmDeleteRecordCommand,RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}"/><StackPanel>
+                <DockPanel><Button DockPanel.Dock="Right" Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" ToolTip="Xóa bản ghi" Style="{StaticResource DestructiveButton}" MinHeight="30" Width="32" Padding="4" Margin="8,0,0,0" Command="{Binding DataContext.ConfirmDeleteRecordCommand,RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}"/><StackPanel>
                   <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" Foreground="#243D35" TextTrimming="CharacterEllipsis" />
                   <TextBlock Text="{Binding KindLabel}" FontSize="11" Foreground="#287568" Margin="0,4,0,0"/><TextBlock Text="{Binding FormattedDate}" FontSize="11" Foreground="#73827C" Margin="0,2,0,0" />
                 </StackPanel></DockPanel>

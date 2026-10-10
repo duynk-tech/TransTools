@@ -160,8 +160,11 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [RelayCommand] private async Task DeleteConversationAsync()
     {
         if (IsThinking || IsListening || SelectedSession == null) return;
-        if (System.Windows.MessageBox.Show("Xóa hội thoại đã chọn?", "Hội thoại", System.Windows.MessageBoxButton.YesNo) != System.Windows.MessageBoxResult.Yes) return;
-        Sessions.Remove(SelectedSession); SelectedSession = null; Messages.Clear(); await _store.SaveAsync(Sessions); SessionsSaved?.Invoke();
+        var target = SelectedSession;
+        var confirm = new TransTools.Views.ConfirmDeleteWindow(target.Title) { Owner = System.Windows.Application.Current.MainWindow };
+        if (confirm.ShowDialog() != true) return;
+        try { await DeleteSessionByIdAsync(target.Id); Status = "Đã xóa hội thoại"; }
+        catch (Exception ex) { Status = "Chưa xóa được hội thoại: " + ex.Message; }
     }
 
     [ObservableProperty]
