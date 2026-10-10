@@ -144,6 +144,7 @@ internal static class Program
                     }
                 }
             }
+            CheckNotebookRecords(window, output);
             CheckReadingLibrary(window, output);
             var chatModel = Descendants(window).OfType<ConversationView>().FirstOrDefault()?.DataContext as ConversationViewModel;
             // The cached conversation view may be hidden; create an isolated fixture instead.
@@ -163,6 +164,42 @@ internal static class Program
         while (!task.IsCompleted) { if (DateTime.UtcNow > deadline) throw new TimeoutException("Fixture did not complete"); Pump(); }
         task.GetAwaiter().GetResult();
     }
+    private static void CheckNotebookRecords(Window window, string output)
+    {
+        var conversationTab = Descendants(window).OfType<RadioButton>().First(b => Equals(b.Content, "Trò chuyện"));
+        conversationTab.IsChecked = true; Pump();
+        var conversation = (ConversationViewModel)Descendants(window).OfType<ConversationView>().First().DataContext;
+        var saved = new TransTools.Services.Storage.ConversationSession {
+            Title = "Trò chuyện · Cuộc họp dự án", Language = "Tiếng Nhật", Topic = "Công việc", UpdatedAt = DateTime.Now.AddHours(1),
+            Messages = [new ChatMessageItem { IsUser = true, Text = "プロジェクトについて話しましょう。", Translation = "Cùng nói về dự án.", TimeString = "10:30" }, new ChatMessageItem { Text = "もちろんです。", Translation = "Chắc chắn rồi.", TimeString = "10:32" }]
+        };
+        conversation.Sessions.Add(saved);
+        var notebookTab = Descendants(window).OfType<RadioButton>().First(b => Equals(b.Content, "Sổ tay"));
+        notebookTab.IsChecked = true; Pump();
+        var notebook = (NotebookViewModel)Descendants(window).OfType<NotebookView>().First().DataContext;
+        notebook.SetConversations(conversation.Sessions);
+        var projection = notebook.Sessions.Single(s => s.Id == saved.Id);
+        if (!projection.IsConversation || projection.SourceLanguage != "ja" || projection.Captions[0].FormattedTimestamp != "10:30" || !projection.Captions[0].Original.Contains(saved.Messages[0].Text)) throw new Exception("Saved conversation projection lost source language, text or original time");
+        if (System.Text.Json.JsonSerializer.Serialize(projection).Contains("IsConversation")) throw new Exception("Conversation projection metadata leaked into meeting persistence");
+        notebook.RecordKind = "Trò chuyện";
+        if (notebook.SessionsView.Cast<MeetingSession>().Any(s => !s.IsConversation)) throw new Exception("Conversation filter contains meetings");
+        notebook.SelectedSession = projection;
+        foreach (var width in new[] {1200, 1280, 1440}) {
+            window.Width = width; Pump(); ValidateControlLayout(window, "Notebook conversation"); Capture(window, output, $"{width}-notebook-conversation.png");
+        }
+        notebook.RecordKind = "Cuộc họp";
+        if (notebook.SessionsView.Cast<MeetingSession>().Any(s => s.IsConversation)) throw new Exception("Meeting filter contains conversations");
+        notebook.RecordKind = "Tất cả"; notebook.SearchKeyword = "プロジェクト"; Pump();
+        if (!notebook.SessionsView.Contains(projection)) throw new Exception("Conversation text search lost saved messages");
+        notebook.SearchKeyword = ""; notebook.SelectedSession = projection;
+        notebook.ResumeConversationCommand.Execute(null); Pump();
+        if (conversation.SelectedSession?.Id != saved.Id || conversation.Messages.Count != 2 || conversation.Messages[0].Text != saved.Messages[0].Text) throw new Exception("Resume conversation did not restore exact saved messages");
+        if (conversation.IsThinking || conversation.IsListening) throw new Exception("Resuming saved conversation triggered AI or microphone automatically");
+        notebook.SetConversations(conversation.Sessions);
+        if (notebook.Sessions.Count(s => s.Id == saved.Id) != 1) throw new Exception("Conversation refresh duplicated a saved session");
+        Console.WriteLine("PASS: combined notebook filters, search, source timestamps and resume routing");
+    }
+
     private static void CheckReadingLibrary(Window owner, string output)
     {
         var unicode = new string('a', 4499) + "😊 " + ReadingFixtureHandler.Sample;

@@ -17,6 +17,7 @@ public partial class NotebookViewModel
     partial void OnCaptionSearchChanged(string value) => CaptionView?.Refresh();
     partial void OnSelectedSessionChanged(MeetingSession? value)
     {
+        OnPropertyChanged(nameof(IsConversationSelected)); OnPropertyChanged(nameof(IsMeetingSelected));
         CaptionView = CollectionViewSource.GetDefaultView(value?.Captions ?? new List<Caption>());
         CaptionView.Filter = item => item is Caption c && (string.IsNullOrWhiteSpace(CaptionSearch) || c.Original.Contains(CaptionSearch, StringComparison.OrdinalIgnoreCase) || c.Vietnamese.Contains(CaptionSearch, StringComparison.OrdinalIgnoreCase));
     }
@@ -29,7 +30,7 @@ public partial class NotebookViewModel
     [RelayCommand] private async Task SpeakOriginalAsync(Caption? caption)
     {
         if (caption == null || string.IsNullOrWhiteSpace(caption.Original)) return;
-        try { await TransTools.Services.Speech.VoicePreferences.SpeakAsync(caption.Original, "en"); }
+        try { await TransTools.Services.Speech.VoicePreferences.SpeakAsync(caption.Original, SelectedSession?.SourceLanguage ?? "en"); }
         catch (Exception ex) { Status = ex.Message; }
     }
     [RelayCommand] private async Task SpeakTranslationAsync(Caption? caption)

@@ -11,5 +11,6 @@ public class Caption : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
     private string _vietnamese = string.Empty;
     public string Vietnamese { get => _vietnamese; set => SetProperty(ref _vietnamese, value); }
 
-    public string FormattedTimestamp => TimeSpan.FromSeconds(Start).ToString(@"hh\:mm\:ss\,fff");
+    [System.Text.Json.Serialization.JsonIgnore] public string? DisplayTimestamp { get; set; }
+    public string FormattedTimestamp => DisplayTimestamp ?? TimeSpan.FromSeconds(Start).ToString(@"hh\:mm\:ss\,fff");
 }

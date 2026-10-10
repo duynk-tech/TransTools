@@ -29,6 +29,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     public ObservableCollection<ChatMessageItem> Messages { get; } = new();
 
     private readonly ConversationStore _store = new();
+    public event Action? SessionsSaved;
     public ObservableCollection<ConversationSession> Sessions { get; } = new();
     [ObservableProperty] private ConversationSession? _selectedSession;
     [ObservableProperty] private string _customPrompt = "";
@@ -132,13 +133,13 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         session.Title = CurrentTopic + " · " + DateTime.Now.ToString("dd/MM HH:mm");
         session.Topic = CurrentTopic; session.Language = TargetLanguage; session.Prompt = CustomPrompt;
         session.UpdatedAt = DateTime.Now; session.Messages = Messages.ToList();
-        await _store.SaveAsync(Sessions); SelectedSession = session; Status = "Đã lưu hội thoại";
+        await _store.SaveAsync(Sessions); SelectedSession = session; Status = "Đã lưu hội thoại"; SessionsSaved?.Invoke();
     }
     [RelayCommand] private async Task DeleteConversationAsync()
     {
         if (IsThinking || IsListening || SelectedSession == null) return;
         if (System.Windows.MessageBox.Show("Xóa hội thoại đã chọn?", "Hội thoại", System.Windows.MessageBoxButton.YesNo) != System.Windows.MessageBoxResult.Yes) return;
-        Sessions.Remove(SelectedSession); SelectedSession = null; Messages.Clear(); await _store.SaveAsync(Sessions);
+        Sessions.Remove(SelectedSession); SelectedSession = null; Messages.Clear(); await _store.SaveAsync(Sessions); SessionsSaved?.Invoke();
     }
 
     [ObservableProperty]

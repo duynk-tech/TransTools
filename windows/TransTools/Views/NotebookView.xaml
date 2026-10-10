@@ -15,13 +15,17 @@
       <DockPanel>
         
         <Grid DockPanel.Dock="Top" Margin="0,0,0,12"><TextBox Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}" ToolTip="Tìm theo tiêu đề, nội dung…" MinHeight="40" Height="40" Margin="0" />
-        <TextBlock Text="Tìm theo tiêu đề, nội dung…" Foreground="#93A19B" FontSize="12" IsHitTestVisible="False" VerticalAlignment="Center" Margin="12,0,8,0" TextTrimming="CharacterEllipsis"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding SearchKeyword}" Value=""><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock></Grid><ListBox ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemsSource="{Binding SessionsView}" SelectedItem="{Binding SelectedSession}" Background="Transparent" BorderThickness="0">
+        <TextBlock Text="Tìm theo tiêu đề, nội dung…" Foreground="#93A19B" FontSize="12" IsHitTestVisible="False" VerticalAlignment="Center" Margin="12,0,8,0" TextTrimming="CharacterEllipsis"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding SearchKeyword}" Value=""><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock></Grid><UniformGrid DockPanel.Dock="Top" Columns="3" Margin="0,0,0,12">
+        <RadioButton Content="Tất cả" Style="{StaticResource SegmentedOption}" GroupName="RecordKind" IsChecked="{Binding RecordKind,Mode=TwoWay,Converter={StaticResource OptionSelection},ConverterParameter=Tất cả}"/>
+        <RadioButton Content="Cuộc họp" Style="{StaticResource SegmentedOption}" GroupName="RecordKind" IsChecked="{Binding RecordKind,Mode=TwoWay,Converter={StaticResource OptionSelection},ConverterParameter=Cuộc họp}"/>
+        <RadioButton Content="Trò chuyện" Style="{StaticResource SegmentedOption}" GroupName="RecordKind" IsChecked="{Binding RecordKind,Mode=TwoWay,Converter={StaticResource OptionSelection},ConverterParameter=Trò chuyện}"/>
+        </UniformGrid><ListBox ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemsSource="{Binding SessionsView}" SelectedItem="{Binding SelectedSession}" Background="Transparent" BorderThickness="0">
           <ListBox.ItemTemplate>
             <DataTemplate>
               <Border Style="{StaticResource TranscriptCard}" Margin="0,0,0,6">
                 <StackPanel>
                   <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" Foreground="#243D35" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Text="{Binding FormattedDate}" FontSize="11" Foreground="#73827C" Margin="0,2,0,0" />
+                  <TextBlock Text="{Binding KindLabel}" FontSize="11" Foreground="#287568" Margin="0,4,0,0"/><TextBlock Text="{Binding FormattedDate}" FontSize="11" Foreground="#73827C" Margin="0,2,0,0" />
                 </StackPanel>
               </Border>
             </DataTemplate>
@@ -36,15 +40,15 @@
             <TextBlock Text="{Binding SelectedSession.Title}" FontSize="20" FontWeight="Bold" Foreground="#243D35" TextWrapping="Wrap" />
             </StackPanel>
           <WrapPanel HorizontalAlignment="Left" Margin="0,12,0,0">
-            <Button Content="Ghi chú" Command="{Binding OpenNotesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" />
-            <Button Content="Tóm tắt AI" Command="{Binding GenerateSummaryCommand}" Margin="0,0,8,0" Padding="12,6" Cursor="Hand" Style="{StaticResource SecondaryButton}" />
+            <Button Content="Tiếp tục trò chuyện" Command="{Binding ResumeConversationCommand}" Visibility="{Binding IsConversationSelected,Converter={StaticResource BoolVisibility}}" Margin="0,0,8,0"/><Button Visibility="{Binding IsMeetingSelected,Converter={StaticResource BoolVisibility}}" Content="Ghi chú" Command="{Binding OpenNotesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" />
+            <Button Visibility="{Binding IsMeetingSelected,Converter={StaticResource BoolVisibility}}" Content="Tóm tắt AI" Command="{Binding GenerateSummaryCommand}" Margin="0,0,8,0" Padding="12,6" Cursor="Hand" Style="{StaticResource SecondaryButton}" />
             <Grid>
               <Button x:Name="ExportButton" Content="Xuất ▾" Click="ShowExport_Click" Style="{StaticResource SecondaryButton}" />
               <Popup x:Name="ExportPopup" PlacementTarget="{Binding ElementName=ExportButton}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
                 <Border Background="White" BorderBrush="#B5D2C9" BorderThickness="1" CornerRadius="10" Padding="8">
                   <StackPanel>
                     <Button Content="Xuất Word" Command="{Binding ExportDocxCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,0,6" />
-                    <Button Content="Xuất phụ đề SRT" Command="{Binding ExportSrtCommand}" Style="{StaticResource SecondaryButton}" />
+                    <Button Visibility="{Binding IsMeetingSelected,Converter={StaticResource BoolVisibility}}" Content="Xuất phụ đề SRT" Command="{Binding ExportSrtCommand}" Style="{StaticResource SecondaryButton}" />
                   </StackPanel>
                 </Border>
               </Popup>

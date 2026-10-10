@@ -28,6 +28,15 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         _conversationViewModel = new ConversationViewModel(() => _meetingViewModel.IsBusy);
+        _notebookViewModel.SetConversations(_conversationViewModel.Sessions);
+        _conversationViewModel.SessionsSaved += () => _notebookViewModel.SetConversations(_conversationViewModel.Sessions);
+        _notebookViewModel.ResumeConversationRequested += id => {
+            if (!_conversationViewModel.CanChangeSession) { _notebookViewModel.Status = "Dừng phiên trò chuyện hiện tại trước khi mở hội thoại khác."; return; }
+            var session = _conversationViewModel.Sessions.FirstOrDefault(s => s.Id == id);
+            if (session == null) { _notebookViewModel.Status = "Hội thoại này không còn trong danh sách."; return; }
+            _conversationViewModel.SelectedSession = session;
+            NavConversation.IsChecked = true;
+        };
         _settingsViewModel = new SettingsViewModel(() => _meetingViewModel.IsBusy || !_conversationViewModel.CanChangeSession);
         _meetingViewModel.OtherAudioBusy = () => !_conversationViewModel.CanChangeSession;
         InitializeComponent();

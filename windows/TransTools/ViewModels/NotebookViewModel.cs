@@ -25,8 +25,8 @@ public partial class NotebookViewModel : ObservableObject
     partial void OnSearchKeywordChanged(string value) => SessionsView?.Refresh();
     [RelayCommand] private async Task OpenNotesAsync()
     {
-        if (SelectedSession == null) return;
-        var session = SelectedSession;
+        if (!IsMeetingSelected) return;
+        var session = SelectedSession!;
         var editor = new TransTools.Views.MeetingNotesWindow(session.Notes, session.Summary ?? "") { Owner = System.Windows.Application.Current.MainWindow };
         if (editor.ShowDialog() != true) return;
         var notes = editor.Notes;
@@ -47,10 +47,44 @@ public partial class NotebookViewModel : ObservableObject
     [ObservableProperty]
     private string _status = "Sẵn sàng";
 
+    private readonly Dictionary<Guid, ConversationSession> _conversations = new();
+    [ObservableProperty] private string _recordKind = "Tất cả";
+    public event Action<Guid>? ResumeConversationRequested;
+    public bool IsConversationSelected => SelectedSession?.IsConversation == true;
+    public bool IsMeetingSelected => SelectedSession != null && !IsConversationSelected;
+    partial void OnRecordKindChanged(string value)
+    {
+        SessionsView.Refresh();
+        if (SelectedSession != null && !SessionsView.Contains(SelectedSession)) SelectedSession = SessionsView.Cast<MeetingSession>().FirstOrDefault();
+    }
+    [RelayCommand] private void ResumeConversation()
+    {
+        if (IsConversationSelected && SelectedSession != null) ResumeConversationRequested?.Invoke(SelectedSession.Id);
+    }
+    public void SetConversations(IEnumerable<ConversationSession> conversations)
+    {
+        var previousId = SelectedSession?.Id;
+        foreach (var old in Sessions.Where(s => s.IsConversation).ToList()) Sessions.Remove(old);
+        _conversations.Clear();
+        foreach (var source in conversations.OrderByDescending(s => s.UpdatedAt)) {
+            _conversations[source.Id] = source;
+            Sessions.Add(new MeetingSession {
+                Id = source.Id, IsConversation = true, Title = source.Title, CreatedAt = source.UpdatedAt,
+                AudioSource = "Luyện nói với AI", SourceLanguage = ConversationLanguage(source.Language),
+                Captions = source.Messages.Select(m => new Caption {
+                    Original = $"[{(m.IsUser ? "Bạn" : TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName)}] {m.Text}",
+                    Vietnamese = m.Translation, DisplayTimestamp = m.TimeString
+                }).ToList()
+            });
+        }
+        SelectedSession = Sessions.FirstOrDefault(s => s.Id == previousId && SessionsView.Contains(s)) ?? SessionsView.Cast<MeetingSession>().FirstOrDefault();
+    }
+    private static string ConversationLanguage(string language) => language.Contains("Nhật") ? "ja" : language.Contains("Trung") ? "zh" : language.Contains("Hàn") ? "ko" : language.Contains("Việt") ? "vi" : "en";
     public NotebookViewModel()
     {
         SessionsView = System.Windows.Data.CollectionViewSource.GetDefaultView(Sessions);
-        SessionsView.Filter = item => item is MeetingSession session && (string.IsNullOrWhiteSpace(SearchKeyword) ||
+        SessionsView.SortDescriptions.Add(new System.ComponentModel.SortDescription(nameof(MeetingSession.CreatedAt), System.ComponentModel.ListSortDirection.Descending));
+        SessionsView.Filter = item => item is MeetingSession session && (RecordKind == "Tất cả" || (RecordKind == "Trò chuyện" ? session.IsConversation : !session.IsConversation)) && (string.IsNullOrWhiteSpace(SearchKeyword) ||
             session.Title.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) || session.Notes.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) ||
             session.Captions.Any(c => c.Original.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) || c.Vietnamese.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase)));
         _ = LoadSafelyAsync();
@@ -66,27 +100,28 @@ public partial class NotebookViewModel : ObservableObject
     {
         var previousId = SelectedSession?.Id;
         var list = await _sessionStore.LoadSessionsAsync();
-        Sessions.Clear();
+        foreach (var old in Sessions.Where(s => !s.IsConversation).ToList()) Sessions.Remove(old);
         foreach (var s in list.OrderByDescending(x => x.CreatedAt))
         {
             Sessions.Add(s);
         }
-        SelectedSession = Sessions.FirstOrDefault(s => s.Id == previousId) ?? Sessions.FirstOrDefault();
+        SelectedSession = Sessions.FirstOrDefault(s => s.Id == previousId && SessionsView.Contains(s)) ?? SessionsView.Cast<MeetingSession>().FirstOrDefault();
     }
 
     [RelayCommand]
     public async Task SaveCurrentSessionAsync(MeetingSession session)
     {
+        if (session.IsConversation) return;
         Sessions.Insert(0, session);
         SelectedSession = session;
-        await _sessionStore.SaveSessionsAsync(Sessions.ToList());
+        await _sessionStore.UpdateSessionAsync(session.Id, () => session, stored => { stored.Title = session.Title; stored.Captions = session.Captions; stored.DurationSeconds = session.DurationSeconds; });
         Status = "Đã lưu vào Sổ tay.";
     }
 
     [RelayCommand]
     public async Task GenerateSummaryAsync()
     {
-        if (IsSummarizing || SelectedSession == null || SelectedSession.Captions.Count == 0) return;
+        if (IsSummarizing || !IsMeetingSelected || SelectedSession == null || SelectedSession.Captions.Count == 0) return;
         var targetSession = SelectedSession;
 
         IsSummarizing = true;
@@ -150,7 +185,7 @@ public partial class NotebookViewModel : ObservableObject
     [RelayCommand]
     public void ExportSrt()
     {
-        if (SelectedSession == null) return;
+        if (!IsMeetingSelected) return;
 
         var sfd = new SaveFileDialog
         {
