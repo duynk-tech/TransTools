@@ -36,6 +36,8 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _showVietnameseTranslation = true;
     [ObservableProperty] private string _status = "Sẵn sàng";
     private readonly Func<bool> _meetingBusy;
+    private readonly Func<Task>? _beginListeningOverride;
+    private Task BeginListeningAsync() => _beginListeningOverride?.Invoke() ?? ToggleMicrophoneAsync();
     private readonly TransTools.Services.Conversation.ConversationPreferencesStore _preferences;
     [ObservableProperty] private string _learnerName = "";
     [ObservableProperty] private int _sendDelaySeconds = 2;
@@ -67,7 +69,8 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [RelayCommand] private async Task StartConversationAsync()
     {
         if (IsThinking || IsListening) return;
-        if (Messages.Count != 0) { IsConversationActive = true; Status = "Đến lượt bạn"; return; }
+        if (_meetingBusy()) { Status = "Kết thúc cuộc họp trước khi luyện nói để tránh thu âm chồng nhau."; return; }
+        if (Messages.Count != 0) { IsConversationActive = true; await BeginListeningAsync(); return; }
         IsThinking = true; IsConversationActive = true;
         var generation = _conversationGeneration;
         using var replyCancellation = new CancellationTokenSource(); _replyCancellation = replyCancellation;
@@ -85,6 +88,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
             Status = "Đến lượt bạn";
         } catch (Exception ex) { if (generation == _conversationGeneration) { IsConversationActive = false; Status = ex.Message; } }
         finally { _replyCancellation = null; IsThinking = false; if (generation != _conversationGeneration) Status = "Đã kết thúc trò chuyện"; }
+        if (IsConversationActive && generation == _conversationGeneration) await BeginListeningAsync();
     }
     private ConversationRecorder? _recorder;
     private CancellationTokenSource? _recognition;
@@ -122,9 +126,10 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     partial void OnIsThinkingChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(CanSendMessage)); ToggleConversationCommand.NotifyCanExecuteChanged(); }
     public bool CanShowTranslation => !TargetLanguage.Contains("Việt", StringComparison.OrdinalIgnoreCase);
 
-    public ConversationViewModel(Func<bool>? meetingBusy = null, TransTools.Services.Conversation.ConversationPreferencesStore? preferences = null)
+    public ConversationViewModel(Func<bool>? meetingBusy = null, TransTools.Services.Conversation.ConversationPreferencesStore? preferences = null, Func<Task>? beginListening = null)
     {
         _meetingBusy = meetingBusy ?? (() => false);
+        _beginListeningOverride = beginListening;
         Messages.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(ConversationActionLabel)); OnPropertyChanged(nameof(CanSaveConversation)); };
         _preferences = preferences ?? new(); var saved = _preferences.Load(); _sendDelaySeconds = saved.DelaySeconds; _learnerName = saved.LearnerName;
         try { foreach (var session in _store.Load().OrderByDescending(s => s.UpdatedAt)) Sessions.Add(session); }
@@ -223,6 +228,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
 
         IsThinking = true; IsConversationActive = true;
         var generation = _conversationGeneration;
+        var replyCompleted = false;
         using var replyCancellation = new CancellationTokenSource(); _replyCancellation = replyCancellation;
         try
         {
@@ -247,6 +253,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
             {
                 await VoicePreferences.SpeakAsync(aiReply, TargetLanguage);
             }
+            replyCompleted = true;
         }
         catch (Exception ex)
         {
@@ -257,5 +264,6 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
             _replyCancellation = null; IsThinking = false;
             if (generation != _conversationGeneration) Status = "Đã kết thúc trò chuyện";
         }
+        if (replyCompleted && IsConversationActive && generation == _conversationGeneration) await BeginListeningAsync();
     }
 }

@@ -22,6 +22,14 @@ internal static class Program
             if (CaptionDisplayTextConverter.Select("source", "translated", "translation", false) != "translated" || CaptionDisplayTextConverter.Select("source", "", "translation", false) != "source" || CaptionDisplayTextConverter.Select("source", "translated", "original", true) != "") throw new Exception("Caption display fallback is incorrect");
             CheckMeetingSpeechQueue();
             var app = new TransTools.App(); app.InitializeComponent();
+            var resumeListenCalls = 0;
+            using (var resumeFixture = new ConversationViewModel(beginListening: () => { resumeListenCalls++; return Task.CompletedTask; })) {
+                resumeFixture.Messages.Add(new ChatMessageItem { Text = "A saved reply" });
+                Await(resumeFixture.ToggleConversationCommand.ExecuteAsync(null));
+                if (resumeListenCalls != 1 || !resumeFixture.IsConversationActive || resumeFixture.Messages.Count != 1) throw new Exception("Resume did not begin listening while preserving the transcript");
+                Await(resumeFixture.ToggleConversationCommand.ExecuteAsync(null));
+                if (resumeListenCalls != 1 || resumeFixture.IsConversationActive || resumeFixture.Messages.Count != 1) throw new Exception("Stop restarted listening or cleared the transcript");
+            }
             var connected = true;
             using (var deviceFixture = new MeetingViewModel(() => connected ? [new("fixture-device", "USB tai nghe")] : [])) {
                 deviceFixture.RefreshPlaybackDevices(); deviceFixture.SelectedPlaybackDevice = deviceFixture.PlaybackDevices[0]; deviceFixture.AutomaticReading = true;
