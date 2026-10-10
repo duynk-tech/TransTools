@@ -3,14 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:ui="clr-namespace:TransTools.Views"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         <Style TargetType="Window"><Setter Property="FontFamily" Value="Segoe UI"/><Setter Property="FontSize" Value="14"/><Setter Property="Foreground" Value="#243D35"/></Style>
+         <Style TargetType="Window"><Setter Property="FontFamily" Value="Segoe UI"/><Setter Property="FontSize" Value="13"/><Setter Property="Foreground" Value="#292F2D"/></Style>
          <ui:LanguageLabelConverter x:Key="LanguageLabel"/><ui:OptionSelectionConverter x:Key="OptionSelection"/>
          <DataTemplate x:Key="LanguageItem"><TextBlock Text="{Binding Converter={StaticResource LanguageLabel}}"/></DataTemplate>
          <BooleanToVisibilityConverter x:Key="BoolVisibility"/>
          <Style TargetType="Button">
              <Setter Property="FontWeight" Value="SemiBold"/><Setter Property="MinHeight" Value="40"/><Setter Property="Padding" Value="12,6"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Background" Value="#287568"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderBrush" Value="#75BBAE"/><Setter Property="BorderThickness" Value="1"/>
              <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
-                 <Border x:Name="Chrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="9" Padding="{TemplateBinding Padding}">
+                 <Border x:Name="Chrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10" Padding="{TemplateBinding Padding}">
                      <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
                  </Border>
                  <ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chrome" Property="Opacity" Value="0.88"/></Trigger><Trigger Property="IsPressed" Value="True"><Setter TargetName="Chrome" Property="Opacity" Value="0.72"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Chrome" Property="BorderBrush" Value="#194F45"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter TargetName="Chrome" Property="Opacity" Value="0.45"/></Trigger></ControlTemplate.Triggers>
@@ -24,7 +24,7 @@
          </Style>
          <Style x:Key="TranscriptCard" TargetType="Border">
              <Setter Property="Background" Value="White"/><Setter Property="BorderBrush" Value="#C2DDD5"/><Setter Property="BorderThickness" Value="1"/>
-             <Setter Property="CornerRadius" Value="10"/><Setter Property="Padding" Value="12"/>
+             <Setter Property="CornerRadius" Value="14"/><Setter Property="Padding" Value="16"/>
              <Style.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter Property="BorderBrush" Value="#75BBAE"/></Trigger></Style.Triggers>
          </Style>
          <Style TargetType="ComboBox">
@@ -51,7 +51,10 @@
              <Setter Property="Padding" Value="10,7"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
              <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBoxItem"><Border x:Name="ItemChrome" Background="Transparent" CornerRadius="6" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsHighlighted" Value="True"><Setter TargetName="ItemChrome" Property="Background" Value="#E0EFE9"/></Trigger><Trigger Property="IsSelected" Value="True"><Setter TargetName="ItemChrome" Property="Background" Value="#D0E7DF"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
          </Style>
-         <Style TargetType="TextBox"><Setter Property="Background" Value="White"/><Setter Property="Foreground" Value="#243D35"/><Setter Property="BorderBrush" Value="#D8E5E1"/><Setter Property="Padding" Value="10,6"/></Style>
+         <Style TargetType="TextBox">
+ <Setter Property="Background" Value="White"/><Setter Property="Foreground" Value="#292F2D"/><Setter Property="BorderBrush" Value="#BDD9D2"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="12,9"/><Setter Property="MinHeight" Value="40"/><Setter Property="VerticalContentAlignment" Value="Center"/>
+ <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TextBox"><Border x:Name="InputChrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10"><ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="InputChrome" Property="BorderBrush" Value="#75BBAE"/></Trigger><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="InputChrome" Property="BorderBrush" Value="#287568"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+ </Style>
          <Style TargetType="CheckBox">
              <Setter Property="Cursor" Value="Hand"/><Setter Property="Foreground" Value="#334B43"/>
              <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="CheckBox">
@@ -62,7 +65,7 @@
                  <ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter TargetName="Track" Property="Background" Value="#287568"/><Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Track" Property="BorderBrush" Value="#194F45"/><Setter TargetName="Track" Property="BorderThickness" Value="1"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger></ControlTemplate.Triggers>
              </ControlTemplate></Setter.Value></Setter>
          </Style>
-         <Style TargetType="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
+         <Style TargetType="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="0"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><Border x:Name="SelectionChrome" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="14" Margin="0,0,0,4"><ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/></Border><ControlTemplate.Triggers><Trigger Property="IsSelected" Value="True"><Setter TargetName="SelectionChrome" Property="Background" Value="#DCECE6"/><Setter TargetName="SelectionChrome" Property="BorderBrush" Value="#75BBAE"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="SelectionChrome" Property="BorderBrush" Value="#75BBAE"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
          <FontFamily x:Key="AppFont">Segoe UI, Helvetica, Arial</FontFamily>
 
          <Style x:Key="SegmentedOption" TargetType="RadioButton"><Setter Property="Cursor" Value="Hand"/><Setter Property="Foreground" Value="#287568"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="MinHeight" Value="36"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RadioButton"><Border x:Name="OptionChrome" Background="White" BorderBrush="#B5D2C9" BorderThickness="1" CornerRadius="7" Padding="16,8"><ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter TargetName="OptionChrome" Property="Background" Value="#287568"/><Setter Property="Foreground" Value="White"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="OptionChrome" Property="BorderBrush" Value="#287568"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
