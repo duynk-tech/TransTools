@@ -231,7 +231,7 @@ internal static class Program
         if (notebook.Sessions.Count(s => s.Id == saved.Id) != 1) throw new Exception("Conversation refresh duplicated a saved session");
         var beforeRenameText = conversation.Messages[0].Text;
         Await(notebook.RenameRecordTitleAsync(notebook.Sessions.Single(s => s.Id == saved.Id), "Tên riêng của tôi"));
-        if (saved.Title != "Tên riêng của tôi" || !saved.HasCustomTitle) throw new Exception("Conversation rename did not update shared source");
+        if (saved.Title != "Tên riêng của tôi" || !saved.HasCustomTitle) throw new Exception("Conversation rename did not update shared source: " + notebook.Status);
         Await(conversation.SaveConversationCommand.ExecuteAsync(null));
         var storedTitle = new TransTools.Services.Storage.ConversationStore().Load().Single(s => s.Id == saved.Id);
         if (storedTitle.Title != "Tên riêng của tôi" || !storedTitle.HasCustomTitle || storedTitle.Messages[0].Text != beforeRenameText) throw new Exception("Saving conversation overwrote custom title or messages");
