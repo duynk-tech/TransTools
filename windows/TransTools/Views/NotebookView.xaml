@@ -37,7 +37,7 @@
       <DockPanel>
         <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
           <StackPanel>
-            <TextBlock Text="{Binding SelectedSession.Title}" FontSize="20" FontWeight="Bold" Foreground="#243D35" TextWrapping="Wrap" />
+            <DockPanel><Button DockPanel.Dock="Right" Content="✎" ToolTip="Đổi tên bản ghi" Command="{Binding RenameRecordCommand}" Style="{StaticResource SecondaryButton}" Width="40" Margin="12,0,0,0"/><TextBlock Text="{Binding SelectedSession.Title}" FontSize="20" FontWeight="Bold" Foreground="#243D35" TextWrapping="Wrap" /></DockPanel>
             </StackPanel>
           <WrapPanel HorizontalAlignment="Left" Margin="0,12,0,0">
             <Button Content="Tiếp tục trò chuyện" Command="{Binding ResumeConversationCommand}" Visibility="{Binding IsConversationSelected,Converter={StaticResource BoolVisibility}}" Margin="0,0,8,0"/><Button Visibility="{Binding IsMeetingSelected,Converter={StaticResource BoolVisibility}}" Content="Ghi chú" Command="{Binding OpenNotesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" />

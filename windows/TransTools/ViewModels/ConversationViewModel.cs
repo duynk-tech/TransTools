@@ -130,10 +130,19 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         if (Messages.Count == 0) return;
         var session = SelectedSession;
         if (session == null) { session = new ConversationSession(); Sessions.Insert(0, session); }
-        session.Title = CurrentTopic + " · " + DateTime.Now.ToString("dd/MM HH:mm");
+        if (!session.HasCustomTitle) session.Title = CurrentTopic + " · " + DateTime.Now.ToString("dd/MM HH:mm");
         session.Topic = CurrentTopic; session.Language = TargetLanguage; session.Prompt = CustomPrompt;
         session.UpdatedAt = DateTime.Now; session.Messages = Messages.ToList();
         await _store.SaveAsync(Sessions); SelectedSession = session; Status = "Đã lưu hội thoại"; SessionsSaved?.Invoke();
+    }
+    public async Task<bool> RenameSessionAsync(Guid id, string title)
+    {
+        title = title.Trim(); var target = Sessions.FirstOrDefault(s => s.Id == id);
+        if (target == null || title.Length == 0 || title.Length > 200) return false;
+        var old = target.Title; var custom = target.HasCustomTitle;
+        target.Title = title; target.HasCustomTitle = true;
+        try { await _store.SaveAsync(Sessions); SessionsSaved?.Invoke(); return true; }
+        catch { target.Title = old; target.HasCustomTitle = custom; throw; }
     }
     [RelayCommand] private async Task DeleteConversationAsync()
     {

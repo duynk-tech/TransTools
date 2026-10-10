@@ -29,6 +29,7 @@ public partial class MainWindow : Window
     {
         _conversationViewModel = new ConversationViewModel(() => _meetingViewModel.IsBusy);
         _notebookViewModel.SetConversations(_conversationViewModel.Sessions);
+        _notebookViewModel.RenameConversationRequested = _conversationViewModel.RenameSessionAsync;
         _conversationViewModel.SessionsSaved += () => _notebookViewModel.SetConversations(_conversationViewModel.Sessions);
         _notebookViewModel.ResumeConversationRequested += id => {
             if (!_conversationViewModel.CanChangeSession) { _notebookViewModel.Status = "Dừng phiên trò chuyện hiện tại trước khi mở hội thoại khác."; return; }

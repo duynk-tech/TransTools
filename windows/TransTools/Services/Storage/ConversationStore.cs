@@ -5,6 +5,7 @@ namespace TransTools.Services.Storage;
 public sealed class ConversationSession
 {
     public Guid Id { get; set; } = Guid.NewGuid();
+    public bool HasCustomTitle { get; set; }
     public string Title { get; set; } = "Trò chuyện mới";
     public string Topic { get; set; } = "Giao tiếp hằng ngày";
     public string Language { get; set; } = "Tiếng Anh (English)";

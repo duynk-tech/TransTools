@@ -50,6 +50,23 @@ public partial class NotebookViewModel : ObservableObject
     private readonly Dictionary<Guid, ConversationSession> _conversations = new();
     [ObservableProperty] private string _recordKind = "Tất cả";
     public event Action<Guid>? ResumeConversationRequested;
+    public Func<Guid, string, Task<bool>>? RenameConversationRequested { get; set; }
+    [RelayCommand] private async Task RenameRecordAsync()
+    {
+        var target = SelectedSession; if (target == null) return;
+        var editor = new TransTools.Views.RenameRecordWindow(target.Title) { Owner = System.Windows.Application.Current.MainWindow };
+        if (editor.ShowDialog() == true) await RenameRecordTitleAsync(target, editor.RecordTitle);
+    }
+    public async Task<bool> RenameRecordTitleAsync(MeetingSession target, string title)
+    {
+        title = title.Trim(); if (title.Length == 0 || title.Length > 200) return false;
+        try {
+            if (target.IsConversation) { if (RenameConversationRequested == null || !await RenameConversationRequested(target.Id, title)) return false; }
+            else await _sessionStore.UpdateSessionAsync(target.Id, () => target, stored => stored.Title = title);
+            target.Title = title; SessionsView.Refresh(); OnPropertyChanged(nameof(SelectedSession)); Status = "Đã đổi tên bản ghi"; return true;
+        } catch (Exception ex) { Status = "Chưa đổi được tên: " + ex.Message; return false; }
+    }
+
     public bool IsConversationSelected => SelectedSession?.IsConversation == true;
     public bool IsMeetingSelected => SelectedSession != null && !IsConversationSelected;
     partial void OnRecordKindChanged(string value)
