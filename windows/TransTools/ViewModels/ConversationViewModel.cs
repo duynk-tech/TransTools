@@ -37,7 +37,11 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _status = "Sẵn sàng";
     private readonly Func<bool> _meetingBusy;
     private readonly Func<Task>? _beginListeningOverride;
-    private Task BeginListeningAsync() => _beginListeningOverride?.Invoke() ?? ToggleMicrophoneAsync();
+    private Task BeginListeningAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(UserInput)) { Status = "Kiểm tra câu đã nhập rồi bấm Gửi."; return Task.CompletedTask; }
+        return _beginListeningOverride?.Invoke() ?? ToggleMicrophoneAsync();
+    }
     private readonly TransTools.Services.Conversation.ConversationPreferencesStore _preferences;
     [ObservableProperty] private string _learnerName = "";
     [ObservableProperty] private int _sendDelaySeconds = 2;

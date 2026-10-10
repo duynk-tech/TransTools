@@ -29,6 +29,9 @@ internal static class Program
                 if (resumeListenCalls != 1 || !resumeFixture.IsConversationActive || resumeFixture.Messages.Count != 1) throw new Exception("Resume did not begin listening while preserving the transcript");
                 Await(resumeFixture.ToggleConversationCommand.ExecuteAsync(null));
                 if (resumeListenCalls != 1 || resumeFixture.IsConversationActive || resumeFixture.Messages.Count != 1) throw new Exception("Stop restarted listening or cleared the transcript");
+                resumeFixture.UserInput = "Keep my typed draft";
+                Await(resumeFixture.ToggleConversationCommand.ExecuteAsync(null));
+                if (resumeListenCalls != 1 || resumeFixture.UserInput != "Keep my typed draft") throw new Exception("Resume discarded a typed draft or started recording over it");
             }
             var connected = true;
             using (var deviceFixture = new MeetingViewModel(() => connected ? [new("fixture-device", "USB tai nghe")] : [])) {
