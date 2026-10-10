@@ -26,6 +26,29 @@ public partial class LearningViewModel : ObservableObject
 
     private readonly LearningStore _store;
     private LearningContent? _content;
+    public string[] LearningGoals { get; } = ["Cuộc họp & Công việc", "Giao tiếp đời sống", "Phỏng vấn & Nghề nghiệp"];
+    public string[] LearningLevels { get; } = ["Cơ bản", "Trung cấp", "Nâng cao"];
+    [ObservableProperty] private string _learningGoal = "Cuộc họp & Công việc";
+    [ObservableProperty] private string _learningLevel = "Cơ bản";
+    [ObservableProperty] private bool _isGeneratingLessons;
+    [ObservableProperty] private string _lessonGenerationStatus = "";
+    partial void OnLearningGoalChanged(string value) { if (_initialized) { SaveGoal(); NextLesson(); } }
+    partial void OnLearningLevelChanged(string value) { if (_initialized) SaveGoal(); }
+    [RelayCommand(IncludeCancelCommand = true)] private async Task GenerateLessonsAsync(CancellationToken token)
+    {
+        if (IsGeneratingLessons) return;
+        var language = SelectedLanguage; var goal = LearningGoal; var level = LearningLevel; IsGeneratingLessons = true;
+        try {
+            var config = new SecureCredentialStore().LoadConfiguredProvider() ?? throw new InvalidOperationException("Cấu hình AI trong Cài đặt trước khi tạo bài.");
+            LessonGenerationStatus = "Đang chuẩn bị bài mới…";
+            var prompt = $"Create 6 distinct short complete sentences in language {language}, for goal {goal}, level {level}. Give accurate Vietnamese meaning and brief Vietnamese context. Avoid names and personal facts. Return ONLY JSON: {{\"lessons\":[{{\"original\":\"...\",\"meaning\":\"...\",\"context\":\"...\"}}]}}.";
+            var json = await new TransTools.Services.Translation.LLMTranslationService().GenerateAsync(prompt, "You prepare language learning exercises. Return only valid JSON without Markdown.", config, token);
+            token.ThrowIfCancellationRequested(); _adaptive.AddGenerated(AdaptiveLessons.ParseGenerated(json, language, goal));
+            LessonGenerationStatus = "Đã có bài mới. Nội dung do AI tạo, có thể có sai sót."; NextLesson();
+        } catch (OperationCanceledException) { LessonGenerationStatus = "Đã hủy tạo bài."; }
+        catch (Exception ex) { LessonGenerationStatus = "Chưa tạo được bài mới: " + ex.Message; }
+        finally { IsGeneratingLessons = false; }
+    }
     private readonly AdaptiveLessons _adaptive = new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TransTools"));
     [ObservableProperty] private AdaptiveLesson? _currentLesson;
     [ObservableProperty] private string _lessonFeedback = "";
@@ -44,10 +67,10 @@ public partial class LearningViewModel : ObservableObject
     [RelayCommand] private void NextLesson()
     {
         var lessons = (_content?.Daily.Where(l => l.Language == SelectedLanguage).Select(l => AdaptiveLesson.Create(l.Language,l.OriginalText,l.VietnameseMeaning,l.ContextNote)) ?? []).Concat(Scenarios.SelectMany(s => s.Dialogues.Select(d => AdaptiveLesson.Create(s.Language,d.Original,d.Translation,s.Description))));
-        CurrentLesson = _adaptive.Next(lessons, DateTime.Now); LessonFeedback = ""; LessonAnswer = ""; LessonRevealed = false;
+        CurrentLesson = _adaptive.Next(_adaptive.Lessons.Where(l => l.Language == SelectedLanguage && l.Goal == LearningGoal).Concat(lessons), DateTime.Now); LessonFeedback = ""; LessonAnswer = ""; LessonRevealed = false;
         LessonDifficulty = CurrentLesson == null ? 1 : _adaptive.Get(CurrentLesson.Id).Difficulty;
         LessonChoices.Clear();
-        if (CurrentLesson != null) foreach (var choice in Scenarios.SelectMany(s => s.Dialogues).Select(d => d.Translation).Where(t => t != CurrentLesson.Meaning).Distinct().Take(2).Append(CurrentLesson.Meaning).OrderBy(_ => Random.Shared.Next())) LessonChoices.Add(choice);
+        if (CurrentLesson != null) foreach (var choice in Scenarios.SelectMany(s => s.Dialogues).Select(d => d.Translation).Concat(_adaptive.Lessons.Where(l => l.Language == SelectedLanguage).Select(l => l.Meaning)).Where(t => t != CurrentLesson.Meaning).Distinct().Take(2).Append(CurrentLesson.Meaning).OrderBy(_ => Random.Shared.Next())) LessonChoices.Add(choice);
         foreach (var name in new[] { nameof(CanAnswerLesson), nameof(ShowLessonText), nameof(ShowLessonChoices), nameof(ShowLessonWriting), nameof(LessonStage) }) OnPropertyChanged(name);
     }
     [RelayCommand] private void AnswerLesson(string? choice) { if (choice != null) GradeLesson(choice == CurrentLesson?.Meaning); }
@@ -91,7 +114,7 @@ public partial class LearningViewModel : ObservableObject
         WordsLearnedToday = _reviewHistory.GetValueOrDefault(DateTime.Today.ToString("yyyy-MM-dd"));
         DailyStreak = SrsScheduler.Streak(_reviewHistory, DateTime.Today); OnPropertyChanged(nameof(DueCount));
     }
-    private void Persist(IEnumerable<VocabularyItem> words, Dictionary<string,int>? history = null) => _store.Save(new LearningState(words.ToList(), history ?? _reviewHistory, Math.Clamp(DailyGoal,1,100), SelectedLanguage));
+    private void Persist(IEnumerable<VocabularyItem> words, Dictionary<string,int>? history = null) => _store.Save(new LearningState(words.ToList(), history ?? _reviewHistory, Math.Clamp(DailyGoal,1,100), SelectedLanguage, LearningGoal, LearningLevel));
     [RelayCommand] private void SaveGoal() { if (!_canSaveVocabulary) return; try { DailyGoal = Math.Clamp(DailyGoal,1,100); Persist(VocabularyList); Status = "Đã lưu mục tiêu học"; } catch (Exception ex) { Status = ex.Message; } }
     [RelayCommand] private void StartReview() { UpdateProgress(); SelectedWord = VisibleVocabulary.Where(w => w.DueAt <= DateTime.Now).OrderBy(w => w.DueAt).FirstOrDefault(); Status = SelectedWord == null ? "Đã ôn hết từ đến hạn." : "Nhớ nghĩa trước khi lật thẻ; sau đó chọn mức ghi nhớ."; }
     [RelayCommand] private void GradeReview(string grade) {
@@ -162,7 +185,7 @@ public partial class LearningViewModel : ObservableObject
         _reviewHistory = state.DailyReviews ?? throw new InvalidDataException("Thiếu tiến độ học.");
         if (state.Words == null) throw new InvalidDataException("Thiếu danh sách từ.");
         foreach (var word in state.Words) VocabularyList.Add(word);
-        DailyGoal = Math.Clamp(state.DailyGoal,1,100);
+        DailyGoal = Math.Clamp(state.DailyGoal,1,100); LearningGoal = LearningGoals.Contains(state.Goal) ? state.Goal : LearningGoals[0]; LearningLevel = LearningLevels.Contains(state.Level) ? state.Level : LearningLevels[0];
         SelectedLanguage = new[] { "en", "ja", "zh", "ko" }.Contains(state.Language) ? state.Language : "en";
         RefreshVocabulary();
     }

@@ -179,6 +179,11 @@ internal static class Program
             var rename = new RenameRecordWindow("Cuộc họp dự án"){ Owner = window }; rename.Show(); Pump(); ValidateControlLayout(rename, "Rename record"); Capture(rename, output, "rename-record.png"); rename.Close();
             var deleteConfirm = new ConfirmDeleteWindow("Cuộc họp dự án") { Owner = window }; deleteConfirm.Show(); Pump(); ValidateControlLayout(deleteConfirm, "Delete confirmation"); Capture(deleteConfirm, output, "delete-record.png"); deleteConfirm.Close();
             var deleteAll = new ConfirmDeleteWindow("12 bản ghi đã lưu", true) { Owner = window }; deleteAll.Show(); Pump(); ValidateControlLayout(deleteAll, "Delete all confirmation"); Capture(deleteAll, output, "delete-all-records.png"); deleteAll.Close();
+            var generatedJson = "{\"lessons\":[{\"original\":\"Hello.\",\"meaning\":\"Xin chào.\",\"context\":\"Chào hỏi\"},{\"original\":\"Thank you.\",\"meaning\":\"Cảm ơn.\",\"context\":\"Cảm ơn\"},{\"original\":\"Goodbye.\",\"meaning\":\"Tạm biệt.\",\"context\":\"Tạm biệt\"}]}";
+            var generated = TransTools.Services.Learning.AdaptiveLessons.ParseGenerated(generatedJson, "en", "Giao tiếp đời sống");
+            if (generated.Count != 3 || generated.Any(l => l.Goal != "Giao tiếp đời sống")) throw new Exception("Generated lessons lost goal context");
+            var rejected = false; try { TransTools.Services.Learning.AdaptiveLessons.ParseGenerated("{\"lessons\":[]}", "en", "test"); } catch { rejected = true; }
+            if (!rejected) throw new Exception("Invalid AI lesson response accepted");
             var progress = new TransTools.Services.Learning.LessonProgress(); var day = new DateTime(2026,10,10);
             for (var i=0;i<10;i++) progress = progress.Record(true,day);
             if (progress.Difficulty != 1) throw new Exception("Repeated same-day answers increased difficulty");

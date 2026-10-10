@@ -14,6 +14,7 @@ public partial class LearningView : UserControl
         _viewModel = viewModel;
         InitializeComponent();
         DataContext = viewModel;
+        Unloaded += (_, _) => { if (_viewModel.IsGeneratingLessons) _viewModel.GenerateLessonsCancelCommand.Execute(null); };
     }
 
     private void ShowGoal_Click(object sender, RoutedEventArgs e) => LearningGoalPopup.IsOpen = true;
