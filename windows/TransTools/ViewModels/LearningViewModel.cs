@@ -26,11 +26,46 @@ public partial class LearningViewModel : ObservableObject
 
     private readonly LearningStore _store;
     private LearningContent? _content;
+    private readonly AdaptiveLessons _adaptive = new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TransTools"));
+    [ObservableProperty] private AdaptiveLesson? _currentLesson;
+    [ObservableProperty] private string _lessonFeedback = "";
+    [ObservableProperty] private string _lessonAnswer = "";
+    [ObservableProperty] private bool _lessonRevealed;
+    [ObservableProperty] private int _lessonDifficulty = 1;
+    public ObservableCollection<string> LessonChoices { get; } = new();
+    public bool CanAnswerLesson => CurrentLesson != null && string.IsNullOrEmpty(LessonFeedback);
+    public bool ShowLessonText => CurrentLesson != null && (LessonDifficulty == 1 || LessonRevealed);
+    public bool ShowLessonChoices => CurrentLesson != null && LessonDifficulty < 3;
+    public bool ShowLessonWriting => CurrentLesson != null && LessonDifficulty == 3;
+    public bool HasLessonFeedback => !string.IsNullOrEmpty(LessonFeedback);
+    public string LessonStage => LessonDifficulty == 1 ? "Hiểu câu" : LessonDifficulty == 2 ? "Nghe và hiểu" : "Nhớ và viết lại";
+    partial void OnLessonFeedbackChanged(string value) { OnPropertyChanged(nameof(CanAnswerLesson)); OnPropertyChanged(nameof(HasLessonFeedback)); }
+    partial void OnLessonRevealedChanged(bool value) => OnPropertyChanged(nameof(ShowLessonText));
+    [RelayCommand] private void NextLesson()
+    {
+        var lessons = (_content?.Daily.Where(l => l.Language == SelectedLanguage).Select(l => AdaptiveLesson.Create(l.Language,l.OriginalText,l.VietnameseMeaning,l.ContextNote)) ?? []).Concat(Scenarios.SelectMany(s => s.Dialogues.Select(d => AdaptiveLesson.Create(s.Language,d.Original,d.Translation,s.Description))));
+        CurrentLesson = _adaptive.Next(lessons, DateTime.Now); LessonFeedback = ""; LessonAnswer = ""; LessonRevealed = false;
+        LessonDifficulty = CurrentLesson == null ? 1 : _adaptive.Get(CurrentLesson.Id).Difficulty;
+        LessonChoices.Clear();
+        if (CurrentLesson != null) foreach (var choice in Scenarios.SelectMany(s => s.Dialogues).Select(d => d.Translation).Where(t => t != CurrentLesson.Meaning).Distinct().Take(2).Append(CurrentLesson.Meaning).OrderBy(_ => Random.Shared.Next())) LessonChoices.Add(choice);
+        foreach (var name in new[] { nameof(CanAnswerLesson), nameof(ShowLessonText), nameof(ShowLessonChoices), nameof(ShowLessonWriting), nameof(LessonStage) }) OnPropertyChanged(name);
+    }
+    [RelayCommand] private void AnswerLesson(string? choice) { if (choice != null) GradeLesson(choice == CurrentLesson?.Meaning); }
+    [RelayCommand] private void CheckWrittenLesson() { if (!string.IsNullOrWhiteSpace(LessonAnswer)) GradeLesson(LessonAnswer.Trim().Equals(CurrentLesson?.Original.Trim(), StringComparison.OrdinalIgnoreCase)); }
+    [RelayCommand] private void RevealLesson() => LessonRevealed = true;
+    [RelayCommand] private async Task SpeakLessonAsync() { if (CurrentLesson == null) return; try { await VoicePreferences.SpeakAsync(CurrentLesson.Original, SelectedLanguage); } catch (Exception ex) { Status = ex.Message; } }
+    private void GradeLesson(bool correct)
+    {
+        if (!CanAnswerLesson || CurrentLesson == null) return;
+        try { _adaptive.Record(CurrentLesson, correct, DateTime.Now); LessonFeedback = correct ? "Đúng rồi!" : "Hãy xem nghĩa và ôn lại câu này."; LessonRevealed = true; }
+        catch (Exception ex) { Status = "Chưa lưu được tiến độ: " + ex.Message; }
+    }
+
     public DailySentence? DailySentence => _content?.Daily.FirstOrDefault(s => s.Language == SelectedLanguage);
     public ObservableCollection<PracticeScenario> Scenarios { get; } = new();
     private void RefreshContent() {
         Scenarios.Clear(); if (_content != null) foreach (var scenario in _content.Scenarios.Where(s => s.Language == SelectedLanguage)) Scenarios.Add(scenario);
-        OnPropertyChanged(nameof(DailySentence));
+        OnPropertyChanged(nameof(DailySentence)); NextLesson();
     }
     [RelayCommand] private async Task SpeakDailyAsync() { if (DailySentence == null) return; try { await VoicePreferences.SpeakAsync(DailySentence.OriginalText, SelectedLanguage); } catch (Exception ex) { Status=ex.Message; } }
     [RelayCommand] private async Task SpeakDialogueAsync(PracticeDialogue? dialogue) { if (dialogue == null) return; try { await VoicePreferences.SpeakAsync(dialogue.Original,SelectedLanguage); } catch (Exception ex) { Status=ex.Message; } }

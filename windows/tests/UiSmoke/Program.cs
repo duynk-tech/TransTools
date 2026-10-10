@@ -179,6 +179,11 @@ internal static class Program
             var rename = new RenameRecordWindow("Cuộc họp dự án"){ Owner = window }; rename.Show(); Pump(); ValidateControlLayout(rename, "Rename record"); Capture(rename, output, "rename-record.png"); rename.Close();
             var deleteConfirm = new ConfirmDeleteWindow("Cuộc họp dự án") { Owner = window }; deleteConfirm.Show(); Pump(); ValidateControlLayout(deleteConfirm, "Delete confirmation"); Capture(deleteConfirm, output, "delete-record.png"); deleteConfirm.Close();
             var deleteAll = new ConfirmDeleteWindow("12 bản ghi đã lưu", true) { Owner = window }; deleteAll.Show(); Pump(); ValidateControlLayout(deleteAll, "Delete all confirmation"); Capture(deleteAll, output, "delete-all-records.png"); deleteAll.Close();
+            var progress = new TransTools.Services.Learning.LessonProgress(); var day = new DateTime(2026,10,10);
+            for (var i=0;i<10;i++) progress = progress.Record(true,day);
+            if (progress.Difficulty != 1) throw new Exception("Repeated same-day answers increased difficulty");
+            progress = progress.Record(true,day.AddDays(1)).Record(true,day.AddDays(2));
+            if (progress.Difficulty != 2 || progress.Record(false,day.AddDays(3)).Difficulty != 1) throw new Exception("Adaptive multi-day difficulty progression failed");
             CheckNotebookRecords(window, output);
             CheckReadingLibrary(window, output);
             var chatModel = Descendants(window).OfType<ConversationView>().FirstOrDefault()?.DataContext as ConversationViewModel;
