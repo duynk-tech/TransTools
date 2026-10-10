@@ -50,6 +50,24 @@ public partial class NotebookViewModel : ObservableObject
     private readonly Dictionary<Guid, ConversationSession> _conversations = new();
     [ObservableProperty] private string _recordKind = "Tất cả";
     public event Action<Guid>? ResumeConversationRequested;
+    public Func<Guid, Task<bool>>? DeleteConversationRequested { get; set; }
+    public Func<bool>? RecordManagementBusy { get; set; }
+    [RelayCommand] private async Task ConfirmDeleteRecordAsync(MeetingSession? target)
+    {
+        if (target == null) return;
+        if (RecordManagementBusy?.Invoke() == true) { Status = "Dừng phiên đang hoạt động trước khi xóa bản ghi."; return; }
+        var confirm = new TransTools.Views.ConfirmDeleteWindow(target.Title) { Owner = System.Windows.Application.Current.MainWindow };
+        if (confirm.ShowDialog() == true) await DeleteRecordByIdAsync(target);
+    }
+    public async Task<bool> DeleteRecordByIdAsync(MeetingSession target)
+    {
+        if (RecordManagementBusy?.Invoke() == true) return false;
+        try {
+            if (target.IsConversation) { if (DeleteConversationRequested == null || !await DeleteConversationRequested(target.Id)) return false; }
+            else await _sessionStore.DeleteSessionAsync(target.Id);
+            System.Windows.Application.Current.Dispatcher.Invoke(() => { Sessions.Remove(target); SessionsView.Refresh(); SelectedSession = SessionsView.Cast<MeetingSession>().FirstOrDefault(); Status = "Đã xóa bản ghi"; }); return true;
+        } catch (Exception ex) { System.Windows.Application.Current.Dispatcher.Invoke(() => Status = "Chưa xóa được bản ghi: " + ex.Message); return false; }
+    }
     public Func<Guid, string, Task<bool>>? RenameConversationRequested { get; set; }
     [RelayCommand] private async Task RenameRecordAsync()
     {

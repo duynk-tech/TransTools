@@ -177,6 +177,7 @@ internal static class Program
             }
             var about = new AboutWindow { Owner = window }; about.Show(); Pump(); ValidateControlLayout(about, "About"); Capture(about, output, "about.png"); about.Close();
             var rename = new RenameRecordWindow("Cuộc họp dự án"){ Owner = window }; rename.Show(); Pump(); ValidateControlLayout(rename, "Rename record"); Capture(rename, output, "rename-record.png"); rename.Close();
+            var deleteConfirm = new ConfirmDeleteWindow("Cuộc họp dự án") { Owner = window }; deleteConfirm.Show(); Pump(); ValidateControlLayout(deleteConfirm, "Delete confirmation"); Capture(deleteConfirm, output, "delete-record.png"); deleteConfirm.Close();
             CheckNotebookRecords(window, output);
             CheckReadingLibrary(window, output);
             var chatModel = Descendants(window).OfType<ConversationView>().FirstOrDefault()?.DataContext as ConversationViewModel;
@@ -238,6 +239,9 @@ internal static class Program
         if (storedTitle.Title != "Tên riêng của tôi" || !storedTitle.HasCustomTitle || storedTitle.Messages[0].Text != beforeRenameText) throw new Exception("Saving conversation overwrote custom title or messages");
         var invalidRename = notebook.RenameRecordTitleAsync(notebook.Sessions.Single(s => s.Id == saved.Id), "   "); Await(invalidRename);
         if (invalidRename.Result || saved.Title != "Tên riêng của tôi") throw new Exception("Empty rename changed source title");
+        var beforeDeleteCount = conversation.Sessions.Count;
+        Await(notebook.DeleteRecordByIdAsync(notebook.Sessions.Single(s => s.Id == saved.Id)));
+        if (conversation.Sessions.Count != beforeDeleteCount - 1 || conversation.Sessions.Any(s => s.Id == saved.Id) || new TransTools.Services.Storage.ConversationStore().Load().Any(s => s.Id == saved.Id) || notebook.Sessions.Any(s => s.Id == saved.Id)) throw new Exception("Deleting conversation did not remove only the selected shared record");
         Console.WriteLine("PASS: combined notebook filters, search, source timestamps and resume routing");
     }
 

@@ -149,6 +149,14 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         try { await _store.SaveAsync(Sessions); OnUi(() => SessionsSaved?.Invoke()); return true; }
         catch { target.Title = old; target.HasCustomTitle = custom; throw; }
     }
+    public async Task<bool> DeleteSessionByIdAsync(Guid id)
+    {
+        if (!CanChangeSession) return false;
+        var target = Sessions.FirstOrDefault(s => s.Id == id); if (target == null) return false;
+        await _store.SaveAsync(Sessions.Where(s => s.Id != id).ToList());
+        OnUi(() => { Sessions.Remove(target); if (SelectedSession?.Id == id) { SelectedSession = null; Messages.Clear(); IsConversationActive = false; } SessionsSaved?.Invoke(); });
+        return true;
+    }
     [RelayCommand] private async Task DeleteConversationAsync()
     {
         if (IsThinking || IsListening || SelectedSession == null) return;
