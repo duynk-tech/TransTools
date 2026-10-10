@@ -82,7 +82,6 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _recognition;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanEditLearnerName))] private bool _isListening;
     public bool CanChangeSession => !IsThinking && !IsListening;
-    public bool CanAdjustSendDelay => !IsThinking;
     public bool CanEditLearnerName => !IsConversationActive && CanChangeSession;
     public string MicrophoneLabel => IsListening ? "Dừng thu" : "Nói bằng micro";
     partial void OnIsListeningChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(MicrophoneLabel)); }
@@ -112,7 +111,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [RelayCommand] private void CancelRecognition() => _recognition?.Cancel();
     public void Dispose() { _replyCancellation?.Cancel(); _recognition?.Cancel(); if (IsListening) { _recorder?.Dispose(); _recorder = null; IsListening = false; } }
 
-    partial void OnIsThinkingChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(CanAdjustSendDelay)); }
+    partial void OnIsThinkingChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); }
     public bool CanShowTranslation => !TargetLanguage.Contains("Việt", StringComparison.OrdinalIgnoreCase);
 
     public ConversationViewModel(Func<bool>? meetingBusy = null, TransTools.Services.Conversation.ConversationPreferencesStore? preferences = null)
