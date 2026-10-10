@@ -121,24 +121,29 @@ public sealed class VoiceService
             }
         } finally { _speakerGate.Release(); }
     }
-    public async Task SpeakAsync(string text, string language, string engine, double rate = 1)
+    public async Task SpeakAsync(string text, string language, string engine, double rate = 1, CancellationToken cancellationToken = default, double? sentencePause = null, double? paragraphPause = null)
     {
-        Stop(); var cts = new CancellationTokenSource(); _playback = cts;
+        Stop(); var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken); _playback = cts;
         bool entered = false;
         try {
             await _speakerGate.WaitAsync(cts.Token); entered = true;
-            if (engine == "Giọng cơ bản") { using var basic = new WindowsMediaTtsService(); await basic.SpeakAsync(text, language: language, token: cts.Token, rate: rate); return; }
-            // Bound playback memory to one phrase; begin reading before the entire paragraph is synthesized.
-            foreach (var part in CaptionTextSegmenter.Split(text)) {
-                cts.Token.ThrowIfCancellationRequested();
-                var bytes = await SynthesizeAsync(part, language, engine, rate, cts.Token);
-                using var stream = new MemoryStream(bytes);
-                using WaveStream reader = engine == "Edge" ? new Mp3FileReader(stream) : new WaveFileReader(stream);
-                cts.Token.ThrowIfCancellationRequested();
-                using var output = new WaveOutEvent(); output.Init(reader); output.Play();
-                while (output.PlaybackState == PlaybackState.Playing) await Task.Delay(50, cts.Token);
-            }
-        } catch (OperationCanceledException) { }
+            IReadOnlyList<ReadingPart> plan = sentencePause.HasValue || paragraphPause.HasValue
+                ? SpeechReadingPlan.Parts(text, sentencePause ?? .35, paragraphPause ?? .8)
+                : new[] { new ReadingPart(text, 0) };
+            await SpeechReadingPlan.PlayAsync(plan, async (phrase, token) => {
+                if (engine == "Giọng cơ bản") { using var basic = new WindowsMediaTtsService(); await basic.SpeakAsync(phrase, language: language, token: token, rate: rate); return; }
+                // Hold the playback gate for the whole reading plan, but keep only one phrase of audio in RAM.
+                foreach (var part in CaptionTextSegmenter.Split(phrase)) {
+                    token.ThrowIfCancellationRequested();
+                    var bytes = await SynthesizeAsync(part, language, engine, rate, token);
+                    using var stream = new MemoryStream(bytes);
+                    using WaveStream reader = engine == "Edge" ? new Mp3FileReader(stream) : new WaveFileReader(stream);
+                    token.ThrowIfCancellationRequested();
+                    using var output = new WaveOutEvent(); output.Init(reader); output.Play();
+                    while (output.PlaybackState == PlaybackState.Playing) await Task.Delay(50, token);
+                }
+            }, cts.Token);
+        } catch (OperationCanceledException) when (cts.IsCancellationRequested) { if (cancellationToken.CanBeCanceled) throw; }
         finally { if (entered) _speakerGate.Release(); if (_playback == cts) _playback = null; cts.Dispose(); }
     }
     public async Task ExportAsync(string text, string language, string engine, double rate, string destination, CancellationToken token)

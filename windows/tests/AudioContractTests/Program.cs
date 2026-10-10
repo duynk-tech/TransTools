@@ -20,6 +20,7 @@ foreach (var (language, prefix) in new[] { ("vi", "vi-VN"), ("Tiếng Việt", "
     Check(EdgeTtsService.VoiceForLanguage(language).StartsWith(prefix), "voice for " + language);
 
 SupertonicTests.Run();
+await ReadingPlanTests.RunAsync();
 
 var format = WaveFormat.CreateIeeeFloatWaveFormat(48000, 2);
 var input = new byte[48000 * 2 * 4];

@@ -53,6 +53,16 @@ internal static class Program
                         if (popup.IsOpen) throw new InvalidOperationException("Reading options must be collapsed initially");
                         options.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
                         if (!popup.IsOpen || popup.Child == null) throw new InvalidOperationException("Reading options did not open");
+                        var readingModel = (TextReaderViewModel)reader.DataContext;
+                        var sentenceSlider = (Slider)reader.FindName("SentencePauseSlider");
+                        var paragraphSlider = (Slider)reader.FindName("ParagraphPauseSlider");
+                        if (sentenceSlider.Maximum != 2 || paragraphSlider.Maximum != 4) throw new Exception("Reader pause ranges differ from macOS");
+                        var oldSentence = readingModel.SentencePause; var oldParagraph = readingModel.ParagraphPause;
+                        sentenceSlider.Value = .7; paragraphSlider.Value = 1.6; Pump();
+                        if (readingModel.SentencePause != .7 || readingModel.ParagraphPause != 1.6) throw new Exception("Reader pause controls did not reach their playback model");
+                        readingModel.IsBusy = true; Pump();
+                        if (sentenceSlider.IsEnabled || paragraphSlider.IsEnabled) throw new Exception("Reader pause controls changed during an active reading");
+                        readingModel.IsBusy = false; readingModel.SentencePause = oldSentence; readingModel.ParagraphPause = oldParagraph; Pump();
                         ValidateControlLayout((FrameworkElement)popup.Child, "Reading options");
                         CaptureElement((FrameworkElement)popup.Child, output, $"{width}-reader-options-popup.png");
                         Capture(window, output, $"{width}-reader-options.png");

@@ -34,6 +34,19 @@ public partial class TextReaderViewModel : ObservableObject
     private bool _isBusy;
     public bool CanExport => CanRead && Engine != "Giọng cơ bản";
     [ObservableProperty] private bool _normalizeReading = true;
+    [ObservableProperty] private double _sentencePause = .35;
+    [ObservableProperty] private double _paragraphPause = .8;
+    private readonly ReadingPreferencesStore _readingPreferences = new();
+    private bool _loadingReadingPreferences;
+    private void SaveReadingPreferences()
+    {
+        if (_loadingReadingPreferences) return;
+        try { _readingPreferences.Save(new(SentencePause, ParagraphPause, NormalizeReading)); }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException) { Status = "Chưa lưu được tùy chỉnh đọc. Bạn vẫn có thể nghe với lựa chọn hiện tại."; }
+    }
+    partial void OnNormalizeReadingChanged(bool value) => SaveReadingPreferences();
+    partial void OnSentencePauseChanged(double value) { var bounded = SpeechReadingPlan.Bound(value, 2, .35); if (bounded != value) { SentencePause = bounded; return; } SaveReadingPreferences(); }
+    partial void OnParagraphPauseChanged(double value) { var bounded = SpeechReadingPlan.Bound(value, 4, .8); if (bounded != value) { ParagraphPause = bounded; return; } SaveReadingPreferences(); }
     private CancellationTokenSource? _preparation;
     private bool _loadingPreference;
     private async Task<string> PrepareAsync(string source, CancellationToken token)
@@ -57,6 +70,9 @@ public partial class TextReaderViewModel : ObservableObject
     public TextReaderViewModel()
     {
         LoadPreference();
+        _loadingReadingPreferences = true;
+        try { var preference = _readingPreferences.Load(); SentencePause = preference.SentencePause; ParagraphPause = preference.ParagraphPause; NormalizeReading = preference.Normalize; }
+        finally { _loadingReadingPreferences = false; }
         VoicePreferences.Changed += code => {
             if (code != Language || IsBusy) return;
             var dispatcher = System.Windows.Application.Current?.Dispatcher;
@@ -70,17 +86,20 @@ public partial class TextReaderViewModel : ObservableObject
     partial void OnEngineChanged(string value) { OnPropertyChanged(nameof(CanExport)); ExportCommand.NotifyCanExecuteChanged(); OnPropertyChanged(nameof(CanChangeRate)); if (value == "VieNeu v3 Turbo") Rate = 1; if (!_loadingPreference) VoicePreferences.Save(Language, value, Rate); }
     [RelayCommand(CanExecute = nameof(CanRead))] private async Task ReadAsync()
     {
-        if (IsBusy || string.IsNullOrWhiteSpace(Text)) return; IsBusy = true;
+        if (IsBusy || string.IsNullOrWhiteSpace(Text)) return;
+        var source = Text; var language = Language; var engine = Engine; var rate = Rate; var sentencePause = SentencePause; var paragraphPause = ParagraphPause;
+        IsBusy = true;
         try {
-            _preparation = new(); var spoken = await PrepareAsync(Text, _preparation.Token); _preparation.Token.ThrowIfCancellationRequested();
-            Status = "Đang đọc..."; await VoiceService.Shared.SpeakAsync(spoken, Language, Engine, Rate);
+            _preparation = new(); var spoken = await PrepareAsync(source, _preparation.Token); _preparation.Token.ThrowIfCancellationRequested();
+            if (Text != source || Language != language) { Status = "Nội dung đã thay đổi · nhấn Đọc lại."; return; }
+            Status = "Đang đọc..."; await VoiceService.Shared.SpeakAsync(spoken, language, engine, rate, _preparation.Token, sentencePause, paragraphPause);
             Status = _preparation.IsCancellationRequested ? "Đã dừng" : "Đã hoàn tất";
         }
         catch (OperationCanceledException) { Status = "Đã dừng"; }
         catch (Exception ex) { Status = ex.Message; }
         finally { _preparation?.Dispose(); _preparation = null; IsBusy = false; }
     }
-    [RelayCommand] private void Stop() { _preparation?.Cancel(); VoiceService.Shared.Stop(); }
+    [RelayCommand] private void Stop() { _preparation?.Cancel(); }
     [RelayCommand(CanExecute = nameof(CanExport))] private async Task ExportAsync()
     {
         if (IsBusy || !CanExport || string.IsNullOrWhiteSpace(Text)) return;
