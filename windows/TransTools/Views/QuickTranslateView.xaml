@@ -7,7 +7,7 @@
             </Grid>
 <Grid><Grid x:Name="TranslationContent"><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
 <Grid Margin="0,0,0,16"><Popup x:Name="ContextPopup" PlacementTarget="{Binding ElementName=ContextButton}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True"><Border Background="White" BorderBrush="#B5D2C9" BorderThickness="1" CornerRadius="12" Padding="16" Width="390"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="130" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions><TextBlock Text="Chuyên ngành" VerticalAlignment="Center" /><ComboBox Grid.Column="1" SelectedValuePath="Content" SelectedValue="{Binding SelectedDomain}" Width="165" Margin="0">
-                        <ComboBoxItem Content="Thông dụng" IsSelected="True" />
+                        <ComboBoxItem Content="Thông dụng" />
                         <ComboBoxItem Content="Công nghệ thông tin" />
                         <ComboBoxItem Content="Y tế &amp; Sinh học" />
                         <ComboBoxItem Content="Kinh tế &amp; Tài chính" />
