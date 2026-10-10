@@ -119,6 +119,35 @@ internal static class Program
                 liveSave.Captions.Clear();
                 if (liveSave.SaveSessionCommand.CanExecute(null) || liveSave.ExportMeetingCommand.CanExecute("TXT") || liveSave.ClearCaptionsCommand.CanExecute(null)) throw new Exception("Empty meeting exposes data actions");
             } finally { if (Directory.Exists(meetingSaveFolder)) Directory.Delete(meetingSaveFolder, true); }
+            var readingRequests = new List<CaptionReadingRequest>();
+            var readingTokens = new List<CancellationToken>();
+            var readingGates = new[] { new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously), new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously) };
+            using (var captionReader = new MeetingViewModel(readCaption: (request, token) => { readingRequests.Add(request); readingTokens.Add(token); return readingGates[readingRequests.Count - 1].Task; })) {
+                captionReader.SourceLanguage = "ja"; captionReader.TargetLanguage = "vi";
+                var sampleCaption = new Caption { Original = "こんにちは", Vietnamese = "Xin chào" };
+                var sourceReading = captionReader.SpeakCaptionOriginalCommand.ExecuteAsync(sampleCaption);
+                if (captionReader.ReadingCaptionId != sampleCaption.Id || captionReader.ReadingTranslation || readingRequests[0].Text != sampleCaption.Original || readingRequests[0].Language != "ja") throw new Exception("Source caption reading did not preserve text/language or set playback state");
+                var translatedReading = captionReader.SpeakCaptionTranslationCommand.ExecuteAsync(sampleCaption);
+                if (!readingTokens[0].IsCancellationRequested || !captionReader.ReadingTranslation || readingRequests[1].Text != sampleCaption.Vietnamese || readingRequests[1].Language != "vi") throw new Exception("Translation caption reading did not cancel source playback and route the selected language");
+                // The old reader deliberately ignores cancellation: it must not clear newer playback state.
+                readingGates[0].SetResult(); Await(sourceReading);
+                if (captionReader.ReadingCaptionId != sampleCaption.Id || !captionReader.ReadingTranslation) throw new Exception("Late caption reading completion cleared the new selection");
+                Await(captionReader.SpeakCaptionTranslationCommand.ExecuteAsync(sampleCaption));
+                if (!readingTokens[1].IsCancellationRequested || captionReader.ReadingCaptionId != null) throw new Exception("Second click did not stop caption playback");
+                readingGates[1].SetResult(); Await(translatedReading);
+                captionReader.CopyCaptionOriginalCommand.Execute(sampleCaption);
+                if (Clipboard.GetText() != sampleCaption.Original) throw new Exception("Copy source altered caption text");
+                captionReader.CopyCaptionTranslationCommand.Execute(sampleCaption);
+                if (Clipboard.GetText() != sampleCaption.Vietnamese) throw new Exception("Copy translation altered caption text");
+                captionReader.IsRecording = true;
+                Await(captionReader.SpeakCaptionOriginalCommand.ExecuteAsync(sampleCaption));
+                if (readingRequests.Count != 2 || !captionReader.EarphoneStatus.Contains("tai nghe")) throw new Exception("Active meeting read without a safe output device reached playback");
+                captionReader.IsRecording = false; captionReader.IsPreparing = true;
+                if (captionReader.SpeakCaptionOriginalCommand.CanExecute(sampleCaption)) throw new Exception("Caption playback is enabled while preparing capture");
+                captionReader.IsPreparing = false; captionReader.Dispose();
+                Await(captionReader.SpeakCaptionOriginalCommand.ExecuteAsync(sampleCaption));
+                if (readingRequests.Count != 2) throw new Exception("Disposed meeting started caption playback");
+            }
             CheckConversationHelp();
             var background = (Button)window.FindName("BackgroundButton");
             foreach (var mode in new[] { "morning", "noon", "afternoon", "night", "mint" }) {
@@ -200,9 +229,27 @@ internal static class Program
                             var hasOriginal = visibleText.Contains(snapshot[0].Original);
                             var hasTranslation = visibleText.Contains(snapshot[0].Vietnamese);
                             if (hasOriginal != (mode != "Bản dịch") || hasTranslation != (mode != "Tiếng gốc")) throw new Exception("Meeting display mode did not update existing captions: " + mode);
+                            var actionNames = Descendants(meetingView).OfType<Button>().Where(button => button.IsVisible && button.CommandParameter is Caption).Select(System.Windows.Automation.AutomationProperties.GetName).ToArray();
+                            if (actionNames.Contains("Nghe câu gốc") != (mode != "Bản dịch") || actionNames.Contains("Nghe bản dịch") != (mode != "Tiếng gốc")) throw new Exception("Caption actions do not follow display mode");
+                            var languageBadges = visibleText.Where(text => text is "EN" or "VI").ToArray();
+                            if (languageBadges.Contains("EN") != (mode != "Bản dịch") || languageBadges.Contains("VI") != (mode != "Tiếng gốc")) throw new Exception("Caption language badges do not follow display mode");
                             if (!snapshot.SequenceEqual(meeting.Captions.Select(c => (c.Id, c.Original, c.Vietnamese)))) throw new Exception("Display mode modified stored captions");
                             if (width == 1280) Capture(window, output, "meeting-display-" + meeting.DisplayModeKey + ".png");
                         }
+                        meeting.SelectedDisplayMode = "Song ngữ";
+                        var pendingCaption = new Caption { Start = 99, End = 103, Original = "Please wait for the translated sentence." };
+                        meeting.Captions.Add(pendingCaption); Pump();
+                        var captionList = (ListBox)meetingView.FindName("CaptionList");
+                        captionList.ScrollIntoView(pendingCaption); captionList.UpdateLayout(); Pump();
+                        var pendingCard = (FrameworkElement)captionList.ItemContainerGenerator.ContainerFromItem(pendingCaption);
+                        if (!Descendants(pendingCard).OfType<TextBlock>().Any(text => text.IsVisible && text.Text == "Đang dịch...") || Descendants(pendingCard).OfType<Button>().Count(button => button.IsVisible) != 2) throw new Exception("Pending caption duplicates source as translation or exposes empty translation actions");
+                        Capture(window, output, $"{width}-meeting-pending-card.png");
+                        pendingCaption.Vietnamese = "Xin chờ câu đã được dịch."; Pump();
+                        if (Descendants(pendingCard).OfType<Button>().Count(button => button.IsVisible) != 4 || Descendants(pendingCard).OfType<TextBlock>().Any(text => text.IsVisible && text.Text == "Đang dịch...")) throw new Exception("Arriving translation did not update its actions and placeholder");
+                        var translatedText = Descendants(pendingCard).OfType<TextBlock>().First(text => text.Text == pendingCaption.Vietnamese);
+                        if (translatedText.FontSize != 15 || translatedText.FontWeight != FontWeights.SemiBold) throw new Exception("Translation lost Mac text emphasis");
+                        Capture(window, output, $"{width}-meeting-ready-card.png");
+                        meeting.Captions.Remove(pendingCaption); Pump();
                         meeting.IsRecording = true; Pump();
                         if (((Button)meetingView.FindName("ClearMeetingButton")).IsVisible || ((Button)meetingView.FindName("ExportWordButton")).IsEnabled || !((Button)meetingView.FindName("SaveMeetingButton")).IsEnabled) throw new Exception("Live meeting footer does not match Mac action states");
                         Capture(window, output, $"{width}-meeting-active-footer.png");

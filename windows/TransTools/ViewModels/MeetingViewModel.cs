@@ -11,11 +11,18 @@ using TransTools.Services.Storage;
 using TransTools.Services.Translation;
 namespace TransTools.ViewModels;
 
+public sealed record CaptionReadingRequest(string Text, string Language, string? DeviceId);
+
 public partial class MeetingViewModel : ObservableObject, IDisposable
 {
     private readonly WasapiAudioCaptureService _audio = new();
     private readonly WhisperSttService _stt = new();
     private readonly string? _sessionDirectory;
+    private readonly Func<CaptionReadingRequest, CancellationToken, Task>? _readCaption;
+    private CancellationTokenSource? _captionSpeechCancellation;
+    private bool _disposed;
+    [ObservableProperty] private Guid? _readingCaptionId;
+    [ObservableProperty] private bool _readingTranslation;
     private readonly GoogleTranslationService _google = new();
     private readonly SecureCredentialStore _credentials = new();
     private readonly object _lock = new();
@@ -40,8 +47,8 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _prepareCancellation;
     public bool CanConfigureMeeting => !IsBusy;
     public bool CanToggleRecording => !IsStopping;
-    partial void OnIsPreparingChanged(bool value) { NotifyMeetingActions(); OnPropertyChanged(nameof(IsBusy)); OnPropertyChanged(nameof(CanConfigureMeeting)); }
-    partial void OnIsRecordingChanged(bool value) { NotifyMeetingActions(); OnPropertyChanged(nameof(IsBusy)); OnPropertyChanged(nameof(CanConfigureMeeting)); }
+    partial void OnIsPreparingChanged(bool value) { if (value) CancelCaptionReading(); NotifyMeetingActions(); OnPropertyChanged(nameof(IsBusy)); OnPropertyChanged(nameof(CanConfigureMeeting)); }
+    partial void OnIsRecordingChanged(bool value) { CancelCaptionReading(); NotifyMeetingActions(); OnPropertyChanged(nameof(IsBusy)); OnPropertyChanged(nameof(CanConfigureMeeting)); }
     partial void OnIsStoppingChanged(bool value) { NotifyMeetingActions(); OnPropertyChanged(nameof(IsBusy)); OnPropertyChanged(nameof(CanConfigureMeeting)); OnPropertyChanged(nameof(CanToggleRecording)); }
     [RelayCommand] public void CancelPreparation() => _prepareCancellation?.Cancel();
     private volatile bool _flushPresentation;
@@ -73,7 +80,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     public void RefreshPlaybackDevices()
     {
         var selected = SelectedPlaybackDevice?.Id;
-        _refreshingPlaybackDevices = true; StopAutomaticReader();
+        _refreshingPlaybackDevices = true; CancelCaptionReading(); StopAutomaticReader();
         try {
             var devices = _playbackDeviceProvider();
             PlaybackDevices.Clear(); foreach (var device in devices) PlaybackDevices.Add(device);
@@ -86,7 +93,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     partial void OnSelectedPlaybackDeviceChanged(PlaybackDevice? value)
     {
         if (_refreshingPlaybackDevices) return;
-        StopAutomaticReader();
+        CancelCaptionReading(); StopAutomaticReader();
         if (AutomaticReading) StartAutomaticReader();
     }
     partial void OnAutomaticReadingChanged(bool value)
@@ -98,6 +105,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     private void StopAutomaticReader() { _readingRevision++; _speechQueue?.Dispose(); _speechQueue = null; }
     private void StartAutomaticReader()
     {
+        if (_disposed || _captionSpeechCancellation != null) return;
         if (SelectedPlaybackDevice == null) { AutomaticReading = false; EarphoneStatus = "Chọn thiết bị nghe trước khi bật đọc tự động."; return; }
         if (!IsRecording) { EarphoneStatus = "Sẽ đọc câu mới khi cuộc họp bắt đầu."; return; }
         if (!TransTools.Services.Audio.PlaybackDevices.CanRead(_sessionSystemAudio, _audio.CapturedDeviceId, SelectedPlaybackDevice.Id)) {
@@ -111,12 +119,68 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         }, error => Ui(() => { if (revision != _readingRevision) return; AutomaticReading = false; EarphoneStatus = "Đã dừng đọc: " + error.Message; }));
         EarphoneStatus = "Đọc câu mới qua thiết bị đã chọn; bỏ câu chờ cũ nếu giọng đọc không theo kịp.";
     }
-    [RelayCommand] private void StopEarphoneReading() { AutomaticReading = false; EarphoneStatus = "Đã dừng đọc tai nghe."; }
+    [RelayCommand] private void StopEarphoneReading() { CancelCaptionReading(); AutomaticReading = false; EarphoneStatus = "Đã dừng đọc tai nghe."; }
     private void EnqueueSpeech(Caption caption)
     {
         if (!AutomaticReading || SelectedPlaybackDevice == null || !IsRecording) return;
         var original = ReadTarget == "Tiếng gốc" || DisplayModeKey == "original" || string.IsNullOrWhiteSpace(caption.Vietnamese);
         _speechQueue?.Enqueue(new MeetingSpeechRequest(original ? caption.Original : caption.Vietnamese, original ? _sessionSource == "auto" ? "en" : _sessionSource : _sessionTarget, SelectedPlaybackDevice.Id));
+    }
+    public bool CanListenOriginal(Caption? caption) => !_disposed && !IsPreparing && !IsStopping && !string.IsNullOrWhiteSpace(caption?.Original);
+    public bool CanListenTranslation(Caption? caption) => !_disposed && !IsPreparing && !IsStopping && !string.IsNullOrWhiteSpace(caption?.Vietnamese);
+    [RelayCommand(AllowConcurrentExecutions = true, CanExecute = nameof(CanListenOriginal))]
+    private Task SpeakCaptionOriginalAsync(Caption? caption) => ReadCaptionAsync(caption, false);
+    [RelayCommand(AllowConcurrentExecutions = true, CanExecute = nameof(CanListenTranslation))]
+    private Task SpeakCaptionTranslationAsync(Caption? caption) => ReadCaptionAsync(caption, true);
+    [RelayCommand] private void CopyCaptionOriginal(Caption? caption) => CopyCaptionText(caption?.Original);
+    [RelayCommand] private void CopyCaptionTranslation(Caption? caption) => CopyCaptionText(caption?.Vietnamese);
+    private void CopyCaptionText(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return;
+        try { System.Windows.Clipboard.SetText(text); EarphoneStatus = "Đã sao chép"; }
+        catch (Exception ex) { EarphoneStatus = "Chưa sao chép được: " + ex.Message; }
+    }
+    private void CancelCaptionReading()
+    {
+        _captionSpeechCancellation?.Cancel();
+        _captionSpeechCancellation = null;
+        ReadingCaptionId = null;
+    }
+    private async Task ReadCaptionAsync(Caption? caption, bool translation)
+    {
+        if (caption == null || !(translation ? CanListenTranslation(caption) : CanListenOriginal(caption))) return;
+        if (ReadingCaptionId == caption.Id && ReadingTranslation == translation) {
+            CancelCaptionReading();
+            if (AutomaticReading && IsRecording) StartAutomaticReader();
+            return;
+        }
+        if (OtherAudioBusy?.Invoke() == true) { EarphoneStatus = "Kết thúc tác vụ âm thanh đang chạy trước khi nghe câu."; return; }
+        var device = SelectedPlaybackDevice?.Id;
+        if (IsRecording && !TransTools.Services.Audio.PlaybackDevices.CanRead(_sessionSystemAudio, _audio.CapturedDeviceId, device)) {
+            EarphoneStatus = "Chọn tai nghe khác nguồn âm thanh đang thu trước khi nghe câu."; return;
+        }
+        CancelCaptionReading(); StopAutomaticReader();
+        using var cancellation = new CancellationTokenSource();
+        _captionSpeechCancellation = cancellation;
+        ReadingTranslation = translation; ReadingCaptionId = caption.Id;
+        var text = translation ? caption.Vietnamese : caption.Original;
+        var language = translation ? TargetLanguage : SourceLanguage == "auto" ? "en" : SourceLanguage;
+        try {
+            var request = new CaptionReadingRequest(text, language, device);
+            if (_readCaption != null) await _readCaption(request, cancellation.Token);
+            else {
+                var preference = VoicePreferences.Get(language);
+                if (device != null) await VoiceService.Shared.SpeakOnDeviceAsync(text, language, preference, device, cancellation.Token);
+                else await VoiceService.Shared.SpeakAsync(text, language, preference.Engine, preference.Rate, cancellation.Token);
+            }
+        } catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+        catch (Exception ex) { if (ReferenceEquals(_captionSpeechCancellation, cancellation)) EarphoneStatus = "Chưa đọc được câu: " + ex.Message; }
+        finally {
+            if (ReferenceEquals(_captionSpeechCancellation, cancellation)) {
+                _captionSpeechCancellation = null; ReadingCaptionId = null;
+                if (!_disposed && AutomaticReading && IsRecording) StartAutomaticReader();
+            }
+        }
     }
     public string[] DisplayModes { get; } = ["Song ngữ", "Tiếng gốc", "Bản dịch"];
     public string DisplayModeKey => TransTools.Services.Experience.SubtitlePreferences.Shared.DisplayMode;
@@ -157,10 +221,10 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     public event Action<Caption>? OnCaptionPresented;
     public event Action<Caption>? OnCaptionIncoming;
     public event Action<MeetingSession>? OnSessionSaved;
-    public MeetingViewModel(Func<PlaybackDevice[]>? playbackDeviceProvider = null, string? sessionDirectory = null)
+    public MeetingViewModel(Func<PlaybackDevice[]>? playbackDeviceProvider = null, string? sessionDirectory = null, Func<CaptionReadingRequest, CancellationToken, Task>? readCaption = null)
     {
         _playbackDeviceProvider = playbackDeviceProvider ?? TransTools.Services.Audio.PlaybackDevices.List;
-        _sessionDirectory = sessionDirectory;
+        _sessionDirectory = sessionDirectory; _readCaption = readCaption;
         Captions.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(CanExportMeeting)); ExportMeetingCommand.NotifyCanExecuteChanged(); NotifyMeetingActions(); };
         TransTools.Services.Experience.SubtitlePreferences.Shared.Changed += DisplayPreferencesChanged;
         _audio.OnAudioLevelChanged += level => Ui(() => AudioLevel = level);
@@ -239,7 +303,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     public bool CanClearMeeting => Captions.Count > 0 && !IsBusy;
     private void NotifyMeetingActions()
     {
-        OnPropertyChanged(nameof(CanManageMeeting)); OnPropertyChanged(nameof(CanClearMeeting)); OnPropertyChanged(nameof(CanExportMeeting)); SaveSessionCommand.NotifyCanExecuteChanged(); ClearCaptionsCommand.NotifyCanExecuteChanged(); ExportMeetingCommand.NotifyCanExecuteChanged();
+        SpeakCaptionOriginalCommand.NotifyCanExecuteChanged(); SpeakCaptionTranslationCommand.NotifyCanExecuteChanged(); OnPropertyChanged(nameof(CanManageMeeting)); OnPropertyChanged(nameof(CanClearMeeting)); OnPropertyChanged(nameof(CanExportMeeting)); SaveSessionCommand.NotifyCanExecuteChanged(); ClearCaptionsCommand.NotifyCanExecuteChanged(); ExportMeetingCommand.NotifyCanExecuteChanged();
     }
     [RelayCommand(CanExecute = nameof(CanClearMeeting))] public async Task ClearCaptionsAsync()
     {
@@ -357,6 +421,8 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         }
     }
     public void Dispose() {
+        if (_disposed) return;
+        _disposed = true; CancelCaptionReading();
         TransTools.Services.Experience.SubtitlePreferences.Shared.Changed -= DisplayPreferencesChanged;
         StopAutomaticReader(); _prepareCancellation?.Cancel(); _cts?.Cancel(); _audio.Dispose();
         var pending = _processing ?? Task.CompletedTask;
