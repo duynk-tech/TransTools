@@ -22,6 +22,14 @@ internal static class Program
             if (CaptionDisplayTextConverter.Select("source", "translated", "translation", false) != "translated" || CaptionDisplayTextConverter.Select("source", "", "translation", false) != "source" || CaptionDisplayTextConverter.Select("source", "translated", "original", true) != "") throw new Exception("Caption display fallback is incorrect");
             CheckMeetingSpeechQueue();
             var app = new TransTools.App(); app.InitializeComponent();
+            var connected = true;
+            using (var deviceFixture = new MeetingViewModel(() => connected ? [new("fixture-device", "USB tai nghe")] : [])) {
+                deviceFixture.RefreshPlaybackDevices(); deviceFixture.SelectedPlaybackDevice = deviceFixture.PlaybackDevices[0]; deviceFixture.AutomaticReading = true;
+                deviceFixture.RefreshPlaybackDevices();
+                if (!deviceFixture.AutomaticReading || deviceFixture.SelectedPlaybackDevice?.Id != "fixture-device") throw new Exception("Refreshing a connected device disabled automatic reading");
+                connected = false; deviceFixture.RefreshPlaybackDevices();
+                if (deviceFixture.AutomaticReading || deviceFixture.SelectedPlaybackDevice != null) throw new Exception("Disconnected earphone remained enabled");
+            }
             var window = new TransTools.MainWindow(); app.MainWindow = window; window.Show();
             System.Threading.SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(app.Dispatcher));
             var background = (Button)window.FindName("BackgroundButton");

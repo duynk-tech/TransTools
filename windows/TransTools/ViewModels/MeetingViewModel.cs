@@ -57,6 +57,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _sourceLanguage = "en";
     [ObservableProperty] private string _targetLanguage = "vi";
     [ObservableProperty] private string _translationMode = "Google";
+    private readonly Func<PlaybackDevice[]> _playbackDeviceProvider;
     public ObservableCollection<PlaybackDevice> PlaybackDevices { get; } = new();
     [ObservableProperty] private PlaybackDevice? _selectedPlaybackDevice;
     [ObservableProperty] private bool _automaticReading;
@@ -66,19 +67,24 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     public string EarphoneLabel => AutomaticReading ? "Tai nghe: BẬT" : "Tai nghe";
     private MeetingSpeechQueue? _speechQueue;
     private int _readingRevision;
+    private bool _refreshingPlaybackDevices;
     [RelayCommand] private void RefreshEarphones() => RefreshPlaybackDevices();
     public void RefreshPlaybackDevices()
     {
         var selected = SelectedPlaybackDevice?.Id;
+        _refreshingPlaybackDevices = true; StopAutomaticReader();
         try {
-            var devices = TransTools.Services.Audio.PlaybackDevices.List();
+            var devices = _playbackDeviceProvider();
             PlaybackDevices.Clear(); foreach (var device in devices) PlaybackDevices.Add(device);
             SelectedPlaybackDevice = PlaybackDevices.FirstOrDefault(device => device.Id == selected);
             EarphoneStatus = devices.Length == 0 ? "Chưa có thiết bị phát âm thanh. Kết nối tai nghe rồi làm mới." : "Giọng đọc dùng tùy chọn đã lưu trong Giọng đọc & Phát âm.";
-        } catch { EarphoneStatus = "Chưa đọc được danh sách thiết bị. Kết nối tai nghe rồi làm mới."; }
+        } catch { AutomaticReading = false; EarphoneStatus = "Chưa đọc được danh sách thiết bị. Kết nối tai nghe rồi làm mới."; }
+        finally { _refreshingPlaybackDevices = false; }
+        if (AutomaticReading) StartAutomaticReader();
     }
     partial void OnSelectedPlaybackDeviceChanged(PlaybackDevice? value)
     {
+        if (_refreshingPlaybackDevices) return;
         StopAutomaticReader();
         if (AutomaticReading) StartAutomaticReader();
     }
@@ -147,8 +153,9 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     public event Action<Caption>? OnCaptionPresented;
     public event Action<Caption>? OnCaptionIncoming;
     public event Action<MeetingSession>? OnSessionSaved;
-    public MeetingViewModel()
+    public MeetingViewModel(Func<PlaybackDevice[]>? playbackDeviceProvider = null)
     {
+        _playbackDeviceProvider = playbackDeviceProvider ?? TransTools.Services.Audio.PlaybackDevices.List;
         Captions.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(CanExportMeeting)); ExportMeetingCommand.NotifyCanExecuteChanged(); NotifyMeetingActions(); };
         TransTools.Services.Experience.SubtitlePreferences.Shared.Changed += DisplayPreferencesChanged;
         _audio.OnAudioLevelChanged += level => Ui(() => AudioLevel = level);
