@@ -18,3 +18,8 @@ node_modules/
 windows/build/
 windows/**/bin/
 windows/**/obj/
+
+windows/native-build/
+windows/test-models/
+windows/test-results/
+windows/probe-build/

@@ -1,0 +1,324 @@
+[
+  {
+    "Character": "b",
+    "RecordingId": "b",
+    "Transcription": "Không bật hơi",
+    "Tip": "Khép chặt hai môi lại để chặn luồng hơi, sau đó mở môi ra nhanh để âm thoát ra. Luồng hơi rất nhẹ, không bật hơi.",
+    "Example": "爸爸 · bàba · bố, ba"
+  },
+  {
+    "Character": "p",
+    "RecordingId": "p",
+    "Transcription": "Bật hơi mạnh",
+    "Tip": "Tương tự âm 'b', khép chặt hai môi, nhưng khi mở môi ra thì bật một luồng hơi thật mạnh ra ngoài.",
+    "Example": "跑 · pǎo · chạy"
+  },
+  {
+    "Character": "m",
+    "RecordingId": "m",
+    "Transcription": "Âm mũi",
+    "Tip": "Khép chặt hai môi, để luồng hơi đi qua khoang mũi và tạo thành âm m mềm mại.",
+    "Example": "妈妈 · māma · mẹ, má"
+  },
+  {
+    "Character": "f",
+    "RecordingId": "f",
+    "Transcription": "Âm xát",
+    "Tip": "Răng hàm trên chạm nhẹ vào môi dưới, đẩy luồng hơi qua khe hở để tạo ra âm ma sát gió f.",
+    "Example": "饭 · fàn · cơm, bữa ăn"
+  },
+  {
+    "Character": "d",
+    "RecordingId": "d",
+    "Transcription": "Không bật hơi",
+    "Tip": "Đầu lưỡi chạm vào phần lợi cứng ngay sau răng cửa trên để chặn hơi, sau đó hạ lưỡi xuống nhanh để âm thoát ra. Không bật hơi.",
+    "Example": "弟弟 · dìdi · em trai"
+  },
+  {
+    "Character": "t",
+    "RecordingId": "t",
+    "Transcription": "Bật hơi mạnh",
+    "Tip": "Tương tự âm 'd', đầu lưỡi chạm vào lợi cứng sau răng trên, nhưng khi hạ lưỡi xuống thì bật một luồng hơi mạnh ra ngoài (như th tiếng Việt nhưng bật mạnh hơn).",
+    "Example": "她 · tā · cô ấy, chị ấy"
+  },
+  {
+    "Character": "n",
+    "RecordingId": "n",
+    "Transcription": "Âm mũi",
+    "Tip": "Đầu lưỡi áp vào phần lợi cứng sau răng trên, để luồng hơi đi hoàn toàn qua khoang mũi.",
+    "Example": "你 · nǐ · bạn, anh, chị"
+  },
+  {
+    "Character": "l",
+    "RecordingId": "l",
+    "Transcription": "Âm bên",
+    "Tip": "Đầu lưỡi chạm vào phần lợi cứng sau răng trên, nhưng luồng hơi được thoát ra từ hai bên cạnh lưỡi.",
+    "Example": "来 · lái · đến, lại"
+  },
+  {
+    "Character": "g",
+    "RecordingId": "g",
+    "Transcription": "Không bật hơi",
+    "Tip": "Nâng cuống lưỡi lên chạm vào ngạc mềm để chặn hơi, sau đó hạ nhanh cuống lưỡi để âm thoát ra nhẹ nhàng. Đọc như c/k tiếng Việt.",
+    "Example": "哥哥 · gēge · anh trai"
+  },
+  {
+    "Character": "k",
+    "RecordingId": "k",
+    "Transcription": "Bật hơi mạnh",
+    "Tip": "Vị trí giống như âm 'g', nhưng bật luồng hơi mạnh từ cuống họng ra ngoài (kh tiếng Việt bật hơi mạnh).",
+    "Example": "看 · kàn · nhìn, xem"
+  },
+  {
+    "Character": "h",
+    "RecordingId": "h",
+    "Transcription": "Âm xát nhẹ",
+    "Tip": "Cuống lưỡi nâng nhẹ gần chạm ngạc mềm, luồng hơi ma sát đi ra ngoài nhẹ nhàng giữa âm h và kh.",
+    "Example": "喝 · hē · uống"
+  },
+  {
+    "Character": "j",
+    "RecordingId": "j",
+    "Transcription": "Không bật hơi",
+    "Tip": "Mặt lưỡi áp sát vào ngạc cứng, chặn hơi rồi hạ nhẹ để âm thoát ra. Không bật hơi (đọc gần như ch nhẹ).",
+    "Example": "家 · jiā · nhà, gia đình"
+  },
+  {
+    "Character": "q",
+    "RecordingId": "q",
+    "Transcription": "Bật hơi mạnh",
+    "Tip": "Vị trí lưỡi giống âm 'j', nhưng bật luồng hơi cực mạnh qua khe mặt lưỡi và vòm họng.",
+    "Example": "去 · qù · đi"
+  },
+  {
+    "Character": "x",
+    "RecordingId": "x",
+    "Transcription": "Âm xát",
+    "Tip": "Mặt lưỡi nâng gần ngạc cứng, đẩy hơi nhẹ nhàng qua khe hở tạo âm xát xì nhẹ (gần như x tiếng Việt).",
+    "Example": "谢谢 · xièxie · cảm ơn"
+  },
+  {
+    "Character": "z",
+    "RecordingId": "z",
+    "Transcription": "Không bật hơi",
+    "Tip": "Đầu lưỡi thẳng chạm nhẹ vào mặt sau răng cửa trên, mở nhẹ khe hở để âm thoát ra không bật hơi.",
+    "Example": "早 · zǎo · sớm, buổi sáng"
+  },
+  {
+    "Character": "c",
+    "RecordingId": "c",
+    "Transcription": "Bật hơi mạnh",
+    "Tip": "Vị trí giống âm 'z', nhưng bật luồng hơi mạnh ra trước kẽ răng.",
+    "Example": "菜 · cài · món ăn, rau"
+  },
+  {
+    "Character": "s",
+    "RecordingId": "s",
+    "Transcription": "Âm xát",
+    "Tip": "Đầu lưỡi gần mặt sau răng dưới, luồng hơi ma sát qua kẽ răng tạo âm s nhẹ xì xì.",
+    "Example": "三 · sān · số ba"
+  },
+  {
+    "Character": "zh",
+    "RecordingId": "zh",
+    "Transcription": "Uốn lưỡi, không bật hơi",
+    "Tip": "Đầu lưỡi cong lên chạm vào ngạc cứng phía sau lợi trên, thả lỏng mở nhẹ khe hở, không bật hơi (tr tiếng Việt miền Nam tròn vành).",
+    "Example": "中 · zhōng · ở giữa, Trung Quốc"
+  },
+  {
+    "Character": "ch",
+    "RecordingId": "ch",
+    "Transcription": "Uốn lưỡi, bật hơi mạnh",
+    "Tip": "Đầu lưỡi uốn cong như 'zh', nhưng bật mạnh một luồng hơi dứt khoát ra ngoài.",
+    "Example": "吃 · chī · ăn"
+  },
+  {
+    "Character": "sh",
+    "RecordingId": "sh",
+    "Transcription": "Uốn lưỡi, âm xát",
+    "Tip": "Đầu lưỡi cong lên gần ngạc cứng, luồng hơi ma sát thoát ra ngoài tạo âm s uốn lưỡi dày.",
+    "Example": "水 · shuǐ · nước"
+  },
+  {
+    "Character": "r",
+    "RecordingId": "r",
+    "Transcription": "Uốn lưỡi rung nhẹ",
+    "Tip": "Đầu lưỡi cong lên ngạc cứng như 'sh', nhưng dây thanh âm rung nhẹ (giữa r và gi).",
+    "Example": "热 · rè · nóng"
+  },
+  {
+    "Character": "y (i)",
+    "RecordingId": "y",
+    "Transcription": "Nguyên âm mở đầu i",
+    "Tip": "Khi đứng đầu âm tiết thay cho i, phát âm mượt mà như i dài.",
+    "Example": "一 · yī · số một"
+  },
+  {
+    "Character": "w (u)",
+    "RecordingId": "w",
+    "Transcription": "Nguyên âm mở đầu u",
+    "Tip": "Khi đứng đầu âm tiết thay cho u, tròn môi chu ra trước phát âm như u/qu.",
+    "Example": "五 · wǔ · số năm"
+  },
+  {
+    "Character": "a",
+    "RecordingId": "a",
+    "Transcription": "Miệng mở rộng",
+    "Tip": "Mở miệng rộng nhất, hạ lưỡi xuống vị trí thấp nhất, môi không tròn.",
+    "Example": "大 · dà · to, lớn"
+  },
+  {
+    "Character": "o",
+    "RecordingId": "o",
+    "Transcription": "Tròn môi",
+    "Tip": "Tròn môi lại, miệng mở ở mức vừa phải, phần sau của lưỡi hơi nâng lên (đọc như ô/ua).",
+    "Example": "我 · wǒ · tôi, mình"
+  },
+  {
+    "Character": "e",
+    "RecordingId": "e",
+    "Transcription": "Miệng dẹt",
+    "Tip": "Khóe miệng kéo dẹt sang hai bên, không tròn môi, miệng mở vừa phải (đọc như ưa/ơ).",
+    "Example": "喝 · hē · uống"
+  },
+  {
+    "Character": "i",
+    "RecordingId": "i",
+    "Transcription": "Miệng dẹt cười",
+    "Tip": "Khóe miệng kéo dẹt sang hai bên như đang cười, miệng chỉ mở khe hẹp, lưỡi đưa cao về phía trước.",
+    "Example": "一 · yī · số một"
+  },
+  {
+    "Character": "u",
+    "RecordingId": "u",
+    "Transcription": "Môi chu tròn",
+    "Tip": "Tròn môi và chu ra phía trước, miệng chỉ mở một khe nhỏ, phần sau của lưỡi nâng cao.",
+    "Example": "五 · wǔ · số năm"
+  },
+  {
+    "Character": "ü",
+    "RecordingId": "ü",
+    "Transcription": "Tròn môi lưỡi trước",
+    "Tip": "Giữ vị trí lưỡi của âm 'i', nhưng khẩu hình môi thì tròn và chu ra như âm 'u' (đọc uy).",
+    "Example": "女 · nǚ · nữ, phụ nữ"
+  },
+  {
+    "Character": "ai",
+    "RecordingId": "ai",
+    "Transcription": "Lướt từ a sang i",
+    "Tip": "Bắt đầu từ âm a (miệng rộng), nhanh chóng lướt lên vị trí âm i.",
+    "Example": "爱 · ài · yêu"
+  },
+  {
+    "Character": "ei",
+    "RecordingId": "ei",
+    "Transcription": "Lướt từ e sang i",
+    "Tip": "Bắt đầu từ âm e (miệng dẹt), nhanh chóng lướt lên vị trí âm i (như ê-i).",
+    "Example": "谁 · shéi · ai (người nào)"
+  },
+  {
+    "Character": "ao",
+    "RecordingId": "ao",
+    "Transcription": "Lướt từ a sang o",
+    "Tip": "Bắt đầu từ âm a (miệng rộng), sau đó lướt về vị trí âm o tròn môi.",
+    "Example": "高 · gāo · cao"
+  },
+  {
+    "Character": "ou",
+    "RecordingId": "ou",
+    "Transcription": "Lướt từ o sang u",
+    "Tip": "Bắt đầu từ âm o (tròn môi), sau đó lướt về vị trí âm u môi chu hơn (như âu).",
+    "Example": "口 · kǒu · miệng, cái"
+  },
+  {
+    "Character": "ia",
+    "RecordingId": "ia",
+    "Transcription": "Lướt từ i sang a",
+    "Tip": "Bắt đầu từ âm i, nhanh chóng lướt mở rộng miệng xuống âm a.",
+    "Example": "家 · jiā · gia đình, nhà"
+  },
+  {
+    "Character": "ie",
+    "RecordingId": "ie",
+    "Transcription": "Lướt từ i sang e",
+    "Tip": "Bắt đầu từ âm i, nhanh chóng lướt sang âm e (như iê).",
+    "Example": "姐 · jiě · chị gái"
+  },
+  {
+    "Character": "ua",
+    "RecordingId": "ua",
+    "Transcription": "Lướt từ u sang a",
+    "Tip": "Bắt đầu từ âm u (tròn môi), nhanh chóng mở rộng sang âm a.",
+    "Example": "花 · huā · bông hoa"
+  },
+  {
+    "Character": "uo",
+    "RecordingId": "uo",
+    "Transcription": "Lướt từ u sang o",
+    "Tip": "Bắt đầu từ âm u tròn môi, nhanh chóng chuyển sang âm o.",
+    "Example": "说 · shuō · nói"
+  },
+  {
+    "Character": "üe",
+    "RecordingId": "üe",
+    "Transcription": "Lướt từ ü sang e",
+    "Tip": "Bắt đầu từ âm ü (tròn môi, lưỡi trước), nhanh chóng lướt sang âm e.",
+    "Example": "学 · xué · học tập"
+  },
+  {
+    "Character": "an",
+    "RecordingId": "an",
+    "Transcription": "Âm mũi trước",
+    "Tip": "Phát âm a rồi nâng đầu lưỡi chạm lợi cứng sau răng trên chặn hơi vào mũi.",
+    "Example": "看 · kàn · nhìn, xem"
+  },
+  {
+    "Character": "en",
+    "RecordingId": "en",
+    "Transcription": "Âm mũi trước",
+    "Tip": "Phát âm e rồi nâng đầu lưỡi chạm lợi cứng sau răng trên (như ơn).",
+    "Example": "很 · hěn · rất"
+  },
+  {
+    "Character": "in",
+    "RecordingId": "in",
+    "Transcription": "Âm mũi trước",
+    "Tip": "Phát âm i rồi nâng đầu lưỡi chạm lợi cứng sau răng trên.",
+    "Example": "心 · xīn · trái tim"
+  },
+  {
+    "Character": "ang",
+    "RecordingId": "ang",
+    "Transcription": "Âm mũi sau",
+    "Tip": "Phát âm a rồi nâng cuống lưỡi chạm ngạc mềm, miệng vẫn mở rộng.",
+    "Example": "忙 · máng · bận rộn"
+  },
+  {
+    "Character": "eng",
+    "RecordingId": "eng",
+    "Transcription": "Âm mũi sau",
+    "Tip": "Phát âm e rồi nâng cuống lưỡi chạm ngạc mềm chặn hơi ra mũi (như âng).",
+    "Example": "冷 · lěng · lạnh"
+  },
+  {
+    "Character": "ing",
+    "RecordingId": "ing",
+    "Transcription": "Âm mũi sau",
+    "Tip": "Phát âm i rồi nâng cuống lưỡi chạm ngạc mềm.",
+    "Example": "听 · tīng · nghe"
+  },
+  {
+    "Character": "ong",
+    "RecordingId": "ong",
+    "Transcription": "Âm mũi sau",
+    "Tip": "Tròn môi, phần sau lưỡi nâng lên chạm ngạc mềm (như ung).",
+    "Example": "红 · hóng · màu đỏ"
+  },
+  {
+    "Character": "er",
+    "RecordingId": "er",
+    "Transcription": "Uốn cong lưỡi",
+    "Tip": "Bắt đầu phát âm như âm e, sau đó đồng thời cuốn đầu lưỡi lên trên và về phía sau.",
+    "Example": "二 · èr · số hai"
+  }
+]

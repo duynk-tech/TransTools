@@ -5,6 +5,9 @@ namespace TransTools.Models;
 
 public class MeetingSession
 {
+    [System.Text.Json.Serialization.JsonIgnore] public bool IsConversation { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore] public string SourceLanguage { get; set; } = "en";
+    [System.Text.Json.Serialization.JsonIgnore] public string KindLabel => IsConversation ? "Trò chuyện" : "Cuộc họp";
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Title { get; set; } = "Cuộc họp mới";
     public DateTime CreatedAt { get; set; } = DateTime.Now;
@@ -14,6 +17,6 @@ public class MeetingSession
     public List<Caption> Captions { get; set; } = new();
     public string? Summary { get; set; }
 
-    public string FormattedDuration => TimeSpan.FromSeconds(DurationSeconds).ToString(@"hh\:mm\:ss");
+    public string FormattedDuration => IsConversation ? "Hội thoại đã lưu" : TimeSpan.FromSeconds(DurationSeconds).ToString(@"hh\:mm\:ss");
     public string FormattedDate => CreatedAt.ToString("HH:mm • dd/MM/yyyy");
 }

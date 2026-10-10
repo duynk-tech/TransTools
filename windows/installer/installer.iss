@@ -13,13 +13,15 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={autopf}\{#MyAppName}
+DefaultDirName={localappdata}\Programs\{#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=..\build
 OutputBaseFilename=TransTools-Setup
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=..\TransTools\Resources\AppIcon.ico
+ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=lowest
 
@@ -31,7 +33,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "startupicon"; Description: "Khởi động cùng Windows"; GroupDescription: "Tự động khởi chạy:"
 
 [Files]
-Source: "..\build\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\build\*"; DestDir: "{app}"; Excludes: "TransTools-Setup.exe,TransTools-Windows-Portable.zip,*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

@@ -1,0 +1,36 @@
+<UserControl x:Class="TransTools.Views.TextReaderView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+ <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+ <StackPanel Margin="0,4,0,18">
+  <Grid Margin="0,0,0,16"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+   <StackPanel><TextBlock Text="Đọc văn bản" FontSize="22" FontWeight="SemiBold" Foreground="#243D35"/><TextBlock Text="Nghe văn bản hoặc chọn truyện từ thư viện" Foreground="#65756F" Margin="0,4,0,0"/></StackPanel>
+   <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"><Button x:Name="LibraryButton" Content="Thư viện truyện" Style="{StaticResource SecondaryButton}" IsEnabled="{Binding CanConfigureReader}" Click="ShowLibrary_Click" Margin="0,0,12,0"/><Button x:Name="ReadingOptionsButton" Content="Tùy chỉnh đọc" Style="{StaticResource SecondaryButton}" Click="ShowReadingOptions_Click"/></StackPanel>
+  </Grid>
+  <StackPanel Orientation="Horizontal"><TextBlock Text="Ngôn ngữ đọc" VerticalAlignment="Center" Margin="0,0,12,0"/><ComboBox IsEnabled="{Binding CanConfigureReader}" ItemsSource="{Binding Languages}" ItemTemplate="{StaticResource LanguageItem}" SelectedItem="{Binding Language}" Width="230"/></StackPanel>
+  <DockPanel Margin="0,12,0,0" Visibility="{Binding HasStory,Converter={StaticResource BoolVisibility}}"><Button DockPanel.Dock="Right" Content="Xem nguồn" Click="ShowSource_Click" Style="{StaticResource SecondaryButton}" MinHeight="28" Padding="8,4"/><TextBlock Text="{Binding Story.Title}" FontWeight="SemiBold" Foreground="#65756F" VerticalAlignment="Center"/></DockPanel>
+  <Popup x:Name="ReadingOptionsPopup" PlacementTarget="{Binding ElementName=ReadingOptionsButton}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+   <Border Background="White" BorderBrush="#B5D2C9" BorderThickness="1" CornerRadius="12" Padding="20" Width="420">
+    <StackPanel><TextBlock Text="Tùy chỉnh đọc" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,18"/>
+     <TextBlock Text="Bộ giọng" Margin="0,0,0,8"/>
+     <ComboBox IsEnabled="{Binding CanConfigureReader}" ItemsSource="{Binding Engines}" SelectedItem="{Binding Engine}"/>
+     <Grid Margin="0,18,0,8"><TextBlock Text="Tốc độ đọc"/><TextBlock Text="{Binding Rate,StringFormat={}{0:0.0}×}" HorizontalAlignment="Right" Foreground="#287568"/></Grid>
+     <Slider IsEnabled="{Binding CanChangeRate}" ToolTip="VieNeu dùng tốc độ gốc; chọn Edge hoặc Supertonic để thay đổi tốc độ." Minimum="0.7" Maximum="1.5" Value="{Binding Rate}"/>
+     <Grid Margin="0,18,0,8"><TextBlock Text="Nghỉ giữa câu"/><TextBlock Text="{Binding SentencePause,StringFormat={}{0:0.0} s}" HorizontalAlignment="Right" Foreground="#287568"/></Grid>
+     <Slider x:Name="SentencePauseSlider" IsEnabled="{Binding CanConfigureReader}" Minimum="0" Maximum="2" TickFrequency=".1" IsSnapToTickEnabled="True" Value="{Binding SentencePause}"/>
+     <Grid Margin="0,18,0,8"><TextBlock Text="Nghỉ giữa đoạn"/><TextBlock Text="{Binding ParagraphPause,StringFormat={}{0:0.0} s}" HorizontalAlignment="Right" Foreground="#287568"/></Grid>
+     <Slider x:Name="ParagraphPauseSlider" IsEnabled="{Binding CanConfigureReader}" Minimum="0" Maximum="4" TickFrequency=".1" IsSnapToTickEnabled="True" Value="{Binding ParagraphPause}"/>
+     <TextBlock Text="Thời gian nghỉ áp dụng khi nghe tại đây. File audio dùng nhịp nghỉ của bộ giọng." Foreground="#65756F" FontSize="12" TextWrapping="Wrap" Margin="0,14,0,0"/>
+     <CheckBox IsEnabled="{Binding CanConfigureReader}" IsChecked="{Binding NormalizeReading}" Margin="0,18,0,8"><TextBlock Text="Chuẩn hóa cách đọc"/></CheckBox>
+     <TextBlock Text="Chuẩn hóa số, ngày giờ và viết tắt; dùng AI khi đã cấu hình. Giữ nguyên văn bản gốc." TextWrapping="Wrap" Foreground="#65756F" FontSize="12"/>
+    </StackPanel>
+   </Border>
+  </Popup>
+ </StackPanel>
+ <Border Grid.Row="1" Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Padding="18">
+  <DockPanel><DockPanel DockPanel.Dock="Top" Margin="0,0,0,12"><Button DockPanel.Dock="Right" Content="Xóa" Command="{Binding ClearTextCommand}" Style="{StaticResource SecondaryButton}" MinHeight="28" Padding="8,4"/><TextBlock Text="Văn bản cần đọc" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel>
+   <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0"><TextBlock Text="{Binding CharacterCountLabel}" FontSize="12"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Foreground" Value="#73827C"/><Style.Triggers><DataTrigger Binding="{Binding IsTooLong}" Value="True"><Setter Property="Foreground" Value="#DC2626"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock><TextBlock Text="Chia văn bản thành phần không quá 5.000 ký tự để nghe hoặc lưu audio." Foreground="#DC2626" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0" Visibility="{Binding IsTooLong,Converter={StaticResource BoolVisibility}}"/></StackPanel>
+   <TextBox Text="{Binding Text,UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsBusy}" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Padding="0" FontSize="16" Background="Transparent" Foreground="#243D35" BorderThickness="0"/>
+  </DockPanel>
+ </Border>
+ <StackPanel Grid.Row="2" Margin="0,16,0,0"><WrapPanel><Button Content="Đọc văn bản" Command="{Binding ReadCommand}" Margin="0,0,8,0"/><Button Content="Dừng" Style="{StaticResource SecondaryButton}" IsEnabled="{Binding IsBusy}" Command="{Binding StopCommand}" Margin="0,0,8,0"/><Button Content="Lưu audio" Style="{StaticResource SecondaryButton}" Command="{Binding ExportCommand}" IsEnabled="{Binding CanExport}"/></WrapPanel><TextBlock Text="{Binding Status}" Foreground="#65756F" TextWrapping="Wrap" Margin="0,8,0,0"/></StackPanel>
+ </Grid>
+</UserControl>

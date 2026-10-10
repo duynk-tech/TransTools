@@ -11,13 +11,25 @@ public partial class QuickTranslateView : UserControl
 {
     private readonly QuickTranslateViewModel _viewModel;
 
-    public QuickTranslateView(QuickTranslateViewModel viewModel)
+    public QuickTranslateView(QuickTranslateViewModel viewModel, TextReaderViewModel? reader = null)
     {
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = viewModel;
     }
 
+    private void ShowContext_Click(object sender, RoutedEventArgs e) => _viewModel.ShowContext = !_viewModel.ShowContext;
+    private async void ChoosePhrase_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: string phrase } || !_viewModel.CanConfigure) return;
+        _viewModel.SelectQuickPhrase(phrase);
+        await _viewModel.TranslateAsync();
+    }
+    private void SwapLanguages_Click(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.SourceLanguage == "auto") return;
+        (_viewModel.SourceLanguage, _viewModel.TargetLanguage) = (_viewModel.TargetLanguage, _viewModel.SourceLanguage);
+    }
     private void ClearSource_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.SourceText = string.Empty;
@@ -38,13 +50,16 @@ public partial class QuickTranslateView : UserControl
         try
         {
             _viewModel.Status = "Đang quét chữ từ ảnh màn hình...";
-            int screenWidth = (int)SystemParameters.PrimaryScreenWidth;
-            int screenHeight = (int)SystemParameters.PrimaryScreenHeight;
-            if (screenWidth <= 0) screenWidth = 1920;
-            if (screenHeight <= 0) screenHeight = 1080;
-
-            var snippetRect = new Rectangle(screenWidth / 4, screenHeight / 4, screenWidth / 2, screenHeight / 2);
-            using var bmp = WindowsOcrService.CaptureScreenRegion(snippetRect);
+            var main = Application.Current.MainWindow;
+            var visible = main.IsVisible;
+            Bitmap? capture = null;
+            main.Hide();
+            try {
+                var selector = new RegionSelectionWindow(); selector.ShowDialog();
+                if (selector.Selection is { } region) capture = WindowsOcrService.CaptureScreenRegion(region);
+            } finally { if (visible) main.Show(); }
+            if (capture == null) { _viewModel.Status = "Đã hủy chụp màn hình"; return; }
+            using var bmp = capture;
             var recognized = await WindowsOcrService.RecognizeTextFromBitmapAsync(bmp);
 
             if (!string.IsNullOrWhiteSpace(recognized))

@@ -9,6 +9,7 @@
     <RootNamespace>TransTools</RootNamespace>
     <AssemblyName>TransTools</AssemblyName>
     <ApplicationTitle>Trans Tools</ApplicationTitle>
+    <ApplicationIcon>Resources\AppIcon.ico</ApplicationIcon>
     <Company>DuyNK-Tech</Company>
     <Product>Trans Tools for Windows</Product>
     <Version>1.4.2</Version>
@@ -30,15 +31,18 @@
 
     <!-- Offline STT (Whisper) & Runtimes -->
     <PackageReference Include="Whisper.net" Version="1.7.4" />
-    <PackageReference Include="Whisper.net.AllRuntimes" Version="1.7.4" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.7.4" />
+    <PackageReference Include="Whisper.net.Runtime.NoAvx" Version="1.7.4" />
     
 
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.20.1" />
     <!-- Export Word Document -->
     <PackageReference Include="DocumentFormat.OpenXml" Version="3.1.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Resources\**\*" />
+    <Resource Include="Resources\**\*" Exclude="Resources\SpeechNative\*.dll" />
+    <Content Include="Resources\SpeechNative\*.dll" Link="SpeechNative\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
 </Project>

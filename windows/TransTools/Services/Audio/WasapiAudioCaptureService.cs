@@ -8,9 +8,13 @@ namespace TransTools.Services.Audio;
 
 public class WasapiAudioCaptureService : IDisposable
 {
+    private MMDevice? _loopbackDevice;
+    public string? CapturedDeviceId { get; private set; }
     private WasapiLoopbackCapture? _loopbackCapture;
     private WasapiCapture? _micCapture;
     private bool _isCapturing;
+    private StreamingAudioConverter? _converter;
+    private readonly object _conversionLock = new();
 
     public event Action<byte[]>? OnAudio16kHzMonoChunk;
     public event Action<float>? OnAudioLevelChanged;
@@ -20,13 +24,18 @@ public class WasapiAudioCaptureService : IDisposable
     public void StartCapture(bool captureSystemAudio = true, bool captureMicrophone = false)
     {
         if (_isCapturing) return;
+        if (captureSystemAudio == captureMicrophone) throw new InvalidOperationException("Chọn một nguồn thu âm.");
 
         try
         {
             if (captureSystemAudio)
             {
-                _loopbackCapture = new WasapiLoopbackCapture();
+                using var enumerator = new MMDeviceEnumerator();
+                _loopbackDevice = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+                CapturedDeviceId = _loopbackDevice.ID;
+                _loopbackCapture = new WasapiLoopbackCapture(_loopbackDevice);
                 _loopbackCapture.DataAvailable += OnLoopbackDataAvailable;
+                _converter = new StreamingAudioConverter(_loopbackCapture.WaveFormat);
                 _loopbackCapture.StartRecording();
             }
 
@@ -34,6 +43,7 @@ public class WasapiAudioCaptureService : IDisposable
             {
                 _micCapture = new WasapiCapture();
                 _micCapture.DataAvailable += OnMicDataAvailable;
+                _converter = new StreamingAudioConverter(_micCapture.WaveFormat);
                 _micCapture.StartRecording();
             }
 
@@ -64,7 +74,9 @@ public class WasapiAudioCaptureService : IDisposable
             _micCapture = null;
         }
 
+        _loopbackDevice?.Dispose(); _loopbackDevice = null; CapturedDeviceId = null;
         _isCapturing = false;
+        lock (_conversionLock) _converter = null;
     }
 
     private void OnLoopbackDataAvailable(object? sender, WaveInEventArgs e)
@@ -81,35 +93,14 @@ public class WasapiAudioCaptureService : IDisposable
 
     private void ProcessAudioBuffer(byte[] buffer, int count, WaveFormat format)
     {
-        // Convert to 16kHz, 16-bit, Mono PCM required by Whisper
-        using var inputStream = new MemoryStream(buffer, 0, count);
-        using var rawSource = new RawSourceWaveStream(inputStream, format);
-        
-        var targetFormat = new WaveFormat(16000, 16, 1);
-        using var resampler = new MediaFoundationResampler(rawSource, targetFormat)
-        {
-            ResamplerQuality = 60
-        };
-
-        var convertedBytes = new byte[count];
-        int read = resampler.Read(convertedBytes, 0, convertedBytes.Length);
-        if (read > 0)
-        {
-            var pcm16 = new byte[read];
-            Array.Copy(convertedBytes, pcm16, read);
-
-            // Compute RMS level for volume meters
-            float sum = 0;
-            for (int i = 0; i < read; i += 2)
-            {
-                short sample = BitConverter.ToInt16(pcm16, i);
-                sum += sample * sample;
-            }
-            float rms = (float)Math.Sqrt(sum / (read / 2)) / 32768f;
-            OnAudioLevelChanged?.Invoke(Math.Clamp(rms * 4f, 0f, 1f));
-
-            OnAudio16kHzMonoChunk?.Invoke(pcm16);
-        }
+        byte[] pcm16;
+        lock (_conversionLock) { if (_converter == null) return; pcm16 = _converter.Convert(buffer, count); }
+        if (pcm16.Length == 0) return;
+        double sum = 0;
+        for (var i = 0; i + 1 < pcm16.Length; i += 2) { var sample = BitConverter.ToInt16(pcm16, i) / 32768.0; sum += sample * sample; }
+        var rms = (float)Math.Sqrt(sum / (pcm16.Length / 2));
+        OnAudioLevelChanged?.Invoke(Math.Clamp(rms * 4, 0, 1));
+        OnAudio16kHzMonoChunk?.Invoke(pcm16);
     }
 
     public void Dispose()

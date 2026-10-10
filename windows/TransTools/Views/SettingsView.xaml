@@ -1,58 +1,222 @@
-<UserControl x:Class="TransTools.Views.SettingsView"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="clr-namespace:TransTools.ViewModels">
-
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel MaxWidth="800" HorizontalAlignment="Left">
-            <!-- Header -->
-            <TextBlock Text="Cài đặt hệ thống &amp; Dịch vụ AI" FontSize="20" FontWeight="Bold" Foreground="#F8FAFC" Margin="0,0,0,16"/>
-
-            <!-- AI API Keys Card -->
-            <Border Background="#1E293B" CornerRadius="12" Padding="20" Margin="0,0,0,16">
-                <StackPanel>
-                    <TextBlock Text="🔑 Cấu hình Khóa API (Mã hóa Windows DPAPI)" FontSize="15" FontWeight="Bold" Foreground="#F8FAFC" Margin="0,0,0,12"/>
-                    <TextBlock Text="API Key được bảo mật cục bộ theo tài khoản Windows của bạn, không gửi qua bất kỳ máy chủ trung gian nào." FontSize="12" Foreground="#94A3B8" Margin="0,0,0,16"/>
-
-                    <!-- OpenAI -->
-                    <TextBlock Text="OpenAI API Key:" FontSize="13" Foreground="#E2E8F0" Margin="0,0,0,4"/>
-                    <TextBox Text="{Binding OpenAiKey, UpdateSourceTrigger=PropertyChanged}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" Padding="8,6" Margin="0,0,0,12"/>
-
-                    <!-- Google Gemini -->
-                    <TextBlock Text="Google Gemini API Key:" FontSize="13" Foreground="#E2E8F0" Margin="0,0,0,4"/>
-                    <TextBox Text="{Binding GeminiKey, UpdateSourceTrigger=PropertyChanged}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" Padding="8,6" Margin="0,0,0,12"/>
-
-                    <!-- Anthropic Claude -->
-                    <TextBlock Text="Anthropic Claude API Key:" FontSize="13" Foreground="#E2E8F0" Margin="0,0,0,4"/>
-                    <TextBox Text="{Binding ClaudeKey, UpdateSourceTrigger=PropertyChanged}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" Padding="8,6" Margin="0,0,0,12"/>
-
-                    <!-- DeepSeek -->
-                    <TextBlock Text="DeepSeek API Key:" FontSize="13" Foreground="#E2E8F0" Margin="0,0,0,4"/>
-                    <TextBox Text="{Binding DeepSeekKey, UpdateSourceTrigger=PropertyChanged}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" Padding="8,6" Margin="0,0,0,16"/>
-
-                    <Button Content="💾 Lưu tất cả API Key" Command="{Binding SaveAllKeysCommand}" Background="#2563EB" Foreground="White" FontWeight="Bold" Padding="16,8" HorizontalAlignment="Left" Cursor="Hand"/>
-                </StackPanel>
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:ui="clr-namespace:TransTools.Views" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="TransTools.Views.SettingsView">
+  <UserControl.Resources>
+    <Style x:Key="SettingsSection" TargetType="TabItem">
+      <Setter Property="Cursor" Value="Hand" /><Setter Property="FontSize" Value="14" />
+      <Setter Property="Foreground" Value="#292F2D" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="TabItem">
+            <Border x:Name="SectionChrome" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="10" Padding="14,9" Margin="0,0,0,4" MinHeight="46">
+              <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><Border x:Name="SectionIconBackground" Background="#D8EAE5" CornerRadius="6" Width="28" Height="28" Margin="0,0,10,0"><TextBlock x:Name="SectionIcon" Text="{TemplateBinding Tag}" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#287568" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ContentPresenter Grid.Column="1" x:Name="SectionLabel" ContentSource="Header" VerticalAlignment="Center" TextElement.Foreground="#65756F" TextElement.FontWeight="SemiBold"/><TextBlock Grid.Column="2" x:Name="SectionChevron" Text="›" Foreground="#243D35" FontSize="20" VerticalAlignment="Center" Margin="8,0,0,0" Visibility="Collapsed"/></Grid>
             </Border>
-
-            <!-- Storage & Data Management -->
-            <Border Background="#1E293B" CornerRadius="12" Padding="20" Margin="0,0,0,16">
-                <StackPanel>
-                    <TextBlock Text="💾 Quản lý Lưu trữ &amp; Dữ liệu" FontSize="15" FontWeight="Bold" Foreground="#F8FAFC" Margin="0,0,0,12"/>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-                        <TextBlock Text="Dung lượng dữ liệu &amp; mô hình hiện tại:" Foreground="#94A3B8" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding CacheSize}" FontWeight="Bold" Foreground="#38BDF8" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal">
-                        <Button Content="📂 Mở thư mục dữ liệu" Command="{Binding OpenDataFolderCommand}" Background="#334155" Foreground="White" Padding="14,8" Margin="0,0,10,0" Cursor="Hand"/>
-                        <Button Content="🧹 Dọn dẹp bộ nhớ đệm" Command="{Binding ClearCacheCommand}" Background="#334155" Foreground="White" Padding="14,8" Cursor="Hand"/>
-                    </StackPanel>
-                </StackPanel>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter TargetName="SectionChrome" Property="Background" Value="#DCEAE5" />
+                <Setter TargetName="SectionChrome" Property="BorderBrush" Value="#B5D2C9" />
+                <Setter TargetName="SectionLabel" Property="TextElement.Foreground" Value="#243D35"/>
+                <Setter TargetName="SectionIconBackground" Property="Background" Value="#287568"/>
+                <Setter TargetName="SectionIcon" Property="Foreground" Value="White"/>
+                <Setter TargetName="SectionChevron" Property="Visibility" Value="Visible"/>
+              </Trigger>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="SectionChrome" Property="BorderBrush" Value="#75BBAE" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </UserControl.Resources>
+  <DockPanel Background="#DAF5F8F7">
+    <TextBlock DockPanel.Dock="Bottom" Text="{Binding Status}" Foreground="#287568" TextWrapping="Wrap" Margin="308,8,28,0" />
+    <TabControl x:Name="SettingsSections" TabStripPlacement="Left" Background="Transparent" BorderThickness="0" ItemContainerStyle="{StaticResource SettingsSection}">
+      <TabControl.Template>
+        <ControlTemplate TargetType="TabControl">
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="280" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <DockPanel Background="#DCF5F8F7">
+              <TextBlock DockPanel.Dock="Top" Text="Cài đặt" FontSize="22" FontWeight="SemiBold" Foreground="#243D35" Margin="14,8,0,16" />
+              <TextBlock DockPanel.Dock="Bottom" Text="{Binding AppVersion}" FontFamily="Consolas" FontSize="11" Foreground="#73827C" Margin="14,16,0,16"/>
+              <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <TabPanel IsItemsHost="True" />
+              </ScrollViewer>
+            </DockPanel>
+            <ContentPresenter Grid.Column="1" ContentSource="SelectedContent" Margin="28,20,28,20" />
+          </Grid>
+        </ControlTemplate>
+      </TabControl.Template>
+      <TabItem Header="Dịch &amp; Phụ đề" Tag="&#xE8F2;"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel><TextBlock Text="Dịch &amp; Phụ đề" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24"/><Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Padding="20" Margin="0,0,0,16"><StackPanel><TextBlock Text="Chuyên ngành &amp; Ngữ cảnh" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,20"/><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Chuyên ngành dịch" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><ComboBox Grid.Column="1" SelectedItem="{Binding TranslationDomain}" ItemsSource="{Binding TranslationDomains}"/></Grid><TextBlock Text="Áp dụng cho Dịch nhanh và dịch bằng AI trong cuộc họp. Phiên họp đang chạy giữ chuyên ngành đã chọn lúc bắt đầu." TextWrapping="Wrap" Foreground="#65756F"/></StackPanel></Border><Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Padding="20" Margin="0,0,0,16"><StackPanel><TextBlock Text="Nhịp hiển thị phụ đề" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,20"/><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Độ trễ bản dịch" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><ComboBox Grid.Column="1" SelectedItem="{Binding SubtitlePacing}" ItemsSource="{Binding SubtitlePacingOptions}"/></Grid><TextBlock Text="Nhanh chuyển câu sớm hơn. Cân bằng giữ thời gian đọc vừa phải. Đủ ngữ cảnh giữ câu lâu hơn. Tùy chọn này điều chỉnh thời gian hiển thị, không thay đổi tốc độ nhận diện hoặc dịch." TextWrapping="Wrap" Foreground="#65756F"/></StackPanel></Border><Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Padding="20" Margin="0,0,0,16"><StackPanel><TextBlock Text="Phụ đề nổi" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,20"/><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Cỡ chữ" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><ComboBox Grid.Column="1" SelectedItem="{Binding SubtitleFontSize}" ItemsSource="{Binding SubtitleFontSizes}"/></Grid><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Nền sáng" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><CheckBox Grid.Column="1" IsChecked="{Binding SubtitleLight}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Hiện tiếng gốc" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><CheckBox Grid.Column="1" IsChecked="{Binding SubtitleOriginal}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Giữ câu trước để theo dõi ngữ cảnh" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><CheckBox Grid.Column="1" IsChecked="{Binding SubtitleContext}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Hiện câu tiếp theo đang được dịch" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><CheckBox Grid.Column="1" IsChecked="{Binding SubtitleNext}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Hiện trợ lý bên cạnh nội dung" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><CheckBox Grid.Column="1" IsChecked="{Binding SubtitleMascot}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Bố cục dọc bên cạnh màn hình" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><CheckBox Grid.Column="1" IsChecked="{Binding SubtitleSide}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid></StackPanel></Border><Button Content="Lưu tùy chỉnh" Command="{Binding SaveSubtitlePreferencesCommand}" HorizontalAlignment="Right"/></StackPanel></ScrollViewer></TabItem>
+<TabItem Header="AI &amp; Kết nối" Tag="">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel>
+            <TextBlock Text="AI &amp; Kết nối" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
+            <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
+              <StackPanel>
+                <TextBlock Text="Cấu hình AI" FontSize="15" FontWeight="Bold" Foreground="#243D35" Margin="0,0,0,12" />
+                <TextBlock Text="API Key được bảo mật cục bộ theo tài khoản Windows của bạn, không gửi qua bất kỳ máy chủ trung gian nào." FontSize="12" Foreground="#65756F" Margin="0,0,0,16" />
+                <TextBlock Text="Nhà cung cấp dùng cho các tính năng AI" Foreground="#65756F" />
+                <ComboBox ItemsSource="{Binding Providers}" SelectedItem="{Binding ActiveProvider}" Margin="0,8"><ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Converter={StaticResource ProviderLabel}}" /></DataTemplate></ComboBox.ItemTemplate></ComboBox>
+                <WrapPanel Margin="0,0,0,12">
+                  <Button Content="Lấy danh sách mô hình" Command="{Binding FetchModelsCommand}" Margin="0,0,8,0" Style="{StaticResource SecondaryButton}" />
+                  <ComboBox ItemsSource="{Binding AvailableModels}" SelectedItem="{Binding CatalogModel}" Width="300" />
+                </WrapPanel>
+                <StackPanel><StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding ActiveProvider}" Value="openai"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style><TextBlock Text="Khóa API" FontSize="13" Foreground="#334B43" Margin="0,0,0,4" />
+                <PasswordBox ui:KeyBinding.Value="{Binding OpenAiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" BorderBrush="#D8E5E1" Padding="8,6" Margin="0,0,0,12" />
+                <TextBlock Text="Mô hình muốn sử dụng" Foreground="#65756F" />
+                <TextBox Text="{Binding OpenAiModel, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" Padding="8,6" Margin="0,4,0,12" />
+                </StackPanel><StackPanel><StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding ActiveProvider}" Value="gemini"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style><TextBlock Text="Khóa API" FontSize="13" Foreground="#334B43" Margin="0,0,0,4" />
+                <PasswordBox ui:KeyBinding.Value="{Binding GeminiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" BorderBrush="#D8E5E1" Padding="8,6" Margin="0,0,0,12" />
+                <TextBlock Text="Mô hình muốn sử dụng" Foreground="#65756F" />
+                <TextBox Text="{Binding GeminiModel, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" Padding="8,6" Margin="0,4,0,12" />
+                </StackPanel><StackPanel><StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding ActiveProvider}" Value="claude"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style><TextBlock Text="Khóa API" FontSize="13" Foreground="#334B43" Margin="0,0,0,4" />
+                <PasswordBox ui:KeyBinding.Value="{Binding ClaudeKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" BorderBrush="#D8E5E1" Padding="8,6" Margin="0,0,0,12" />
+                <TextBlock Text="Mô hình muốn sử dụng" Foreground="#65756F" />
+                <TextBox Text="{Binding ClaudeModel, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" Padding="8,6" Margin="0,4,0,12" />
+                </StackPanel><StackPanel><StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding ActiveProvider}" Value="deepseek"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style><TextBlock Text="Khóa API" FontSize="13" Foreground="#334B43" Margin="0,0,0,4" />
+                <PasswordBox ui:KeyBinding.Value="{Binding DeepSeekKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" BorderBrush="#D8E5E1" Padding="8,6" Margin="0,0,0,16" />
+                <TextBlock Text="Mô hình muốn sử dụng" Foreground="#65756F" />
+                <TextBox Text="{Binding DeepSeekModel, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" Padding="8,6" Margin="0,4,0,12" />
+                </StackPanel><Button Content="Lưu cấu hình AI" Command="{Binding SaveAllKeysCommand}" Background="#287568" Foreground="White" FontWeight="Bold" Padding="16,8" HorizontalAlignment="Right" Cursor="Hand" />
+              </StackPanel>
             </Border>
-
-            <!-- Status Notice -->
-            <TextBlock Text="{Binding Status}" FontSize="12" Foreground="#10B981" Margin="0,4,0,20"/>
-        </StackPanel>
-    </ScrollViewer>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+<TabItem Header="Mô hình AI" Tag="">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel>
+            <DockPanel Margin="0,8,0,16"><Button DockPanel.Dock="Right" Content="Làm mới dung lượng" Command="{Binding RefreshStorageCommand}" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0"/><Button DockPanel.Dock="Right" Content="{Binding CatalogUpdateLabel}" IsEnabled="{Binding CanManageModels}" Command="{Binding UpdateCatalogCommand}" Style="{StaticResource SecondaryButton}"/><TextBlock Text="Mô hình AI" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel><TextBlock Text="{Binding CatalogStatus}" Foreground="#65756F" Margin="0,0,0,16" TextWrapping="Wrap"/>
+<DockPanel Margin="0,0,0,16"><ComboBox DockPanel.Dock="Right" Width="165" ItemsSource="{Binding ModelVoiceLanguages}" ItemTemplate="{StaticResource LanguageItem}" SelectedItem="{Binding ModelVoiceLanguage}" IsEnabled="{Binding CanManageModels}"/><TextBlock Text="Chọn giọng mặc định cho ngôn ngữ" Foreground="#65756F" VerticalAlignment="Center"/></DockPanel><UniformGrid Columns="6" Margin="0,0,0,16"><RadioButton Content="Đề xuất" GroupName="ModelFilter" Style="{StaticResource SegmentedOption}" Margin="0,0,4,0" IsChecked="{Binding ModelFilter,Converter={StaticResource OptionSelection},ConverterParameter=recommended}"/><RadioButton Content="TTS" GroupName="ModelFilter" Style="{StaticResource SegmentedOption}" Margin="0,0,4,0" IsChecked="{Binding ModelFilter,Converter={StaticResource OptionSelection},ConverterParameter=tts}"/><RadioButton Content="STT" GroupName="ModelFilter" Style="{StaticResource SegmentedOption}" Margin="0,0,4,0" IsChecked="{Binding ModelFilter,Converter={StaticResource OptionSelection},ConverterParameter=stt}"/><RadioButton Content="Dịch" GroupName="ModelFilter" Style="{StaticResource SegmentedOption}" Margin="0,0,4,0" IsChecked="{Binding ModelFilter,Converter={StaticResource OptionSelection},ConverterParameter=translation}"/><RadioButton Content="Ngôn ngữ" GroupName="ModelFilter" Style="{StaticResource SegmentedOption}" Margin="0,0,4,0" IsChecked="{Binding ModelFilter,Converter={StaticResource OptionSelection},ConverterParameter=languageModel}"/><RadioButton Content="Đã cài" GroupName="ModelFilter" Style="{StaticResource SegmentedOption}" Margin="0,0,4,0" IsChecked="{Binding ModelFilter,Converter={StaticResource OptionSelection},ConverterParameter=installed}"/></UniformGrid><TextBlock Text="Chưa có mô hình đã tích hợp trong nhóm này." Visibility="{Binding ModelFilterEmpty,Converter={StaticResource BoolVisibility}}" Foreground="#65756F" Margin="0,0,0,18"/>
+            <Border Visibility="{Binding ShowSupertonicCard,Converter={StaticResource BoolVisibility}}" Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
+              <StackPanel>
+                <TextBlock Text="Giọng tự nhiên · Supertonic 3" FontSize="18" FontWeight="SemiBold" Foreground="#243D35" />
+                <TextBlock Text="{Binding SupertonicSummary}" Foreground="#65756F" Margin="0,8" />
+                <TextBlock Text="{Binding LocalVoiceStatus}" Foreground="#287568" Margin="0,8" /><TextBlock Text="{Binding SupertonicStorageSize}" Foreground="#65756F" Margin="0,0,0,12"/>
+                <WrapPanel>
+                  <Button Content="Dùng giọng này" Command="{Binding UseSupertonicCommand}" IsEnabled="{Binding CanUseSupertonic}" Visibility="{Binding SupertonicInstalled,Converter={StaticResource BoolVisibility}}" Margin="0,0,8,0"/><Button Content="Giấy phép" Style="{StaticResource SecondaryButton}" Command="{Binding OpenVoiceLicenseCommand}" Margin="0,0,8,0" />
+                  <Button Content="Tải mô hình" Visibility="{Binding ShowSupertonicInstall,Converter={StaticResource BoolVisibility}}" IsEnabled="{Binding CanManageModels}" Command="{Binding InstallVoiceCommand}" Margin="0,0,8,0" />
+                  <Button Content="Hủy tải" Visibility="{Binding DownloadingSupertonic,Converter={StaticResource BoolVisibility}}" Style="{StaticResource SecondaryButton}" Command="{Binding CancelVoiceInstallCommand}" Margin="0,0,8,0" />
+                  <Button Content="Gỡ mô hình" Visibility="{Binding SupertonicInstalled,Converter={StaticResource BoolVisibility}}" IsEnabled="{Binding CanManageModels}" Style="{StaticResource DestructiveButton}" Command="{Binding RemoveVoiceCommand}" Foreground="#EF4444" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+            <Border Visibility="{Binding ShowVieNeuCard,Converter={StaticResource BoolVisibility}}" Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
+              <StackPanel>
+                <TextBlock Text="VieNeu v3 Turbo · Tiếng Việt" FontSize="18" FontWeight="SemiBold" Foreground="#243D35" />
+                <TextBlock Text="{Binding VieNeuSummary}" Foreground="#65756F" TextWrapping="Wrap" Margin="0,8" />
+                <TextBlock Text="{Binding VieNeuStorageSize}" Foreground="#65756F" Margin="0,0,0,8"/><TextBlock Text="{Binding VieNeuInstallationStatus}" Foreground="#287568" Margin="0,0,0,12"/><WrapPanel><Button Content="Dùng giọng này" Command="{Binding UseVieNeuCommand}" IsEnabled="{Binding CanUseVieNeu}" Visibility="{Binding VieNeuInstalled,Converter={StaticResource BoolVisibility}}" Margin="0,0,8,0"/><Button Content="Tải VieNeu" Visibility="{Binding ShowVieNeuInstall,Converter={StaticResource BoolVisibility}}" IsEnabled="{Binding CanInstallVieNeu}" Command="{Binding InstallVieNeuCommand}" Margin="0,0,8,0"/><Button Content="Hủy tải" Visibility="{Binding DownloadingVieNeu,Converter={StaticResource BoolVisibility}}" Style="{StaticResource SecondaryButton}" Command="{Binding CancelVoiceInstallCommand}" Margin="0,0,8,0"/><Button Content="Gỡ mô hình" Visibility="{Binding VieNeuInstalled,Converter={StaticResource BoolVisibility}}" IsEnabled="{Binding CanManageModels}" Command="{Binding RemoveVieNeuCommand}" Style="{StaticResource DestructiveButton}"/></WrapPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+<TabItem Header="Chip Chip &amp; Sức khỏe" Tag="">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel>
+            <TextBlock Text="Chip Chip &amp; Sức khỏe" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
+            <Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,0,0,16">
+              <StackPanel>
+                <TextBlock Text="Trợ lý của bạn" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="180" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="Tên trợ lý" VerticalAlignment="Center" />
+                  <TextBox Grid.Column="1" Text="{Binding AssistantName}" MaxLength="40" MinHeight="40" ToolTip="Để trống để dùng Chip Chip" Margin="0,0,12,0" />
+                  <Button Grid.Column="2" Content="Lưu" Command="{Binding SaveAssistantNameCommand}" />
+                </Grid>
+                <TextBlock Text="Tên này dùng trong trò chuyện, phụ đề và trợ lý trên màn hình." Foreground="#65756F" Margin="0,10,0,0" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
+              <StackPanel>
+                <DockPanel>
+                  <CheckBox DockPanel.Dock="Right" IsChecked="{Binding BreakReminderEnabled}" VerticalAlignment="Center" />
+                  <TextBlock Text="Chip Chip nhắc nghỉ" FontSize="18" FontWeight="SemiBold" Foreground="#243D35" />
+                </DockPanel>
+                <TextBlock Text="Nhắc chớp mắt, uống nước và thư giãn vai khi học hoặc làm việc." Foreground="#65756F" TextWrapping="Wrap" Margin="0,8" />
+                <WrapPanel>
+                  <TextBlock Text="Chu kỳ (phút)" Foreground="#65756F" VerticalAlignment="Center" Margin="0,0,12,0" />
+                  <ComboBox ItemsSource="{Binding BreakIntervals}" SelectedItem="{Binding BreakMinutes}" Width="100" Margin="0,0,12,0" />
+                  <Button Content="Lưu nhịp nghỉ" Command="{Binding SaveBreakReminderCommand}" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+<TabItem Header="Giọng đọc &amp; Phát âm" Tag="">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel>
+            <TextBlock Text="Giọng đọc &amp; Phát âm" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" /><ContentControl x:Name="VoiceSettingsHost"/>
+            <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
+              <StackPanel>
+                <TextBlock Text="Bản ghi phát âm offline" FontSize="18" FontWeight="SemiBold" Foreground="#243D35" />
+                <TextBlock Text="Nhập bộ âm thanh mẫu để nghe phát âm khi học chữ." TextWrapping="Wrap" Foreground="#65756F" Margin="0,10" />
+                <Button Content="Nhập bộ bản ghi" Command="{Binding ImportRecordingsCommand}" HorizontalAlignment="Left" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+<TabItem Header="Quyền &amp; Phím tắt" Tag="&#xE765;"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel><TextBlock Text="Quyền &amp; Phím tắt" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24"/><Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Padding="20" Margin="0,0,0,16"><StackPanel><TextBlock Text="Âm thanh &amp; Quyền truy cập" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,20"/><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Cho phép Windows dùng micro" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><Button Grid.Column="1" Content="Mở quyền micro" Command="{Binding OpenMicrophonePrivacyCommand}" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Right"/></Grid><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Chọn thiết bị và âm lượng" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><Button Grid.Column="1" Content="Mở cài đặt âm thanh" Command="{Binding OpenSoundSettingsCommand}" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Right"/></Grid><TextBlock Text="Âm thanh hệ thống dùng thiết bị phát mặc định của Windows. Chọn micro trong Cuộc họp khi cần thu giọng của bạn." TextWrapping="Wrap" Foreground="#65756F"/></StackPanel></Border><Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Padding="20" Margin="0,0,0,16"><StackPanel><TextBlock Text="Phím tắt tiện ích" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,20"/><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Dịch văn bản đang chọn" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><TextBlock Grid.Column="1" Text="Ctrl + Alt + D" HorizontalAlignment="Right" Foreground="#287568" FontWeight="SemiBold"/></Grid><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Mở Dịch nhanh" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><TextBlock Grid.Column="1" Text="Ctrl + Alt + T" HorizontalAlignment="Right" Foreground="#287568" FontWeight="SemiBold"/></Grid><TextBlock Text="Nếu ứng dụng khác đang dùng cùng phím tắt, Trans Tools sẽ báo trong trạng thái Cài đặt." TextWrapping="Wrap" Foreground="#65756F"/></StackPanel></Border></StackPanel></ScrollViewer></TabItem>
+<TabItem Header="Hệ thống &amp; Cập nhật" Tag="">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel>
+            <TextBlock Text="Hệ thống &amp; Cập nhật" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
+<Button Content="Giới thiệu Trans Tools" Click="About_Click" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Right" Margin="0,0,0,16"/>
+            <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
+              <StackPanel>
+                <TextBlock Text="Phiên bản &amp; Cập nhật" FontSize="18" FontWeight="Bold" Foreground="#243D35" />
+                <TextBlock Text="{Binding UpdateStatus}" Foreground="#75BBAE" TextWrapping="Wrap" Margin="0,10" />
+                <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto">
+                  <TextBlock Text="{Binding ReleaseNotes}" TextWrapping="Wrap" Foreground="#65756F" />
+                </ScrollViewer>
+                <ProgressBar Value="{Binding UpdateProgress}" Maximum="1" Height="6" Margin="0,12" Visibility="{Binding IsUpdating, Converter={StaticResource BoolVisibility}}" />
+                <WrapPanel>
+                  <Button Content="Kiểm tra cập nhật" Command="{Binding CheckUpdateCommand}" Margin="0,0,8,0" />
+                  <Button Content="Tải &amp; Cài cập nhật" Command="{Binding InstallUpdateCommand}" IsEnabled="{Binding CanInstallUpdate}" Margin="0,0,8,0" />
+                  <Button Content="Hủy tải" Command="{Binding CancelUpdateCommand}" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+<TabItem Header="Lưu trữ &amp; Dữ liệu" Tag="">
+ <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+  <StackPanel>
+   <TextBlock Text="Lưu trữ &amp; Dữ liệu" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,6"/>
+   <TextBlock Text="Mô hình đã cài và dữ liệu được lưu trên máy" Foreground="#65756F" Margin="0,0,0,24"/>
+   <Border Background="#E1EEE6" CornerRadius="18" Padding="24" Margin="0,0,0,20">
+    <DockPanel LastChildFill="True">
+     <Button DockPanel.Dock="Right" Content="↻  Làm mới" Command="{Binding RefreshStorageCommand}" Style="{StaticResource SecondaryButton}" VerticalAlignment="Center" Margin="20,0,0,0"/>
+     <StackPanel><TextBlock Text="{Binding CacheSize}" FontSize="32" FontWeight="SemiBold" Foreground="#243D35"/><TextBlock Text="Dung lượng dữ liệu đang sử dụng" Foreground="#65756F" Margin="0,6,0,0"/></StackPanel>
+    </DockPanel>
+   </Border>
+   <TextBlock Text="Dọn dữ liệu sẽ chuyển vào Thùng rác. Sổ tay, hội thoại, từ vựng và khóa API được giữ lại khi dọn bộ nhớ đệm." Foreground="#65756F" TextWrapping="Wrap" Margin="0,0,0,20" LineHeight="21"/>
+   <ItemsControl ItemsSource="{Binding StorageGroups}">
+    <ItemsControl.ItemTemplate><DataTemplate>
+     <Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="16" Padding="20" Margin="0,0,0,16">
+      <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+       <StackPanel Margin="0,0,20,0"><TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" Foreground="#243D35" TextWrapping="Wrap"/><TextBlock Text="{Binding Detail}" Foreground="#65756F" TextWrapping="Wrap" Margin="0,6,0,6"/><TextBlock Text="{Binding Size}" Foreground="#73827C" FontSize="12"/></StackPanel>
+       <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+        <Button Width="40" Padding="0" ToolTip="Mở thư mục" Style="{StaticResource SecondaryButton}" Command="{Binding DataContext.OpenStorageFolderCommand,RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Margin="0,0,8,0"><TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets"/></Button>
+        <Button Width="40" Padding="0" ToolTip="Chuyển nhóm dữ liệu vào Thùng rác" Style="{StaticResource DestructiveButton}" Command="{Binding DataContext.RemoveStorageCommand,RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Visibility="{Binding Removable,Converter={StaticResource BoolVisibility}}"><TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"/></Button>
+       </StackPanel>
+      </Grid>
+     </Border>
+    </DataTemplate></ItemsControl.ItemTemplate>
+   </ItemsControl>
+   <DockPanel Margin="0,4,0,12"><Button DockPanel.Dock="Right" Content="Dọn bộ nhớ đệm" Command="{Binding ClearCacheCommand}" Style="{StaticResource DestructiveButton}"/><Button Content="Mở thư mục dữ liệu" Command="{Binding OpenDataFolderCommand}" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"/></DockPanel>
+  </StackPanel>
+ </ScrollViewer>
+</TabItem>
+    </TabControl>
+  </DockPanel>
 </UserControl>

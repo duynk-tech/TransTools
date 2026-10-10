@@ -1,0 +1,5 @@
+<UserControl x:Class="TransTools.Views.GardenBackground" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:TransTools.Views" IsHitTestVisible="False">
+ <Grid ClipToBounds="True"><Grid.Background><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop x:Name="SkyTop" Color="#E0F7FA"/><GradientStop x:Name="SkyBottom" Color="#E0F5E3" Offset="1"/></LinearGradientBrush></Grid.Background>
+  <local:GardenScene x:Name="Scenery"/>
+ </Grid>
+</UserControl>

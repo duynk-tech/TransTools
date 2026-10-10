@@ -8,7 +8,7 @@ using NAudio.Wave;
 
 namespace TransTools.Services.Speech;
 
-public class WindowsMediaTtsService
+public class WindowsMediaTtsService : IDisposable
 {
     private readonly SpeechSynthesizer _synthesizer = new();
 
@@ -17,7 +17,7 @@ public class WindowsMediaTtsService
         return SpeechSynthesizer.AllVoices;
     }
 
-    public async Task SpeakAsync(string text, string? voiceId = null)
+    public async Task SpeakAsync(string text, string? voiceId = null, string? language = null, System.Threading.CancellationToken token = default, double rate = 1, string? playbackDeviceId = null)
     {
         if (string.IsNullOrWhiteSpace(text)) return;
 
@@ -33,16 +33,27 @@ public class WindowsMediaTtsService
             }
         }
 
+        if (language != null) {
+            var code = EdgeTtsService.VoiceForLanguage(language)[..2];
+            var matching = SpeechSynthesizer.AllVoices.FirstOrDefault(v => v.Language.StartsWith(code + "-", StringComparison.OrdinalIgnoreCase));
+            if (matching == null) throw new InvalidOperationException("Chưa cài giọng cơ bản cho ngôn ngữ này.");
+            _synthesizer.Voice = matching;
+        }
+        _synthesizer.Options.SpeakingRate = Math.Clamp(rate, .7, 1.5);
+        token.ThrowIfCancellationRequested();
         using var stream = await _synthesizer.SynthesizeTextToStreamAsync(text);
         using var netStream = stream.AsStreamForRead();
         using var waveStream = new WaveFileReader(netStream);
+        if (playbackDeviceId != null) { await TransTools.Services.Audio.PlaybackDevices.PlayAsync(waveStream, playbackDeviceId, token); return; }
         using var waveOut = new WaveOutEvent();
         waveOut.Init(waveStream);
+        token.ThrowIfCancellationRequested();
         waveOut.Play();
 
         while (waveOut.PlaybackState == PlaybackState.Playing)
         {
-            await Task.Delay(100);
+            await Task.Delay(50, token);
         }
     }
+    public void Dispose() => _synthesizer.Dispose();
 }

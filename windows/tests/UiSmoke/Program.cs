@@ -1,0 +1,893 @@
+using System.Diagnostics;
+using TransTools.ViewModels;
+using TransTools.Models;
+using TransTools.Services.Conversation;
+using TransTools.Services.Storage;
+using TransTools.Views;
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
+
+internal static class Program
+{
+    [STAThread] private static int Main(string[] args)
+    {
+        var output = Path.GetFullPath(args.FirstOrDefault() ?? "windows/test-results/ui");
+        Directory.CreateDirectory(output);
+        var errors = new BindingErrors();
+        PresentationTraceSources.DataBindingSource.Listeners.Add(errors);
+        PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Error;
+        try {
+            if (CaptionDisplayTextConverter.Select("source", "translated", "translation", false) != "translated" || CaptionDisplayTextConverter.Select("source", "", "translation", false) != "source" || CaptionDisplayTextConverter.Select("source", "translated", "original", true) != "") throw new Exception("Caption display fallback is incorrect");
+            CheckMeetingSpeechQueue();
+            var app = new TransTools.App(); app.InitializeComponent();
+            var resumeListenCalls = 0;
+            using (var resumeFixture = new ConversationViewModel(beginListening: () => { resumeListenCalls++; return Task.CompletedTask; })) {
+                resumeFixture.Messages.Add(new ChatMessageItem { Text = "A saved reply" });
+                Await(resumeFixture.ToggleConversationCommand.ExecuteAsync(null));
+                if (resumeListenCalls != 1 || !resumeFixture.IsConversationActive || resumeFixture.Messages.Count != 1) throw new Exception("Resume did not begin listening while preserving the transcript");
+                Await(resumeFixture.ToggleConversationCommand.ExecuteAsync(null));
+                if (resumeListenCalls != 1 || resumeFixture.IsConversationActive || resumeFixture.Messages.Count != 1) throw new Exception("Stop restarted listening or cleared the transcript");
+                resumeFixture.UserInput = "Keep my typed draft";
+                Await(resumeFixture.ToggleConversationCommand.ExecuteAsync(null));
+                if (resumeListenCalls != 1 || resumeFixture.UserInput != "Keep my typed draft") throw new Exception("Resume discarded a typed draft or started recording over it");
+            }
+            var beginGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            using (var pendingResume = new ConversationViewModel(beginListening: () => beginGate.Task)) {
+                pendingResume.Messages.Add(new ChatMessageItem { Text = "Keep this transcript" });
+                var pendingStart = pendingResume.ToggleConversationCommand.ExecuteAsync(null);
+                if (!pendingResume.IsConversationActive || !pendingResume.ToggleConversationCommand.CanExecute(null)) throw new Exception("Unified stop action is disabled while start is awaiting listening");
+                Await(pendingResume.ToggleConversationCommand.ExecuteAsync(null));
+                beginGate.SetResult(); Await(pendingStart);
+                if (pendingResume.IsConversationActive || pendingResume.Messages.Count != 1) throw new Exception("Late start completion reactivated or cleared a stopped conversation");
+            }
+            var connected = true;
+            using (var deviceFixture = new MeetingViewModel(() => connected ? [new("fixture-device", "USB tai nghe")] : [])) {
+                deviceFixture.RefreshPlaybackDevices(); deviceFixture.SelectedPlaybackDevice = deviceFixture.PlaybackDevices[0]; deviceFixture.AutomaticReading = true;
+                deviceFixture.RefreshPlaybackDevices();
+                if (!deviceFixture.AutomaticReading || deviceFixture.SelectedPlaybackDevice?.Id != "fixture-device") throw new Exception("Refreshing a connected device disabled automatic reading");
+                connected = false; deviceFixture.RefreshPlaybackDevices();
+                if (deviceFixture.AutomaticReading || deviceFixture.SelectedPlaybackDevice != null) throw new Exception("Disconnected earphone remained enabled");
+            }
+            var window = new TransTools.MainWindow(); app.MainWindow = window; window.Show();
+            System.Threading.SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(app.Dispatcher));
+            foreach (var interrupt in new[] { true, false }) {
+                var speechStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously); var listenCount = 0;
+                using var speakingChat = new ConversationViewModel(beginListening: () => { listenCount++; return Task.CompletedTask; },
+                    generateReply: (_, _, _) => Task.FromResult("Hello! What would you like to practice today?"),
+                    speakReply: (_, _, token) => { speechStarted.SetResult(); return Task.Delay(Timeout.Infinite, token); });
+                speakingChat.ShowVietnameseTranslation = false;
+                var opening = speakingChat.StartConversationCommand.ExecuteAsync(null); Await(speechStarted.Task);
+                if (!speakingChat.IsSpeakingResponse || speakingChat.ConversationStateLabel != "Đang trả lời" || !speakingChat.InterruptReplyCommand.CanExecute(null)) throw new Exception("Conversation speech state/interrupt action is unavailable");
+                var speakingMini = new ConversationMiniWindow(speakingChat); speakingMini.Show(); Pump();
+                if (!((Button)speakingMini.FindName("MiniInterruptButton")).IsVisible) throw new Exception("Mini chat hides speak interruption action");
+                if (interrupt) {
+                    ValidateControlLayout(speakingMini, "Speaking mini chat"); Capture(speakingMini, output, "mini-chat-speaking.png");
+                    speakingChat.InterruptReplyCommand.Execute(null);
+                } else speakingChat.EndConversationCommand.Execute(null);
+                Await(opening); Pump();
+                if (speakingChat.IsSpeakingResponse || speakingChat.IsThinking || speakingChat.Messages.Count != 1) throw new Exception("Canceled speech lost reply or left conversation busy");
+                if (interrupt ? !speakingChat.IsConversationActive || listenCount != 1 : speakingChat.IsConversationActive || listenCount != 0) throw new Exception("Speech interruption/end restarted listening incorrectly");
+                speakingMini.CloseForExit();
+            }
+            foreach (var action in new[] { "end", "cancel", "dispose" }) {
+                var finish = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var observedToken = CancellationToken.None; var recognitionReplyCalls = 0;
+                using var recognizing = new ConversationViewModel(recognize: (_, token) => { observedToken = token; return finish.Task; },
+                    generateReply: (_, _, _) => { recognitionReplyCalls++; return Task.FromResult("This must not be recognitionReplyCalls"); });
+                recognizing.Messages.Add(new ChatMessageItem { Text = "Keep the earlier turn" });
+                recognizing.IsConversationActive = true; recognizing.IsListening = true;
+                var pendingRecognition = recognizing.ToggleMicrophoneCommand.ExecuteAsync(null);
+                if (!recognizing.IsThinking) throw new Exception("Recognition fixture did not enter processing");
+                if (action == "end") recognizing.EndConversationCommand.Execute(null);
+                else if (action == "cancel") recognizing.CancelRecognitionCommand.Execute(null);
+                else recognizing.Dispose();
+                if (!observedToken.IsCancellationRequested) throw new Exception("Recognition cancellation was not propagated");
+                // Deliberately ignore cancellation in the recognizer to exercise the result boundary.
+                finish.SetResult("A stale recognition must never reappear"); Await(pendingRecognition);
+                if (recognitionReplyCalls != 0 || recognizing.UserInput.Length != 0 || recognizing.Messages.Count != 1 || recognizing.IsThinking) throw new Exception("Late recognition mutated or submitted the stopped turn");
+                if (recognizing.Status != (action == "cancel" ? "Đã hủy nhận diện" : "Đã kết thúc trò chuyện")) throw new Exception("Late recognition overwrote terminal status");
+                if (action == "dispose") { recognizing.UserInput = "Do not send after disposal"; Await(recognizing.SendMessageAsync()); if (recognitionReplyCalls != 0 || recognizing.Messages.Count != 1) throw new Exception("Disposed conversation accepted input"); }
+            }
+            using (var recognized = new ConversationViewModel(recognize: (_, _) => Task.FromResult("A current spoken sentence"))) {
+                recognized.SendRecognizedSpeechAutomatically = false; recognized.IsConversationActive = true; recognized.IsListening = true;
+                Await(recognized.ToggleMicrophoneCommand.ExecuteAsync(null));
+                if (recognized.UserInput != "A current spoken sentence" || recognized.IsThinking) throw new Exception("Current recognition was rejected by stale-result protection");
+            }
+            var disposedReply = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously); var disposedListenCount = 0;
+            using (var disposedChat = new ConversationViewModel(beginListening: () => { disposedListenCount++; return Task.CompletedTask; }, generateReply: (_, _, _) => disposedReply.Task)) {
+                disposedChat.ShowVietnameseTranslation = false;
+                var pendingReply = disposedChat.StartConversationCommand.ExecuteAsync(null); disposedChat.Dispose();
+                disposedReply.SetResult("An obsolete opening reply"); Await(pendingReply);
+                if (disposedChat.IsConversationActive || disposedChat.Messages.Count != 0 || disposedListenCount != 0 || disposedChat.IsThinking) throw new Exception("Late reply reactivated a disposed conversation");
+            }
+            var meetingSaveFolder = Path.Combine(Path.GetTempPath(), "trans-tools-meeting-save-" + Guid.NewGuid().ToString("N"));
+            try {
+                using var liveSave = new MeetingViewModel(sessionDirectory: meetingSaveFolder);
+                liveSave.Captions.Add(new Caption { Original = "Preserve this spoken sentence", Vietnamese = "Giữ lại câu đã nói", Start = 0, End = 4 });
+                liveSave.IsRecording = true;
+                if (!liveSave.SaveSessionCommand.CanExecute(null) || liveSave.ExportMeetingCommand.CanExecute("TXT") || liveSave.ClearCaptionsCommand.CanExecute(null)) throw new Exception("Live meeting save/export/delete availability differs from Mac");
+                Await(liveSave.SaveSessionCommand.ExecuteAsync(null));
+                if (!liveSave.IsRecording || liveSave.Captions.Count != 1) throw new Exception("Saving a live meeting stopped capture or removed captions");
+                var savedLive = new SessionStore(meetingSaveFolder).LoadSessionsAsync(); Await(savedLive);
+                if (savedLive.Result.Count != 1 || savedLive.Result[0].Captions[0].Original != "Preserve this spoken sentence") throw new Exception("Live meeting save did not persist the current transcript");
+                liveSave.IsRecording = false;
+                if (!liveSave.ExportMeetingCommand.CanExecute("TXT") || !liveSave.ClearCaptionsCommand.CanExecute(null)) throw new Exception("Stopped meeting export/delete did not re-enable");
+                liveSave.Captions.Clear();
+                if (liveSave.SaveSessionCommand.CanExecute(null) || liveSave.ExportMeetingCommand.CanExecute("TXT") || liveSave.ClearCaptionsCommand.CanExecute(null)) throw new Exception("Empty meeting exposes data actions");
+            } finally { if (Directory.Exists(meetingSaveFolder)) Directory.Delete(meetingSaveFolder, true); }
+            var readingRequests = new List<CaptionReadingRequest>();
+            var readingTokens = new List<CancellationToken>();
+            var readingGates = new[] { new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously), new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously) };
+            using (var captionReader = new MeetingViewModel(readCaption: (request, token) => { readingRequests.Add(request); readingTokens.Add(token); return readingGates[readingRequests.Count - 1].Task; })) {
+                captionReader.SourceLanguage = "ja"; captionReader.TargetLanguage = "vi";
+                var sampleCaption = new Caption { Original = "こんにちは", Vietnamese = "Xin chào" };
+                var sourceReading = captionReader.SpeakCaptionOriginalCommand.ExecuteAsync(sampleCaption);
+                if (captionReader.ReadingCaptionId != sampleCaption.Id || captionReader.ReadingTranslation || readingRequests[0].Text != sampleCaption.Original || readingRequests[0].Language != "ja") throw new Exception("Source caption reading did not preserve text/language or set playback state");
+                var translatedReading = captionReader.SpeakCaptionTranslationCommand.ExecuteAsync(sampleCaption);
+                if (!readingTokens[0].IsCancellationRequested || !captionReader.ReadingTranslation || readingRequests[1].Text != sampleCaption.Vietnamese || readingRequests[1].Language != "vi") throw new Exception("Translation caption reading did not cancel source playback and route the selected language");
+                // The old reader deliberately ignores cancellation: it must not clear newer playback state.
+                readingGates[0].SetResult(); Await(sourceReading);
+                if (captionReader.ReadingCaptionId != sampleCaption.Id || !captionReader.ReadingTranslation) throw new Exception("Late caption reading completion cleared the new selection");
+                Await(captionReader.SpeakCaptionTranslationCommand.ExecuteAsync(sampleCaption));
+                if (!readingTokens[1].IsCancellationRequested || captionReader.ReadingCaptionId != null) throw new Exception("Second click did not stop caption playback");
+                readingGates[1].SetResult(); Await(translatedReading);
+                captionReader.CopyCaptionOriginalCommand.Execute(sampleCaption);
+                if (Clipboard.GetText() != sampleCaption.Original) throw new Exception("Copy source altered caption text");
+                captionReader.CopyCaptionTranslationCommand.Execute(sampleCaption);
+                if (Clipboard.GetText() != sampleCaption.Vietnamese) throw new Exception("Copy translation altered caption text");
+                captionReader.IsRecording = true;
+                Await(captionReader.SpeakCaptionOriginalCommand.ExecuteAsync(sampleCaption));
+                if (readingRequests.Count != 2 || !captionReader.EarphoneStatus.Contains("tai nghe")) throw new Exception("Active meeting read without a safe output device reached playback");
+                captionReader.IsRecording = false; captionReader.IsPreparing = true;
+                if (captionReader.SpeakCaptionOriginalCommand.CanExecute(sampleCaption)) throw new Exception("Caption playback is enabled while preparing capture");
+                captionReader.IsPreparing = false; captionReader.Dispose();
+                Await(captionReader.SpeakCaptionOriginalCommand.ExecuteAsync(sampleCaption));
+                if (readingRequests.Count != 2) throw new Exception("Disposed meeting started caption playback");
+            }
+            CheckConversationHelp();
+            var background = (Button)window.FindName("BackgroundButton");
+            foreach (var mode in new[] { "morning", "noon", "afternoon", "night", "mint" }) {
+                var item = background.ContextMenu.Items.OfType<MenuItem>().First(value => Equals(value.Tag, mode));
+                item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump();
+                if (!item.IsChecked) throw new Exception("Background selection did not update: " + mode);
+                Capture(window, output, "background-" + mode + ".png");
+            }
+            background.ContextMenu.Items.OfType<MenuItem>().First(value => Equals(value.Tag, "noon")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump();
+            foreach (var (width, height) in new[] { (1280, 820), (1200, 740), (1440, 900) }) {
+                SetViewportSize(window, width, height);
+                Pump(); window.UpdateLayout();
+                var tabs = (Grid)window.FindName("NavigationTabs");
+                foreach (var nav in tabs.Children.OfType<RadioButton>()) {
+                    var label = new TextBlock { Text = (string)nav.Content, FontFamily = nav.FontFamily, FontSize = nav.FontSize, FontWeight = nav.FontWeight };
+                    label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                    if (label.DesiredSize.Width + 17 + 7 + nav.Padding.Left + nav.Padding.Right + 2 > nav.ActualWidth + 1)
+                        throw new Exception($"Navigation label clipped at {width}: {nav.Content}");
+                }
+
+                foreach (var route in new[] { "Cuộc họp", "Sổ tay", "Dịch nhanh", "Đọc văn bản", "Học ngôn ngữ", "Trò chuyện", "Cài đặt" }) {
+                    var button = Descendants(window).OfType<RadioButton>().First(b => Equals(b.Content, route));
+                    button.IsChecked = true; Pump(); window.UpdateLayout();
+                    if (width == 1280) Capture(window, output, $"{width}-idle-{route}.png");
+                    var quickView = Descendants(window).OfType<QuickTranslateView>().FirstOrDefault();
+                    if (quickView != null) {
+                        var quickModel = (QuickTranslateViewModel)quickView.DataContext;
+                        var originalDomain = quickModel.SelectedDomain; var originalText = quickModel.SourceText;
+                        quickModel.SelectedDomain = "Công nghệ thông tin";
+                        if (quickModel.QuickPhrases.Length != 5) throw new Exception("Mac developer phrases missing");
+                        quickModel.SelectQuickPhrase(quickModel.QuickPhrases[0]);
+                        if (quickModel.SourceText != "Nhờ bạn review PR này giúp mình nhé") throw new Exception("Phrase selection lost text");
+                        quickModel.IsTranslating = true; quickModel.SelectQuickPhrase(quickModel.QuickPhrases[1]);
+                        if (quickModel.SourceText != "Nhờ bạn review PR này giúp mình nhé") throw new Exception("Busy phrase selection replaced request");
+                        quickModel.IsTranslating = false; quickModel.ShowContext = true; Pump(); window.UpdateLayout();
+                        ValidateControlLayout(window, "Quick context expanded");
+                        Capture(window, output, $"{width}-quick-context.png");
+                        quickModel.ShowContext = false; quickModel.SelectedDomain = originalDomain; quickModel.SourceText = originalText; Pump();
+                    }
+                    var reader = Descendants(window).OfType<TextReaderView>().FirstOrDefault();
+                    if (reader != null) {
+                        var options = (Button)reader.FindName("ReadingOptionsButton");
+                        var popup = (System.Windows.Controls.Primitives.Popup)reader.FindName("ReadingOptionsPopup");
+                        if (popup.IsOpen) throw new InvalidOperationException("Reading options must be collapsed initially");
+                        options.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        if (!popup.IsOpen || popup.Child == null) throw new InvalidOperationException("Reading options did not open");
+                        var readingModel = (TextReaderViewModel)reader.DataContext;
+                        var sentenceSlider = (Slider)reader.FindName("SentencePauseSlider");
+                        var paragraphSlider = (Slider)reader.FindName("ParagraphPauseSlider");
+                        if (sentenceSlider.Maximum != 2 || paragraphSlider.Maximum != 4) throw new Exception("Reader pause ranges differ from macOS");
+                        var oldText = readingModel.Text;
+                        readingModel.Text = string.Concat(Enumerable.Repeat("a\u0301", 5000)); Pump();
+                        if (readingModel.CharacterCount != 5000 || !readingModel.CanRead) throw new Exception("Reader 5000-character limit incorrectly counts combining marks");
+                        readingModel.Text += "x"; Pump();
+                        if (!readingModel.IsTooLong || readingModel.CanRead || readingModel.CanExport || readingModel.Text.Length != 10001) throw new Exception("Oversized reader text was silently truncated or remained playable");
+                        readingModel.Text = oldText; Pump();
+                        var oldSentence = readingModel.SentencePause; var oldParagraph = readingModel.ParagraphPause;
+                        sentenceSlider.Value = .7; paragraphSlider.Value = 1.6; Pump();
+                        if (readingModel.SentencePause != .7 || readingModel.ParagraphPause != 1.6) throw new Exception("Reader pause controls did not reach their playback model");
+                        readingModel.IsBusy = true; Pump();
+                        if (sentenceSlider.IsEnabled || paragraphSlider.IsEnabled) throw new Exception("Reader pause controls changed during an active reading");
+                        readingModel.IsBusy = false; readingModel.SentencePause = oldSentence; readingModel.ParagraphPause = oldParagraph; Pump();
+                        ValidateControlLayout((FrameworkElement)popup.Child, "Reading options");
+                        CaptureElement((FrameworkElement)popup.Child, output, $"{width}-reader-options-popup.png");
+                        Capture(window, output, $"{width}-reader-options.png");
+                        popup.IsOpen = false;
+                    }
+                    var meeting = Descendants(window).OfType<MeetingView>().FirstOrDefault()?.DataContext as MeetingViewModel;
+                    if (meeting != null && meeting.Captions.Count == 0) {
+                        for (var n = 0; n < 12; n++) meeting.Captions.Add(new Caption { Start = n * 8, End = n * 8 + 7, Original = "We should preserve the full conversation, including longer sentences and the context needed to understand the discussion.", Vietnamese = "Cần giữ đầy đủ cuộc hội thoại, bao gồm những câu dài và ngữ cảnh để hiểu đúng nội dung đang thảo luận." });
+                    }
+                    if (meeting != null) {
+                        var meetingView = Descendants(window).OfType<MeetingView>().First();
+                        var snapshot = meeting.Captions.Select(c => (c.Id, c.Original, c.Vietnamese)).ToArray();
+                        foreach (var mode in meeting.DisplayModes) {
+                            meeting.SelectedDisplayMode = mode; Pump();
+                            ValidateControlLayout(meetingView, "Meeting display " + mode);
+                            var visibleText = Descendants(meetingView).OfType<TextBlock>().Where(t => t.IsVisible).Select(t => t.Text).ToArray();
+                            var hasOriginal = visibleText.Contains(snapshot[0].Original);
+                            var hasTranslation = visibleText.Contains(snapshot[0].Vietnamese);
+                            if (hasOriginal != (mode != "Bản dịch") || hasTranslation != (mode != "Tiếng gốc")) throw new Exception("Meeting display mode did not update existing captions: " + mode);
+                            var actionNames = Descendants(meetingView).OfType<Button>().Where(button => button.IsVisible && button.CommandParameter is Caption).Select(System.Windows.Automation.AutomationProperties.GetName).ToArray();
+                            if (actionNames.Contains("Nghe câu gốc") != (mode != "Bản dịch") || actionNames.Contains("Nghe bản dịch") != (mode != "Tiếng gốc")) throw new Exception("Caption actions do not follow display mode");
+                            var languageBadges = visibleText.Where(text => text is "EN" or "VI").ToArray();
+                            if (languageBadges.Contains("EN") != (mode != "Bản dịch") || languageBadges.Contains("VI") != (mode != "Tiếng gốc")) throw new Exception("Caption language badges do not follow display mode");
+                            if (!snapshot.SequenceEqual(meeting.Captions.Select(c => (c.Id, c.Original, c.Vietnamese)))) throw new Exception("Display mode modified stored captions");
+                            if (width == 1280) Capture(window, output, "meeting-display-" + meeting.DisplayModeKey + ".png");
+                        }
+                        meeting.SelectedDisplayMode = "Song ngữ";
+                        var pendingCaption = new Caption { Start = 99, End = 103, Original = "Please wait for the translated sentence." };
+                        meeting.Captions.Add(pendingCaption); Pump();
+                        var captionList = (ListBox)meetingView.FindName("CaptionList");
+                        captionList.ScrollIntoView(pendingCaption); captionList.UpdateLayout(); Pump();
+                        var pendingCard = (FrameworkElement)captionList.ItemContainerGenerator.ContainerFromItem(pendingCaption);
+                        if (!Descendants(pendingCard).OfType<TextBlock>().Any(text => text.IsVisible && text.Text == "Đang dịch...") || Descendants(pendingCard).OfType<Button>().Count(button => button.IsVisible) != 2) throw new Exception("Pending caption duplicates source as translation or exposes empty translation actions");
+                        Capture(window, output, $"{width}-meeting-pending-card.png");
+                        pendingCaption.Vietnamese = "Xin chờ câu đã được dịch."; Pump();
+                        if (Descendants(pendingCard).OfType<Button>().Count(button => button.IsVisible && button.IsEnabled) != 4 || Descendants(pendingCard).OfType<TextBlock>().Any(text => text.IsVisible && text.Text == "Đang dịch...")) throw new Exception("Arriving translation did not update its actions and placeholder");
+                        var translatedText = Descendants(pendingCard).OfType<TextBlock>().First(text => text.Text == pendingCaption.Vietnamese);
+                        if (translatedText.FontSize != 15 || translatedText.FontWeight != FontWeights.SemiBold) throw new Exception("Translation lost Mac text emphasis");
+                        Capture(window, output, $"{width}-meeting-ready-card.png");
+                        pendingCaption.Vietnamese = string.Join("\n", Enumerable.Range(1, 28).Select(index => $"Dòng bản dịch {index}: nội dung dài cần theo dõi đến cuối.")); Pump();
+                        var meetingScroll = Descendants(captionList).OfType<ScrollViewer>().First();
+                        if (meetingScroll.ScrollableHeight < 1 || meetingScroll.VerticalOffset < meetingScroll.ScrollableHeight - 1) throw new Exception("Meeting did not reach the final pixel after arriving translation reflow");
+                        var finalText = Descendants(captionList).OfType<TextBlock>().First(text => text.Text == pendingCaption.Vietnamese);
+                        var finalBounds = finalText.TransformToAncestor(captionList).TransformBounds(new Rect(finalText.RenderSize));
+                        if (finalBounds.Bottom > captionList.ActualHeight + 1 || finalBounds.Bottom < captionList.ActualHeight - 65) throw new Exception("Meeting final translation line is clipped or leaves excessive trailing space");
+                        Capture(window, output, $"{width}-meeting-final-line.png");
+                        meeting.SelectedDisplayMode = "Tiếng gốc"; Pump();
+                        if (meetingScroll.VerticalOffset < meetingScroll.ScrollableHeight - 1) throw new Exception("Meeting lost end scrolling after display-mode reflow");
+                        meeting.SelectedDisplayMode = "Song ngữ"; Pump();
+                        meeting.Captions.Remove(pendingCaption); Pump();
+                        meeting.IsRecording = true; Pump();
+                        if (((Button)meetingView.FindName("ClearMeetingButton")).IsVisible || ((Button)meetingView.FindName("ExportWordButton")).IsEnabled || !((Button)meetingView.FindName("SaveMeetingButton")).IsEnabled) throw new Exception("Live meeting footer does not match Mac action states");
+                        Capture(window, output, $"{width}-meeting-active-footer.png");
+                        meeting.IsRecording = false; Pump();
+                        if (!((Button)meetingView.FindName("ClearMeetingButton")).IsVisible || !((Button)meetingView.FindName("ExportWordButton")).IsEnabled) throw new Exception("Stopped meeting footer did not restore export/delete");
+                        meeting.SelectedDisplayMode = "Song ngữ"; Pump();
+                        var settings = (Button)meetingView.FindName("TranslationSettingsButton");
+                        settings.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        var translationPopup = (System.Windows.Controls.Primitives.Popup)meetingView.FindName("TranslationSettingsPopup");
+                        if (!translationPopup.IsOpen) throw new Exception("Meeting translation settings did not open");
+                        ValidateControlLayout((FrameworkElement)translationPopup.Child, "Meeting translation settings");
+                        if (width == 1280) CaptureElement((FrameworkElement)translationPopup.Child, output, "meeting-translation-settings.png");
+                        translationPopup.IsOpen = false;
+                        var earphones = (Button)meetingView.FindName("EarphoneButton"); earphones.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        var earphonePopup = (System.Windows.Controls.Primitives.Popup)meetingView.FindName("EarphonePopup");
+                        if (!earphonePopup.IsOpen) throw new Exception("Earphone popup did not open");
+                        ValidateControlLayout((FrameworkElement)earphonePopup.Child, "Meeting earphones");
+                        if (width == 1280) CaptureElement((FrameworkElement)earphonePopup.Child, output, "meeting-earphones.png");
+                        meeting.StopEarphoneReadingCommand.Execute(null); if (meeting.AutomaticReading) throw new Exception("Earphone stop did not disable auto reading");
+                        earphonePopup.IsOpen = false;
+                    }
+                    var conversation = Descendants(window).OfType<ConversationView>().FirstOrDefault()?.DataContext as ConversationViewModel;
+                    if (conversation != null && conversation.Messages.Count == 0) {
+                        for (var n = 0; n < 8; n++) conversation.Messages.Add(new ChatMessageItem { IsUser = n % 2 == 0, Text = "Let us practice a longer conversation about your work and the next project. What would you like to discuss today?", Translation = n % 2 == 0 ? "" : "Cùng luyện một cuộc trò chuyện dài về công việc và dự án sắp tới. Hôm nay bạn muốn thảo luận điều gì?" });
+                    }
+                    if (conversation != null) {
+                        var chatView = Descendants(window).OfType<ConversationView>().First();
+                        var actionButton = (Button)chatView.FindName("ConversationActionButton");
+                        if (!Equals(actionButton.Content, "Tiếp tục nói")) throw new Exception("Saved conversation did not show resume action");
+                        conversation.IsConversationActive = true; conversation.IsThinking = true; Pump();
+                        if (!Equals(actionButton.Content, "Kết thúc") || !actionButton.IsEnabled) throw new Exception("Active conversation cannot be stopped during AI processing");
+                        conversation.ToggleConversationCommand.Execute(null); Pump();
+                        if (conversation.IsConversationActive || !Equals(actionButton.Content, "Tiếp tục nói")) throw new Exception("Unified conversation action failed to end session without clearing messages");
+                        conversation.IsThinking = false; Pump();
+                        var topicButton = (Button)chatView.FindName("TopicButton"); topicButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        var topicPopup = (System.Windows.Controls.Primitives.Popup)chatView.FindName("TopicPopup");
+                        if (!topicPopup.IsOpen || topicPopup.Child == null) throw new Exception("Conversation name/options popup did not open");
+                        ValidateControlLayout((FrameworkElement)topicPopup.Child, "Conversation name and options");
+                        CaptureElement((FrameworkElement)topicPopup.Child, output, $"{width}-conversation-options.png");
+                        var wasActive = conversation.IsConversationActive;
+                        conversation.IsConversationActive = true; Pump();
+                        if (((TextBox)chatView.FindName("LearnerNameInput")).IsEnabled) throw new Exception("Learner name can change during active conversation");
+                        conversation.IsConversationActive = wasActive; topicPopup.IsOpen = false; Pump();
+                        var delay = (TextBox)chatView.FindName("SendDelayInput");
+                        var oldDelay = conversation.SendDelaySeconds;
+                        delay.Text = "30"; delay.GetBindingExpression(TextBox.TextProperty)!.UpdateSource(); Pump();
+                        if (conversation.SendDelaySeconds != 30) throw new Exception("Conversation numeric delay did not accept 30 seconds");
+                        delay.UpdateLayout();
+                        var numberHost = Descendants(delay).OfType<ScrollViewer>().First();
+                        if (numberHost.ViewportWidth < 24 || numberHost.ViewportHeight < 20) throw new Exception("Conversation numeric input padding clips its value");
+                        conversation.IncreaseSendDelayCommand.Execute(null); if (conversation.SendDelaySeconds != 30) throw new Exception("Conversation stepper exceeded upper limit");
+                        conversation.SendDelaySeconds = 1; conversation.DecreaseSendDelayCommand.Execute(null); if (conversation.SendDelaySeconds != 1) throw new Exception("Conversation stepper exceeded lower limit");
+                        conversation.SendDelaySeconds = oldDelay;
+                        conversation.IsListening = true; Pump();
+                        if (!delay.IsEnabled || !((TextBox)chatView.FindName("ConversationInput")).IsReadOnly) throw new Exception("Listening controls allow conflicting draft edits or block delay adjustment");
+                        conversation.IsListening = false; conversation.IsThinking = true; Pump();
+                        if (!delay.IsEnabled || !((TextBox)chatView.FindName("ConversationInput")).IsReadOnly) throw new Exception("Processing controls allow conflicting draft edits or block delay adjustment");
+                        conversation.IsThinking = false; Pump();
+                        var list = (ListBox)chatView.FindName("MessageList"); Pump(); list.UpdateLayout();
+                        var bubbles = Descendants(list).OfType<Border>().Where(b => Equals(b.Tag, "ChatBubble") && b.IsVisible).Select(b => (Bubble: b, Bounds: new Rect(b.TransformToAncestor(list).Transform(new Point()), b.RenderSize))).Where(b => b.Bounds.IntersectsWith(new Rect(0, 0, list.ActualWidth, list.ActualHeight))).OrderBy(b => b.Bounds.Top).ToArray();
+                        if (bubbles.Length < 2) { Capture(window, output, $"{width}-conversation-spacing-failure.png"); throw new Exception("Conversation fixture did not render adjacent bubbles"); }
+                        for (var i = 1; i < bubbles.Length; i++) {
+                            var gap = bubbles[i].Bounds.Top - bubbles[i - 1].Bounds.Bottom;
+                            if (gap < -1 || gap > 20) { Capture(window, output, $"{width}-conversation-spacing-failure.png"); throw new Exception($"Conversation bubble spacing is not content driven: {gap}; bounds={string.Join(";", bubbles.Select(b => b.Bounds.ToString()))}"); }
+                        }
+                        var originalToggle = conversation.ShowVietnameseTranslation;
+                        conversation.ShowVietnameseTranslation = false; Pump();
+                        if (Descendants(list).OfType<TextBlock>().Any(t => t.IsVisible && conversation.Messages.Any(m => m.Translation.Length > 0 && m.Translation == t.Text))) throw new Exception("Conversation translation toggle left translations visible");
+                        conversation.ShowVietnameseTranslation = originalToggle; Pump();
+                        list.UpdateLayout(); var chatScroll = Descendants(list).OfType<ScrollViewer>().First();
+                        if (chatScroll.ScrollableHeight > .5 && chatScroll.VerticalOffset < chatScroll.ScrollableHeight - .5) throw new Exception("Conversation did not reveal the final line after translation height changed");
+                        ValidateControlLayout(chatView, "Conversation bubbles");
+                        CheckConversationHelpLayout(window, output, width, conversation.Messages);
+                    }
+                    var notebook = Descendants(window).OfType<NotebookView>().FirstOrDefault()?.DataContext as NotebookViewModel;
+                    if (notebook != null && notebook.Sessions.Count == 0) {
+                        var view = Descendants(window).OfType<NotebookView>().First(); Pump();
+                        if (notebook.HasSelectedSession || ((Border)view.FindName("RecordDetailPanel")).IsVisible || !((StackPanel)view.FindName("EmptyRecordPanel")).IsVisible) throw new Exception("Empty notebook exposed orphan detail controls");
+                        var sample = new MeetingSession { Title = "Cuộc họp dự án • Nội dung dài để kiểm tra bố cục", DurationSeconds = 96, Notes = "# Ghi chú cuộc họp\n- Giữ nguyên toàn bộ nội dung đã ghi nhận.", Summary = string.Join("\n", Enumerable.Range(0, 30).Select(n => "Quyết định cần được giữ đầy đủ trong phần tóm tắt, kể cả khi nội dung dài. " + n)), Captions = Enumerable.Range(0, 12).Select(n => new Caption { Start = n * 8, End = n * 8 + 7, Original = "The recording should remain readable when the window is resized and when a longer sentence arrives.", Vietnamese = "Bản ghi phải dễ đọc khi thay đổi kích thước cửa sổ và khi xuất hiện câu dài hơn." }).ToList() };
+                        notebook.Sessions.Add(sample); notebook.SelectedSession = sample; Pump();
+                        if (!notebook.HasSelectedSession || !((Border)view.FindName("RecordDetailPanel")).IsVisible || ((StackPanel)view.FindName("EmptyRecordPanel")).IsVisible) throw new Exception("Selecting a notebook record did not replace its empty state");
+                        if (((ScrollViewer)view.FindName("SummaryScroll")).ScrollableHeight <= 0) throw new Exception("Long notebook summary is clipped instead of scrollable");
+                        notebook.CaptionSearch = "no-matching-caption-fixture"; Pump();
+                        if (notebook.FilteredCaptionCount != 0 || sample.Captions.Count != 12) throw new Exception("Transcript filtering changed stored captions or its visible count");
+                        notebook.ClearCaptionSearchCommand.Execute(null); Pump();
+                        if (notebook.FilteredCaptionCount != 12) throw new Exception("Clearing transcript search did not restore the visible count");
+                        for (var n = 0; n < 20; n++) notebook.IncreaseCaptionFontCommand.Execute(null);
+                        if (notebook.CaptionFontSize != 22 || notebook.IncreaseCaptionFontCommand.CanExecute(null)) throw new Exception("Notebook font upper limit differs from macOS");
+                        for (var n = 0; n < 20; n++) notebook.DecreaseCaptionFontCommand.Execute(null);
+                        if (notebook.CaptionFontSize != 12 || notebook.DecreaseCaptionFontCommand.CanExecute(null)) throw new Exception("Notebook font lower limit differs from macOS");
+                        notebook.CaptionFontSize = 14;
+                        var before = sample.Captions.Select(c => (c.Id, c.Original, c.Vietnamese)).ToArray();
+                        sample.Captions[0].Vietnamese = "";
+                        foreach (var mode in notebook.CaptionModes) {
+                            notebook.CaptionMode = mode; Pump();
+                            if (!Descendants(view).OfType<TextBlock>().Any(t => t.IsVisible && t.Text == sample.Captions[0].Original)) throw new Exception("Notebook display mode erased a caption without translation: " + mode);
+                        }
+                        sample.Captions[0].Vietnamese = before[0].Vietnamese;
+                        notebook.SelectedSession = null; notebook.SelectedSession = sample; notebook.CaptionMode = "Song ngữ"; Pump();
+                        if (!before.SequenceEqual(sample.Captions.Select(c => (c.Id, c.Original, c.Vietnamese)))) throw new Exception("Notebook display controls altered stored captions");
+                    }
+                    Pump(); window.UpdateLayout();
+                    if (button.ActualHeight < 30 || button.ActualWidth < 60) throw new Exception("Navigation collapsed: " + route);
+                    var filename = $"{width}-{Array.IndexOf(new[] { "Cuộc họp", "Sổ tay", "Dịch nhanh", "Đọc văn bản", "Học ngôn ngữ", "Trò chuyện", "Cài đặt" }, route)}.png";
+                    ValidateControlLayout(window, route);
+                    Capture(window, output, filename);
+                    Console.WriteLine($"PASS: rendered {route} at {width}x{height}");
+                    if (route == "Sổ tay" && width == 1280) {
+                        var copyMenu = Descendants(window).OfType<MenuItem>().First(item => Equals(item.Header, "Sao chép"));
+                        copyMenu.IsSubmenuOpen = true; Pump();
+                        var copy = (MenuItem)copyMenu.Items[2];
+                        if (copy.DataContext is not Caption caption) throw new Exception("Caption copy menu lost its row context");
+                        copy.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump();
+                        if (!Clipboard.ContainsText() || !Clipboard.GetText().Contains(caption.Original) || !Clipboard.GetText().Contains(caption.Vietnamese)) throw new Exception("Bilingual copy did not preserve both texts");
+                        copyMenu.IsSubmenuOpen = false;
+                    }
+                    if (route == "Sổ tay") {
+                        var notebookView = Descendants(window).OfType<NotebookView>().First();
+                        ((RadioButton)notebookView.FindName("WordsTab")).IsChecked = true; Pump();
+                        var vocabularyView = Descendants(window).OfType<NotebookVocabularyView>().First();
+                        var model = (LearningViewModel)vocabularyView.DataContext;
+                        if (model.VisibleVocabulary.Count == 0) {
+                            model.VisibleVocabulary.Add(new TransTools.Models.VocabularyItem { Word = "follow up", Phonetic = "/ˈfɒləʊ ʌp/", Meaning = "Theo dõi và tiếp tục xử lý", ExampleSentence = "I will follow up with the team after the meeting.", ExampleTranslation = "Tôi sẽ trao đổi tiếp với nhóm sau cuộc họp." });
+                            model.VisibleVocabulary.Add(new TransTools.Models.VocabularyItem { Word = "deadline", MasteryScore = 5, Meaning = "Hạn hoàn thành", ExampleSentence = "We need to agree on the deadline." });
+                        }
+                        Pump(); ValidateControlLayout(window, "Notebook vocabulary");
+                        Capture(window, output, $"{width}-notebook-vocabulary.png");
+                        var search = (TextBox)vocabularyView.FindName("SearchBox");
+                        var words = (ListBox)vocabularyView.FindName("WordsList");
+                        var count = model.VisibleVocabulary.Count;
+                        ((RadioButton)vocabularyView.FindName("MasteredWords")).IsChecked = true; Pump();
+                        if (words.Items.Cast<TransTools.Models.VocabularyItem>().Any(word => word.MasteryScore < 4)) throw new Exception("Mastered filter contains learning words");
+                        ((RadioButton)vocabularyView.FindName("LearningWords")).IsChecked = true; Pump();
+                        if (words.Items.Cast<TransTools.Models.VocabularyItem>().Any(word => word.MasteryScore >= 4)) throw new Exception("Learning filter contains mastered words");
+                        ((RadioButton)vocabularyView.FindName("AllWords")).IsChecked = true; Pump();
+                        search.Text = "follow up"; Pump();
+                        if (words.Items.Count != 1 || model.VisibleVocabulary.Count != count) throw new Exception("Notebook search changed the learning vocabulary collection");
+                        search.Text = "not-a-word"; Pump();
+                        if (((FrameworkElement)vocabularyView.FindName("EmptyState")).Visibility != Visibility.Visible) throw new Exception("Vocabulary missing empty-search state");
+                        search.Text = ""; Pump();
+                        ((Button)vocabularyView.FindName("AddWordButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        var add = (System.Windows.Controls.Primitives.Popup)vocabularyView.FindName("AddWordPopup");
+                        if (!add.IsOpen || add.Child == null) throw new Exception("Notebook add-word popup did not open");
+                        ValidateControlLayout((FrameworkElement)add.Child, "Notebook add word");
+                        CaptureElement((FrameworkElement)add.Child, output, $"{width}-notebook-add-word.png");
+                        add.IsOpen = false;
+                        ((RadioButton)notebookView.FindName("RecordsTab")).IsChecked = true; Pump();
+                    }
+
+                    if (route == "Học ngôn ngữ") {
+                        var learning = Descendants(window).OfType<LearningView>().First();
+                        foreach (var label in new[] { "Hôm nay", "Chữ & Viết", "Từ vựng của tôi", "Luyện giao tiếp" }) {
+                            var section = Descendants(learning).OfType<RadioButton>().First(item => Equals(item.Content, label));
+                            section.IsChecked = true; Pump(); window.UpdateLayout();
+                            ValidateControlLayout(window, "Learning: " + label);
+                            Capture(window, output, $"{width}-learning-{Array.IndexOf(new[] { "Hôm nay", "Chữ & Viết", "Từ vựng của tôi", "Luyện giao tiếp" }, label)}.png");
+                        }
+                        var goal = (Button)learning.FindName("LearningGoalButton");
+                        goal.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        var popup = (System.Windows.Controls.Primitives.Popup)learning.FindName("LearningGoalPopup");
+                        if (!popup.IsOpen || popup.Child == null) throw new Exception("Learning goal popup did not open");
+                        ValidateControlLayout((FrameworkElement)popup.Child, "Learning goal");
+                        CaptureElement((FrameworkElement)popup.Child, output, $"{width}-learning-goal.png");
+                        popup.IsOpen = false;
+                        Descendants(learning).OfType<RadioButton>().First(item => Equals(item.Content, "Hôm nay")).IsChecked = true;
+                    }
+                    if (route == "Cài đặt") {
+                        var sections = Descendants(window).OfType<TabControl>().First();
+                        for (var i = 0; i < sections.Items.Count; i++) {
+                            sections.SelectedIndex = i; Pump(); window.UpdateLayout();
+                            if (sections.SelectedItem is TabItem { Header: "Lưu trữ & Dữ liệu" }) {
+                                var settingsView = Descendants(window).OfType<SettingsView>().First();
+                                var storageVm = (SettingsViewModel)settingsView.DataContext;
+                                storageVm.StorageGroups.Clear();
+                                storageVm.StorageGroups.Add(new StorageEntry("supertonic", "Supertonic 3 · Offline", "Giọng tự nhiên đã tải; gỡ sẽ chuyển về giọng cơ bản.", Path.GetTempPath(), true, 687026995, 13));
+                                storageVm.StorageGroups.Add(new StorageEntry("personal", "Sổ tay, hội thoại và từ vựng", "Dữ liệu học tập được giữ lại khi dọn bộ nhớ đệm.", Path.GetTempPath(), false, 2097152, 12));
+                                Pump(); window.UpdateLayout();
+                                var rowActions = Descendants(settingsView).OfType<Button>().Where(button => button.CommandParameter is StorageEntry && button.IsVisible).ToList();
+                                if (rowActions.Count != 3 || rowActions.Any(button => button.Command == null)) throw new Exception("Storage cards lost their per-row actions or expose deletion for protected data");
+                                ValidateControlLayout(settingsView, "Storage cards");
+                                Capture(window, output, $"{width}-storage-cards.png");
+                            }
+                            if (sections.SelectedItem is TabItem { Header: "AI & Kết nối" } && width == 1280) {
+                                var provider = Descendants(window).OfType<ComboBox>().First(control => control.ItemsSource is string[] values && values.Contains("openai"));
+                                foreach (var name in new[] { "openai", "gemini", "claude", "deepseek" }) {
+                                    provider.SelectedItem = name; Pump(); window.UpdateLayout();
+                                    ValidateControlLayout(window, "AI settings: " + name);
+                                    Capture(window, output, "settings-provider-" + name + ".png");
+                                }
+                                provider.SelectedItem = "openai"; Pump();
+                            }
+                            if (sections.SelectedItem is TabItem { Header: "Mô hình AI" }) {
+                                var modelSettings = (SettingsViewModel)Descendants(window).OfType<SettingsView>().First().DataContext;
+                                modelSettings.ModelVoiceLanguage = "en";
+                                if (modelSettings.CanUseVieNeu) throw new Exception("VieNeu can be selected for English");
+                                modelSettings.ModelVoiceLanguage = "vi";
+                                if (modelSettings.CanUseVieNeu != (modelSettings.CanManageModels && modelSettings.VieNeuInstalled)) throw new Exception("VieNeu default availability differs from installation");
+                                modelSettings.ModelFilter = "tts";
+                                if (!modelSettings.ShowSupertonicCard || !modelSettings.ShowVieNeuCard || modelSettings.ModelFilterEmpty) throw new Exception("TTS filter hides supported models");
+                                foreach (var filter in new[] { "stt", "translation", "languageModel" }) {
+                                    modelSettings.ModelFilter = filter;
+                                    if (!modelSettings.ModelFilterEmpty || modelSettings.ShowSupertonicCard || modelSettings.ShowVieNeuCard) throw new Exception("Unsupported category displays TTS models");
+                                }
+                                modelSettings.ModelFilter = "installed";
+                                if (modelSettings.ShowSupertonicCard != modelSettings.SupertonicInstalled || modelSettings.ShowVieNeuCard != modelSettings.VieNeuInstalled) throw new Exception("Installed model filter differs from inventory");
+                                Pump(); Capture(window, output, $"{width}-models-installed.png");
+                                modelSettings.ModelFilter = "recommended";
+                                modelSettings.DownloadingModel = "supertonic";
+                                if (!modelSettings.DownloadingSupertonic || modelSettings.DownloadingVieNeu || modelSettings.ShowSupertonicInstall) throw new Exception("Supertonic download exposes wrong actions");
+                                modelSettings.DownloadingModel = "vieneu";
+                                if (!modelSettings.DownloadingVieNeu || modelSettings.DownloadingSupertonic || modelSettings.ShowVieNeuInstall) throw new Exception("VieNeu download exposes wrong actions");
+                                modelSettings.DownloadingModel = "";
+                                if (modelSettings.DownloadingSupertonic || modelSettings.DownloadingVieNeu) throw new Exception("Idle model exposes cancellation");
+                                modelSettings.UpdatingCatalog = true; Pump();
+                                if (modelSettings.CanManageModels || modelSettings.CatalogUpdateLabel != "Đang cập nhật…") throw new Exception("Catalog busy state is not visible or permits mutation");
+                                modelSettings.UpdatingCatalog = false; Pump();
+                                var busySettings = new SettingsViewModel(() => true);
+                                if (busySettings.CanManageModels) throw new Exception("Active session permits model management");
+                                Await(busySettings.UpdateCatalogCommand.ExecuteAsync(null));
+                                if (busySettings.UpdatingCatalog) throw new Exception("Busy session started catalog network request");
+                            }
+                            ValidateControlLayout(window, "Settings section " + i);
+                            if (sections.SelectedItem is TabItem { Header: "Dịch & Phụ đề" } && width == 1280) {
+                                var settings = (SettingsViewModel)Descendants(window).OfType<SettingsView>().First().DataContext;
+                                var quick = new QuickTranslateViewModel();
+                                if (quick.TranslateCommand.CanExecute(null) || quick.CheckGrammarCommand.CanExecute(null)) throw new Exception("Empty quick text enables AI actions");
+                                var originalQuickFont = quick.EditorFontSize;
+                                quick.SourceText = "a\u0301";
+                                if (!quick.TranslateCommand.CanExecute(null) || !quick.CheckGrammarCommand.CanExecute(null)) throw new Exception("Quick AI actions did not enable for text");
+                                quick.IsTranslating = true;
+                                if (quick.CanConfigure || quick.TranslateCommand.CanExecute(null) || quick.CheckGrammarCommand.CanExecute(null)) throw new Exception("Quick processing permits overlapping actions");
+                                quick.IsTranslating = false;
+                                if (quick.CharacterCountLabel != "1 ký tự") throw new Exception("Quick editor Unicode count is incorrect");
+                                for (var n = 0; n < 30; n++) quick.IncreaseEditorFontCommand.Execute(null);
+                                if (quick.EditorFontSize != 22 || quick.IncreaseEditorFontCommand.CanExecute(null)) throw new Exception("Quick editor upper font bound failed");
+                                for (var n = 0; n < 30; n++) quick.DecreaseEditorFontCommand.Execute(null);
+                                if (quick.EditorFontSize != 12 || quick.DecreaseEditorFontCommand.CanExecute(null) || quick.SourceText != "a\u0301") throw new Exception("Quick editor lower font bound or source preservation failed");
+                                quick.EditorFontSize = originalQuickFont;
+                                var domain = settings.TranslationDomain; var pace = settings.SubtitlePacing; var size = settings.SubtitleFontSize; var light = settings.SubtitleLight;
+                                settings.TranslationDomain = "Công nghệ thông tin"; settings.SubtitlePacing = "Nhanh"; settings.SubtitleFontSize = 21; settings.SubtitleLight = true;
+                                settings.SaveSubtitlePreferencesCommand.Execute(null);
+                                var preferences = TransTools.Services.Experience.SubtitlePreferences.Shared;
+                                if (quick.SelectedDomain != "Công nghệ thông tin" || preferences.Pacing != "fast" || preferences.FontSize != 21 || !preferences.Light) throw new Exception("Translation/subtitle settings did not update shared consumers");
+                                settings.TranslationDomain = domain; settings.SubtitlePacing = pace; settings.SubtitleFontSize = size; settings.SubtitleLight = light;
+                                settings.SaveSubtitlePreferencesCommand.Execute(null); Pump();
+                            }
+                            if (sections.SelectedItem is TabItem { Header: "Giọng đọc & Phát âm" }) {
+                                var voice = Descendants(window).OfType<VoiceSettingsView>().First();
+                                Capture(window, output, $"{width}-voice-default.png");
+                                ((RadioButton)voice.FindName("AdvancedTab")).IsChecked = true; Pump(); ValidateControlLayout(window, "Voice advanced");
+                                Capture(window, output, $"{width}-voice-advanced.png");
+                                ((RadioButton)voice.FindName("DefaultTab")).IsChecked = true; Pump();
+                                if (width == 1280) {
+                                    var management = (SettingsViewModel)Descendants(window).OfType<SettingsView>().First().DataContext;
+                                    var blocked = new VoiceSettingsViewModel(management, () => true);
+                                    Await(blocked.PreviewCommand.ExecuteAsync(null));
+                                    if (blocked.IsPreviewing || !blocked.Status.Contains("Dừng phiên")) throw new Exception("Voice preview did not respect active audio session");
+                                    var voicePreviewReader = new TextReaderViewModel { Text = "Keep this original text unchanged." };
+                                    var old = TransTools.Services.Speech.VoicePreferences.Get("vi");
+                                    TransTools.Services.Speech.VoicePreferences.Save("vi", "Giọng cơ bản", 1.2);
+                                    if (voicePreviewReader.Engine != "Giọng cơ bản" || Math.Abs(voicePreviewReader.Rate - 1.2) > 0.000001 || voicePreviewReader.Text != "Keep this original text unchanged.") throw new Exception("Voice preference update failed or overwrote reader text");
+                                    TransTools.Services.Speech.VoicePreferences.Save("vi", old.Engine, old.Rate);
+                                }
+                            }
+                            Capture(window, output, $"{width}-settings-{i}.png");
+                            Console.WriteLine($"PASS: settings section {i} at {width}x{height}");
+                        }
+                    }
+                }
+            }
+            Descendants(window).OfType<RadioButton>().First(b => Equals(b.Content, "Cuộc họp")).IsChecked = true; Pump();
+            var routedMeeting = Descendants(window).OfType<MeetingView>().First();
+            ((Button)routedMeeting.FindName("EarphoneButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+            var routedPopup = (System.Windows.Controls.Primitives.Popup)routedMeeting.FindName("EarphonePopup");
+            Descendants(routedPopup.Child).OfType<Button>().First(b => Equals(b.Content, "Giọng & Tốc độ")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+            var routedSettings = Descendants(window).OfType<SettingsView>().First();
+            if (((TabControl)routedSettings.FindName("SettingsSections")).SelectedIndex != 4 || Descendants(routedSettings).OfType<VoiceSettingsView>().First().DataContext is not VoiceSettingsViewModel routedVoice || routedVoice.Language != ((MeetingViewModel)routedMeeting.DataContext).TargetLanguage) throw new Exception("Earphone voice settings route lost the target language");
+            var about = new AboutWindow { Owner = window }; about.Show(); Pump(); ValidateControlLayout(about, "About"); Capture(about, output, "about.png"); about.Close();
+            var rename = new RenameRecordWindow("Cuộc họp dự án"){ Owner = window }; rename.Show(); Pump(); ValidateControlLayout(rename, "Rename record"); Capture(rename, output, "rename-record.png"); rename.Close();
+            var deleteConfirm = new ConfirmDeleteWindow("Cuộc họp dự án") { Owner = window }; deleteConfirm.Show(); Pump(); ValidateControlLayout(deleteConfirm, "Delete confirmation"); Capture(deleteConfirm, output, "delete-record.png"); deleteConfirm.Close();
+            var clearMeeting = new ConfirmDeleteWindow("Nội dung cuộc họp hiện tại", currentMeeting: true) { Owner = window }; clearMeeting.Show(); Pump(); ValidateControlLayout(clearMeeting, "Clear current meeting"); Capture(clearMeeting, output, "clear-current-meeting.png"); clearMeeting.Close();
+            var deleteAll = new ConfirmDeleteWindow("12 bản ghi đã lưu", true) { Owner = window }; deleteAll.Show(); Pump(); ValidateControlLayout(deleteAll, "Delete all confirmation"); Capture(deleteAll, output, "delete-all-records.png"); deleteAll.Close();
+            var generatedJson = "{\"lessons\":[{\"original\":\"Hello.\",\"meaning\":\"Xin chào.\",\"context\":\"Chào hỏi\"},{\"original\":\"Thank you.\",\"meaning\":\"Cảm ơn.\",\"context\":\"Cảm ơn\"},{\"original\":\"Goodbye.\",\"meaning\":\"Tạm biệt.\",\"context\":\"Tạm biệt\"}]}";
+            var generated = TransTools.Services.Learning.AdaptiveLessons.ParseGenerated(generatedJson, "en", "Giao tiếp đời sống");
+            if (generated.Count != 3 || generated.Any(l => l.Goal != "Giao tiếp đời sống")) throw new Exception("Generated lessons lost goal context");
+            var rejected = false; try { TransTools.Services.Learning.AdaptiveLessons.ParseGenerated("{\"lessons\":[]}", "en", "test"); } catch { rejected = true; }
+            if (!rejected) throw new Exception("Invalid AI lesson response accepted");
+            var lessonRoot = Path.Combine(output, "adaptive-fixture"); var lessonStore = new TransTools.Services.Learning.AdaptiveLessons(lessonRoot);
+            lessonStore.AddGenerated(generated);
+            var restoredLessons = new TransTools.Services.Learning.AdaptiveLessons(lessonRoot);
+            if (restoredLessons.Lessons.Count != 3 || restoredLessons.Lessons[0].Goal != "Giao tiếp đời sống") throw new Exception("Generated lesson persistence lost goal");
+            var progress = new TransTools.Services.Learning.LessonProgress(); var day = new DateTime(2026,10,10);
+            for (var i=0;i<10;i++) progress = progress.Record(true,day);
+            if (progress.Difficulty != 1) throw new Exception("Repeated same-day answers increased difficulty");
+            progress = progress.Record(true,day.AddDays(1)).Record(true,day.AddDays(2));
+            if (progress.Difficulty != 2 || progress.Record(false,day.AddDays(3)).Difficulty != 1) throw new Exception("Adaptive multi-day difficulty progression failed");
+            var exportFixture = new MeetingSession { Title = "Tiếng Việt", Captions = [new Caption { Start = 1.25, End = 3.5, Original = "Hello", Vietnamese = "Xin chào" }] };
+            var exportSrt = MeetingViewModel.FormatExport(exportFixture, "srt");
+            if (!exportSrt.Contains("00:00:01,250 --> 00:00:03,500") || !exportSrt.Contains("Hello\nXin chào")) throw new Exception("Meeting SRT export lost timing or bilingual text");
+            if (!MeetingViewModel.FormatExport(exportFixture, "txt").Contains("Tiếng Việt")) throw new Exception("Meeting TXT export lost Unicode title");
+            CheckNotebookRecords(window, output);
+            CheckReadingLibrary(window, output);
+            var chatModel = Descendants(window).OfType<ConversationView>().FirstOrDefault()?.DataContext as ConversationViewModel;
+            // The cached conversation view may be hidden; create an isolated fixture instead.
+            chatModel = new ConversationViewModel(() => false);
+            chatModel.Messages.Add(new ChatMessageItem { Text = "A long reply should wrap and remain readable in the mini chat window. The user should be able to follow the conversation while the main window is closed.", Translation = "Câu trả lời dài cần xuống dòng và vẫn dễ đọc trong cửa sổ trò chuyện nhỏ." });
+            var mini = new ConversationMiniWindow(chatModel); mini.Show();
+            for (var n = 0; n < 8; n++) chatModel.Messages.Add(new ChatMessageItem { IsUser = n % 2 == 0, Text = "A longer spoken reply should wrap without hiding its ending in the compact conversation window.", Translation = "Câu trả lời dài vẫn phải hiển thị đầy đủ trong cửa sổ trò chuyện nhỏ." });
+            foreach (var width in new[] { 360, 460 }) {
+                mini.Width = width; Pump(); mini.UpdateLayout(); ValidateControlLayout(mini, "Mini chat");
+                var miniList = (ListBox)mini.FindName("MessagesList");
+                if (miniList.Items.Count != 6 || !ReferenceEquals(miniList.Items[^1], chatModel.Messages.Last()) || chatModel.Messages.Count != 9) throw new Exception("Mini chat subset discarded full transcript or missed latest reply");
+                chatModel.ShowVietnameseTranslation = true; chatModel.ShowMiniTranslation = true;
+                ((Button)mini.FindName("MiniTranslationButton")).Command.Execute(null); Pump();
+                if (chatModel.ShowMiniTranslation || !chatModel.ShowVietnameseTranslation) throw new Exception("Mini translation toggle changed full chat presentation");
+                if (Descendants(mini).OfType<TextBlock>().Any(t => t.IsVisible && t.Text == chatModel.Messages.Last().Translation)) throw new Exception("Mini chat ignored its own bilingual toggle");
+                ((Button)mini.FindName("MiniTranslationButton")).Command.Execute(null); Pump();
+                chatModel.IsConversationActive = true; chatModel.UserInput = "A recognized draft to send"; Pump();
+                if (!((Button)mini.FindName("MiniEndButton")).IsVisible || !((TextBlock)mini.FindName("MiniDraft")).IsVisible) throw new Exception("Active mini chat did not show stop/draft");
+                var scroll = Descendants((ListBox)mini.FindName("MessagesList")).OfType<ScrollViewer>().First();
+                if (scroll.ScrollableHeight - scroll.VerticalOffset > 1) throw new Exception("Mini chat missed final line after bilingual reflow");
+                Capture(mini, output, $"mini-chat-{width}.png");
+            }
+            chatModel.EndConversationCommand.Execute(null); Pump();
+            if (((Button)mini.FindName("MiniEndButton")).IsVisible || chatModel.Messages.Count != 9) throw new Exception("Ending mini conversation did not hide stop or preserve history");
+            Capture(mini, output, "mini-chat-stopped.png");
+            mini.CloseForExit(); chatModel.Dispose();
+            CheckSubtitleHud(output);
+            File.WriteAllLines(Path.Combine(output, "bindings.txt"), errors.Lines);
+            if (errors.Lines.Count != 0) throw new Exception("WPF binding errors detected; see bindings.txt.");
+            File.WriteAllText(Path.Combine(output, "result.txt"), "PASS: seven routes, three window sizes, no WPF binding errors. Audio, model inference and Windows 10/11 interactive tests remain separate.");
+            app.Shutdown(); return 0;
+        } catch (Exception ex) { File.WriteAllText(Path.Combine(output, "failure.txt"), ex.ToString()); Console.Error.WriteLine(ex); return 1; }
+    }
+    private const string HintJson = """{"translations":[],"suggestions":[{"text":"Could you explain the next step?","vietnamese":"Bạn giải thích bước tiếp theo được không?"},{"text":"I can review the proposal tomorrow.","vietnamese":"Tôi có thể xem lại đề xuất vào ngày mai."},{"text":"Let us agree on the deadline first.","vietnamese":"Chúng ta thống nhất thời hạn trước nhé."}]}""";
+    private static void CheckConversationHelp() {
+        var folder = Path.Combine(Path.GetTempPath(), "trans-tools-hints-" + Guid.NewGuid());
+        try {
+            var calls = 0; var history = "";
+            using (var hints = new ConversationViewModel(preferences: new ConversationPreferencesStore(Path.Combine(folder, "current.json")), generateHelp: (input, _, _) => { calls++; history = input; return Task.FromResult(HintJson); })) {
+                hints.SuggestionsEnabled = true;
+                for (var i = 0; i < 8; i++) hints.Messages.Add(new ChatMessageItem { IsUser = i % 2 == 0, Text = "turn-" + i });
+                Await(hints.RefreshHelpCommand.ExecuteAsync(null));
+                if (calls != 1 || hints.Suggestions.Count != 3 || history.Contains("turn-0") || history.Contains("turn-1") || !history.Contains("turn-7")) throw new Exception("Hints did not use exactly the latest six turns");
+                hints.UserInput = "I am still speaking"; hints.IsListening = true; hints.IsConversationActive = true;
+                if (calls != 1 || hints.ListenSuggestionCommand.CanExecute(hints.Suggestions[0])) throw new Exception("Draft changes generated hints or listening allowed sample playback");
+                hints.EndConversationCommand.Execute(null);
+                if (hints.Suggestions.Count != 3 || !hints.ListenSuggestionCommand.CanExecute(hints.Suggestions[0])) throw new Exception("Ending conversation discarded hints or left sample playback disabled");
+            }
+            foreach (var change in new[] { "turn", "off", "end" }) {
+                var completion = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously); var observed = CancellationToken.None;
+                using var staleHints = new ConversationViewModel(preferences: new ConversationPreferencesStore(Path.Combine(folder, change + ".json")), generateHelp: (_, _, token) => { observed = token; return completion.Task; });
+                staleHints.SuggestionsEnabled = true; staleHints.Messages.Add(new ChatMessageItem { Text = "What is the next step?" });
+                var pendingHints = staleHints.RefreshHelpCommand.ExecuteAsync(null);
+                if (!staleHints.IsGeneratingHelp || staleHints.RefreshHelpCommand.CanExecute(null)) throw new Exception("Repeated hint refresh is available during an in-flight request");
+                if (change == "turn") staleHints.Messages.Add(new ChatMessageItem { IsUser = true, Text = "I already replied" });
+                else if (change == "off") staleHints.SuggestionsEnabled = false;
+                else staleHints.EndConversationCommand.Execute(null);
+                if (!observed.IsCancellationRequested) throw new Exception("Stale hints were not canceled");
+                completion.SetResult(HintJson); Await(pendingHints);
+                if (staleHints.Suggestions.Count != 0 || staleHints.IsGeneratingHelp) throw new Exception("Late hints replaced a newer conversation state");
+            }
+            var automaticCalls = 0; var listenCalls = 0;
+            using var automatic = new ConversationViewModel(preferences: new ConversationPreferencesStore(Path.Combine(folder, "auto.json")),
+                generateReply: (_, _, _) => Task.FromResult("What would you like to practice today?"), generateHelp: (_, _, _) => { automaticCalls++; return Task.FromResult(HintJson); }, beginListening: () => { listenCalls++; return Task.CompletedTask; });
+            automatic.SuggestionsEnabled = true; automatic.ShowVietnameseTranslation = false; automatic.AutoSpeakResponse = false;
+            Await(automatic.StartConversationCommand.ExecuteAsync(null));
+            if (automaticCalls != 1 || automatic.Suggestions.Count != 3 || listenCalls != 1 || automatic.Messages.Count != 1) throw new Exception("Opening reply did not create hints once and resume listening");
+        } finally { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
+    }
+    private static void CheckConversationHelpLayout(TransTools.MainWindow window, string output, int width, IEnumerable<ChatMessageItem> messages) {
+        var folder = Path.Combine(Path.GetTempPath(), "trans-tools-hint-layout-" + Guid.NewGuid());
+        var container = (Grid)window.FindName("MainContentGrid"); var original = container.Children.Cast<UIElement>().ToArray();
+        using var model = new ConversationViewModel(preferences: new ConversationPreferencesStore(Path.Combine(folder, "prefs.json")), generateHelp: (_, _, _) => Task.FromResult(HintJson));
+        try {
+            foreach (var message in messages) model.Messages.Add(message);
+            model.SuggestionsEnabled = true;
+            var view = new ConversationView(model); container.Children.Clear(); container.Children.Add(view); Pump();
+            ValidateControlLayout(view, "Conversation suggestions");
+            var panel = (ScrollViewer)view.FindName("ConversationHelpPanel");
+            if (!panel.IsVisible || Math.Abs(panel.ActualWidth - 260) > 1 || model.Suggestions.Count != 3) throw new Exception("Conversation suggestion column is missing or sized differently from Mac");
+            model.IsConversationActive = true; Pump();
+            if (Descendants(panel).OfType<Button>().Where(b => Equals(b.Content, "Nghe mẫu")).Any(b => b.IsEnabled)) throw new Exception("Sample playback is enabled during active conversation");
+            model.IsConversationActive = false; Pump(); Capture(window, output, $"{width}-conversation-help.png");
+        } finally { container.Children.Clear(); foreach (var child in original) container.Children.Add(child); Pump(); if (Directory.Exists(folder)) Directory.Delete(folder, true); }
+    }
+    private static void Await(Task task)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(20);
+        while (!task.IsCompleted) { if (DateTime.UtcNow > deadline) throw new TimeoutException("Fixture did not complete"); Pump(); }
+        task.GetAwaiter().GetResult();
+    }
+    private static void CheckNotebookRecords(Window window, string output)
+    {
+        var conversationTab = Descendants(window).OfType<RadioButton>().First(b => Equals(b.Content, "Trò chuyện"));
+        conversationTab.IsChecked = true; Pump();
+        var conversation = (ConversationViewModel)Descendants(window).OfType<ConversationView>().First().DataContext;
+        var saved = new TransTools.Services.Storage.ConversationSession {
+            Title = "Trò chuyện · Cuộc họp dự án", Language = "Tiếng Nhật", Topic = "Công việc", UpdatedAt = DateTime.Now.AddHours(1),
+            Messages = [new ChatMessageItem { IsUser = true, Text = "プロジェクトについて話しましょう。", Translation = "Cùng nói về dự án.", TimeString = "10:30" }, new ChatMessageItem { Text = "もちろんです。", Translation = "Chắc chắn rồi.", TimeString = "10:32" }]
+        };
+        conversation.Sessions.Add(saved);
+        var notebookTab = Descendants(window).OfType<RadioButton>().First(b => Equals(b.Content, "Sổ tay"));
+        notebookTab.IsChecked = true; Pump();
+        var notebook = (NotebookViewModel)Descendants(window).OfType<NotebookView>().First().DataContext;
+        notebook.SetConversations(conversation.Sessions);
+        var projection = notebook.Sessions.Single(s => s.Id == saved.Id);
+        if (!projection.IsConversation || projection.SourceLanguage != "ja" || projection.Captions[0].FormattedTimestamp != "10:30" || !projection.Captions[0].Original.Contains(saved.Messages[0].Text)) throw new Exception("Saved conversation projection lost source language, text or original time");
+        if (System.Text.Json.JsonSerializer.Serialize(projection).Contains("IsConversation")) throw new Exception("Conversation projection metadata leaked into meeting persistence");
+        notebook.RecordKind = "Trò chuyện";
+        if (notebook.SessionsView.Cast<MeetingSession>().Any(s => !s.IsConversation)) throw new Exception("Conversation filter contains meetings");
+        notebook.SelectedSession = projection;
+        foreach (var width in new[] {1200, 1280, 1440}) {
+            SetViewportSize(window, width, (int)window.Height); Pump(); ValidateControlLayout(window, "Notebook conversation"); Capture(window, output, $"{width}-notebook-conversation.png");
+        }
+        notebook.RecordKind = "Cuộc họp";
+        if (notebook.SessionsView.Cast<MeetingSession>().Any(s => s.IsConversation)) throw new Exception("Meeting filter contains conversations");
+        notebook.RecordKind = "Tất cả"; notebook.SearchKeyword = "プロジェクト"; Pump();
+        if (!notebook.SessionsView.Contains(projection)) throw new Exception("Conversation text search lost saved messages");
+        notebook.SearchKeyword = ""; notebook.SelectedSession = projection;
+        notebook.ResumeConversationCommand.Execute(null); Pump();
+        if (conversation.SelectedSession?.Id != saved.Id || conversation.Messages.Count != 2 || conversation.Messages[0].Text != saved.Messages[0].Text) throw new Exception("Resume conversation did not restore exact saved messages");
+        if (conversation.IsThinking || conversation.IsListening) throw new Exception("Resuming saved conversation triggered AI or microphone automatically");
+        notebook.SetConversations(conversation.Sessions);
+        if (notebook.Sessions.Count(s => s.Id == saved.Id) != 1) throw new Exception("Conversation refresh duplicated a saved session");
+        var beforeRenameText = conversation.Messages[0].Text;
+        Await(notebook.RenameRecordTitleAsync(notebook.Sessions.Single(s => s.Id == saved.Id), "Tên riêng của tôi"));
+        if (saved.Title != "Tên riêng của tôi" || !saved.HasCustomTitle) throw new Exception("Conversation rename did not update shared source: " + notebook.Status);
+        Await(conversation.SaveConversationCommand.ExecuteAsync(null));
+        var storedTitle = new TransTools.Services.Storage.ConversationStore().Load().Single(s => s.Id == saved.Id);
+        if (storedTitle.Title != "Tên riêng của tôi" || !storedTitle.HasCustomTitle || storedTitle.Messages[0].Text != beforeRenameText) throw new Exception("Saving conversation overwrote custom title or messages");
+        var invalidRename = notebook.RenameRecordTitleAsync(notebook.Sessions.Single(s => s.Id == saved.Id), "   "); Await(invalidRename);
+        if (invalidRename.Result || saved.Title != "Tên riêng của tôi") throw new Exception("Empty rename changed source title");
+        var beforeDeleteCount = conversation.Sessions.Count;
+        Await(notebook.DeleteRecordByIdAsync(notebook.Sessions.Single(s => s.Id == saved.Id)));
+        if (conversation.Sessions.Count != beforeDeleteCount - 1 || conversation.Sessions.Any(s => s.Id == saved.Id) || new TransTools.Services.Storage.ConversationStore().Load().Any(s => s.Id == saved.Id) || notebook.Sessions.Any(s => s.Id == saved.Id)) throw new Exception("Deleting conversation did not remove only the selected shared record");
+        conversation.Sessions.Add(saved); notebook.SetConversations(conversation.Sessions);
+        notebook.RecordManagementBusy = () => true;
+        var busyDelete = notebook.DeleteAllRecordsAsync(); Await(busyDelete);
+        if (busyDelete.Result || !notebook.Sessions.Any(s => s.Id == saved.Id)) throw new Exception("Bulk deletion ignored busy guard");
+        notebook.RecordManagementBusy = () => false;
+        notebook.RecordKind = "Cuộc họp"; notebook.SearchKeyword = "does not match any record";
+        var allDelete = notebook.DeleteAllRecordsAsync(); Await(allDelete);
+        if (!allDelete.Result || notebook.Sessions.Count != 0 || conversation.Sessions.Count != 0 || new TransTools.Services.Storage.ConversationStore().Load().Count != 0) throw new Exception("Bulk delete left hidden records behind");
+        Console.WriteLine("PASS: combined notebook filters, search, source timestamps and resume routing");
+    }
+
+    private static void CheckReadingLibrary(Window owner, string output)
+    {
+        var unicode = new string('a', 4499) + "😊 " + ReadingFixtureHandler.Sample;
+        var parts = TransTools.Services.Reading.ReadingLibrary.SplitParts(unicode);
+        if (string.Concat(parts.Select(part => part.Text)) != unicode.Trim() || parts.Any(part => part.Text.Length > 4500 || char.IsHighSurrogate(part.Text[^1]))) throw new Exception("Story splitting lost text or broke Unicode");
+        var html = TransTools.Services.Reading.ReadingLibrary.ExtractParagraphs("<p>Tiếng <b>Việt</b> &amp; tên riêng.<script>ignore me</script></p>");
+        if (html != "Tiếng Việt & tên riêng.") throw new Exception("Story HTML extraction lost readable text");
+        var handler = new ReadingFixtureHandler(); using var client = new System.Net.Http.HttpClient(handler);
+        using var model = new ReadingLibraryViewModel(new TransTools.Services.Reading.ReadingLibrary(client));
+        var library = new ReadingLibraryWindow(model) { Owner = owner }; library.Show(); Pump();
+        ValidateControlLayout(library, "Story catalog"); Capture(library, output, "reading-library-catalog.png");
+        var reader = new TextReaderViewModel { Text = "Keep the original text until the user confirms." };
+        Await(model.LoadStoryAsync(TransTools.Services.Reading.ReadingLibrary.Catalog[0])); Pump();
+        if (!model.CanUsePart || reader.Text != "Keep the original text until the user confirms." || string.Concat(model.Parts.Select(part => part.Text)) != ReadingFixtureHandler.Sample) throw new Exception("Story preview changed the editor or lost content");
+        ValidateControlLayout(library, "Story preview"); Capture(library, output, "reading-library-preview.png");
+        reader.UseStory(model.SelectedStory!, model.SelectedPart!.Text);
+        if (reader.Language != "vi" || !reader.HasStory || reader.Text != model.PreviewText) throw new Exception("Story import lost its text, language or source");
+        Await(model.LoadStoryAsync(TransTools.Services.Reading.ReadingLibrary.Catalog[1]));
+        if (string.Concat(model.Parts.Select(part => part.Text)) != ReadingFixtureHandler.Sample) throw new Exception("Gutenberg import retained boilerplate or lost story text");
+        model.Query = "truyện cổ tích"; Await(model.SearchAsync());
+        if (model.Stories.Count != 2 || !model.Stories.All(story => story.Page.Scheme == "https" && story.Id.Contains("123"))) throw new Exception("Online story search did not retain source links");
+        Capture(library, output, "reading-library-search.png");
+        model.SuggestionsCommand.Execute(null);
+        handler.Fail = true; var preserved = reader.Text; Await(model.LoadStoryAsync(TransTools.Services.Reading.ReadingLibrary.Catalog[0]));
+        if (model.CanUsePart || reader.Text != preserved || !model.Status.StartsWith("Chưa tải")) throw new Exception("Failed story download changed the reader");
+        handler.Fail = false; handler.Oversized = true; Await(model.LoadStoryAsync(TransTools.Services.Reading.ReadingLibrary.Catalog[0]));
+        if (model.CanUsePart) throw new Exception("Oversized story download was accepted");
+        handler.Oversized = false; handler.Pending = new(TaskCreationOptions.RunContinuationsAsynchronously); model.Query = "old search";
+        var pending = model.SearchAsync(); model.SuggestionsCommand.Execute(null); handler.Pending.SetResult(ReadingFixtureHandler.SearchResponse()); Await(pending);
+        if (model.Stories.Count != 4 || model.IsBusy || model.Stories[0].Id != "tam-cam") throw new Exception("Canceled search overwrote the suggested catalog");
+        library.Close(); Console.WriteLine("PASS: story catalog, search, preview, import, Unicode, cancellation and download limits");
+    }
+    private static void CheckMeetingSpeechQueue()
+    {
+        if (TransTools.Services.Audio.PlaybackDevices.CanRead(true, "device-a", "device-a") || TransTools.Services.Audio.PlaybackDevices.CanRead(true, null, "device-b") || !TransTools.Services.Audio.PlaybackDevices.CanRead(true, "device-a", "device-b") || !TransTools.Services.Audio.PlaybackDevices.CanRead(false, null, "device-a")) throw new Exception("Earphone feedback policy is incorrect");
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var spoken = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        using var queue = new TransTools.Services.Speech.MeetingSpeechQueue(async (request, token) => {
+            spoken.Enqueue(request.Text);
+            if (request.Text == "first") { entered.TrySetResult(); await release.Task.WaitAsync(token); }
+            if (request.Text == "fourth") done.TrySetResult();
+        }, error => done.TrySetException(error));
+        queue.Enqueue(new("first", "en", "device-b")); entered.Task.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+        foreach (var text in new[] { "second", "third", "fourth" }) queue.Enqueue(new(text, "en", "device-b"));
+        release.TrySetResult(); done.Task.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+        if (!spoken.SequenceEqual(new[] { "first", "third", "fourth" })) throw new Exception("Auto reading retained an unbounded stale backlog");
+        queue.Dispose(); queue.Completion.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+        if (queue.Enqueue(new("later", "en", "device-b"))) throw new Exception("Stopped auto reader accepted new speech");
+        var canceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var active = new TransTools.Services.Speech.MeetingSpeechQueue(async (_, token) => { canceled.TrySetResult(); await Task.Delay(Timeout.Infinite, token); }, _ => throw new Exception("Cancellation was reported as a playback failure"));
+        active.Enqueue(new("active", "en", "device-b")); canceled.Task.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult(); active.Dispose(); active.Completion.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+        Console.WriteLine("PASS: auto reading bounded backlog, owned cancellation and endpoint feedback policy");
+    }
+    private static void CheckSubtitleHud(string output)
+    {
+        var prefs = TransTools.Services.Experience.SubtitlePreferences.Shared;
+        prefs.DisplayMode = "bilingual"; prefs.Light = false; prefs.Side = false; prefs.ShowMascot = false; prefs.ShowContext = true; prefs.ShowNext = true; prefs.ShowOriginal = true;
+        var hud = new FloatingSubtitleWindow(); hud.Show(); hud.SetMeetingState(true); Pump();
+        var paused = false; var started = false; hud.StopRequested += () => paused = true; hud.StartRequested += () => started = true;
+        ((Button)hud.FindName("StopButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        if (!paused) throw new Exception("HUD pause action did not reach the meeting");
+        hud.SetMeetingState(false); ((Button)hud.FindName("StopButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        if (!started) throw new Exception("HUD start action did not reach the meeting");
+        hud.SetMeetingState(true);
+        for (var i = 0; i < 33; i++) hud.UpdateCaption(new Caption { Start = i, Original = "Original sentence " + i, Vietnamese = "Câu hoàn chỉnh cần được giữ lại để người dùng có thể đọc đủ nội dung. " + i });
+        hud.UpdateIncoming(new Caption { Start = 34, Original = "A new sentence is arriving and should not replace the completed translation." });
+        Pump(); ValidateControlLayout(hud, "HUD live"); Capture(hud, output, "subtitles.png");
+        foreach (var mode in new[] { "original", "translation", "bilingual" }) {
+            prefs.DisplayMode = mode; prefs.Save(); Pump();
+            var shown = ((TextBlock)hud.FindName("TranslatedText")).Text;
+            if (mode == "original" ? shown != "Original sentence 32" : !shown.EndsWith("32")) throw new Exception("HUD display mode lost the latest caption");
+            var sourceVisible = ((TextBlock)hud.FindName("OriginalText")).Visibility == Visibility.Visible;
+            if (sourceVisible != (mode == "bilingual")) throw new Exception("HUD source visibility differs from selected mode");
+            if (hud.HistoryCount != 30) throw new Exception("HUD display mode modified history");
+            Capture(hud, output, "subtitles-mode-" + mode + ".png");
+        }
+        var last = ((TextBlock)hud.FindName("TranslatedText")).Text; hud.UpdateSubtitle("", ""); Pump();
+        if (hud.HistoryCount != 30 || ((TextBlock)hud.FindName("TranslatedText")).Text != last) throw new Exception("HUD lost a completed caption or retained unbounded history");
+        var original = (MenuItem)hud.FindName("ShowOriginal"); original.IsChecked = false; original.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+        hud.UpdateCaption(new Caption { Original = "Translation failed; the original must remain readable." }); Pump();
+        if (((TextBlock)hud.FindName("TranslatedText")).Text != "Translation failed; the original must remain readable.") throw new Exception("HUD translation failure erased its source text");
+        var light = (MenuItem)hud.FindName("LightBackground"); light.IsChecked = true; light.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+        ((Button)hud.FindName("ReviewButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+        Capture(hud, output, "subtitles-review-light.png");
+        var review = (ListBox)hud.FindName("ReviewList");
+        if (review.Visibility != Visibility.Visible || ((ScrollViewer)hud.FindName("CaptionScroll")).Visibility != Visibility.Collapsed) throw new Exception("HUD review did not isolate manual scrolling");
+        ((Button)hud.FindName("ReviewButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        ((MenuItem)hud.FindName("LayoutItem")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump(); ValidateControlLayout(hud, "HUD side"); Capture(hud, output, "subtitles-side.png");
+        ((MenuItem)hud.FindName("LayoutItem")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); hud.Width = 820;
+        var mascot = (MenuItem)hud.FindName("ShowMascot"); mascot.IsChecked = true; mascot.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump();
+        if (!hud.IsMascotDisplayed) throw new Exception("HUD mascot was not displayed in its own column");
+        ValidateControlLayout(hud, "HUD mascot"); Capture(hud, output, "subtitles-mascot.png");
+        var longCaption = new Caption { Original = string.Join("\n", Enumerable.Repeat("Long source line for checking scroll after content layout.", 25)), Vietnamese = string.Join("\n", Enumerable.Repeat("Nội dung dài cần tự cuộn đến dòng cuối sau khi bố cục hoàn tất.", 25)) };
+        hud.UpdateCaption(longCaption); Pump();
+        var scroll = (ScrollViewer)hud.FindName("CaptionScroll");
+        if (scroll.ScrollableHeight > .5 && scroll.VerticalOffset < scroll.ScrollableHeight - .5) throw new Exception("HUD did not scroll to its final line");
+        hud.ResetSession(); Pump(); if (hud.HistoryCount != 0) throw new Exception("HUD new session retained previous history");
+        hud.Hide(); Console.WriteLine("PASS: HUD controls, retained captions, review history, layouts, mascot and final-line scrolling");
+    }
+    private static void ValidateControlLayout(Window window, string route)
+        => ValidateControlLayout((FrameworkElement)window.Content, route);
+    private static void ValidateControlLayout(FrameworkElement root, string route)
+    {
+        var viewport = new Rect(0, 0, root.ActualWidth, root.ActualHeight);
+        var controls = Descendants(root).OfType<FrameworkElement>().Where(e => e.IsVisible && (e is Button || e is ComboBox || e is RadioButton)).Select(e => (Element: e, Bounds: VisibleBounds(e, root))).Where(e => e.Bounds.Width > 1 && e.Bounds.Height > 1 && viewport.IntersectsWith(e.Bounds)).ToArray();
+        for (var i = 0; i < controls.Length; i++) for (var j = i + 1; j < controls.Length; j++) {
+            var overlap = Rect.Intersect(controls[i].Bounds, controls[j].Bounds);
+            if (!overlap.IsEmpty && overlap.Width > 2 && overlap.Height > 2)
+                throw new Exception($"Overlapping controls in {route}: {controls[i].Element.Name} ({controls[i].Element.GetType().Name}) and {controls[j].Element.Name} ({controls[j].Element.GetType().Name}), {overlap}");
+        }
+        Console.WriteLine($"PASS: no button/dropdown overlap in {route}");
+    }
+    private static Rect VisibleBounds(FrameworkElement element, FrameworkElement root)
+    {
+        var bounds = element.TransformToAncestor(root).TransformBounds(new Rect(element.RenderSize));
+        for (DependencyObject? ancestor = VisualTreeHelper.GetParent(element); ancestor != null && ancestor != root; ancestor = VisualTreeHelper.GetParent(ancestor))
+            if (ancestor is FrameworkElement frame && (frame.ClipToBounds || frame is ScrollContentPresenter))
+                bounds.Intersect(frame.TransformToAncestor(root).TransformBounds(new Rect(frame.RenderSize)));
+        bounds.Intersect(new Rect(root.RenderSize));
+        return bounds;
+    }
+    private static void SetViewportSize(Window window, int width, int height)
+    {
+        // Hosted runners may have a small desktop. Raise track minimums as well
+        // as requested size so native window constraints cannot silently clamp it.
+        window.MinWidth = width; window.MinHeight = height;
+        window.Width = width; window.Height = height; Pump(); window.UpdateLayout();
+        var root = (FrameworkElement)window.Content;
+        if (Math.Abs(window.ActualWidth - width) > 2 || Math.Abs(window.ActualHeight - height) > 2 || root.ActualWidth < width - 40 || root.ActualHeight < height - 60)
+            throw new Exception($"Requested {width}x{height}, actual window {window.ActualWidth}x{window.ActualHeight}, client {root.ActualWidth}x{root.ActualHeight}");
+        Console.WriteLine($"PASS: requested {width}x{height}; actual window {window.ActualWidth}x{window.ActualHeight}; client {root.ActualWidth}x{root.ActualHeight}");
+    }
+    private static void Capture(Window window, string output, string name)
+    {
+        window.UpdateLayout(); var root = (FrameworkElement)window.Content;
+        var margin = root.Margin;
+        var width = root.ActualWidth + margin.Left + margin.Right;
+        var height = root.ActualHeight + margin.Top + margin.Bottom;
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(width), (int)Math.Ceiling(height), 96, 96, PixelFormats.Pbgra32);
+        // Capture the client area including the content's outer margin. An explicit
+        // viewbox prevents VisualBrush from stretching descendant bounds into it.
+        var drawing = new DrawingVisual();
+        using (var context = drawing.RenderOpen()) {
+            context.DrawRectangle(window.Background, null, new Rect(0, 0, width, height));
+            var offset = VisualTreeHelper.GetOffset(root);
+            var brush = new VisualBrush(root) { Stretch = Stretch.Fill, ViewboxUnits = BrushMappingMode.Absolute, Viewbox = new Rect(offset.X, offset.Y, root.ActualWidth, root.ActualHeight) };
+            context.DrawRectangle(brush, null, new Rect(margin.Left, margin.Top, root.ActualWidth, root.ActualHeight));
+        }
+        bitmap.Render(drawing);
+        var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(bitmap));
+        using var file = File.Create(Path.Combine(output, name)); png.Save(file);
+    }
+    private static void CaptureElement(FrameworkElement element, string output, string name)
+    {
+        element.UpdateLayout();
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(element.ActualWidth), (int)Math.Ceiling(element.ActualHeight), 96, 96, PixelFormats.Pbgra32);
+        var drawing = new DrawingVisual();
+        using (var context = drawing.RenderOpen()) context.DrawRectangle(new VisualBrush(element), null, new Rect(0, 0, element.ActualWidth, element.ActualHeight));
+        bitmap.Render(drawing);
+        var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(bitmap));
+        using var file = File.Create(Path.Combine(output, name)); png.Save(file);
+    }
+    private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++) {
+            var child = VisualTreeHelper.GetChild(root, i); yield return child;
+            foreach (var descendant in Descendants(child)) yield return descendant;
+        }
+    }
+    private static void Pump()
+    {
+        var frame = new DispatcherFrame();
+        var timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(250) };
+        timer.Tick += (_, _) => { timer.Stop(); frame.Continue = false; }; timer.Start(); Dispatcher.PushFrame(frame);
+    }
+    private sealed class BindingErrors : TraceListener
+    {
+        public List<string> Lines { get; } = new();
+        public override void Write(string? message) { if (!string.IsNullOrWhiteSpace(message)) Lines.Add(message); }
+        public override void WriteLine(string? message) => Write(message);
+    }
+}

@@ -53,6 +53,10 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
+      - name: Build native VieNeu phonemizer (no Python runtime)
+        shell: pwsh
+        run: ./windows/scripts/build-native-phonemizer.ps1
+
       - name: Restore NuGet Packages
         shell: pwsh
         run: dotnet restore windows/TransTools/TransTools.csproj
@@ -74,7 +78,9 @@ jobs:
 
       - name: Create Portable ZIP
         shell: pwsh
-        run: Compress-Archive -Path windows/build/TransTools.exe -DestinationPath windows/build/TransTools-Windows-Portable.zip
+        run: |
+          $files = Get-ChildItem windows/build -Exclude 'TransTools-Setup.exe','TransTools-Windows-Portable.zip','*.pdb'
+          Compress-Archive -Path $files.FullName -DestinationPath windows/build/TransTools-Windows-Portable.zip
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
@@ -82,6 +88,8 @@ jobs:
           name: windows-release-artifacts
           path: |
             windows/build/TransTools.exe
+            windows/build/runtimes/**
+            windows/build/SpeechNative/**
             windows/build/TransTools-Setup.exe
             windows/build/TransTools-Windows-Portable.zip
 
@@ -136,11 +144,3 @@ jobs:
         run: |
           npm run test:updates
           zsh scripts/test-update-manifest.sh
-
-      - name: Publish all assets (macOS & Windows) to Vercel Blob
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
-          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
-          RELEASE_VERSION: ${{ github.ref_name }}
-          RELEASE_NOTES_FILE: docs/release-${{ github.ref_name }}.md
-        run: npm run publish:release

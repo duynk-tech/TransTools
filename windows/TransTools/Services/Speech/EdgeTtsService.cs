@@ -32,15 +32,28 @@ public class EdgeTtsService
         new() { ShortName = "ko-KR-SunHiNeural", DisplayName = "Sun-Hi (Korean)", Locale = "ko-KR", Gender = "Female" }
     };
 
-    public async Task<byte[]> SynthesizeAsync(string text, string voiceName = "vi-VN-HoaiMyNeural", double rate = 1.0, double pitch = 1.0)
+    public static string VoiceForLanguage(string language)
     {
+        var code = language.ToLowerInvariant();
+        if (code.StartsWith("vi") || code.Contains("việt")) return "vi-VN-HoaiMyNeural";
+        if (code.StartsWith("ja") || code.Contains("nhật")) return "ja-JP-NanamiNeural";
+        if (code.StartsWith("zh") || code.Contains("trung")) return "zh-CN-XiaoxiaoNeural";
+        if (code.StartsWith("ko") || code.Contains("hàn")) return "ko-KR-SunHiNeural";
+        return "en-US-JennyNeural";
+    }
+
+    public async Task<byte[]> SynthesizeAsync(string text, string voiceName = "vi-VN-HoaiMyNeural", double rate = 1.0, double pitch = 1.0, CancellationToken cancellationToken = default)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(45));
+        var token = timeout.Token;
         using var client = new ClientWebSocket();
         client.Options.SetRequestHeader("Pragma", "no-cache");
         client.Options.SetRequestHeader("Cache-Control", "no-cache");
         client.Options.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0");
         client.Options.SetRequestHeader("Origin", "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold");
 
-        await client.ConnectAsync(new Uri(WssUrl), CancellationToken.None);
+        await client.ConnectAsync(new Uri(WssUrl), token);
 
         var requestId = Guid.NewGuid().ToString("N");
         var timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
@@ -48,15 +61,15 @@ public class EdgeTtsService
         // Step 1: Send configuration
         var configMessage = $"X-Timestamp:{timestamp}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n" +
             "{\"context\":{\"synthesis\":{\"audio\":{\"metadataoptions\":{\"sentenceBoundaryEnabled\":\"false\",\"wordBoundaryEnabled\":\"false\"},\"outputFormat\":\"audio-24khz-48kbitrate-mono-mp3\"}}}}";
-        await client.SendAsync(Encoding.UTF8.GetBytes(configMessage), WebSocketMessageType.Text, true, CancellationToken.None);
+        await client.SendAsync(Encoding.UTF8.GetBytes(configMessage), WebSocketMessageType.Text, true, token);
 
         // Step 2: Send SSML synthesis request
         var rateStr = rate >= 1.0 ? $"+{Math.Round((rate - 1.0) * 100)}%" : $"-{Math.Round((1.0 - rate) * 100)}%";
         var ssml = $"<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>" +
                    $"<voice name='{voiceName}'><prosody rate='{rateStr}'>{System.Security.SecurityElement.Escape(text)}</prosody></voice></speak>";
 
-        var ssmlMessage = $"X-RequestId:{requestId}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:{timestamp}Z\r\nPath:ssml\r\n\r\n{ssml}";
-        await client.SendAsync(Encoding.UTF8.GetBytes(ssmlMessage), WebSocketMessageType.Text, true, CancellationToken.None);
+        var ssmlMessage = $"X-RequestId:{requestId}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:{timestamp}\r\nPath:ssml\r\n\r\n{ssml}";
+        await client.SendAsync(Encoding.UTF8.GetBytes(ssmlMessage), WebSocketMessageType.Text, true, token);
 
         // Step 3: Receive audio chunks
         using var audioStream = new MemoryStream();
@@ -64,23 +77,31 @@ public class EdgeTtsService
 
         while (client.State == WebSocketState.Open)
         {
-            var result = await client.ReceiveAsync(buffer, CancellationToken.None);
+            using var message = new MemoryStream();
+            WebSocketReceiveResult result;
+            do
+            {
+                result = await client.ReceiveAsync(new ArraySegment<byte>(buffer), token);
+                message.Write(buffer, 0, result.Count);
+                if (message.Length > 16 * 1024 * 1024) throw new InvalidDataException("TTS message too large.");
+            } while (!result.EndOfMessage && result.MessageType != WebSocketMessageType.Close);
+            var payload = message.ToArray();
             if (result.MessageType == WebSocketMessageType.Close) break;
 
-            if (result.MessageType == WebSocketMessageType.Binary && result.Count > 2)
+            if (result.MessageType == WebSocketMessageType.Binary && payload.Length > 2)
             {
                 // Edge TTS binary format: 2-byte header length (big-endian), then header string, then binary audio
-                int headerLength = (buffer[0] << 8) | buffer[1];
-                if (result.Count > headerLength + 2)
+                int headerLength = (payload[0] << 8) | payload[1];
+                if (payload.Length > headerLength + 2)
                 {
                     int audioOffset = headerLength + 2;
-                    int audioCount = result.Count - audioOffset;
-                    audioStream.Write(buffer, audioOffset, audioCount);
+                    int audioCount = payload.Length - audioOffset;
+                    audioStream.Write(payload, audioOffset, audioCount);
                 }
             }
             else if (result.MessageType == WebSocketMessageType.Text)
             {
-                var textMsg = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                var textMsg = Encoding.UTF8.GetString(payload);
                 if (textMsg.Contains("Path:turn.end"))
                 {
                     break;
@@ -88,7 +109,7 @@ public class EdgeTtsService
             }
         }
 
-        await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Complete", CancellationToken.None);
+        if (client.State == WebSocketState.Open) await client.CloseAsync(WebSocketCloseStatus.NormalClosure, "Complete", token);
         return audioStream.ToArray();
     }
 

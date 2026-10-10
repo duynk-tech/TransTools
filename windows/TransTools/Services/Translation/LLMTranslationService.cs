@@ -21,16 +21,25 @@ public class LLMTranslationService
 
         var systemPrompt = $"You are an expert translator. Translate the given text accurately into {targetLanguage}. Maintain natural tone with style: {style}. Return ONLY the direct translation without extra quotes or commentary.";
 
+        return await GenerateAsync(text, systemPrompt, config);
+    }
+
+    public async Task<string> GenerateAsync(string text, string systemPrompt, AIProviderConfig config, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(config.SelectedModel))
+            throw new InvalidOperationException("Chọn model AI trong Cài đặt trước khi sử dụng.");
+        if (string.IsNullOrWhiteSpace(config.ApiKey) && config.ProviderId != "ollama")
+            throw new InvalidOperationException("Chưa cấu hình API key.");
         return config.ProviderId.ToLowerInvariant() switch
         {
-            "gemini" => await CallGeminiAsync(text, systemPrompt, config),
-            "claude" => await CallClaudeAsync(text, systemPrompt, config),
-            "ollama" => await CallOllamaAsync(text, systemPrompt, config),
-            _ => await CallOpenAICompatibleAsync(text, systemPrompt, config) // OpenAI, Groq, DeepSeek
+            "gemini" => await CallGeminiAsync(text, systemPrompt, config, cancellationToken),
+            "claude" => await CallClaudeAsync(text, systemPrompt, config, cancellationToken),
+            "ollama" => await CallOllamaAsync(text, systemPrompt, config, cancellationToken),
+            _ => await CallOpenAICompatibleAsync(text, systemPrompt, config, cancellationToken) // OpenAI, Groq, DeepSeek
         };
     }
 
-    private static async Task<string> CallOpenAICompatibleAsync(string text, string systemPrompt, AIProviderConfig config)
+    private static async Task<string> CallOpenAICompatibleAsync(string text, string systemPrompt, AIProviderConfig config, CancellationToken cancellationToken)
     {
         var endpoint = !string.IsNullOrWhiteSpace(config.CustomEndpoint)
             ? config.CustomEndpoint
@@ -57,17 +66,17 @@ public class LLMTranslationService
 
         request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.SendAsync(request);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var json = await response.Content.ReadAsStringAsync();
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         using var doc = JsonDocument.Parse(json);
         return doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString()?.Trim() ?? string.Empty;
     }
 
-    private static async Task<string> CallGeminiAsync(string text, string systemPrompt, AIProviderConfig config)
+    private static async Task<string> CallGeminiAsync(string text, string systemPrompt, AIProviderConfig config, CancellationToken cancellationToken)
     {
-        var model = string.IsNullOrWhiteSpace(config.SelectedModel) ? "gemini-1.5-flash" : config.SelectedModel;
+        var model = config.SelectedModel;
         var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={config.ApiKey}";
 
         var payload = new
@@ -82,15 +91,15 @@ public class LLMTranslationService
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
         request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.SendAsync(request);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var json = await response.Content.ReadAsStringAsync();
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         using var doc = JsonDocument.Parse(json);
         return doc.RootElement.GetProperty("candidates")[0].GetProperty("content").GetProperty("parts")[0].GetProperty("text").GetString()?.Trim() ?? string.Empty;
     }
 
-    private static async Task<string> CallClaudeAsync(string text, string systemPrompt, AIProviderConfig config)
+    private static async Task<string> CallClaudeAsync(string text, string systemPrompt, AIProviderConfig config, CancellationToken cancellationToken)
     {
         var endpoint = "https://api.anthropic.com/v1/messages";
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
@@ -99,7 +108,7 @@ public class LLMTranslationService
 
         var payload = new
         {
-            model = string.IsNullOrWhiteSpace(config.SelectedModel) ? "claude-3-5-sonnet-20241022" : config.SelectedModel,
+            model = config.SelectedModel,
             max_tokens = 1024,
             system = systemPrompt,
             messages = new[]
@@ -109,20 +118,20 @@ public class LLMTranslationService
         };
 
         request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-        var response = await _httpClient.SendAsync(request);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var json = await response.Content.ReadAsStringAsync();
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         using var doc = JsonDocument.Parse(json);
         return doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString()?.Trim() ?? string.Empty;
     }
 
-    private static async Task<string> CallOllamaAsync(string text, string systemPrompt, AIProviderConfig config)
+    private static async Task<string> CallOllamaAsync(string text, string systemPrompt, AIProviderConfig config, CancellationToken cancellationToken)
     {
         var endpoint = string.IsNullOrWhiteSpace(config.CustomEndpoint) ? "http://localhost:11434/api/generate" : config.CustomEndpoint;
         var payload = new
         {
-            model = string.IsNullOrWhiteSpace(config.SelectedModel) ? "qwen2.5:7b" : config.SelectedModel,
+            model = config.SelectedModel,
             system = systemPrompt,
             prompt = text,
             stream = false
@@ -131,10 +140,10 @@ public class LLMTranslationService
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
         request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.SendAsync(request);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var json = await response.Content.ReadAsStringAsync();
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         using var doc = JsonDocument.Parse(json);
         return doc.RootElement.GetProperty("response").GetString()?.Trim() ?? string.Empty;
     }
