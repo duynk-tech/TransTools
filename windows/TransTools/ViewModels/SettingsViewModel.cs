@@ -126,6 +126,13 @@ public partial class SettingsViewModel : ObservableObject
     private readonly SecureCredentialStore _credentialStore = new();
     private readonly string _appDataDir;
     private readonly Func<bool> _meetingBusy;
+    public string SupertonicStorageSize => ModelStorageSize("supertonic");
+    public string VieNeuStorageSize => ModelStorageSize("vieneu");
+    private string ModelStorageSize(string id)
+    {
+        var entry = StorageGroups.FirstOrDefault(e => e.Id == id);
+        return entry == null ? "Chưa có dữ liệu đã tải" : "Đã lưu " + entry.Size;
+    }
     public ObservableCollection<StorageEntry> StorageGroups { get; } = new();
     [ObservableProperty] private StorageEntry? _selectedStorage;
     [ObservableProperty] private bool _isScanningStorage;
@@ -135,6 +142,8 @@ public partial class SettingsViewModel : ObservableObject
         try {
             var entries = await Task.Run(() => StorageInventory.Entries(_appDataDir).Select(StorageInventory.Scan).Where(e => e.Bytes > 0 || e.Error != null).ToList());
             StorageGroups.Clear(); foreach (var entry in entries) StorageGroups.Add(entry);
+            OnPropertyChanged(nameof(SupertonicStorageSize)); OnPropertyChanged(nameof(VieNeuStorageSize));
+            foreach (var name in new[] { nameof(SupertonicInstalled), nameof(VieNeuInstalled), nameof(VieNeuInstallationStatus), nameof(ShowSupertonicInstall), nameof(ShowVieNeuInstall) }) OnPropertyChanged(name);
             CacheSize = $"{entries.Sum(e => e.Bytes) / 1048576.0:F1} MB";
         } finally { IsScanningStorage = false; }
     }

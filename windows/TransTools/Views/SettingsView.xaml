@@ -88,12 +88,12 @@
 <TabItem Header="Mô hình AI" Tag="">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
-            <DockPanel Margin="0,8,0,16"><Button DockPanel.Dock="Right" Content="{Binding CatalogUpdateLabel}" IsEnabled="{Binding CanManageModels}" Command="{Binding UpdateCatalogCommand}" Style="{StaticResource SecondaryButton}"/><TextBlock Text="Mô hình AI" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel><TextBlock Text="{Binding CatalogStatus}" Foreground="#65756F" Margin="0,0,0,16" TextWrapping="Wrap"/>
+            <DockPanel Margin="0,8,0,16"><Button DockPanel.Dock="Right" Content="Làm mới dung lượng" Command="{Binding RefreshStorageCommand}" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0"/><Button DockPanel.Dock="Right" Content="{Binding CatalogUpdateLabel}" IsEnabled="{Binding CanManageModels}" Command="{Binding UpdateCatalogCommand}" Style="{StaticResource SecondaryButton}"/><TextBlock Text="Mô hình AI" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel><TextBlock Text="{Binding CatalogStatus}" Foreground="#65756F" Margin="0,0,0,16" TextWrapping="Wrap"/>
             <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
               <StackPanel>
                 <TextBlock Text="Giọng tự nhiên · Supertonic 3" FontSize="18" Foreground="#243D35" />
                 <TextBlock Text="{Binding SupertonicSummary}" Foreground="#65756F" Margin="0,8" />
-                <TextBlock Text="{Binding LocalVoiceStatus}" Foreground="#75BBAE" Margin="0,8" />
+                <TextBlock Text="{Binding LocalVoiceStatus}" Foreground="#287568" Margin="0,8" /><TextBlock Text="{Binding SupertonicStorageSize}" Foreground="#65756F" Margin="0,0,0,12"/>
                 <WrapPanel>
                   <Button Content="Giấy phép" Style="{StaticResource SecondaryButton}" Command="{Binding OpenVoiceLicenseCommand}" Margin="0,0,8,0" />
                   <Button Content="Tải mô hình" Visibility="{Binding ShowSupertonicInstall,Converter={StaticResource BoolVisibility}}" IsEnabled="{Binding CanManageModels}" Command="{Binding InstallVoiceCommand}" Margin="0,0,8,0" />
@@ -106,7 +106,7 @@
               <StackPanel>
                 <TextBlock Text="VieNeu v3 Turbo · Tiếng Việt" FontSize="18" Foreground="#243D35" />
                 <TextBlock Text="{Binding VieNeuSummary}" Foreground="#65756F" TextWrapping="Wrap" Margin="0,8" />
-                <TextBlock Text="{Binding VieNeuInstallationStatus}" Foreground="#287568" Margin="0,0,0,12"/><WrapPanel><Button Content="Tải VieNeu" Visibility="{Binding ShowVieNeuInstall,Converter={StaticResource BoolVisibility}}" IsEnabled="{Binding CanInstallVieNeu}" Command="{Binding InstallVieNeuCommand}" Margin="0,0,8,0"/><Button Content="Hủy tải" Visibility="{Binding DownloadingVieNeu,Converter={StaticResource BoolVisibility}}" Style="{StaticResource SecondaryButton}" Command="{Binding CancelVoiceInstallCommand}" Margin="0,0,8,0"/><Button Content="Gỡ mô hình" Visibility="{Binding VieNeuInstalled,Converter={StaticResource BoolVisibility}}" IsEnabled="{Binding CanManageModels}" Command="{Binding RemoveVieNeuCommand}" Style="{StaticResource DestructiveButton}"/></WrapPanel>
+                <TextBlock Text="{Binding VieNeuStorageSize}" Foreground="#65756F" Margin="0,0,0,8"/><TextBlock Text="{Binding VieNeuInstallationStatus}" Foreground="#287568" Margin="0,0,0,12"/><WrapPanel><Button Content="Tải VieNeu" Visibility="{Binding ShowVieNeuInstall,Converter={StaticResource BoolVisibility}}" IsEnabled="{Binding CanInstallVieNeu}" Command="{Binding InstallVieNeuCommand}" Margin="0,0,8,0"/><Button Content="Hủy tải" Visibility="{Binding DownloadingVieNeu,Converter={StaticResource BoolVisibility}}" Style="{StaticResource SecondaryButton}" Command="{Binding CancelVoiceInstallCommand}" Margin="0,0,8,0"/><Button Content="Gỡ mô hình" Visibility="{Binding VieNeuInstalled,Converter={StaticResource BoolVisibility}}" IsEnabled="{Binding CanManageModels}" Command="{Binding RemoveVieNeuCommand}" Style="{StaticResource DestructiveButton}"/></WrapPanel>
               </StackPanel>
             </Border>
           </StackPanel>
