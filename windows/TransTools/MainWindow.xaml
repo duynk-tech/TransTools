@@ -8,7 +8,7 @@
   <Geometry x:Key="ChatNavIcon">M2,2 L13,2 Q15,2 15,4 L15,11 L7,11 L3,15 L3,11 L1,11 L1,3 Z M7,12 L7,15 L13,15 L17,19 L17,15 L19,15 L19,7 L16,7</Geometry>
   <Geometry x:Key="SettingsNavIcon">M8,1 L12,1 L13,4 L16,4 L18,7 L16,10 L18,13 L16,16 L13,16 L12,19 L8,19 L7,16 L4,16 L2,13 L4,10 L2,7 L4,4 L7,4 Z M10,6 A4,4 0 1 1 10,14 A4,4 0 1 1 10,6</Geometry>
   <Style x:Key="NavButtonStyle" TargetType="RadioButton">
-   <Setter Property="Foreground" Value="#65756F"/><Setter Property="FontSize" Value="13"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Height" Value="40"/><Setter Property="Padding" Value="7,0"/><Setter Property="Cursor" Value="Hand"/>
+   <Setter Property="Foreground" Value="#65756F"/><Setter Property="FontSize" Value="14"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Height" Value="40"/><Setter Property="Padding" Value="7,0"/><Setter Property="Cursor" Value="Hand"/>
    <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RadioButton">
     <Border x:Name="Chrome" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="10" Padding="{TemplateBinding Padding}"><StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center"><Path Data="{TemplateBinding Tag}" Stroke="{TemplateBinding Foreground}" StrokeThickness="1.7" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="17" Height="17" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,7,0"/><ContentPresenter VerticalAlignment="Center"/></StackPanel></Border>
     <ControlTemplate.Triggers>
@@ -20,9 +20,9 @@
   </Style>
  </Window.Resources>
  <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-  <ui:GardenBackground x:Name="DashboardGarden" Grid.RowSpan="2"/><Image x:Name="DashboardPhoto" Grid.RowSpan="2" Stretch="UniformToFill" IsHitTestVisible="False" Visibility="Collapsed"/><Border x:Name="PhotoVeil" Grid.RowSpan="2" Background="#65FFFFFF" IsHitTestVisible="False" Visibility="Collapsed"/><Border Background="#E8FFFFFF" BorderBrush="#D8E5E1" BorderThickness="0,0,0,1" Padding="18,10">
+  <ui:GardenBackground x:Name="DashboardGarden" Grid.RowSpan="2"/><Image x:Name="DashboardPhoto" Grid.RowSpan="2" Stretch="UniformToFill" IsHitTestVisible="False" Visibility="Collapsed"/><Border x:Name="PhotoVeil" Grid.RowSpan="2" Background="#65FFFFFF" IsHitTestVisible="False" Visibility="Collapsed"/><Border Background="#E8FFFFFF" BorderBrush="#D8E5E1" BorderThickness="0,0,0,1" Padding="18,12">
    <DockPanel LastChildFill="True">
-    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"><Button x:Name="BackgroundButton" Width="36" Height="36" MinHeight="36" Padding="0" ToolTip="Chọn nền" Style="{StaticResource SecondaryButton}" Click="ShowBackground_Click"><TextBlock Text="&#xEB9F;" FontFamily="Segoe MDL2 Assets"/><Button.ContextMenu><ContextMenu>
+    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"><Button x:Name="BackgroundButton" Width="40" Height="40" MinHeight="40" Padding="0" ToolTip="Chọn nền" Style="{StaticResource SecondaryButton}" Click="ShowBackground_Click"><TextBlock Text="&#xEB9F;" FontFamily="Segoe MDL2 Assets"/><Button.ContextMenu><ContextMenu>
 <MenuItem Header="Tự động theo thời gian" Tag="auto" IsCheckable="True" Click="ChooseBackground_Click"/>
 <MenuItem Header="Buổi sáng" Tag="morning" IsCheckable="True" Click="ChooseBackground_Click"/>
 <MenuItem Header="Buổi trưa" Tag="noon" IsCheckable="True" Click="ChooseBackground_Click"/>
@@ -31,10 +31,10 @@
 <MenuItem Header="Xanh mint" Tag="mint" IsCheckable="True" Click="ChooseBackground_Click"/><Separator/>
 <MenuItem Header="Chọn ảnh từ máy…" Tag="photo" IsCheckable="True" Click="ChoosePhoto_Click"/>
 </ContextMenu></Button.ContextMenu></Button>
-     <Button Height="36" MinHeight="36" Width="110" ToolTip="{Binding DisplayName,Source={x:Static experience:AssistantIdentity.Shared}}" Click="ToggleMascot_Click" Background="#E1EEE6" Foreground="#287568" Margin="12,0,8,0"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock Text="{Binding DisplayName,Source={x:Static experience:AssistantIdentity.Shared}}" MaxWidth="72" TextTrimming="CharacterEllipsis"/></StackPanel></Button>
-     <Button Height="36" MinHeight="36" Click="ToggleSubtitle_Click" Style="{StaticResource SecondaryButton}"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8F2;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock Text="Phụ đề"/></StackPanel></Button>
+     <Button Height="40" MinHeight="40" Width="110" ToolTip="{Binding DisplayName,Source={x:Static experience:AssistantIdentity.Shared}}" Click="ToggleMascot_Click" Background="#E1EEE6" Foreground="#287568" Margin="12,0,8,0"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock Text="{Binding DisplayName,Source={x:Static experience:AssistantIdentity.Shared}}" MaxWidth="72" TextTrimming="CharacterEllipsis"/></StackPanel></Button>
+     <Button Height="40" MinHeight="40" Click="ToggleSubtitle_Click" Style="{StaticResource SecondaryButton}"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8F2;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock Text="Phụ đề"/></StackPanel></Button>
     </StackPanel>
-    <Border CornerRadius="14" Background="#DFFFFFFF" BorderBrush="#BDD9D2" BorderThickness="1" Padding="4">
+    <Border CornerRadius="14" Background="#DFFFFFFF" BorderBrush="#BDD9D2" BorderThickness="1" Padding="4" Margin="0,0,18,0">
      <UniformGrid Columns="7">
       <RadioButton Content="Cuộc họp" Tag="{StaticResource MeetingNavIcon}" Style="{StaticResource NavButtonStyle}" IsChecked="True" Checked="NavMeeting_Checked"/>
       <RadioButton Content="Sổ tay" Tag="{StaticResource NotebookNavIcon}" Style="{StaticResource NavButtonStyle}" Checked="NavNotebook_Checked"/>
