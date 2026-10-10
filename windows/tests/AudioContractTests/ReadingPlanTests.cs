@@ -30,6 +30,13 @@ internal static class ReadingPlanTests
         try {
             var path = Path.Combine(folder, "preferences.json"); var store = new ReadingPreferencesStore(path);
             Check(store.Load() == new ReadingPreference(), "Missing reader preferences did not use defaults");
+            var quickPath = Path.Combine(folder, "quick.json");
+            var quick = new TransTools.Services.Translation.QuickEditorPreferencesStore(quickPath);
+            Check(quick.Load() == 15, "Quick editor default differs from Mac");
+            quick.Save(19); Check(new TransTools.Services.Translation.QuickEditorPreferencesStore(quickPath).Load() == 19, "Quick font did not survive reload");
+            quick.Save(30); Check(quick.Load() == 22, "Quick font upper bound failed");
+            quick.Save(-1); Check(quick.Load() == 12, "Quick font lower bound failed");
+            File.WriteAllText(quickPath, "{broken"); Check(quick.Load() == 15 && File.ReadAllText(quickPath) == "{broken", "Quick font corrupt load modified stored data");
             store.Save(new(.7, 1.6, false)); Check(new ReadingPreferencesStore(path).Load() == new ReadingPreference(.7, 1.6, false), "Reading preferences did not survive reload");
             store.Save(new(-5, 9, true)); Check(store.Load() == new ReadingPreference(0, 4, true), "Persisted reader pauses were not bounded");
             File.WriteAllText(path, "{broken"); Check(store.Load() == new ReadingPreference() && File.ReadAllText(path) == "{broken", "Corrupt preference load changed stored data or prevented reading");

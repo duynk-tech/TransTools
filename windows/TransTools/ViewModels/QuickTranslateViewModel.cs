@@ -26,6 +26,16 @@ public partial class QuickTranslateViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanDecreaseEditorFont))]
     private void DecreaseEditorFont() => EditorFontSize = Math.Max(12, EditorFontSize - 1);
 
+    private readonly QuickEditorPreferencesStore _editorPreferences = new();
+    private bool _loadingEditorPreferences = true;
+    partial void OnEditorFontSizeChanged(int value)
+    {
+        if (_loadingEditorPreferences) return;
+        var bounded = Math.Clamp(value, 12, 22);
+        if (bounded != value) { EditorFontSize = bounded; return; }
+        try { _editorPreferences.Save(value); }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException) { Status = "Chưa lưu được cỡ chữ: " + e.Message; }
+    }
     private readonly GoogleTranslationService _googleTranslate = new();
     private readonly LLMTranslationService _llmTranslate = new();
 
@@ -51,6 +61,8 @@ public partial class QuickTranslateViewModel : ObservableObject
     private string _selectedDomain = TransTools.Services.Experience.SubtitlePreferences.Shared.Domain;
     public QuickTranslateViewModel()
     {
+        EditorFontSize = _editorPreferences.Load();
+        _loadingEditorPreferences = false;
         TransTools.Services.Experience.SubtitlePreferences.Shared.Changed += () => SelectedDomain = TransTools.Services.Experience.SubtitlePreferences.Shared.Domain;
     }
     partial void OnSelectedDomainChanged(string value)
