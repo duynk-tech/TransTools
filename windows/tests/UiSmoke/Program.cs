@@ -62,6 +62,15 @@ internal static class Program
             background.ContextMenu.Items.OfType<MenuItem>().First(value => Equals(value.Tag, "noon")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump();
             foreach (var (width, height) in new[] { (1280, 820), (1200, 740), (1440, 900) }) {
                 SetViewportSize(window, width, height);
+                Pump(); window.UpdateLayout();
+                var tabs = (Grid)window.FindName("NavigationTabs");
+                foreach (var nav in tabs.Children.OfType<RadioButton>()) {
+                    var label = new TextBlock { Text = (string)nav.Content, FontFamily = nav.FontFamily, FontSize = nav.FontSize, FontWeight = nav.FontWeight };
+                    label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                    if (label.DesiredSize.Width + 17 + 7 + nav.Padding.Left + nav.Padding.Right + 2 > nav.ActualWidth + 1)
+                        throw new Exception($"Navigation label clipped at {width}: {nav.Content}");
+                }
+
                 foreach (var route in new[] { "Cuộc họp", "Sổ tay", "Dịch nhanh", "Đọc văn bản", "Học ngôn ngữ", "Trò chuyện", "Cài đặt" }) {
                     var button = Descendants(window).OfType<RadioButton>().First(b => Equals(b.Content, route));
                     button.IsChecked = true; Pump(); window.UpdateLayout();

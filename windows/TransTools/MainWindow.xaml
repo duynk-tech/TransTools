@@ -35,18 +35,18 @@
      <Button Height="40" MinHeight="40" Click="ToggleSubtitle_Click" Style="{StaticResource SecondaryButton}"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8F2;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock Text="Phụ đề"/></StackPanel></Button>
     </StackPanel>
     <Border CornerRadius="14" Background="#DFFFFFFF" BorderBrush="#BDD9D2" BorderThickness="1" Padding="4" Margin="0,0,18,0">
-     <UniformGrid Columns="7">
-      <RadioButton Content="Cuộc họp" Tag="{StaticResource MeetingNavIcon}" Style="{StaticResource NavButtonStyle}" IsChecked="True" Checked="NavMeeting_Checked"/>
-      <RadioButton Content="Sổ tay" Tag="{StaticResource NotebookNavIcon}" Style="{StaticResource NavButtonStyle}" Checked="NavNotebook_Checked"/>
-      <RadioButton x:Name="NavTranslate" Content="Dịch nhanh" Tag="{StaticResource TranslateNavIcon}" Style="{StaticResource NavButtonStyle}" Checked="NavTranslate_Checked"/>
-      <RadioButton Content="Đọc văn bản" Tag="{StaticResource ReaderNavIcon}" Style="{StaticResource NavButtonStyle}" Checked="NavReader_Checked"/>
-      <RadioButton Content="Học ngôn ngữ" Tag="{StaticResource LearningNavIcon}" Style="{StaticResource NavButtonStyle}" Checked="NavLearning_Checked"/>
-      <RadioButton x:Name="NavConversation" Content="Trò chuyện" Tag="{StaticResource ChatNavIcon}" Style="{StaticResource NavButtonStyle}" Checked="NavConversation_Checked"/>
-      <RadioButton x:Name="NavSettings" Content="Cài đặt" Tag="{StaticResource SettingsNavIcon}" Style="{StaticResource NavButtonStyle}" Checked="NavSettings_Checked"/>
-     </UniformGrid>
+     <Grid x:Name="NavigationTabs"><Grid.ColumnDefinitions><ColumnDefinition Width="103*"/><ColumnDefinition Width="87*"/><ColumnDefinition Width="113*"/><ColumnDefinition Width="124*"/><ColumnDefinition Width="148*"/><ColumnDefinition Width="121*"/><ColumnDefinition Width="101*"/></Grid.ColumnDefinitions>
+      <RadioButton Grid.Column="0" Content="Cuộc họp" Tag="{StaticResource MeetingNavIcon}" Style="{StaticResource NavButtonStyle}" IsChecked="True" Checked="NavMeeting_Checked"/>
+      <RadioButton Grid.Column="1" Content="Sổ tay" Tag="{StaticResource NotebookNavIcon}" Style="{StaticResource NavButtonStyle}" Checked="NavNotebook_Checked"/>
+      <RadioButton Grid.Column="2" x:Name="NavTranslate" Content="Dịch nhanh" Tag="{StaticResource TranslateNavIcon}" Style="{StaticResource NavButtonStyle}" Checked="NavTranslate_Checked"/>
+      <RadioButton Grid.Column="3" Content="Đọc văn bản" Tag="{StaticResource ReaderNavIcon}" Style="{StaticResource NavButtonStyle}" Checked="NavReader_Checked"/>
+      <RadioButton Grid.Column="4" Content="Học ngôn ngữ" Tag="{StaticResource LearningNavIcon}" Style="{StaticResource NavButtonStyle}" Checked="NavLearning_Checked"/>
+      <RadioButton Grid.Column="5" x:Name="NavConversation" Content="Trò chuyện" Tag="{StaticResource ChatNavIcon}" Style="{StaticResource NavButtonStyle}" Checked="NavConversation_Checked"/>
+      <RadioButton Grid.Column="6" x:Name="NavSettings" Content="Cài đặt" Tag="{StaticResource SettingsNavIcon}" Style="{StaticResource NavButtonStyle}" Checked="NavSettings_Checked"/>
+     </Grid>
     </Border>
    </DockPanel>
   </Border>
-  <Grid x:Name="MainContentGrid" Grid.Row="1" Margin="18"/>
+  <Border Grid.Row="1" Background="#A6F5F8F7" IsHitTestVisible="False"/><Grid x:Name="MainContentGrid" Grid.Row="1" Margin="18"/>
  </Grid>
 </Window>
