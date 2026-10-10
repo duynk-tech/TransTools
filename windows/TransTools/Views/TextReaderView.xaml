@@ -1,7 +1,7 @@
 <UserControl x:Class="TransTools.Views.TextReaderView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
  <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
  <StackPanel Margin="0,4,0,18">
-  <TextBlock Text="Đọc văn bản" FontSize="22" FontWeight="SemiBold" Foreground="#243D35"/>
+  <TextBlock Text="Đọc văn bản" FontSize="18" FontWeight="SemiBold" Foreground="#243D35"/>
   <TextBlock Text="Nghe văn bản với giọng và tốc độ phù hợp với bạn" Foreground="#65756F" Margin="0,4,0,18"/>
   <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
    <TextBlock Text="Ngôn ngữ đọc" VerticalAlignment="Center" Margin="0,0,12,0"/>
