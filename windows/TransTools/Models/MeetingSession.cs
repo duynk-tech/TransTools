@@ -18,5 +18,15 @@ public class MeetingSession
     public string? Summary { get; set; }
 
     public string FormattedDuration => IsConversation ? "Hội thoại đã lưu" : TimeSpan.FromSeconds(DurationSeconds).ToString(@"hh\:mm\:ss");
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string DateGroup
+    {
+        get
+        {
+            var date = CreatedAt.Kind == DateTimeKind.Utc ? CreatedAt.ToLocalTime().Date : CreatedAt.Date;
+            return date == DateTime.Today ? "Hôm nay" : date == DateTime.Today.AddDays(-1) ? "Hôm qua" : "Trước đó";
+        }
+    }
+
     public string FormattedDate => CreatedAt.ToString("HH:mm • dd/MM/yyyy");
 }

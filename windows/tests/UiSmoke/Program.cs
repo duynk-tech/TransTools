@@ -666,6 +666,22 @@ internal static class Program
         notebookTab.IsChecked = true; Pump();
         var notebook = (NotebookViewModel)Descendants(window).OfType<NotebookView>().First().DataContext;
         notebook.SetConversations(conversation.Sessions);
+        var datedRecords = new[] {
+            new MeetingSession { Title = "date-group-fixture today", CreatedAt = DateTime.Today.AddHours(9) },
+            new MeetingSession { Title = "date-group-fixture yesterday", CreatedAt = DateTime.Today.AddDays(-1).AddHours(9) },
+            new MeetingSession { Title = "date-group-fixture older", CreatedAt = DateTime.Today.AddDays(-7) }
+        };
+        foreach (var record in datedRecords) notebook.Sessions.Add(record);
+        notebook.SearchKeyword = "date-group-fixture"; Pump();
+        var groups = notebook.SessionsView.Groups?.Cast<System.Windows.Data.CollectionViewGroup>().ToArray();
+        if (groups == null || !groups.Select(g => (string)g.Name).SequenceEqual(new[] { "Hôm nay", "Hôm qua", "Trước đó" }) || groups.Any(g => g.ItemCount != 1)) throw new Exception("Notebook date groups lost ordering or filtered records");
+        foreach (var width in new[] {1200, 1280, 1440}) {
+            SetViewportSize(window, width, (int)window.Height); Pump(); ValidateControlLayout(window, "Notebook date groups"); Capture(window, output, $"{width}-notebook-date-groups.png");
+        }
+        notebook.RecordKind = "Trò chuyện"; Pump();
+        if (notebook.SessionsView.Groups?.Count != 0) throw new Exception("Notebook filter left empty date headers");
+        foreach (var record in datedRecords) notebook.Sessions.Remove(record);
+        notebook.RecordKind = "Tất cả"; notebook.SearchKeyword = ""; Pump();
         var projection = notebook.Sessions.Single(s => s.Id == saved.Id);
         if (!projection.IsConversation || projection.SourceLanguage != "ja" || projection.Captions[0].FormattedTimestamp != "10:30" || !projection.Captions[0].Original.Contains(saved.Messages[0].Text)) throw new Exception("Saved conversation projection lost source language, text or original time");
         if (System.Text.Json.JsonSerializer.Serialize(projection).Contains("IsConversation")) throw new Exception("Conversation projection metadata leaked into meeting persistence");

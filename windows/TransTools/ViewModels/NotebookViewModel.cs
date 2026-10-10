@@ -139,6 +139,7 @@ public partial class NotebookViewModel : ObservableObject
     {
         SessionsView = System.Windows.Data.CollectionViewSource.GetDefaultView(Sessions);
         SessionsView.SortDescriptions.Add(new System.ComponentModel.SortDescription(nameof(MeetingSession.CreatedAt), System.ComponentModel.ListSortDirection.Descending));
+        SessionsView.GroupDescriptions.Add(new System.Windows.Data.PropertyGroupDescription(nameof(MeetingSession.DateGroup)));
         SessionsView.Filter = item => item is MeetingSession session && (RecordKind == "Tất cả" || (RecordKind == "Trò chuyện" ? session.IsConversation : !session.IsConversation)) && (string.IsNullOrWhiteSpace(SearchKeyword) ||
             session.Title.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) || session.Notes.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) ||
             session.Captions.Any(c => c.Original.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) || c.Vietnamese.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase)));
