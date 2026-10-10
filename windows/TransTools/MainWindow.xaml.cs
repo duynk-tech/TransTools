@@ -32,6 +32,7 @@ public partial class MainWindow : Window
         _notebookViewModel.DeleteConversationsRequested = _conversationViewModel.DeleteSessionsByIdsAsync;
         _notebookViewModel.DeleteConversationRequested = _conversationViewModel.DeleteSessionByIdAsync;
         _notebookViewModel.RecordManagementBusy = () => _meetingViewModel.IsBusy || !_conversationViewModel.CanChangeSession;
+        _notebookViewModel.SaveConversationNotesRequested = _conversationViewModel.SaveSessionNotesAsync;
         _notebookViewModel.RenameConversationRequested = _conversationViewModel.RenameSessionAsync;
         _conversationViewModel.SessionsSaved += () => _notebookViewModel.SetConversations(_conversationViewModel.Sessions);
         _notebookViewModel.ResumeConversationRequested += id => {

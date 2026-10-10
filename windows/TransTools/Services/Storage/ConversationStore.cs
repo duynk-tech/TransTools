@@ -9,6 +9,7 @@ public sealed class ConversationSession
     public string Title { get; set; } = "Trò chuyện mới";
     public string Topic { get; set; } = "Giao tiếp hằng ngày";
     public string Language { get; set; } = "Tiếng Anh (English)";
+    public string Notes { get; set; } = "";
     public string Prompt { get; set; } = "";
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
     public List<ChatMessageItem> Messages { get; set; } = new();

@@ -260,6 +260,15 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         var dispatcher = System.Windows.Application.Current?.Dispatcher;
         if (dispatcher == null || dispatcher.CheckAccess()) action(); else dispatcher.Invoke(action);
     }
+    public async Task<bool> SaveSessionNotesAsync(Guid id, string notes)
+    {
+        var target = Sessions.FirstOrDefault(s => s.Id == id);
+        if (target == null) return false;
+        var previous = target.Notes;
+        target.Notes = notes;
+        try { await _store.SaveAsync(Sessions); OnUi(() => SessionsSaved?.Invoke()); return true; }
+        catch { target.Notes = previous; throw; }
+    }
     public async Task<bool> RenameSessionAsync(Guid id, string title)
     {
         title = title.Trim(); var target = Sessions.FirstOrDefault(s => s.Id == id);

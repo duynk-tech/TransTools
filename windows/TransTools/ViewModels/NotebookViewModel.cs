@@ -23,16 +23,24 @@ public partial class NotebookViewModel : ObservableObject
     public ObservableCollection<MeetingSession> Sessions { get; } = new();
     public System.ComponentModel.ICollectionView SessionsView { get; private set; } = null!;
     partial void OnSearchKeywordChanged(string value) => SessionsView?.Refresh();
+    public Func<Guid, string, Task<bool>>? SaveConversationNotesRequested { get; set; }
     [RelayCommand] private async Task OpenNotesAsync()
     {
-        if (!IsMeetingSelected) return;
-        var session = SelectedSession!;
+        if (SelectedSession is not { } session) return;
         var editor = new TransTools.Views.MeetingNotesWindow(session.Notes, session.Summary ?? "") { Owner = System.Windows.Application.Current.MainWindow };
-        if (editor.ShowDialog() != true) return;
-        var notes = editor.Notes;
-        await _sessionStore.UpdateSessionAsync(session.Id, () => session, stored => stored.Notes = notes);
-        var visible = Sessions.FirstOrDefault(s => s.Id == session.Id); if (visible != null) visible.Notes = notes;
-        OnPropertyChanged(nameof(SelectedSession)); Status = "Đã lưu ghi chú";
+        if (editor.ShowDialog() == true) await SaveRecordNotesAsync(session, editor.Notes);
+    }
+    public async Task<bool> SaveRecordNotesAsync(MeetingSession session, string notes)
+    {
+        try {
+            if (session.IsConversation) {
+                if (SaveConversationNotesRequested == null || !await SaveConversationNotesRequested(session.Id, notes)) return false;
+            } else await _sessionStore.UpdateSessionAsync(session.Id, () => session, stored => stored.Notes = notes);
+            var visible = Sessions.FirstOrDefault(s => s.Id == session.Id);
+            if (visible != null) visible.Notes = notes;
+            SessionsView.Refresh(); OnPropertyChanged(nameof(SelectedSession)); Status = "Đã lưu ghi chú";
+            return true;
+        } catch (Exception ex) { Status = "Chưa lưu được ghi chú: " + ex.Message; return false; }
     }
 
     [ObservableProperty]
@@ -124,7 +132,7 @@ public partial class NotebookViewModel : ObservableObject
         foreach (var source in conversations.OrderByDescending(s => s.UpdatedAt)) {
             _conversations[source.Id] = source;
             Sessions.Add(new MeetingSession {
-                Id = source.Id, IsConversation = true, Title = source.Title, CreatedAt = source.UpdatedAt,
+                Id = source.Id, IsConversation = true, Title = source.Title, CreatedAt = source.UpdatedAt, Notes = source.Notes,
                 AudioSource = "Luyện nói với AI", SourceLanguage = ConversationLanguage(source.Language),
                 Captions = source.Messages.Select(m => new Caption {
                     Original = $"[{(m.IsUser ? "Bạn" : TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName)}] {m.Text}",
