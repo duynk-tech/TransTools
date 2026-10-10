@@ -97,8 +97,30 @@ internal static class Program
                     }
                     var notebook = Descendants(window).OfType<NotebookView>().FirstOrDefault()?.DataContext as NotebookViewModel;
                     if (notebook != null && notebook.Sessions.Count == 0) {
-                        var sample = new MeetingSession { Title = "Cuộc họp dự án • Nội dung dài để kiểm tra bố cục", DurationSeconds = 96, Notes = "# Ghi chú cuộc họp\n- Giữ nguyên toàn bộ nội dung đã ghi nhận.", Captions = Enumerable.Range(0, 12).Select(n => new Caption { Start = n * 8, End = n * 8 + 7, Original = "The recording should remain readable when the window is resized and when a longer sentence arrives.", Vietnamese = "Bản ghi phải dễ đọc khi thay đổi kích thước cửa sổ và khi xuất hiện câu dài hơn." }).ToList() };
-                        notebook.Sessions.Add(sample); notebook.SelectedSession = sample;
+                        var view = Descendants(window).OfType<NotebookView>().First(); Pump();
+                        if (notebook.HasSelectedSession || ((Border)view.FindName("RecordDetailPanel")).IsVisible || !((StackPanel)view.FindName("EmptyRecordPanel")).IsVisible) throw new Exception("Empty notebook exposed orphan detail controls");
+                        var sample = new MeetingSession { Title = "Cuộc họp dự án • Nội dung dài để kiểm tra bố cục", DurationSeconds = 96, Notes = "# Ghi chú cuộc họp\n- Giữ nguyên toàn bộ nội dung đã ghi nhận.", Summary = string.Join("\n", Enumerable.Range(0, 30).Select(n => "Quyết định cần được giữ đầy đủ trong phần tóm tắt, kể cả khi nội dung dài. " + n)), Captions = Enumerable.Range(0, 12).Select(n => new Caption { Start = n * 8, End = n * 8 + 7, Original = "The recording should remain readable when the window is resized and when a longer sentence arrives.", Vietnamese = "Bản ghi phải dễ đọc khi thay đổi kích thước cửa sổ và khi xuất hiện câu dài hơn." }).ToList() };
+                        notebook.Sessions.Add(sample); notebook.SelectedSession = sample; Pump();
+                        if (!notebook.HasSelectedSession || !((Border)view.FindName("RecordDetailPanel")).IsVisible || ((StackPanel)view.FindName("EmptyRecordPanel")).IsVisible) throw new Exception("Selecting a notebook record did not replace its empty state");
+                        if (((ScrollViewer)view.FindName("SummaryScroll")).ScrollableHeight <= 0) throw new Exception("Long notebook summary is clipped instead of scrollable");
+                        notebook.CaptionSearch = "no-matching-caption-fixture"; Pump();
+                        if (notebook.FilteredCaptionCount != 0 || sample.Captions.Count != 12) throw new Exception("Transcript filtering changed stored captions or its visible count");
+                        notebook.ClearCaptionSearchCommand.Execute(null); Pump();
+                        if (notebook.FilteredCaptionCount != 12) throw new Exception("Clearing transcript search did not restore the visible count");
+                        for (var n = 0; n < 20; n++) notebook.IncreaseCaptionFontCommand.Execute(null);
+                        if (notebook.CaptionFontSize != 22 || notebook.IncreaseCaptionFontCommand.CanExecute(null)) throw new Exception("Notebook font upper limit differs from macOS");
+                        for (var n = 0; n < 20; n++) notebook.DecreaseCaptionFontCommand.Execute(null);
+                        if (notebook.CaptionFontSize != 12 || notebook.DecreaseCaptionFontCommand.CanExecute(null)) throw new Exception("Notebook font lower limit differs from macOS");
+                        notebook.CaptionFontSize = 14;
+                        var before = sample.Captions.Select(c => (c.Id, c.Original, c.Vietnamese)).ToArray();
+                        sample.Captions[0].Vietnamese = "";
+                        foreach (var mode in notebook.CaptionModes) {
+                            notebook.CaptionMode = mode; Pump();
+                            if (!Descendants(view).OfType<TextBlock>().Any(t => t.IsVisible && t.Text == sample.Captions[0].Original)) throw new Exception("Notebook display mode erased a caption without translation: " + mode);
+                        }
+                        sample.Captions[0].Vietnamese = before[0].Vietnamese;
+                        notebook.SelectedSession = null; notebook.SelectedSession = sample; notebook.CaptionMode = "Song ngữ"; Pump();
+                        if (!before.SequenceEqual(sample.Captions.Select(c => (c.Id, c.Original, c.Vietnamese)))) throw new Exception("Notebook display controls altered stored captions");
                     }
                     Pump(); window.UpdateLayout();
                     if (button.ActualHeight < 30 || button.ActualWidth < 60) throw new Exception("Navigation collapsed: " + route);

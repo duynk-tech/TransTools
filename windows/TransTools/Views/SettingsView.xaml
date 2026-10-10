@@ -7,13 +7,16 @@
         <Setter.Value>
           <ControlTemplate TargetType="TabItem">
             <Border x:Name="SectionChrome" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,0,8" MinHeight="50">
-              <StackPanel Orientation="Horizontal"><Border Background="#D8EAE5" CornerRadius="8" Width="32" Height="32" Margin="0,0,12,0"><TextBlock Text="{TemplateBinding Tag}" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="#287568" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border><ContentPresenter x:Name="SectionLabel" ContentSource="Header" VerticalAlignment="Center" TextElement.Foreground="#65756F" TextElement.FontWeight="SemiBold" /></StackPanel>
+              <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><Border x:Name="SectionIconBackground" Background="#D8EAE5" CornerRadius="6" Width="28" Height="28" Margin="0,0,10,0"><TextBlock x:Name="SectionIcon" Text="{TemplateBinding Tag}" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#287568" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ContentPresenter Grid.Column="1" x:Name="SectionLabel" ContentSource="Header" VerticalAlignment="Center" TextElement.Foreground="#65756F" TextElement.FontWeight="SemiBold"/><TextBlock Grid.Column="2" x:Name="SectionChevron" Text="›" Foreground="#243D35" FontSize="20" VerticalAlignment="Center" Margin="8,0,0,0" Visibility="Collapsed"/></Grid>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsSelected" Value="True">
                 <Setter TargetName="SectionChrome" Property="Background" Value="#DCEAE5" />
                 <Setter TargetName="SectionChrome" Property="BorderBrush" Value="#B5D2C9" />
-                <Setter TargetName="SectionLabel" Property="TextElement.Foreground" Value="#287568" />
+                <Setter TargetName="SectionLabel" Property="TextElement.Foreground" Value="#243D35"/>
+                <Setter TargetName="SectionIconBackground" Property="Background" Value="#287568"/>
+                <Setter TargetName="SectionIcon" Property="Foreground" Value="White"/>
+                <Setter TargetName="SectionChevron" Property="Visibility" Value="Visible"/>
               </Trigger>
               <Trigger Property="IsMouseOver" Value="True">
                 <Setter TargetName="SectionChrome" Property="BorderBrush" Value="#75BBAE" />
@@ -36,6 +39,7 @@
             </Grid.ColumnDefinitions>
             <DockPanel Background="#DCF5F8F7">
               <TextBlock DockPanel.Dock="Top" Text="Cài đặt" FontSize="22" FontWeight="SemiBold" Foreground="#243D35" Margin="14,8,0,24" />
+              <TextBlock DockPanel.Dock="Bottom" Text="{Binding AppVersion}" FontFamily="Consolas" FontSize="11" Foreground="#73827C" Margin="14,16,0,16"/>
               <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <TabPanel IsItemsHost="True" />
               </ScrollViewer>

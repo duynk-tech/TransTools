@@ -13,6 +13,8 @@ namespace TransTools.ViewModels;
 
 public partial class SettingsViewModel : ObservableObject
 {
+    public string AppVersion => "Trans Tools v" + (typeof(SettingsViewModel).Assembly.GetName().Version?.ToString(3) ?? "—");
+
     public string[] TranslationDomains => TransTools.Services.Experience.SubtitlePreferences.Domains;
     public string[] SubtitlePacingOptions { get; } = ["Nhanh", "Cân bằng", "Đủ ngữ cảnh"];
     public double[] SubtitleFontSizes { get; } = [15, 18, 21, 24];
