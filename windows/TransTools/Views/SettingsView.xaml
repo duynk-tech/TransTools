@@ -2,18 +2,18 @@
   <UserControl.Resources>
     <Style x:Key="SettingsSection" TargetType="TabItem">
       <Setter Property="Cursor" Value="Hand" /><Setter Property="FontSize" Value="14" />
-      <Setter Property="Foreground" Value="#65756F" />
+      <Setter Property="Foreground" Value="#292F2D" />
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="TabItem">
             <Border x:Name="SectionChrome" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,0,8" MinHeight="50">
-              <StackPanel Orientation="Horizontal"><Border Background="#D8EAE5" CornerRadius="8" Width="32" Height="32" Margin="0,0,12,0"><TextBlock Text="{TemplateBinding Tag}" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="#287568" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border><ContentPresenter ContentSource="Header" VerticalAlignment="Center" TextElement.FontWeight="SemiBold" /></StackPanel>
+              <StackPanel Orientation="Horizontal"><Border Background="#D8EAE5" CornerRadius="8" Width="32" Height="32" Margin="0,0,12,0"><TextBlock Text="{TemplateBinding Tag}" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="#287568" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border><ContentPresenter x:Name="SectionLabel" ContentSource="Header" VerticalAlignment="Center" TextElement.Foreground="#65756F" TextElement.FontWeight="SemiBold" /></StackPanel>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsSelected" Value="True">
                 <Setter TargetName="SectionChrome" Property="Background" Value="#DCEAE5" />
                 <Setter TargetName="SectionChrome" Property="BorderBrush" Value="#B5D2C9" />
-                <Setter Property="Foreground" Value="#287568" />
+                <Setter TargetName="SectionLabel" Property="TextElement.Foreground" Value="#287568" />
               </Trigger>
               <Trigger Property="IsMouseOver" Value="True">
                 <Setter TargetName="SectionChrome" Property="BorderBrush" Value="#75BBAE" />
@@ -34,12 +34,12 @@
               <ColumnDefinition Width="280" />
               <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <StackPanel>
-              <TextBlock Text="Cài đặt" FontSize="22" FontWeight="SemiBold" Foreground="#243D35" Margin="14,8,0,24" />
+            <DockPanel Background="#DCF5F8F7">
+              <TextBlock DockPanel.Dock="Top" Text="Cài đặt" FontSize="22" FontWeight="SemiBold" Foreground="#243D35" Margin="14,8,0,24" />
               <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <TabPanel IsItemsHost="True" />
               </ScrollViewer>
-            </StackPanel>
+            </DockPanel>
             <ContentPresenter Grid.Column="1" ContentSource="SelectedContent" Margin="28,20,28,20" />
           </Grid>
         </ControlTemplate>
