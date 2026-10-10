@@ -7,8 +7,8 @@
     <Border Grid.Column="0" Background="#E8F5F8F7" BorderBrush="#C2DDD5" BorderThickness="0,0,1,0" CornerRadius="0" Padding="14" Margin="0">
       <DockPanel>
         <TextBlock DockPanel.Dock="Top" Text="Cuộc họp &amp; Hội thoại" FontSize="16" FontWeight="Bold" Foreground="#243D35" Margin="0,0,0,12" />
-        <TextBox DockPanel.Dock="Top" Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}" ToolTip="Tìm theo tiêu đề, nội dung…" Margin="0,0,0,12" MinHeight="40" />
-        <ListBox ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemsSource="{Binding SessionsView}" SelectedItem="{Binding SelectedSession}" Background="Transparent" BorderThickness="0">
+        <Grid DockPanel.Dock="Top" Margin="0,0,0,12"><TextBox Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}" ToolTip="Tìm theo tiêu đề, nội dung…" MinHeight="40" Height="40" Margin="0" />
+        <TextBlock Text="Tìm theo tiêu đề, nội dung…" Foreground="#93A19B" FontSize="12" IsHitTestVisible="False" VerticalAlignment="Center" Margin="12,0,8,0" TextTrimming="CharacterEllipsis"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding SearchKeyword}" Value=""><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock></Grid><ListBox ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemsSource="{Binding SessionsView}" SelectedItem="{Binding SelectedSession}" Background="Transparent" BorderThickness="0">
           <ListBox.ItemTemplate>
             <DataTemplate>
               <Border Style="{StaticResource TranscriptCard}" Margin="0,0,0,6">
@@ -78,11 +78,11 @@
               <RadioButton Content="Bản dịch" GroupName="TranscriptMode" Style="{StaticResource SegmentedOption}" IsChecked="{Binding CaptionMode,Mode=TwoWay,Converter={StaticResource OptionSelection},ConverterParameter=Bản dịch}" MinWidth="74" FontSize="12" Padding="6" />
             </StackPanel>
             <StackPanel Grid.Column="2" Orientation="Horizontal">
-              <Button Content="A−" Command="{Binding DecreaseCaptionFontCommand}" Style="{StaticResource SecondaryButton}" Padding="7,4" MinHeight="32" />
+              <Button Content="A−" Command="{Binding DecreaseCaptionFontCommand}" Style="{StaticResource SecondaryButton}" Padding="7,4" MinHeight="32" Height="32" VerticalAlignment="Center" />
               <TextBlock Text="{Binding CaptionFontSize}" VerticalAlignment="Center" Margin="8,0" />
-              <Button Content="A+" Command="{Binding IncreaseCaptionFontCommand}" Style="{StaticResource SecondaryButton}" Padding="7,4" MinHeight="32" />
-              <TextBox Text="{Binding CaptionSearch,UpdateSourceTrigger=PropertyChanged}" ToolTip="Lọc câu thoại…" Width="150" Margin="12,0,0,0" />
-            </StackPanel>
+              <Button Content="A+" Command="{Binding IncreaseCaptionFontCommand}" Style="{StaticResource SecondaryButton}" Padding="7,4" MinHeight="32" Height="32" VerticalAlignment="Center" />
+              <Grid Width="150" Margin="12,0,0,0" VerticalAlignment="Center"><TextBox Text="{Binding CaptionSearch,UpdateSourceTrigger=PropertyChanged}" ToolTip="Lọc câu thoại…" Height="32" MinHeight="32" Margin="0" />
+            <TextBlock Text="Lọc câu thoại…" Foreground="#93A19B" FontSize="12" IsHitTestVisible="False" VerticalAlignment="Center" Margin="12,0,8,0" TextTrimming="CharacterEllipsis"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding CaptionSearch}" Value=""><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock></Grid></StackPanel>
           </Grid>
         </Border>
         <ListBox ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemsSource="{Binding CaptionView}" Background="Transparent" BorderThickness="0" Margin="0,14,0,0">

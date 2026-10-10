@@ -1,13 +1,13 @@
 <UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:ui="clr-namespace:TransTools.Views" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="TransTools.Views.SettingsView">
   <UserControl.Resources>
     <Style x:Key="SettingsSection" TargetType="TabItem">
-      <Setter Property="Cursor" Value="Hand" /><Setter Property="FontSize" Value="14"/>
+      <Setter Property="Cursor" Value="Hand" /><Setter Property="FontSize" Value="14" />
       <Setter Property="Foreground" Value="#65756F" />
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="TabItem">
             <Border x:Name="SectionChrome" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,0,8" MinHeight="50">
-              <StackPanel Orientation="Horizontal"><Border Background="#D8EAE5" CornerRadius="8" Width="32" Height="32" Margin="0,0,12,0"><TextBlock Text="{TemplateBinding Tag}" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="#287568" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ContentPresenter ContentSource="Header" VerticalAlignment="Center" TextElement.FontWeight="SemiBold" /></StackPanel>
+              <StackPanel Orientation="Horizontal"><Border Background="#D8EAE5" CornerRadius="8" Width="32" Height="32" Margin="0,0,12,0"><TextBlock Text="{TemplateBinding Tag}" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="#287568" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border><ContentPresenter ContentSource="Header" VerticalAlignment="Center" TextElement.FontWeight="SemiBold" /></StackPanel>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsSelected" Value="True">
@@ -44,7 +44,7 @@
           </Grid>
         </ControlTemplate>
       </TabControl.Template>
-      <TabItem Header="AI &amp; Kết nối" Tag="&#xE945;">
+      <TabItem Header="AI &amp; Kết nối" Tag="">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
             <TextBlock Text="AI &amp; Kết nối" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
@@ -53,34 +53,34 @@
                 <TextBlock Text="Cấu hình AI" FontSize="15" FontWeight="Bold" Foreground="#243D35" Margin="0,0,0,12" />
                 <TextBlock Text="API Key được bảo mật cục bộ theo tài khoản Windows của bạn, không gửi qua bất kỳ máy chủ trung gian nào." FontSize="12" Foreground="#65756F" Margin="0,0,0,16" />
                 <TextBlock Text="Nhà cung cấp dùng cho các tính năng AI" Foreground="#65756F" />
-                <ComboBox ItemsSource="{Binding Providers}" SelectedItem="{Binding ActiveProvider}" Margin="0,8" />
+                <ComboBox ItemsSource="{Binding Providers}" SelectedItem="{Binding ActiveProvider}" Margin="0,8"><ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Converter={StaticResource ProviderLabel}}" /></DataTemplate></ComboBox.ItemTemplate></ComboBox>
                 <WrapPanel Margin="0,0,0,12">
-                  <Button Content="Lấy danh sách mô hình" Command="{Binding FetchModelsCommand}" Margin="0,0,8,0" />
+                  <Button Content="Lấy danh sách mô hình" Command="{Binding FetchModelsCommand}" Margin="0,0,8,0" Style="{StaticResource SecondaryButton}" />
                   <ComboBox ItemsSource="{Binding AvailableModels}" SelectedItem="{Binding CatalogModel}" Width="300" />
                 </WrapPanel>
-                <TextBlock Text="OpenAI API Key:" FontSize="13" Foreground="#334B43" Margin="0,0,0,4" />
+                <StackPanel><StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding ActiveProvider}" Value="openai"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style><TextBlock Text="Khóa API" FontSize="13" Foreground="#334B43" Margin="0,0,0,4" />
                 <PasswordBox ui:KeyBinding.Value="{Binding OpenAiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" BorderBrush="#D8E5E1" Padding="8,6" Margin="0,0,0,12" />
                 <TextBlock Text="Mô hình muốn sử dụng" Foreground="#65756F" />
                 <TextBox Text="{Binding OpenAiModel, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" Padding="8,6" Margin="0,4,0,12" />
-                <TextBlock Text="Google Gemini API Key:" FontSize="13" Foreground="#334B43" Margin="0,0,0,4" />
+                </StackPanel><StackPanel><StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding ActiveProvider}" Value="gemini"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style><TextBlock Text="Khóa API" FontSize="13" Foreground="#334B43" Margin="0,0,0,4" />
                 <PasswordBox ui:KeyBinding.Value="{Binding GeminiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" BorderBrush="#D8E5E1" Padding="8,6" Margin="0,0,0,12" />
                 <TextBlock Text="Mô hình muốn sử dụng" Foreground="#65756F" />
                 <TextBox Text="{Binding GeminiModel, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" Padding="8,6" Margin="0,4,0,12" />
-                <TextBlock Text="Anthropic Claude API Key:" FontSize="13" Foreground="#334B43" Margin="0,0,0,4" />
+                </StackPanel><StackPanel><StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding ActiveProvider}" Value="claude"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style><TextBlock Text="Khóa API" FontSize="13" Foreground="#334B43" Margin="0,0,0,4" />
                 <PasswordBox ui:KeyBinding.Value="{Binding ClaudeKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" BorderBrush="#D8E5E1" Padding="8,6" Margin="0,0,0,12" />
                 <TextBlock Text="Mô hình muốn sử dụng" Foreground="#65756F" />
                 <TextBox Text="{Binding ClaudeModel, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" Padding="8,6" Margin="0,4,0,12" />
-                <TextBlock Text="DeepSeek API Key:" FontSize="13" Foreground="#334B43" Margin="0,0,0,4" />
+                </StackPanel><StackPanel><StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding ActiveProvider}" Value="deepseek"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></StackPanel.Style><TextBlock Text="Khóa API" FontSize="13" Foreground="#334B43" Margin="0,0,0,4" />
                 <PasswordBox ui:KeyBinding.Value="{Binding DeepSeekKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" BorderBrush="#D8E5E1" Padding="8,6" Margin="0,0,0,16" />
                 <TextBlock Text="Mô hình muốn sử dụng" Foreground="#65756F" />
                 <TextBox Text="{Binding DeepSeekModel, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" Padding="8,6" Margin="0,4,0,12" />
-                <Button Content="Lưu cấu hình AI" Command="{Binding SaveAllKeysCommand}" Background="#287568" Foreground="White" FontWeight="Bold" Padding="16,8" HorizontalAlignment="Right" Cursor="Hand" />
+                </StackPanel><Button Content="Lưu cấu hình AI" Command="{Binding SaveAllKeysCommand}" Background="#287568" Foreground="White" FontWeight="Bold" Padding="16,8" HorizontalAlignment="Right" Cursor="Hand" />
               </StackPanel>
             </Border>
           </StackPanel>
         </ScrollViewer>
       </TabItem>
-      <TabItem Header="Mô hình AI" Tag="&#xE950;">
+      <TabItem Header="Mô hình AI" Tag="">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
             <TextBlock Text="Mô hình AI" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
@@ -107,7 +107,7 @@
           </StackPanel>
         </ScrollViewer>
       </TabItem>
-      <TabItem Header="Giọng đọc &amp; Phát âm" Tag="&#xE767;">
+      <TabItem Header="Giọng đọc &amp; Phát âm" Tag="">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
             <TextBlock Text="Giọng đọc &amp; Phát âm" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
@@ -121,7 +121,7 @@
           </StackPanel>
         </ScrollViewer>
       </TabItem>
-      <TabItem Header="Chip Chip &amp; Sức khỏe" Tag="&#xEB51;">
+      <TabItem Header="Chip Chip &amp; Sức khỏe" Tag="">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
             <TextBlock Text="Chip Chip &amp; Sức khỏe" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
@@ -158,7 +158,7 @@
           </StackPanel>
         </ScrollViewer>
       </TabItem>
-      <TabItem Header="Lưu trữ &amp; Dữ liệu" Tag="&#xE7F1;">
+      <TabItem Header="Lưu trữ &amp; Dữ liệu" Tag="">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
             <TextBlock Text="Lưu trữ &amp; Dữ liệu" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
@@ -193,7 +193,7 @@
           </StackPanel>
         </ScrollViewer>
       </TabItem>
-      <TabItem Header="Hệ thống &amp; Cập nhật" Tag="&#xE713;">
+      <TabItem Header="Hệ thống &amp; Cập nhật" Tag="">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
             <TextBlock Text="Hệ thống &amp; Cập nhật" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />

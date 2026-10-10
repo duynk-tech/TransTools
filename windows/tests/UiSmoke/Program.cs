@@ -96,6 +96,15 @@ internal static class Program
                         var sections = Descendants(window).OfType<TabControl>().First();
                         for (var i = 0; i < sections.Items.Count; i++) {
                             sections.SelectedIndex = i; Pump(); window.UpdateLayout();
+                            if (i == 0 && width == 1280) {
+                                var provider = Descendants(window).OfType<ComboBox>().First(control => control.ItemsSource is string[] values && values.Contains("openai"));
+                                foreach (var name in new[] { "openai", "gemini", "claude", "deepseek" }) {
+                                    provider.SelectedItem = name; Pump(); window.UpdateLayout();
+                                    ValidateControlLayout(window, "AI settings: " + name);
+                                    Capture(window, output, "settings-provider-" + name + ".png");
+                                }
+                                provider.SelectedItem = "openai"; Pump();
+                            }
                             Capture(window, output, $"{width}-settings-{i}.png");
                             Console.WriteLine($"PASS: settings section {i} at {width}x{height}");
                         }
