@@ -1,5 +1,11 @@
 <UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="TransTools.Views.QuickTranslateView">
-<DockPanel><Grid DockPanel.Dock="Top" Margin="0,4,0,18"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Dịch nhanh" FontSize="18" FontWeight="SemiBold" /><TextBlock Text="Dịch, sửa ngữ pháp và chọn cách diễn đạt phù hợp" Foreground="#65756F" Margin="0,4,0,0" /></StackPanel><StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0" Grid.Column="1">
+<UserControl.Resources>
+ <Style x:Key="StudioEditor" TargetType="TextBox">
+  <Setter Property="Padding" Value="8"/><Setter Property="VerticalContentAlignment" Value="Top"/>
+  <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TextBox"><ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/></ControlTemplate></Setter.Value></Setter>
+ </Style>
+</UserControl.Resources>
+<DockPanel><Grid DockPanel.Dock="Top" Margin="0,4,0,18"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Dịch nhanh" FontSize="22" FontWeight="SemiBold" /><TextBlock Text="Dịch, sửa ngữ pháp và chọn cách diễn đạt phù hợp" Foreground="#65756F" Margin="0,4,0,0" /></StackPanel><StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0" Grid.Column="1">
                     <Button Content="Sửa ngữ pháp" Command="{Binding CheckGrammarCommand}" Margin="0,0,8,0" Padding="12,8" Cursor="Hand" Style="{StaticResource SecondaryButton}" />
                     <Button Content="Chụp" Click="CaptureOcr_Click" Margin="0,0,8,0" Padding="12,8" Cursor="Hand" Style="{StaticResource SecondaryButton}" ToolTip="Chụp và dịch màn hình" />
                     <Button Content="Dịch ngay" Command="{Binding TranslateCommand}" FontWeight="Bold" Padding="16,8" Cursor="Hand" Margin="0,0,16,0" />
@@ -50,7 +56,7 @@
                         <Button Content="Xóa" Style="{StaticResource SecondaryButton}" Click="ClearSource_Click" BorderThickness="0" Cursor="Hand" MinHeight="28" Padding="8,4" FontSize="12" Margin="8,0,0,0" />
                     </StackPanel><TextBlock DockPanel.Dock="Top" Text="Văn bản gốc" FontWeight="SemiBold" Foreground="#65756F" Margin="0" VerticalAlignment="Center" /></DockPanel><Border Background="#FFFFFF" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Padding="10" Margin="0">
                 <DockPanel>
-                    <TextBox Text="{Binding SourceText, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" Foreground="#243D35" BorderThickness="0" FontSize="14" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
+                    <Grid><TextBox x:Name="SourceEditor" Style="{StaticResource StudioEditor}" Text="{Binding SourceText, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" Foreground="#243D35" BorderThickness="0" FontSize="15" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" /><TextBlock Text="Nhập hoặc dán văn bản…" Margin="8" Foreground="#8B9691" FontSize="15" IsHitTestVisible="False" TextWrapping="Wrap"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding Text,ElementName=SourceEditor}" Value=""><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock></Grid>
                 </DockPanel>
             </Border>
 
@@ -59,7 +65,7 @@
                         <Button Content="Sao chép" Click="CopyTranslated_Click" Padding="8,4" Cursor="Hand" MinHeight="28" FontSize="12" Margin="8,0,0,0" Style="{StaticResource SecondaryButton}" />
                     </StackPanel><TextBlock DockPanel.Dock="Top" Text="Bản dịch" FontWeight="SemiBold" Foreground="#65756F" Margin="0" VerticalAlignment="Center" /></DockPanel><Border Background="#FFFFFF" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Padding="10" Margin="0">
                 <DockPanel>
-                    <TextBox Text="{Binding TranslatedText}" IsReadOnly="True" Background="Transparent" Foreground="#287568" BorderThickness="0" FontSize="14" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
+                    <Grid><TextBox x:Name="TranslationEditor" Style="{StaticResource StudioEditor}" Text="{Binding TranslatedText}" IsReadOnly="True" Background="Transparent" Foreground="#287568" BorderThickness="0" FontSize="15" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" /><TextBlock Text="Bản dịch sẽ hiện tại đây." Margin="8" Foreground="#8B9691" FontSize="15" IsHitTestVisible="False" TextWrapping="Wrap"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding Text,ElementName=TranslationEditor}" Value=""><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock></Grid>
                 </DockPanel>
             </Border>
         </DockPanel></Grid>
