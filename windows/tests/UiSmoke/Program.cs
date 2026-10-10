@@ -141,6 +141,9 @@ internal static class Program
                         var oldDelay = conversation.SendDelaySeconds;
                         delay.Text = "30"; delay.GetBindingExpression(TextBox.TextProperty)!.UpdateSource(); Pump();
                         if (conversation.SendDelaySeconds != 30) throw new Exception("Conversation numeric delay did not accept 30 seconds");
+                        delay.UpdateLayout();
+                        var numberHost = Descendants(delay).OfType<ScrollViewer>().First();
+                        if (numberHost.ViewportWidth < 24 || numberHost.ViewportHeight < 20) throw new Exception("Conversation numeric input padding clips its value");
                         conversation.IncreaseSendDelayCommand.Execute(null); if (conversation.SendDelaySeconds != 30) throw new Exception("Conversation stepper exceeded upper limit");
                         conversation.SendDelaySeconds = 1; conversation.DecreaseSendDelayCommand.Execute(null); if (conversation.SendDelaySeconds != 1) throw new Exception("Conversation stepper exceeded lower limit");
                         conversation.SendDelaySeconds = oldDelay;
