@@ -109,7 +109,7 @@ public partial class MainWindow : Window
     private void NavNotebook_Checked(object sender, RoutedEventArgs e)
     {
         if (MainContentGrid == null) return;
-        ShowView("notebook", () => new NotebookView(_notebookViewModel));
+        ShowView("notebook", () => new NotebookView(_notebookViewModel, _learningViewModel));
     }
 
     private void NavTranslate_Checked(object sender, RoutedEventArgs e)

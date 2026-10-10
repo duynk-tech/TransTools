@@ -75,6 +75,34 @@ internal static class Program
                         if (!Clipboard.ContainsText() || !Clipboard.GetText().Contains(caption.Original) || !Clipboard.GetText().Contains(caption.Vietnamese)) throw new Exception("Bilingual copy did not preserve both texts");
                         copyMenu.IsSubmenuOpen = false;
                     }
+                    if (route == "Sổ tay") {
+                        var notebookView = Descendants(window).OfType<NotebookView>().First();
+                        ((RadioButton)notebookView.FindName("WordsTab")).IsChecked = true; Pump();
+                        var vocabularyView = Descendants(window).OfType<NotebookVocabularyView>().First();
+                        var model = (LearningViewModel)vocabularyView.DataContext;
+                        if (model.VisibleVocabulary.Count == 0) {
+                            model.VisibleVocabulary.Add(new TransTools.Models.VocabularyItem { Word = "follow up", Phonetic = "/ˈfɒləʊ ʌp/", Meaning = "Theo dõi và tiếp tục xử lý", ExampleSentence = "I will follow up with the team after the meeting.", ExampleTranslation = "Tôi sẽ trao đổi tiếp với nhóm sau cuộc họp." });
+                            model.VisibleVocabulary.Add(new TransTools.Models.VocabularyItem { Word = "deadline", Meaning = "Hạn hoàn thành", ExampleSentence = "We need to agree on the deadline." });
+                        }
+                        Pump(); ValidateControlLayout(window, "Notebook vocabulary");
+                        Capture(window, output, $"{width}-notebook-vocabulary.png");
+                        var search = (TextBox)vocabularyView.FindName("SearchBox");
+                        var words = (ListBox)vocabularyView.FindName("WordsList");
+                        var count = model.VisibleVocabulary.Count;
+                        search.Text = "follow up"; Pump();
+                        if (words.Items.Count != 1 || model.VisibleVocabulary.Count != count) throw new Exception("Notebook search changed the learning vocabulary collection");
+                        search.Text = "not-a-word"; Pump();
+                        if (((FrameworkElement)vocabularyView.FindName("EmptyState")).Visibility != Visibility.Visible) throw new Exception("Vocabulary missing empty-search state");
+                        search.Text = ""; Pump();
+                        ((Button)vocabularyView.FindName("AddWordButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        var add = (System.Windows.Controls.Primitives.Popup)vocabularyView.FindName("AddWordPopup");
+                        if (!add.IsOpen || add.Child == null) throw new Exception("Notebook add-word popup did not open");
+                        ValidateControlLayout((FrameworkElement)add.Child, "Notebook add word");
+                        CaptureElement((FrameworkElement)add.Child, output, $"{width}-notebook-add-word.png");
+                        add.IsOpen = false;
+                        ((RadioButton)notebookView.FindName("RecordsTab")).IsChecked = true; Pump();
+                    }
+
                     if (route == "Học ngôn ngữ") {
                         var learning = Descendants(window).OfType<LearningView>().First();
                         foreach (var label in new[] { "Hôm nay", "Chữ & Viết", "Từ vựng của tôi", "Luyện giao tiếp" }) {
