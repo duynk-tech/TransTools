@@ -129,7 +129,7 @@ internal static class Program
                         var sections = Descendants(window).OfType<TabControl>().First();
                         for (var i = 0; i < sections.Items.Count; i++) {
                             sections.SelectedIndex = i; Pump(); window.UpdateLayout();
-                            if (i == 0 && width == 1280) {
+                            if (sections.SelectedItem is TabItem { Header: "AI & Kết nối" } && width == 1280) {
                                 var provider = Descendants(window).OfType<ComboBox>().First(control => control.ItemsSource is string[] values && values.Contains("openai"));
                                 foreach (var name in new[] { "openai", "gemini", "claude", "deepseek" }) {
                                     provider.SelectedItem = name; Pump(); window.UpdateLayout();
@@ -137,6 +137,18 @@ internal static class Program
                                     Capture(window, output, "settings-provider-" + name + ".png");
                                 }
                                 provider.SelectedItem = "openai"; Pump();
+                            }
+                            ValidateControlLayout(window, "Settings section " + i);
+                            if (sections.SelectedItem is TabItem { Header: "Dịch & Phụ đề" } && width == 1280) {
+                                var settings = (SettingsViewModel)Descendants(window).OfType<SettingsView>().First().DataContext;
+                                var quick = new QuickTranslateViewModel();
+                                var domain = settings.TranslationDomain; var pace = settings.SubtitlePacing; var size = settings.SubtitleFontSize; var light = settings.SubtitleLight;
+                                settings.TranslationDomain = "Công nghệ thông tin"; settings.SubtitlePacing = "Nhanh"; settings.SubtitleFontSize = 21; settings.SubtitleLight = true;
+                                settings.SaveSubtitlePreferencesCommand.Execute(null);
+                                var preferences = TransTools.Services.Experience.SubtitlePreferences.Shared;
+                                if (quick.SelectedDomain != "Công nghệ thông tin" || preferences.Pacing != "fast" || preferences.FontSize != 21 || !preferences.Light) throw new Exception("Translation/subtitle settings did not update shared consumers");
+                                settings.TranslationDomain = domain; settings.SubtitlePacing = pace; settings.SubtitleFontSize = size; settings.SubtitleLight = light;
+                                settings.SaveSubtitlePreferencesCommand.Execute(null); Pump();
                             }
                             Capture(window, output, $"{width}-settings-{i}.png");
                             Console.WriteLine($"PASS: settings section {i} at {width}x{height}");

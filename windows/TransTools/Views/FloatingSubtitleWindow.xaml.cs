@@ -17,15 +17,23 @@ public partial class FloatingSubtitleWindow : Window
     private readonly ObservableCollection<Caption> _history = new();
     private Caption? _current, _incoming;
     private bool _running, _reviewing;
+    private bool _appliedSide;
     public bool IsMascotDisplayed => IsVisible && _preferences.ShowMascot && ActualWidth >= 560;
     public int HistoryCount => _history.Count;
     public FloatingSubtitleWindow()
     {
         InitializeComponent(); ReviewList.ItemsSource = _history;
+        _appliedSide = _preferences.Side;
+        _preferences.Changed += PreferencesChanged;
+        Closed += (_, _) => _preferences.Changed -= PreferencesChanged;
         SetBounds(); ApplyPreferences(); RenderContent();
         SizeChanged += (_, _) => { ApplyMascot(); PacingLabel.Visibility = ActualWidth < 600 ? Visibility.Collapsed : Visibility.Visible; FollowLatest(); };
         IsVisibleChanged += (_, _) => ApplyMascot();
     }
+    private void PreferencesChanged() => Dispatcher.Invoke(() => {
+        if (_appliedSide != _preferences.Side) { _appliedSide = _preferences.Side; SetBounds(); }
+        ApplyPreferences(); RenderContent();
+    });
     private static Caption Copy(Caption caption) => new() { Id = caption.Id, Start = caption.Start, End = caption.End, Original = caption.Original, Vietnamese = caption.Vietnamese };
     public void UpdateSubtitle(string original, string translation) => UpdateCaption(new Caption { Original = original, Vietnamese = translation });
     public void UpdateCaption(Caption caption)

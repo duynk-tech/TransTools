@@ -31,6 +31,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     private DateTime _started;
     private Guid _sessionId = Guid.NewGuid();
     private bool _sessionSystemAudio = true;
+    private string _sessionDomain = "Thông dụng";
     private string _sessionSource = "en", _sessionTarget = "vi", _sessionTranslationMode = "Google";
     private AIProviderConfig? _sessionAi;
     [ObservableProperty] private bool _isPreparing;
@@ -104,6 +105,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
             if (CaptureSystemAudio == CaptureMicrophone) throw new InvalidOperationException("Chọn một nguồn âm thanh.");
             // Persist the stopped session before a new recognition session clears the screen.
             if (Captions.Count > 0) await PersistCurrentSessionAsync();
+            _sessionDomain = TransTools.Services.Experience.SubtitlePreferences.Shared.Domain;
             _sessionSource = SourceLanguage; _sessionTarget = TargetLanguage; _sessionTranslationMode = TranslationMode;
             _sessionAi = _sessionTranslationMode == "AI" ? _credentials.LoadConfiguredProvider() ?? throw new InvalidOperationException("Chọn AI và model trong Cài đặt.") : null;
             Status = "Đang chuẩn bị nhận diện...";
@@ -196,7 +198,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
                 string translated;
                 if (_sessionTranslationMode == "AI") {
                     var config = _sessionAi ?? throw new InvalidOperationException("Cấu hình AI không còn khả dụng.");
-                    translated = await new LLMTranslationService().TranslateWithAIAsync(caption.Original, _sessionTarget, "Tự nhiên, không thêm nội dung", config);
+                    translated = await new LLMTranslationService().TranslateWithAIAsync(caption.Original, _sessionTarget, $"{_sessionDomain}. Tự nhiên, giữ đúng thuật ngữ chuyên ngành, không thêm nội dung", config);
                 } else translated = await _google.TranslateAsync(caption.Original, _sessionSource, _sessionTarget, token);
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
                     caption.Vietnamese = translated; OnCaptionIncoming?.Invoke(caption);

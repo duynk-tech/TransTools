@@ -44,7 +44,8 @@
           </Grid>
         </ControlTemplate>
       </TabControl.Template>
-      <TabItem Header="AI &amp; Kết nối" Tag="">
+      <TabItem Header="Dịch &amp; Phụ đề" Tag="&#xE8F2;"><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel><TextBlock Text="Dịch &amp; Phụ đề" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24"/><Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Padding="20" Margin="0,0,0,16"><StackPanel><TextBlock Text="Chuyên ngành &amp; Ngữ cảnh" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,20"/><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Chuyên ngành dịch" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><ComboBox Grid.Column="1" SelectedItem="{Binding TranslationDomain}" ItemsSource="{Binding TranslationDomains}"/></Grid><TextBlock Text="Áp dụng cho Dịch nhanh và dịch bằng AI trong cuộc họp. Phiên họp đang chạy giữ chuyên ngành đã chọn lúc bắt đầu." TextWrapping="Wrap" Foreground="#65756F"/></StackPanel></Border><Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Padding="20" Margin="0,0,0,16"><StackPanel><TextBlock Text="Nhịp hiển thị phụ đề" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,20"/><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Độ trễ bản dịch" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><ComboBox Grid.Column="1" SelectedItem="{Binding SubtitlePacing}" ItemsSource="{Binding SubtitlePacingOptions}"/></Grid><TextBlock Text="Nhanh chuyển câu sớm hơn. Cân bằng giữ thời gian đọc vừa phải. Đủ ngữ cảnh giữ câu lâu hơn. Tùy chọn này điều chỉnh thời gian hiển thị, không thay đổi tốc độ nhận diện hoặc dịch." TextWrapping="Wrap" Foreground="#65756F"/></StackPanel></Border><Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Padding="20" Margin="0,0,0,16"><StackPanel><TextBlock Text="Phụ đề nổi" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,20"/><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Cỡ chữ" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><ComboBox Grid.Column="1" SelectedItem="{Binding SubtitleFontSize}" ItemsSource="{Binding SubtitleFontSizes}"/></Grid><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Nền sáng" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><CheckBox Grid.Column="1" IsChecked="{Binding SubtitleLight}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Hiện tiếng gốc" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><CheckBox Grid.Column="1" IsChecked="{Binding SubtitleOriginal}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Giữ câu trước để theo dõi ngữ cảnh" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><CheckBox Grid.Column="1" IsChecked="{Binding SubtitleContext}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Hiện câu tiếp theo đang được dịch" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><CheckBox Grid.Column="1" IsChecked="{Binding SubtitleNext}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Hiện trợ lý bên cạnh nội dung" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><CheckBox Grid.Column="1" IsChecked="{Binding SubtitleMascot}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Bố cục dọc bên cạnh màn hình" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><CheckBox Grid.Column="1" IsChecked="{Binding SubtitleSide}" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid></StackPanel></Border><Button Content="Lưu tùy chỉnh" Command="{Binding SaveSubtitlePreferencesCommand}" HorizontalAlignment="Right"/></StackPanel></ScrollViewer></TabItem>
+<TabItem Header="AI &amp; Kết nối" Tag="">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
             <TextBlock Text="AI &amp; Kết nối" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
@@ -80,7 +81,7 @@
           </StackPanel>
         </ScrollViewer>
       </TabItem>
-      <TabItem Header="Mô hình AI" Tag="">
+<TabItem Header="Mô hình AI" Tag="">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
             <TextBlock Text="Mô hình AI" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
@@ -107,21 +108,7 @@
           </StackPanel>
         </ScrollViewer>
       </TabItem>
-      <TabItem Header="Giọng đọc &amp; Phát âm" Tag="">
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-          <StackPanel>
-            <TextBlock Text="Giọng đọc &amp; Phát âm" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
-            <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
-              <StackPanel>
-                <TextBlock Text="Bản ghi phát âm offline" FontSize="18" Foreground="#243D35" />
-                <TextBlock Text="Nhập bộ âm thanh mẫu để nghe phát âm khi học chữ." TextWrapping="Wrap" Foreground="#65756F" Margin="0,10" />
-                <Button Content="Nhập bộ bản ghi" Command="{Binding ImportRecordingsCommand}" HorizontalAlignment="Left" />
-              </StackPanel>
-            </Border>
-          </StackPanel>
-        </ScrollViewer>
-      </TabItem>
-      <TabItem Header="Chip Chip &amp; Sức khỏe" Tag="">
+<TabItem Header="Chip Chip &amp; Sức khỏe" Tag="">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
             <TextBlock Text="Chip Chip &amp; Sức khỏe" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
@@ -158,7 +145,44 @@
           </StackPanel>
         </ScrollViewer>
       </TabItem>
-      <TabItem Header="Lưu trữ &amp; Dữ liệu" Tag="">
+<TabItem Header="Giọng đọc &amp; Phát âm" Tag="">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel>
+            <TextBlock Text="Giọng đọc &amp; Phát âm" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
+            <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
+              <StackPanel>
+                <TextBlock Text="Bản ghi phát âm offline" FontSize="18" Foreground="#243D35" />
+                <TextBlock Text="Nhập bộ âm thanh mẫu để nghe phát âm khi học chữ." TextWrapping="Wrap" Foreground="#65756F" Margin="0,10" />
+                <Button Content="Nhập bộ bản ghi" Command="{Binding ImportRecordingsCommand}" HorizontalAlignment="Left" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+<TabItem Header="Quyền &amp; Phím tắt" Tag="&#xE765;"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel><TextBlock Text="Quyền &amp; Phím tắt" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24"/><Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Padding="20" Margin="0,0,0,16"><StackPanel><TextBlock Text="Âm thanh &amp; Quyền truy cập" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,20"/><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Cho phép Windows dùng micro" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><Button Grid.Column="1" Content="Mở quyền micro" Command="{Binding OpenMicrophonePrivacyCommand}" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Right"/></Grid><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Chọn thiết bị và âm lượng" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><Button Grid.Column="1" Content="Mở cài đặt âm thanh" Command="{Binding OpenSoundSettingsCommand}" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Right"/></Grid><TextBlock Text="Âm thanh hệ thống dùng thiết bị phát mặc định của Windows. Chọn micro trong Cuộc họp khi cần thu giọng của bạn." TextWrapping="Wrap" Foreground="#65756F"/></StackPanel></Border><Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Padding="20" Margin="0,0,0,16"><StackPanel><TextBlock Text="Phím tắt tiện ích" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,20"/><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Dịch văn bản đang chọn" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><TextBlock Grid.Column="1" Text="Ctrl + Alt + D" HorizontalAlignment="Right" Foreground="#287568" FontWeight="SemiBold"/></Grid><Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="250"/></Grid.ColumnDefinitions><TextBlock Text="Mở Dịch nhanh" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,20,0"/><TextBlock Grid.Column="1" Text="Ctrl + Alt + T" HorizontalAlignment="Right" Foreground="#287568" FontWeight="SemiBold"/></Grid><TextBlock Text="Nếu ứng dụng khác đang dùng cùng phím tắt, Trans Tools sẽ báo trong trạng thái Cài đặt." TextWrapping="Wrap" Foreground="#65756F"/></StackPanel></Border></StackPanel></ScrollViewer></TabItem>
+<TabItem Header="Hệ thống &amp; Cập nhật" Tag="">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel>
+            <TextBlock Text="Hệ thống &amp; Cập nhật" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
+            <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
+              <StackPanel>
+                <TextBlock Text="Phiên bản &amp; Cập nhật" FontSize="18" FontWeight="Bold" Foreground="#243D35" />
+                <TextBlock Text="{Binding UpdateStatus}" Foreground="#75BBAE" TextWrapping="Wrap" Margin="0,10" />
+                <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto">
+                  <TextBlock Text="{Binding ReleaseNotes}" TextWrapping="Wrap" Foreground="#65756F" />
+                </ScrollViewer>
+                <ProgressBar Value="{Binding UpdateProgress}" Maximum="1" Height="6" Margin="0,12" Visibility="{Binding IsUpdating, Converter={StaticResource BoolVisibility}}" />
+                <WrapPanel>
+                  <Button Content="Kiểm tra cập nhật" Command="{Binding CheckUpdateCommand}" Margin="0,0,8,0" />
+                  <Button Content="Tải &amp; Cài cập nhật" Command="{Binding InstallUpdateCommand}" IsEnabled="{Binding CanInstallUpdate}" Margin="0,0,8,0" />
+                  <Button Content="Hủy tải" Command="{Binding CancelUpdateCommand}" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+<TabItem Header="Lưu trữ &amp; Dữ liệu" Tag="">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
             <TextBlock Text="Lưu trữ &amp; Dữ liệu" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
@@ -188,28 +212,6 @@
                   <Button Content="📂 Mở thư mục dữ liệu" Command="{Binding OpenDataFolderCommand}" Background="#D8E5E1" Foreground="#243D35" Padding="14,8" Margin="0,0,10,0" Cursor="Hand" />
                   <Button Content="🧹 Dọn dẹp bộ nhớ đệm" Command="{Binding ClearCacheCommand}" Background="#FFF1F1" Foreground="#C84343" BorderBrush="#F3BABA" Padding="14,8" Cursor="Hand" />
                 </StackPanel>
-              </StackPanel>
-            </Border>
-          </StackPanel>
-        </ScrollViewer>
-      </TabItem>
-      <TabItem Header="Hệ thống &amp; Cập nhật" Tag="">
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-          <StackPanel>
-            <TextBlock Text="Hệ thống &amp; Cập nhật" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
-            <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
-              <StackPanel>
-                <TextBlock Text="Phiên bản &amp; Cập nhật" FontSize="18" FontWeight="Bold" Foreground="#243D35" />
-                <TextBlock Text="{Binding UpdateStatus}" Foreground="#75BBAE" TextWrapping="Wrap" Margin="0,10" />
-                <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto">
-                  <TextBlock Text="{Binding ReleaseNotes}" TextWrapping="Wrap" Foreground="#65756F" />
-                </ScrollViewer>
-                <ProgressBar Value="{Binding UpdateProgress}" Maximum="1" Height="6" Margin="0,12" Visibility="{Binding IsUpdating, Converter={StaticResource BoolVisibility}}" />
-                <WrapPanel>
-                  <Button Content="Kiểm tra cập nhật" Command="{Binding CheckUpdateCommand}" Margin="0,0,8,0" />
-                  <Button Content="Tải &amp; Cài cập nhật" Command="{Binding InstallUpdateCommand}" IsEnabled="{Binding CanInstallUpdate}" Margin="0,0,8,0" />
-                  <Button Content="Hủy tải" Command="{Binding CancelUpdateCommand}" />
-                </WrapPanel>
               </StackPanel>
             </Border>
           </StackPanel>

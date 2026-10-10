@@ -13,6 +13,38 @@ namespace TransTools.ViewModels;
 
 public partial class SettingsViewModel : ObservableObject
 {
+    public string[] TranslationDomains => TransTools.Services.Experience.SubtitlePreferences.Domains;
+    public string[] SubtitlePacingOptions { get; } = ["Nhanh", "Cân bằng", "Đủ ngữ cảnh"];
+    public double[] SubtitleFontSizes { get; } = [15, 18, 21, 24];
+    [ObservableProperty] private string _translationDomain = "Thông dụng";
+    [ObservableProperty] private string _subtitlePacing = "Cân bằng";
+    [ObservableProperty] private double _subtitleFontSize = 18;
+    [ObservableProperty] private bool _subtitleLight;
+    [ObservableProperty] private bool _subtitleOriginal = true;
+    [ObservableProperty] private bool _subtitleContext = true;
+    [ObservableProperty] private bool _subtitleNext = true;
+    [ObservableProperty] private bool _subtitleMascot;
+    [ObservableProperty] private bool _subtitleSide;
+    private void LoadSubtitlePreferences()
+    {
+        var p = TransTools.Services.Experience.SubtitlePreferences.Shared;
+        TranslationDomain = p.Domain; SubtitlePacing = p.Pacing == "fast" ? "Nhanh" : p.Pacing == "contextual" ? "Đủ ngữ cảnh" : "Cân bằng";
+        SubtitleFontSize = p.FontSize; SubtitleLight = p.Light; SubtitleOriginal = p.ShowOriginal; SubtitleContext = p.ShowContext;
+        SubtitleNext = p.ShowNext; SubtitleMascot = p.ShowMascot; SubtitleSide = p.Side;
+    }
+    [RelayCommand] private void SaveSubtitlePreferences()
+    {
+        try {
+            var p = TransTools.Services.Experience.SubtitlePreferences.Shared;
+            p.Domain = TranslationDomains.Contains(TranslationDomain) ? TranslationDomain : "Thông dụng";
+            p.Pacing = SubtitlePacing == "Nhanh" ? "fast" : SubtitlePacing == "Đủ ngữ cảnh" ? "contextual" : "balanced";
+            p.FontSize = Math.Clamp(SubtitleFontSize, 15, 24); p.Light = SubtitleLight; p.ShowOriginal = SubtitleOriginal; p.ShowContext = SubtitleContext;
+            p.ShowNext = SubtitleNext; p.ShowMascot = SubtitleMascot; p.Side = SubtitleSide; p.Save(); Status = "Đã lưu tùy chỉnh dịch và phụ đề";
+        } catch (Exception ex) { Status = "Chưa lưu được tùy chỉnh: " + ex.Message; }
+    }
+    [RelayCommand] private void OpenMicrophonePrivacy() => OpenWindowsSetting("ms-settings:privacy-microphone");
+    [RelayCommand] private void OpenSoundSettings() => OpenWindowsSetting("ms-settings:sound");
+    private void OpenWindowsSetting(string uri) { try { Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true }); } catch (Exception ex) { Status = ex.Message; } }
     [ObservableProperty] private string _assistantName = TransTools.Services.Experience.AssistantIdentity.Shared.CustomName;
     [RelayCommand] private void SaveAssistantName()
     {
@@ -195,6 +227,8 @@ public partial class SettingsViewModel : ObservableObject
 
         ActiveProvider = _credentialStore.LoadActiveProvider();
         LoadSavedSettings();
+        LoadSubtitlePreferences();
+        TransTools.Services.Experience.SubtitlePreferences.Shared.Changed += LoadSubtitlePreferences;
         CalculateCacheSize();
         foreach (var provider in new[] { "openai", "gemini", "claude", "deepseek" })
         {

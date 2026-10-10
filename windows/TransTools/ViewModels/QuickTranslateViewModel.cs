@@ -32,7 +32,18 @@ public partial class QuickTranslateViewModel : ObservableObject
     private string _targetLanguage = "vi";
 
     [ObservableProperty]
-    private string _selectedDomain = "Thông dụng";
+    private string _selectedDomain = TransTools.Services.Experience.SubtitlePreferences.Shared.Domain;
+    public QuickTranslateViewModel()
+    {
+        TransTools.Services.Experience.SubtitlePreferences.Shared.Changed += () => SelectedDomain = TransTools.Services.Experience.SubtitlePreferences.Shared.Domain;
+    }
+    partial void OnSelectedDomainChanged(string value)
+    {
+        var p = TransTools.Services.Experience.SubtitlePreferences.Shared;
+        if (p.Domain == value || !TransTools.Services.Experience.SubtitlePreferences.Domains.Contains(value)) return;
+        p.Domain = value;
+        try { p.Save(); } catch (Exception ex) { Status = "Chưa lưu được chuyên ngành: " + ex.Message; }
+    }
 
     [ObservableProperty]
     private string _selectedStyle = "Tự nhiên"; // Tự nhiên, Trang trọng, Học thuật, Ngắn gọn
