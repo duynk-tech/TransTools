@@ -28,6 +28,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     private DateTime _lastVoice;
     private double _offset;
     private bool _overflow;
+    private bool _lastStopSucceeded = true;
     private DateTime _started;
     private Guid _sessionId = Guid.NewGuid();
     private bool _sessionSystemAudio = true;
@@ -38,9 +39,9 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _prepareCancellation;
     public bool CanConfigureMeeting => !IsBusy;
     public bool CanToggleRecording => !IsStopping;
-    partial void OnIsPreparingChanged(bool value) { OnPropertyChanged(nameof(IsBusy)); OnPropertyChanged(nameof(CanConfigureMeeting)); }
+    partial void OnIsPreparingChanged(bool value) { NotifyMeetingActions(); OnPropertyChanged(nameof(IsBusy)); OnPropertyChanged(nameof(CanConfigureMeeting)); }
     partial void OnIsRecordingChanged(bool value) { OnPropertyChanged(nameof(IsBusy)); OnPropertyChanged(nameof(CanConfigureMeeting)); }
-    partial void OnIsStoppingChanged(bool value) { OnPropertyChanged(nameof(IsBusy)); OnPropertyChanged(nameof(CanConfigureMeeting)); OnPropertyChanged(nameof(CanToggleRecording)); }
+    partial void OnIsStoppingChanged(bool value) { NotifyMeetingActions(); OnPropertyChanged(nameof(IsBusy)); OnPropertyChanged(nameof(CanConfigureMeeting)); OnPropertyChanged(nameof(CanToggleRecording)); }
     [RelayCommand] public void CancelPreparation() => _prepareCancellation?.Cancel();
     private volatile bool _flushPresentation;
     public Func<bool>? OtherAudioBusy { get; set; }
@@ -94,7 +95,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     public event Action<MeetingSession>? OnSessionSaved;
     public MeetingViewModel()
     {
-        Captions.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(CanExportMeeting)); ExportMeetingCommand.NotifyCanExecuteChanged(); };
+        Captions.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(CanExportMeeting)); ExportMeetingCommand.NotifyCanExecuteChanged(); NotifyMeetingActions(); };
         TransTools.Services.Experience.SubtitlePreferences.Shared.Changed += DisplayPreferencesChanged;
         _audio.OnAudioLevelChanged += level => Ui(() => AudioLevel = level);
         _audio.OnAudio16kHzMonoChunk += AcceptAudio;
@@ -152,6 +153,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     [RelayCommand] public async Task StopRecordingAsync()
     {
         if (!IsRecording || IsStopping) return;
+        _lastStopSucceeded = false;
         _flushPresentation = true; IsStopping = true; IsRecording = false; _audio.StopCapture(); Status = "Đang hoàn tất phần âm thanh cuối...";
         try {
             byte[]? final;
@@ -161,12 +163,29 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
             // Drain the last utterance instead of silently throwing it away.
             if (_processing != null) await _processing;
             await PersistCurrentSessionAsync();
+            _lastStopSucceeded = true;
             Status = _overflow ? "Đã dừng vì xử lý không theo kịp. Một đoạn âm thanh chưa được xử lý." : "Đã dừng; có thể lưu Sổ tay.";
         } catch (Exception ex) { Status = "Lỗi hoàn tất: " + ex.Message; }
         finally { if (_processing?.IsCompleted == true) _stt.Dispose(); IsStopping = false; AudioLevel = 0; }
     }
-    [RelayCommand] public async Task ClearCaptionsAsync() { if (IsStopping || IsPreparing) return; if (System.Windows.MessageBox.Show("Xóa toàn bộ nội dung cuộc họp hiện tại?", "Xóa nội dung", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning, System.Windows.MessageBoxResult.No) != System.Windows.MessageBoxResult.Yes) return; await StopRecordingAsync(); _flushPresentation = false; Captions.Clear(); CurrentLiveOriginal = ""; CurrentLiveVietnamese = ""; }
-    [RelayCommand] public async Task SaveSessionAsync()
+    public bool CanManageMeeting => Captions.Count > 0 && !IsStopping && !IsPreparing;
+    private void NotifyMeetingActions()
+    {
+        OnPropertyChanged(nameof(CanManageMeeting)); SaveSessionCommand.NotifyCanExecuteChanged(); ClearCaptionsCommand.NotifyCanExecuteChanged();
+    }
+    [RelayCommand(CanExecute = nameof(CanManageMeeting))] public async Task ClearCaptionsAsync()
+    {
+        if (!CanManageMeeting) return;
+        var confirm = new TransTools.Views.ConfirmDeleteWindow("Nội dung cuộc họp hiện tại", currentMeeting: true) { Owner = System.Windows.Application.Current.MainWindow };
+        if (confirm.ShowDialog() != true) return;
+        var wasRecording = IsRecording;
+        await StopRecordingAsync();
+        if (wasRecording && !_lastStopSucceeded) { Status = "Chưa hoàn tất lưu cuộc họp; nội dung được giữ nguyên."; return; }
+        try { await PersistCurrentSessionAsync(); }
+        catch (Exception ex) { Status = "Chưa lưu được cuộc họp; nội dung được giữ nguyên: " + ex.Message; return; }
+        _flushPresentation = false; Captions.Clear(); CurrentLiveOriginal = ""; CurrentLiveVietnamese = "";
+    }
+    [RelayCommand(CanExecute = nameof(CanManageMeeting))] public async Task SaveSessionAsync()
     {
         if (IsStopping || IsPreparing) { Status = "Chờ hoàn tất âm thanh cuối trước khi lưu."; return; }
         await StopRecordingAsync(); if (Captions.Count == 0) return;
