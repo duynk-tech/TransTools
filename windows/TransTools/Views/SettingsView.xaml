@@ -88,11 +88,11 @@
 <TabItem Header="Mô hình AI" Tag="">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
-            <TextBlock Text="Mô hình AI" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
+            <DockPanel Margin="0,8,0,16"><Button DockPanel.Dock="Right" Content="Cập nhật danh mục" Command="{Binding UpdateCatalogCommand}" Style="{StaticResource SecondaryButton}"/><TextBlock Text="Mô hình AI" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel><TextBlock Text="{Binding CatalogStatus}" Foreground="#65756F" Margin="0,0,0,16" TextWrapping="Wrap"/>
             <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
               <StackPanel>
                 <TextBlock Text="Giọng tự nhiên · Supertonic 3" FontSize="18" Foreground="#243D35" />
-                <TextBlock Text="Dùng offline sau khi tải · Việt, Anh, Nhật, Hàn" Foreground="#65756F" Margin="0,8" />
+                <TextBlock Text="{Binding SupertonicSummary}" Foreground="#65756F" Margin="0,8" />
                 <TextBlock Text="{Binding LocalVoiceStatus}" Foreground="#75BBAE" Margin="0,8" />
                 <WrapPanel>
                   <Button Content="Giấy phép" Command="{Binding OpenVoiceLicenseCommand}" Margin="0,0,8,0" />
@@ -105,7 +105,7 @@
             <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
               <StackPanel>
                 <TextBlock Text="VieNeu v3 Turbo · Tiếng Việt" FontSize="18" Foreground="#243D35" />
-                <TextBlock Text="Giọng tiếng Việt · Tải khi cần · Dùng offline" Foreground="#65756F" TextWrapping="Wrap" Margin="0,8" />
+                <TextBlock Text="{Binding VieNeuSummary}" Foreground="#65756F" TextWrapping="Wrap" Margin="0,8" />
                 <Button Content="Tải VieNeu" IsEnabled="{Binding HasVieNeuProcessor}" Command="{Binding InstallVieNeuCommand}" HorizontalAlignment="Left" />
               </StackPanel>
             </Border>

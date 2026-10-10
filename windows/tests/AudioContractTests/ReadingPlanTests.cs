@@ -5,6 +5,13 @@ internal static class ReadingPlanTests
     public static async Task RunAsync()
     {
         void Check(bool value, string message) { if (!value) throw new Exception(message); }
+        var catalog = "{\"schemaVersion\":1,\"revision\":1,\"models\":[{\"id\":\"supertonic-3\",\"engineID\":\"supertonic\",\"version\":\"3.0.0\",\"name\":\"Supertonic 3\",\"summary\":\"Giọng đọc\",\"recommended\":true}]}";
+        var feed = TransTools.Services.Models.RemoteModelCatalog.Parse(System.Text.Encoding.UTF8.GetBytes(catalog));
+        Check(feed.Revision == 1 && feed.Models[0].Summary == "Giọng đọc", "Remote catalog did not preserve valid metadata");
+        foreach (var invalid in new[] { catalog.Replace("supertonic-3", "unknown"), catalog.Replace("3.0.0", "9.0.0"), catalog.Replace("schemaVersion\":1", "schemaVersion\":2") }) {
+            var rejected = false; try { TransTools.Services.Models.RemoteModelCatalog.Parse(System.Text.Encoding.UTF8.GetBytes(invalid)); } catch (System.IO.InvalidDataException) { rejected = true; }
+            Check(rejected, "Remote catalog accepted unsupported model/schema/version");
+        }
         var source = "Số 3.14 đúng. “Xin chào!”\r\nĐoạn hai chưa có dấu";
         var parts = SpeechReadingPlan.Parts(source, .35, .8);
         Check(parts.Select(p => p.Text).SequenceEqual(new[] { "Số 3.14 đúng.", "“Xin chào!”", "Đoạn hai chưa có dấu" }), "Reading plan lost text, quotes or decimal punctuation");

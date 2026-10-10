@@ -13,6 +13,24 @@ namespace TransTools.ViewModels;
 
 public partial class SettingsViewModel : ObservableObject
 {
+    private readonly TransTools.Services.Models.RemoteModelCatalog _remoteCatalog = new();
+    [ObservableProperty] private string _catalogStatus = "Danh mục có sẵn trong ứng dụng";
+    [ObservableProperty] private bool _updatingCatalog;
+    [ObservableProperty] private string _supertonicSummary = "Giọng đọc đa ngôn ngữ, chạy trên thiết bị.";
+    [ObservableProperty] private string _vieNeuSummary = "Tiếng Việt tự nhiên, hỗ trợ hồ sơ giọng từ mẫu.";
+    [RelayCommand] private async Task UpdateCatalogAsync()
+    {
+        if (UpdatingCatalog || IsInstallingVoice || IsUpdating || _meetingBusy()) return;
+        UpdatingCatalog = true; CatalogStatus = "Đang cập nhật danh mục…";
+        try { ApplyCatalog(await _remoteCatalog.UpdateAsync()); CatalogStatus = "Đã cập nhật danh mục"; }
+        catch (Exception e) { CatalogStatus = "Chưa cập nhật được · " + e.Message; }
+        finally { UpdatingCatalog = false; }
+    }
+    private void ApplyCatalog(TransTools.Services.Models.CatalogFeed feed)
+    {
+        SupertonicSummary = feed.Models.FirstOrDefault(e => e.Id == "supertonic-3")?.Summary ?? SupertonicSummary;
+        VieNeuSummary = feed.Models.FirstOrDefault(e => e.Id == "vieneu-v3-turbo")?.Summary ?? VieNeuSummary;
+    }
     public string AppVersion => "Trans Tools v" + (typeof(SettingsViewModel).Assembly.GetName().Version?.ToString(3) ?? "—");
 
     public string[] TranslationDomains => TransTools.Services.Experience.SubtitlePreferences.Domains;
@@ -222,6 +240,7 @@ public partial class SettingsViewModel : ObservableObject
 
     public SettingsViewModel(Func<bool>? meetingBusy = null)
     {
+        ApplyCatalog(_remoteCatalog.Load());
         _meetingBusy = meetingBusy ?? (() => false);
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         _appDataDir = Path.Combine(appData, "TransTools");
