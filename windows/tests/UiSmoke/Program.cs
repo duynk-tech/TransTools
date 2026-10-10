@@ -73,9 +73,9 @@ internal static class Program
             }
             foreach (var action in new[] { "end", "cancel", "dispose" }) {
                 var finish = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
-                var observedToken = CancellationToken.None; var generated = 0;
+                var observedToken = CancellationToken.None; var recognitionReplyCalls = 0;
                 using var recognizing = new ConversationViewModel(recognize: (_, token) => { observedToken = token; return finish.Task; },
-                    generateReply: (_, _, _) => { generated++; return Task.FromResult("This must not be generated"); });
+                    generateReply: (_, _, _) => { recognitionReplyCalls++; return Task.FromResult("This must not be recognitionReplyCalls"); });
                 recognizing.Messages.Add(new ChatMessageItem { Text = "Keep the earlier turn" });
                 recognizing.IsConversationActive = true; recognizing.IsListening = true;
                 var pendingRecognition = recognizing.ToggleMicrophoneCommand.ExecuteAsync(null);
@@ -86,9 +86,9 @@ internal static class Program
                 if (!observedToken.IsCancellationRequested) throw new Exception("Recognition cancellation was not propagated");
                 // Deliberately ignore cancellation in the recognizer to exercise the result boundary.
                 finish.SetResult("A stale recognition must never reappear"); Await(pendingRecognition);
-                if (generated != 0 || recognizing.UserInput.Length != 0 || recognizing.Messages.Count != 1 || recognizing.IsThinking) throw new Exception("Late recognition mutated or submitted the stopped turn");
+                if (recognitionReplyCalls != 0 || recognizing.UserInput.Length != 0 || recognizing.Messages.Count != 1 || recognizing.IsThinking) throw new Exception("Late recognition mutated or submitted the stopped turn");
                 if (recognizing.Status != (action == "cancel" ? "Đã hủy nhận diện" : "Đã kết thúc trò chuyện")) throw new Exception("Late recognition overwrote terminal status");
-                if (action == "dispose") { recognizing.UserInput = "Do not send after disposal"; Await(recognizing.SendMessageAsync()); if (generated != 0 || recognizing.Messages.Count != 1) throw new Exception("Disposed conversation accepted input"); }
+                if (action == "dispose") { recognizing.UserInput = "Do not send after disposal"; Await(recognizing.SendMessageAsync()); if (recognitionReplyCalls != 0 || recognizing.Messages.Count != 1) throw new Exception("Disposed conversation accepted input"); }
             }
             using (var recognized = new ConversationViewModel(recognize: (_, _) => Task.FromResult("A current spoken sentence"))) {
                 recognized.SendRecognizedSpeechAutomatically = false; recognized.IsConversationActive = true; recognized.IsListening = true;
