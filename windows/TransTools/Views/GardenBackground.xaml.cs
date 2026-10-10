@@ -23,9 +23,10 @@ public partial class GardenBackground : UserControl
                 var radius = Math.Sqrt(random.NextDouble());
                 var x = 113 + Math.Cos(angle) * radius * 57;
                 var y = 445 + Math.Sin(angle) * radius * 60;
-                var leaf = new System.Windows.Shapes.Ellipse
+                var leaf = new System.Windows.Shapes.Path
                 {
-                    Width = 6 + random.NextDouble() * 5, Height = 4 + random.NextDouble() * 3,
+                    Data = Geometry.Parse("M0,4 Q3,-2 9,0 Q8,6 0,4 Z"),
+                    Stretch = Stretch.Fill, Width = 6 + random.NextDouble() * 5, Height = 4 + random.NextDouble() * 3,
                     Fill = leafBrush, Opacity = 0.22 + random.NextDouble() * 0.18,
                     RenderTransform = new RotateTransform(-25), IsHitTestVisible = false
                 };

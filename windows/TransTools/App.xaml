@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:ui="clr-namespace:TransTools.Views"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         <Style TargetType="Window"><Setter Property="FontFamily" Value="Segoe UI"/><Setter Property="FontSize" Value="13"/><Setter Property="Foreground" Value="#292F2D"/></Style>
+         <Style TargetType="Window"><Setter Property="FontFamily" Value="Segoe UI"/><Setter Property="FontSize" Value="14"/><Setter Property="Foreground" Value="#292F2D"/></Style>
          <ui:ProviderLabelConverter x:Key="ProviderLabel"/><ui:LanguageLabelConverter x:Key="LanguageLabel"/><ui:OptionSelectionConverter x:Key="OptionSelection"/>
          <DataTemplate x:Key="LanguageItem"><TextBlock Text="{Binding Converter={StaticResource LanguageLabel}}"/></DataTemplate>
          <ui:CaptionDisplayTextConverter x:Key="CaptionDisplayText"/>
