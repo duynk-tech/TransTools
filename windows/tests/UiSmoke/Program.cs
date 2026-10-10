@@ -147,6 +147,11 @@ internal static class Program
                         conversation.IncreaseSendDelayCommand.Execute(null); if (conversation.SendDelaySeconds != 30) throw new Exception("Conversation stepper exceeded upper limit");
                         conversation.SendDelaySeconds = 1; conversation.DecreaseSendDelayCommand.Execute(null); if (conversation.SendDelaySeconds != 1) throw new Exception("Conversation stepper exceeded lower limit");
                         conversation.SendDelaySeconds = oldDelay;
+                        conversation.IsListening = true; Pump();
+                        if (!delay.IsEnabled) throw new Exception("Conversation delay cannot be adjusted while listening");
+                        conversation.IsListening = false; conversation.IsThinking = true; Pump();
+                        if (delay.IsEnabled) throw new Exception("Conversation delay remains editable during AI processing");
+                        conversation.IsThinking = false; Pump();
                         var list = (ListBox)chatView.FindName("MessageList"); Pump(); list.UpdateLayout();
                         var bubbles = Descendants(list).OfType<Border>().Where(b => Equals(b.Tag, "ChatBubble") && b.IsVisible).Select(b => (Bubble: b, Bounds: new Rect(b.TransformToAncestor(list).Transform(new Point()), b.RenderSize))).Where(b => b.Bounds.IntersectsWith(new Rect(0, 0, list.ActualWidth, list.ActualHeight))).OrderBy(b => b.Bounds.Top).ToArray();
                         if (bubbles.Length < 2) { Capture(window, output, $"{width}-conversation-spacing-failure.png"); throw new Exception("Conversation fixture did not render adjacent bubbles"); }

@@ -73,6 +73,16 @@ var longEndpoint = new TransTools.Services.Speech.UtteranceEndpoint(30);
 longEndpoint.Accept(voice);
 for (var second = 1; second < 30; second++) Check(!longEndpoint.Accept(silence), "Thirty-second conversation pause was shortened");
 Check(longEndpoint.Accept(silence), "Thirty-second conversation pause never finished");
+var adjustableEndpoint = new TransTools.Services.Speech.UtteranceEndpoint(2);
+adjustableEndpoint.Accept(voice); Check(!adjustableEndpoint.Accept(silence), "Initial pause ended early");
+adjustableEndpoint.SetDelaySeconds(5);
+for (var i = 0; i < 3; i++) Check(!adjustableEndpoint.Accept(silence), "Increasing live delay reset/shortened the silence history");
+Check(adjustableEndpoint.Accept(silence), "Increasing live delay lost the previously recorded pause");
+var shorterEndpoint = new TransTools.Services.Speech.UtteranceEndpoint(5);
+shorterEndpoint.Accept(voice); shorterEndpoint.Accept(silence); shorterEndpoint.SetDelaySeconds(1);
+Check(shorterEndpoint.Accept(new byte[3200]), "Decreasing live delay discarded existing silence");
+shorterEndpoint.Accept(voice); Check(!shorterEndpoint.Accept(new byte[3200]), "Resumed speech did not reset silence after changing delay");
+
 var conversationPath = Path.Combine(Path.GetTempPath(), "trans-tools-chat-prefs-" + Guid.NewGuid(), "prefs.json");
 try {
     var preferences = new TransTools.Services.Conversation.ConversationPreferencesStore(conversationPath);

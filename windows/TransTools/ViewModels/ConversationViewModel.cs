@@ -42,7 +42,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _sendRecognizedSpeechAutomatically = true;
     public string GreetingName => LearnerName.Trim();
     partial void OnLearnerNameChanged(string value) { var clean = TransTools.Services.Conversation.ConversationPreferencesStore.Normalize(new(SendDelaySeconds, value)).LearnerName; if (clean != value) { LearnerName = clean; return; } SavePreferences(); }
-    partial void OnSendDelaySecondsChanged(int value) { var bounded = Math.Clamp(value, 1, 30); if (bounded != value) { SendDelaySeconds = bounded; return; } SavePreferences(); }
+    partial void OnSendDelaySecondsChanged(int value) { var bounded = Math.Clamp(value, 1, 30); if (bounded != value) { SendDelaySeconds = bounded; return; } if (_recorder != null) _recorder.SilenceDelaySeconds = bounded; if (IsListening) Status = $"Đang nghe · chờ {bounded} giây khi bạn ngừng nói"; SavePreferences(); }
     private void SavePreferences() { if (_preferences == null) return; try { _preferences.Save(new(SendDelaySeconds, LearnerName)); } catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException) { Status = "Chưa lưu được tùy chọn trò chuyện"; } }
     [RelayCommand] private void IncreaseSendDelay() => SendDelaySeconds = Math.Min(30, SendDelaySeconds + 1);
     [RelayCommand] private void DecreaseSendDelay() => SendDelaySeconds = Math.Max(1, SendDelaySeconds - 1);
@@ -82,6 +82,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _recognition;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanEditLearnerName))] private bool _isListening;
     public bool CanChangeSession => !IsThinking && !IsListening;
+    public bool CanAdjustSendDelay => !IsThinking;
     public bool CanEditLearnerName => !IsConversationActive && CanChangeSession;
     public string MicrophoneLabel => IsListening ? "Dừng thu" : "Nói bằng micro";
     partial void OnIsListeningChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(MicrophoneLabel)); }
@@ -111,7 +112,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [RelayCommand] private void CancelRecognition() => _recognition?.Cancel();
     public void Dispose() { _replyCancellation?.Cancel(); _recognition?.Cancel(); if (IsListening) { _recorder?.Dispose(); _recorder = null; IsListening = false; } }
 
-    partial void OnIsThinkingChanged(bool value) => OnPropertyChanged(nameof(CanChangeSession));
+    partial void OnIsThinkingChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(CanAdjustSendDelay)); }
     public bool CanShowTranslation => !TargetLanguage.Contains("Việt", StringComparison.OrdinalIgnoreCase);
 
     public ConversationViewModel(Func<bool>? meetingBusy = null, TransTools.Services.Conversation.ConversationPreferencesStore? preferences = null)

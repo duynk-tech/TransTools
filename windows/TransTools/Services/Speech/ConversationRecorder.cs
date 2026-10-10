@@ -13,7 +13,11 @@ public sealed class ConversationRecorder : IDisposable
     private readonly MemoryStream _audio = new();
     private bool _accepting;
     private UtteranceEndpoint _endpoint = new(2);
-    public int SilenceDelaySeconds { get; init; } = 2;
+    private int _silenceDelaySeconds = 2;
+    public int SilenceDelaySeconds {
+        get { lock (_sync) return _silenceDelaySeconds; }
+        set { lock (_sync) { _silenceDelaySeconds = Math.Clamp(value, 1, 30); _endpoint.SetDelaySeconds(_silenceDelaySeconds); } }
+    }
     public event Action? LimitReached;
     public ConversationRecorder() { _capture.OnAudio16kHzMonoChunk += Append; }
     private void Append(byte[] chunk) {
