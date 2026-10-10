@@ -98,9 +98,10 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _recognition;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanEditLearnerName))] private bool _isListening;
     public bool CanChangeSession => !IsThinking && !IsListening;
+    public bool InputReadOnly => IsThinking || IsListening;
     public bool CanEditLearnerName => !IsConversationActive && CanChangeSession;
     public string MicrophoneLabel => IsListening ? "Dừng thu" : "Nói bằng micro";
-    partial void OnIsListeningChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(MicrophoneLabel)); OnPropertyChanged(nameof(CanSendMessage)); ToggleConversationCommand.NotifyCanExecuteChanged(); }
+    partial void OnIsListeningChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(MicrophoneLabel)); OnPropertyChanged(nameof(CanSendMessage)); OnPropertyChanged(nameof(InputReadOnly)); ToggleConversationCommand.NotifyCanExecuteChanged(); }
     [RelayCommand] private async Task ToggleMicrophoneAsync() {
         if (IsThinking) return;
         if (!IsListening) {
@@ -127,7 +128,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [RelayCommand] private void CancelRecognition() => _recognition?.Cancel();
     public void Dispose() { _replyCancellation?.Cancel(); _recognition?.Cancel(); if (IsListening) { _recorder?.Dispose(); _recorder = null; IsListening = false; } }
 
-    partial void OnIsThinkingChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(CanSendMessage)); ToggleConversationCommand.NotifyCanExecuteChanged(); }
+    partial void OnIsThinkingChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(CanSendMessage)); OnPropertyChanged(nameof(InputReadOnly)); ToggleConversationCommand.NotifyCanExecuteChanged(); }
     public bool CanShowTranslation => !TargetLanguage.Contains("Việt", StringComparison.OrdinalIgnoreCase);
 
     public ConversationViewModel(Func<bool>? meetingBusy = null, TransTools.Services.Conversation.ConversationPreferencesStore? preferences = null, Func<Task>? beginListening = null)

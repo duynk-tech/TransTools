@@ -4,7 +4,7 @@
   <ListBox x:Name="MessagesList" Grid.Row="1" ItemsSource="{Binding Messages}" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"><ListBox.ItemTemplate><DataTemplate>
    <Border Style="{StaticResource TranscriptCard}" Margin="0,0,0,8"><StackPanel><TextBlock Text="{Binding Text}" TextWrapping="Wrap" FontSize="14"/><TextBlock Text="{Binding Translation}" TextWrapping="Wrap" Foreground="#287568" Margin="0,6,0,0"/></StackPanel></Border>
   </DataTemplate></ListBox.ItemTemplate></ListBox>
-  <StackPanel Grid.Row="2" Margin="0,12,0,0"><TextBox Text="{Binding UserInput,UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsListening}" TextWrapping="Wrap" MaxHeight="90" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
+  <StackPanel Grid.Row="2" Margin="0,12,0,0"><TextBox Text="{Binding UserInput,UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding InputReadOnly}" TextWrapping="Wrap" MaxHeight="90" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
    <WrapPanel Margin="0,8,0,0"><Button Content="{Binding MicrophoneLabel}" Command="{Binding ToggleMicrophoneCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button Content="Gửi" Command="{Binding SendMessageCommand}" IsEnabled="{Binding CanSendMessage}" Margin="0,0,8,0"/><Button Content="{Binding ConversationActionLabel}" Command="{Binding ToggleConversationCommand}" Style="{StaticResource SecondaryButton}"/></WrapPanel>
   </StackPanel>
  </Grid>
