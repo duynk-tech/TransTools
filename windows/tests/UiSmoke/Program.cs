@@ -233,6 +233,10 @@ internal static class Program
                             }
                             if (sections.SelectedItem is TabItem { Header: "Mô hình AI" }) {
                                 var modelSettings = (SettingsViewModel)Descendants(window).OfType<SettingsView>().First().DataContext;
+                                modelSettings.ModelVoiceLanguage = "en";
+                                if (modelSettings.CanUseVieNeu) throw new Exception("VieNeu can be selected for English");
+                                modelSettings.ModelVoiceLanguage = "vi";
+                                if (modelSettings.CanUseVieNeu != (modelSettings.CanManageModels && modelSettings.VieNeuInstalled)) throw new Exception("VieNeu default availability differs from installation");
                                 modelSettings.ModelFilter = "tts";
                                 if (!modelSettings.ShowSupertonicCard || !modelSettings.ShowVieNeuCard || modelSettings.ModelFilterEmpty) throw new Exception("TTS filter hides supported models");
                                 foreach (var filter in new[] { "stt", "translation", "languageModel" }) {

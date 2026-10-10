@@ -24,14 +24,38 @@ public partial class SettingsViewModel : ObservableObject
     public bool ShowVieNeuCard => ModelFilter == "tts" || (ModelFilter == "recommended" && _vieNeuRecommended) || (ModelFilter == "installed" && VieNeuInstalled);
     public bool ModelFilterEmpty => !ShowSupertonicCard && !ShowVieNeuCard;
     private void RefreshModelFilter() { OnPropertyChanged(nameof(ShowSupertonicCard)); OnPropertyChanged(nameof(ShowVieNeuCard)); OnPropertyChanged(nameof(ModelFilterEmpty)); }
+    public string[] ModelVoiceLanguages { get; } = ["vi", "en", "ja", "ko"];
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanUseSupertonic))]
+    [NotifyPropertyChangedFor(nameof(CanUseVieNeu))]
+    private string _modelVoiceLanguage = "vi";
+    public bool CanUseSupertonic => CanManageModels && SupertonicInstalled && ModelVoiceLanguages.Contains(ModelVoiceLanguage);
+    public bool CanUseVieNeu => CanManageModels && VieNeuInstalled && ModelVoiceLanguage == "vi";
+    [RelayCommand] private void UseSupertonic()
+    {
+        if (!CanUseSupertonic) return;
+        SaveModelDefault("Supertonic 3");
+    }
+    [RelayCommand] private void UseVieNeu()
+    {
+        if (!CanUseVieNeu) return;
+        SaveModelDefault("VieNeu v3 Turbo");
+    }
+    private void SaveModelDefault(string engine)
+    {
+        try { var current = VoicePreferences.Get(ModelVoiceLanguage); VoicePreferences.Save(ModelVoiceLanguage, engine, current.Rate); CatalogStatus = "Đã chọn " + engine + " cho " + ModelVoiceLanguage.ToUpperInvariant(); }
+        catch (Exception e) { CatalogStatus = "Chưa lưu được giọng mặc định · " + e.Message; }
+    }
     private readonly TransTools.Services.Models.RemoteModelCatalog _remoteCatalog = new();
     [ObservableProperty] private string _catalogStatus = "Danh mục có sẵn trong ứng dụng";
     public bool CanManageModels => !UpdatingCatalog && !IsInstallingVoice && !IsUpdating && !_meetingBusy();
     public string CatalogUpdateLabel => UpdatingCatalog ? "Đang cập nhật…" : "Cập nhật danh mục";
     public bool CanInstallVieNeu => CanManageModels && HasVieNeuProcessor;
-    public void RefreshModelAvailability() { OnPropertyChanged(nameof(CanManageModels)); OnPropertyChanged(nameof(CanInstallVieNeu)); }
+    public void RefreshModelAvailability() { OnPropertyChanged(nameof(CanManageModels)); OnPropertyChanged(nameof(CanInstallVieNeu)); OnPropertyChanged(nameof(CanUseSupertonic)); OnPropertyChanged(nameof(CanUseVieNeu)); }
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanManageModels))]
+    [NotifyPropertyChangedFor(nameof(CanUseSupertonic))]
+    [NotifyPropertyChangedFor(nameof(CanUseVieNeu))]
     [NotifyPropertyChangedFor(nameof(CanInstallVieNeu))]
     [NotifyPropertyChangedFor(nameof(CatalogUpdateLabel))]
     private bool _updatingCatalog;
@@ -99,6 +123,8 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _releaseNotes = "";
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanManageModels))]
+    [NotifyPropertyChangedFor(nameof(CanUseSupertonic))]
+    [NotifyPropertyChangedFor(nameof(CanUseVieNeu))]
     [NotifyPropertyChangedFor(nameof(CanInstallVieNeu))]
     private bool _isUpdating;
     [ObservableProperty] private bool _canInstallUpdate;
@@ -158,6 +184,7 @@ public partial class SettingsViewModel : ObservableObject
             StorageGroups.Clear(); foreach (var entry in entries) StorageGroups.Add(entry);
             OnPropertyChanged(nameof(SupertonicStorageSize)); OnPropertyChanged(nameof(VieNeuStorageSize));
             foreach (var name in new[] { nameof(SupertonicInstalled), nameof(VieNeuInstalled), nameof(VieNeuInstallationStatus), nameof(ShowSupertonicInstall), nameof(ShowVieNeuInstall) }) OnPropertyChanged(name);
+            OnPropertyChanged(nameof(CanUseSupertonic)); OnPropertyChanged(nameof(CanUseVieNeu));
             RefreshModelFilter();
             CacheSize = $"{entries.Sum(e => e.Bytes) / 1048576.0:F1} MB";
         } finally { IsScanningStorage = false; }
@@ -183,6 +210,8 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _localVoiceStatus = VoiceService.Shared.IsInstalled ? "Supertonic 3 đã cài" : "Chưa tải Supertonic 3";
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanManageModels))]
+    [NotifyPropertyChangedFor(nameof(CanUseSupertonic))]
+    [NotifyPropertyChangedFor(nameof(CanUseVieNeu))]
     [NotifyPropertyChangedFor(nameof(CanInstallVieNeu))]
     private bool _isInstallingVoice;
     public bool SupertonicInstalled => VoiceService.Shared.IsInstalled;
