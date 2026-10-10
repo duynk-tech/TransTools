@@ -32,7 +32,7 @@ internal static class Program
             }
             background.ContextMenu.Items.OfType<MenuItem>().First(value => Equals(value.Tag, "noon")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump();
             foreach (var (width, height) in new[] { (1280, 820), (1200, 740), (1440, 900) }) {
-                window.Width = width; window.Height = height;
+                SetViewportSize(window, width, height);
                 foreach (var route in new[] { "Cuộc họp", "Sổ tay", "Dịch nhanh", "Đọc văn bản", "Học ngôn ngữ", "Trò chuyện", "Cài đặt" }) {
                     var button = Descendants(window).OfType<RadioButton>().First(b => Equals(b.Content, route));
                     button.IsChecked = true; Pump(); window.UpdateLayout();
@@ -262,7 +262,7 @@ internal static class Program
         if (notebook.SessionsView.Cast<MeetingSession>().Any(s => !s.IsConversation)) throw new Exception("Conversation filter contains meetings");
         notebook.SelectedSession = projection;
         foreach (var width in new[] {1200, 1280, 1440}) {
-            window.Width = width; Pump(); ValidateControlLayout(window, "Notebook conversation"); Capture(window, output, $"{width}-notebook-conversation.png");
+            SetViewportSize(window, width, (int)window.Height); Pump(); ValidateControlLayout(window, "Notebook conversation"); Capture(window, output, $"{width}-notebook-conversation.png");
         }
         notebook.RecordKind = "Cuộc họp";
         if (notebook.SessionsView.Cast<MeetingSession>().Any(s => s.IsConversation)) throw new Exception("Meeting filter contains conversations");
@@ -395,6 +395,17 @@ internal static class Program
                 bounds.Intersect(frame.TransformToAncestor(root).TransformBounds(new Rect(frame.RenderSize)));
         bounds.Intersect(new Rect(root.RenderSize));
         return bounds;
+    }
+    private static void SetViewportSize(Window window, int width, int height)
+    {
+        // Hosted runners may have a small desktop. Raise track minimums as well
+        // as requested size so native window constraints cannot silently clamp it.
+        window.MinWidth = width; window.MinHeight = height;
+        window.Width = width; window.Height = height; Pump(); window.UpdateLayout();
+        var root = (FrameworkElement)window.Content;
+        if (Math.Abs(window.ActualWidth - width) > 2 || Math.Abs(window.ActualHeight - height) > 2 || root.ActualWidth < width - 40 || root.ActualHeight < height - 60)
+            throw new Exception($"Requested {width}x{height}, actual window {window.ActualWidth}x{window.ActualHeight}, client {root.ActualWidth}x{root.ActualHeight}");
+        Console.WriteLine($"PASS: requested {width}x{height}; actual window {window.ActualWidth}x{window.ActualHeight}; client {root.ActualWidth}x{root.ActualHeight}");
     }
     private static void Capture(Window window, string output, string name)
     {
