@@ -174,6 +174,7 @@ internal static class Program
                     }
                 }
             }
+            var about = new AboutWindow { Owner = window }; about.Show(); Pump(); ValidateControlLayout(about, "About"); Capture(about, output, "about.png"); about.Close();
             CheckNotebookRecords(window, output);
             CheckReadingLibrary(window, output);
             var chatModel = Descendants(window).OfType<ConversationView>().FirstOrDefault()?.DataContext as ConversationViewModel;
