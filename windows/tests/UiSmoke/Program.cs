@@ -126,6 +126,21 @@ internal static class Program
                     if (conversation != null && conversation.Messages.Count == 0) {
                         for (var n = 0; n < 8; n++) conversation.Messages.Add(new ChatMessageItem { IsUser = n % 2 == 0, Text = "Let us practice a longer conversation about your work and the next project. What would you like to discuss today?", Translation = n % 2 == 0 ? "" : "Cùng luyện một cuộc trò chuyện dài về công việc và dự án sắp tới. Hôm nay bạn muốn thảo luận điều gì?" });
                     }
+                    if (conversation != null) {
+                        var chatView = Descendants(window).OfType<ConversationView>().First();
+                        var list = (ListBox)chatView.FindName("MessageList"); Pump(); list.UpdateLayout();
+                        var bubbles = Descendants(list).OfType<Border>().Where(b => Equals(b.Tag, "ChatBubble") && b.IsVisible).Select(b => (Bubble: b, Bounds: new Rect(b.TransformToAncestor(list).Transform(new Point()), b.RenderSize))).OrderBy(b => b.Bounds.Top).ToArray();
+                        if (bubbles.Length < 2) throw new Exception("Conversation fixture did not render adjacent bubbles");
+                        for (var i = 1; i < bubbles.Length; i++) {
+                            var gap = bubbles[i].Bounds.Top - bubbles[i - 1].Bounds.Bottom;
+                            if (gap < -1 || gap > 20) throw new Exception($"Conversation bubble spacing is not content driven: {gap}");
+                        }
+                        var originalToggle = conversation.ShowVietnameseTranslation;
+                        conversation.ShowVietnameseTranslation = false; Pump();
+                        if (Descendants(list).OfType<TextBlock>().Any(t => t.IsVisible && conversation.Messages.Any(m => m.Translation.Length > 0 && m.Translation == t.Text))) throw new Exception("Conversation translation toggle left translations visible");
+                        conversation.ShowVietnameseTranslation = originalToggle; Pump();
+                        ValidateControlLayout(chatView, "Conversation bubbles");
+                    }
                     var notebook = Descendants(window).OfType<NotebookView>().FirstOrDefault()?.DataContext as NotebookViewModel;
                     if (notebook != null && notebook.Sessions.Count == 0) {
                         var view = Descendants(window).OfType<NotebookView>().First(); Pump();
