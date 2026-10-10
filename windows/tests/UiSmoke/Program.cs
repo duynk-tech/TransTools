@@ -419,7 +419,8 @@ internal static class Program
         var drawing = new DrawingVisual();
         using (var context = drawing.RenderOpen()) {
             context.DrawRectangle(window.Background, null, new Rect(0, 0, width, height));
-            var brush = new VisualBrush(root) { Stretch = Stretch.Fill, ViewboxUnits = BrushMappingMode.Absolute, Viewbox = new Rect(0, 0, root.ActualWidth, root.ActualHeight) };
+            var offset = VisualTreeHelper.GetOffset(root);
+            var brush = new VisualBrush(root) { Stretch = Stretch.Fill, ViewboxUnits = BrushMappingMode.Absolute, Viewbox = new Rect(offset.X, offset.Y, root.ActualWidth, root.ActualHeight) };
             context.DrawRectangle(brush, null, new Rect(margin.Left, margin.Top, root.ActualWidth, root.ActualHeight));
         }
         bitmap.Render(drawing);
