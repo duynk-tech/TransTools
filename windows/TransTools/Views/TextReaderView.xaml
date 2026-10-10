@@ -27,6 +27,7 @@
  </StackPanel>
  <Border Grid.Row="1" Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Padding="18">
   <DockPanel><DockPanel DockPanel.Dock="Top" Margin="0,0,0,12"><Button DockPanel.Dock="Right" Content="Xóa" Command="{Binding ClearTextCommand}" Style="{StaticResource SecondaryButton}" MinHeight="28" Padding="8,4"/><TextBlock Text="Văn bản cần đọc" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel>
+   <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0"><TextBlock Text="{Binding CharacterCountLabel}" FontSize="12"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Foreground" Value="#73827C"/><Style.Triggers><DataTrigger Binding="{Binding IsTooLong}" Value="True"><Setter Property="Foreground" Value="#DC2626"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock><TextBlock Text="Chia văn bản thành phần không quá 5.000 ký tự để nghe hoặc lưu audio." Foreground="#DC2626" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0" Visibility="{Binding IsTooLong,Converter={StaticResource BoolVisibility}}"/></StackPanel>
    <TextBox Text="{Binding Text,UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsBusy}" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Padding="0" FontSize="16" Background="Transparent" Foreground="#243D35" BorderThickness="0"/>
   </DockPanel>
  </Border>

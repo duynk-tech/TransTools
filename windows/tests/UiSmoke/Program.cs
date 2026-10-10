@@ -57,6 +57,12 @@ internal static class Program
                         var sentenceSlider = (Slider)reader.FindName("SentencePauseSlider");
                         var paragraphSlider = (Slider)reader.FindName("ParagraphPauseSlider");
                         if (sentenceSlider.Maximum != 2 || paragraphSlider.Maximum != 4) throw new Exception("Reader pause ranges differ from macOS");
+                        var oldText = readingModel.Text;
+                        readingModel.Text = string.Concat(Enumerable.Repeat("a\u0301", 5000)); Pump();
+                        if (readingModel.CharacterCount != 5000 || !readingModel.CanRead) throw new Exception("Reader 5000-character limit incorrectly counts combining marks");
+                        readingModel.Text += "x"; Pump();
+                        if (!readingModel.IsTooLong || readingModel.CanRead || readingModel.CanExport || readingModel.Text.Length != 10001) throw new Exception("Oversized reader text was silently truncated or remained playable");
+                        readingModel.Text = oldText; Pump();
                         var oldSentence = readingModel.SentencePause; var oldParagraph = readingModel.ParagraphPause;
                         sentenceSlider.Value = .7; paragraphSlider.Value = 1.6; Pump();
                         if (readingModel.SentencePause != .7 || readingModel.ParagraphPause != 1.6) throw new Exception("Reader pause controls did not reach their playback model");

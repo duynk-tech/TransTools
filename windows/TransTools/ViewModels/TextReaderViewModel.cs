@@ -12,12 +12,15 @@ public partial class TextReaderViewModel : ObservableObject
     public bool CanChangeRate => !IsBusy && Engine != "VieNeu v3 Turbo";
     public bool CanConfigureReader => !IsBusy;
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanRead), nameof(CanExport))]
+    [NotifyPropertyChangedFor(nameof(CanRead), nameof(CanExport), nameof(CharacterCount), nameof(CharacterCountLabel), nameof(IsTooLong))]
     [NotifyCanExecuteChangedFor(nameof(ReadCommand), nameof(ExportCommand))]
     private string _text = "";
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(HasStory))] private ReadingStory? _story;
     public bool HasStory => Story != null;
-    public bool CanRead => !IsBusy && !string.IsNullOrWhiteSpace(Text);
+    public int CharacterCount => new System.Globalization.StringInfo(Text.Trim()).LengthInTextElements;
+    public string CharacterCountLabel => CharacterCount.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("vi-VN")) + "/5.000 ký tự";
+    public bool IsTooLong => CharacterCount > 5000;
+    public bool CanRead => !IsBusy && !string.IsNullOrWhiteSpace(Text) && !IsTooLong;
     public void UseStory(ReadingStory story, string content)
     {
         if (!CanConfigureReader) return;
@@ -49,9 +52,9 @@ public partial class TextReaderViewModel : ObservableObject
     partial void OnParagraphPauseChanged(double value) { var bounded = SpeechReadingPlan.Bound(value, 4, .8); if (bounded != value) { ParagraphPause = bounded; return; } SaveReadingPreferences(); }
     private CancellationTokenSource? _preparation;
     private bool _loadingPreference;
-    private async Task<string> PrepareAsync(string source, CancellationToken token)
+    private async Task<string> PrepareAsync(string source, string language, bool normalize, CancellationToken token)
     {
-        if (!NormalizeReading || Language != "vi" || source.Length > 30000) return source;
+        if (!normalize || language != "vi" || source.Length > 30000) return source;
         var tokens = SpeechReadingPreparation.Tokens(source);
         if (tokens.Length == 0 || tokens.Length > 250) return source;
         var config = new TransTools.Services.Storage.SecureCredentialStore().LoadConfiguredProvider();
@@ -86,12 +89,12 @@ public partial class TextReaderViewModel : ObservableObject
     partial void OnEngineChanged(string value) { OnPropertyChanged(nameof(CanExport)); ExportCommand.NotifyCanExecuteChanged(); OnPropertyChanged(nameof(CanChangeRate)); if (value == "VieNeu v3 Turbo") Rate = 1; if (!_loadingPreference) VoicePreferences.Save(Language, value, Rate); }
     [RelayCommand(CanExecute = nameof(CanRead))] private async Task ReadAsync()
     {
-        if (IsBusy || string.IsNullOrWhiteSpace(Text)) return;
-        var source = Text; var language = Language; var engine = Engine; var rate = Rate; var sentencePause = SentencePause; var paragraphPause = ParagraphPause;
+        if (!CanRead) return;
+        var source = Text.Trim(); var language = Language; var engine = Engine; var rate = Rate; var sentencePause = SentencePause; var paragraphPause = ParagraphPause; var normalize = NormalizeReading;
         IsBusy = true;
         try {
-            _preparation = new(); var spoken = await PrepareAsync(source, _preparation.Token); _preparation.Token.ThrowIfCancellationRequested();
-            if (Text != source || Language != language) { Status = "Nội dung đã thay đổi · nhấn Đọc lại."; return; }
+            _preparation = new(); var spoken = await PrepareAsync(source, language, normalize, _preparation.Token); _preparation.Token.ThrowIfCancellationRequested();
+            if (Text.Trim() != source || Language != language) { Status = "Nội dung đã thay đổi · nhấn Đọc lại."; return; }
             Status = "Đang đọc..."; await VoiceService.Shared.SpeakAsync(spoken, language, engine, rate, _preparation.Token, sentencePause, paragraphPause);
             Status = _preparation.IsCancellationRequested ? "Đã dừng" : "Đã hoàn tất";
         }
@@ -103,12 +106,13 @@ public partial class TextReaderViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanExport))] private async Task ExportAsync()
     {
         if (IsBusy || !CanExport || string.IsNullOrWhiteSpace(Text)) return;
-        var ext = Engine == "Edge" ? "mp3" : "wav";
+        var source = Text.Trim(); var language = Language; var engine = Engine; var rate = Rate; var normalize = NormalizeReading;
+        var ext = engine == "Edge" ? "mp3" : "wav";
         var dialog = new SaveFileDialog { Filter = $"Audio (*.{ext})|*.{ext}", FileName = "Trans Tools Audio." + ext };
         if (dialog.ShowDialog() != true) return; IsBusy = true;
         try {
-            _preparation = new(); var spoken = await PrepareAsync(Text, _preparation.Token);
-            Status = "Đang tạo audio..."; await VoiceService.Shared.ExportAsync(spoken, Language, Engine, Rate, dialog.FileName, _preparation.Token); Status = "Đã lưu audio";
+            _preparation = new(); var spoken = await PrepareAsync(source, language, normalize, _preparation.Token);
+            Status = "Đang tạo audio..."; await VoiceService.Shared.ExportAsync(spoken, language, engine, rate, dialog.FileName, _preparation.Token); Status = "Đã lưu audio";
         }
         catch (OperationCanceledException) { Status = "Đã hủy xuất audio"; }
         catch (Exception ex) { Status = ex.Message; }

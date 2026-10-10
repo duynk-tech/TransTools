@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 namespace TransTools.Services.Speech;
 public sealed record ReadingPart(string Text, double Pause);
 public static class SpeechReadingPlan
@@ -25,7 +24,9 @@ public static class SpeechReadingPlan
                 if (end < content.Length && !char.IsWhiteSpace(content[end]) && !cjk) continue;
                 if (punctuation == '.' && end < content.Length)
                 {
-                    var word = Regex.Match(content[..i], @"[\p{L}.]+$").Value;
+                    var wordStart = i;
+                    while (wordStart > 0 && (char.IsLetter(content[wordStart - 1]) || content[wordStart - 1] == '.')) wordStart--;
+                    var word = content[wordStart..i];
                     if (Abbreviations.Contains(word) || word.Length == 1 && char.IsLetter(word[0])) continue;
                 }
                 var sentence = content[start..end].Trim();
