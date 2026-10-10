@@ -150,6 +150,24 @@ internal static class Program
                                 settings.TranslationDomain = domain; settings.SubtitlePacing = pace; settings.SubtitleFontSize = size; settings.SubtitleLight = light;
                                 settings.SaveSubtitlePreferencesCommand.Execute(null); Pump();
                             }
+                            if (sections.SelectedItem is TabItem { Header: "Giọng đọc & Phát âm" }) {
+                                var voice = Descendants(window).OfType<VoiceSettingsView>().First();
+                                Capture(window, output, $"{width}-voice-default.png");
+                                ((RadioButton)voice.FindName("AdvancedTab")).IsChecked = true; Pump(); ValidateControlLayout(window, "Voice advanced");
+                                Capture(window, output, $"{width}-voice-advanced.png");
+                                ((RadioButton)voice.FindName("DefaultTab")).IsChecked = true; Pump();
+                                if (width == 1280) {
+                                    var management = (SettingsViewModel)Descendants(window).OfType<SettingsView>().First().DataContext;
+                                    var blocked = new VoiceSettingsViewModel(management, () => true);
+                                    Await(blocked.PreviewCommand.ExecuteAsync(null));
+                                    if (blocked.IsPreviewing || !blocked.Status.Contains("Dừng phiên")) throw new Exception("Voice preview did not respect active audio session");
+                                    var reader = new TextReaderViewModel { Text = "Keep this original text unchanged." };
+                                    var old = TransTools.Services.Speech.VoicePreferences.Get("vi");
+                                    TransTools.Services.Speech.VoicePreferences.Save("vi", "Giọng cơ bản", 1.2);
+                                    if (reader.Engine != "Giọng cơ bản" || reader.Rate != 1.2 || reader.Text != "Keep this original text unchanged.") throw new Exception("Voice preference update failed or overwrote reader text");
+                                    TransTools.Services.Speech.VoicePreferences.Save("vi", old.Engine, old.Rate);
+                                }
+                            }
                             Capture(window, output, $"{width}-settings-{i}.png");
                             Console.WriteLine($"PASS: settings section {i} at {width}x{height}");
                         }

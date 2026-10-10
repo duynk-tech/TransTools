@@ -54,7 +54,16 @@ public partial class TextReaderViewModel : ObservableObject
         catch (OperationCanceledException) { throw; }
         catch { return source; }
     }
-    public TextReaderViewModel() => LoadPreference();
+    public TextReaderViewModel()
+    {
+        LoadPreference();
+        VoicePreferences.Changed += code => {
+            if (code != Language || IsBusy) return;
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess()) LoadPreference(); else dispatcher.InvokeAsync(() => { if (!IsBusy && code == Language) LoadPreference(); });
+        };
+    }
+    partial void OnIsBusyChanged(bool value) { if (!value) LoadPreference(); }
     private void LoadPreference() { _loadingPreference = true; try { var preference = VoicePreferences.Get(Language); Engine = Engines.Contains(preference.Engine) ? preference.Engine : "Giọng cơ bản"; Rate = Engine == "VieNeu v3 Turbo" ? 1 : preference.Rate; } finally { _loadingPreference = false; } }
     partial void OnLanguageChanged(string value) { OnPropertyChanged(nameof(Engines)); LoadPreference(); }
     partial void OnRateChanged(double value) { if (!_loadingPreference) VoicePreferences.Save(Language, Engine, value); }

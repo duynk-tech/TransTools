@@ -148,7 +148,7 @@ public partial class MainWindow : Window
     private void NavSettings_Checked(object sender, RoutedEventArgs e)
     {
         if (MainContentGrid == null) return;
-        ShowView("settings", () => new SettingsView(_settingsViewModel));
+        ShowView("settings", () => new SettingsView(_settingsViewModel, () => _meetingViewModel.IsBusy || !_conversationViewModel.CanChangeSession || _readerViewModel.IsBusy));
     }
 
     private async void StartMeetingFromMascot()

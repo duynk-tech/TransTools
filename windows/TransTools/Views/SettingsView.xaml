@@ -26,7 +26,7 @@
   </UserControl.Resources>
   <DockPanel>
     <TextBlock DockPanel.Dock="Bottom" Text="{Binding Status}" Foreground="#287568" TextWrapping="Wrap" Margin="308,8,28,0" />
-    <TabControl TabStripPlacement="Left" Background="Transparent" BorderThickness="0" ItemContainerStyle="{StaticResource SettingsSection}">
+    <TabControl x:Name="SettingsSections" TabStripPlacement="Left" Background="Transparent" BorderThickness="0" ItemContainerStyle="{StaticResource SettingsSection}">
       <TabControl.Template>
         <ControlTemplate TargetType="TabControl">
           <Grid>
@@ -148,7 +148,7 @@
 <TabItem Header="Giọng đọc &amp; Phát âm" Tag="">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
-            <TextBlock Text="Giọng đọc &amp; Phát âm" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
+            <TextBlock Text="Giọng đọc &amp; Phát âm" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" /><ContentControl x:Name="VoiceSettingsHost"/>
             <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
               <StackPanel>
                 <TextBlock Text="Bản ghi phát âm offline" FontSize="18" Foreground="#243D35" />

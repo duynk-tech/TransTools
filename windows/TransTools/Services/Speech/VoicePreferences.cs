@@ -4,6 +4,7 @@ namespace TransTools.Services.Speech;
 public sealed record VoicePreference(string Engine, double Rate);
 public static class VoicePreferences
 {
+    public static event Action<string>? Changed;
     private static readonly object Gate = new();
     private static string PathName => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TransTools", "voices.json");
     public static string LanguageCode(string value) => EdgeTtsService.VoiceForLanguage(value)[..2];
@@ -19,6 +20,7 @@ public static class VoicePreferences
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(PathName)!);
             File.WriteAllText(PathName + ".tmp", JsonSerializer.Serialize(values)); File.Move(PathName + ".tmp", PathName, true);
         }
+        Changed?.Invoke(LanguageCode(language));
     }
     private static Dictionary<string, VoicePreference> Load() => File.Exists(PathName) ? JsonSerializer.Deserialize<Dictionary<string, VoicePreference>>(File.ReadAllText(PathName)) ?? new() : new();
     public static Task SpeakAsync(string text, string language) {
