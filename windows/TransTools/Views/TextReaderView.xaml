@@ -2,12 +2,13 @@
  <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
  <StackPanel Margin="0,4,0,18">
   <TextBlock Text="Đọc văn bản" FontSize="18" FontWeight="SemiBold" Foreground="#243D35"/>
-  <TextBlock Text="Nghe văn bản với giọng và tốc độ phù hợp với bạn" Foreground="#65756F" Margin="0,4,0,18"/>
+  <TextBlock Text="Nghe văn bản hoặc chọn truyện từ thư viện" Foreground="#65756F" Margin="0,4,0,18"/>
   <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
    <TextBlock Text="Ngôn ngữ đọc" VerticalAlignment="Center" Margin="0,0,12,0"/>
    <ComboBox Grid.Column="1" IsEnabled="{Binding CanConfigureReader}" ItemsSource="{Binding Languages}" ItemTemplate="{StaticResource LanguageItem}" SelectedItem="{Binding Language}" Width="230"/>
-   <Button Grid.Column="3" x:Name="ReadingOptionsButton" Content="Tùy chỉnh đọc" Style="{StaticResource SecondaryButton}" Click="ShowReadingOptions_Click"/>
+   <StackPanel Grid.Column="3" Orientation="Horizontal"><Button x:Name="LibraryButton" Content="Thư viện truyện" Style="{StaticResource SecondaryButton}" IsEnabled="{Binding CanConfigureReader}" Click="ShowLibrary_Click" Margin="0,0,12,0"/><Button x:Name="ReadingOptionsButton" Content="Tùy chỉnh đọc" Style="{StaticResource SecondaryButton}" Click="ShowReadingOptions_Click"/></StackPanel>
   </Grid>
+  <DockPanel Margin="0,12,0,0" Visibility="{Binding HasStory,Converter={StaticResource BoolVisibility}}"><Button DockPanel.Dock="Right" Content="Xem nguồn" Click="ShowSource_Click" Style="{StaticResource SecondaryButton}" MinHeight="28" Padding="8,4"/><TextBlock Text="{Binding Story.Title}" FontWeight="SemiBold" Foreground="#65756F" VerticalAlignment="Center"/></DockPanel>
   <Popup x:Name="ReadingOptionsPopup" PlacementTarget="{Binding ElementName=ReadingOptionsButton}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
    <Border Background="White" BorderBrush="#B5D2C9" BorderThickness="1" CornerRadius="12" Padding="20" Width="420">
     <StackPanel><TextBlock Text="Tùy chỉnh đọc" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,18"/>
@@ -22,10 +23,10 @@
   </Popup>
  </StackPanel>
  <Border Grid.Row="1" Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Padding="18">
-  <DockPanel><TextBlock DockPanel.Dock="Top" Text="Văn bản cần đọc" FontWeight="SemiBold" Margin="0,0,0,12"/>
+  <DockPanel><DockPanel DockPanel.Dock="Top" Margin="0,0,0,12"><Button DockPanel.Dock="Right" Content="Xóa" Command="{Binding ClearTextCommand}" Style="{StaticResource SecondaryButton}" MinHeight="28" Padding="8,4"/><TextBlock Text="Văn bản cần đọc" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel>
    <TextBox Text="{Binding Text,UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Padding="0" FontSize="16" Background="Transparent" Foreground="#243D35" BorderThickness="0"/>
   </DockPanel>
  </Border>
- <StackPanel Grid.Row="2" Margin="0,16,0,0"><WrapPanel><Button Content="Đọc văn bản" Command="{Binding ReadCommand}" Margin="0,0,8,0"/><Button Content="Dừng" Style="{StaticResource SecondaryButton}" Command="{Binding StopCommand}" Margin="0,0,8,0"/><Button Content="Lưu audio" Style="{StaticResource SecondaryButton}" Command="{Binding ExportCommand}" IsEnabled="{Binding CanExport}"/></WrapPanel><TextBlock Text="{Binding Status}" Foreground="#65756F" TextWrapping="Wrap" Margin="0,8,0,0"/></StackPanel>
+ <StackPanel Grid.Row="2" Margin="0,16,0,0"><WrapPanel><Button Content="Đọc văn bản" Command="{Binding ReadCommand}" Margin="0,0,8,0"/><Button Content="Dừng" Style="{StaticResource SecondaryButton}" IsEnabled="{Binding IsBusy}" Command="{Binding StopCommand}" Margin="0,0,8,0"/><Button Content="Lưu audio" Style="{StaticResource SecondaryButton}" Command="{Binding ExportCommand}" IsEnabled="{Binding CanExport}"/></WrapPanel><TextBlock Text="{Binding Status}" Foreground="#65756F" TextWrapping="Wrap" Margin="0,8,0,0"/></StackPanel>
  </Grid>
 </UserControl>

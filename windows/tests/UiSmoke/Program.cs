@@ -111,17 +111,93 @@ internal static class Program
                     }
                 }
             }
+            CheckReadingLibrary(window, output);
             var chatModel = Descendants(window).OfType<ConversationView>().FirstOrDefault()?.DataContext as ConversationViewModel;
             // The cached conversation view may be hidden; create an isolated fixture instead.
             chatModel = new ConversationViewModel(() => false);
             chatModel.Messages.Add(new ChatMessageItem { Text = "A long reply should wrap and remain readable in the mini chat window. The user should be able to follow the conversation while the main window is closed.", Translation = "Câu trả lời dài cần xuống dòng và vẫn dễ đọc trong cửa sổ trò chuyện nhỏ." });
             var mini = new ConversationMiniWindow(chatModel); mini.Show(); Pump(); ValidateControlLayout(mini, "Mini chat"); Capture(mini, output, "mini-chat.png"); mini.CloseForExit(); chatModel.Dispose();
-            var hud = new FloatingSubtitleWindow(); hud.Show(); hud.UpdateSubtitle("The last complete sentence must stay visible until the next caption is ready.", "Câu hoàn chỉnh gần nhất phải được giữ lại cho đến khi phụ đề tiếp theo sẵn sàng."); Pump(); ValidateControlLayout(hud, "Phụ đề nổi"); Capture(hud, output, "subtitles.png"); hud.Hide();
+            CheckSubtitleHud(output);
             File.WriteAllLines(Path.Combine(output, "bindings.txt"), errors.Lines);
             if (errors.Lines.Count != 0) throw new Exception("WPF binding errors detected; see bindings.txt.");
             File.WriteAllText(Path.Combine(output, "result.txt"), "PASS: seven routes, three window sizes, no WPF binding errors. Audio, model inference and Windows 10/11 interactive tests remain separate.");
             app.Shutdown(); return 0;
         } catch (Exception ex) { File.WriteAllText(Path.Combine(output, "failure.txt"), ex.ToString()); Console.Error.WriteLine(ex); return 1; }
+    }
+    private static void Await(Task task)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(20);
+        while (!task.IsCompleted) { if (DateTime.UtcNow > deadline) throw new TimeoutException("Fixture did not complete"); Pump(); }
+        task.GetAwaiter().GetResult();
+    }
+    private static void CheckReadingLibrary(Window owner, string output)
+    {
+        var unicode = new string('a', 4499) + "😊 " + ReadingFixtureHandler.Sample;
+        var parts = TransTools.Services.Reading.ReadingLibrary.SplitParts(unicode);
+        if (string.Concat(parts.Select(part => part.Text)) != unicode.Trim() || parts.Any(part => part.Text.Length > 4500 || char.IsHighSurrogate(part.Text[^1]))) throw new Exception("Story splitting lost text or broke Unicode");
+        var html = TransTools.Services.Reading.ReadingLibrary.ExtractParagraphs("<p>Tiếng <b>Việt</b> &amp; tên riêng.<script>ignore me</script></p>");
+        if (html != "Tiếng Việt & tên riêng.") throw new Exception("Story HTML extraction lost readable text");
+        var handler = new ReadingFixtureHandler(); using var client = new System.Net.Http.HttpClient(handler);
+        using var model = new ReadingLibraryViewModel(new TransTools.Services.Reading.ReadingLibrary(client));
+        var library = new ReadingLibraryWindow(model) { Owner = owner }; library.Show(); Pump();
+        ValidateControlLayout(library, "Story catalog"); Capture(library, output, "reading-library-catalog.png");
+        var reader = new TextReaderViewModel { Text = "Keep the original text until the user confirms." };
+        Await(model.LoadStoryAsync(TransTools.Services.Reading.ReadingLibrary.Catalog[0])); Pump();
+        if (!model.CanUsePart || reader.Text != "Keep the original text until the user confirms." || string.Concat(model.Parts.Select(part => part.Text)) != ReadingFixtureHandler.Sample) throw new Exception("Story preview changed the editor or lost content");
+        ValidateControlLayout(library, "Story preview"); Capture(library, output, "reading-library-preview.png");
+        reader.UseStory(model.SelectedStory!, model.SelectedPart!.Text);
+        if (reader.Language != "vi" || !reader.HasStory || reader.Text != model.PreviewText) throw new Exception("Story import lost its text, language or source");
+        Await(model.LoadStoryAsync(TransTools.Services.Reading.ReadingLibrary.Catalog[1]));
+        if (string.Concat(model.Parts.Select(part => part.Text)) != ReadingFixtureHandler.Sample) throw new Exception("Gutenberg import retained boilerplate or lost story text");
+        model.Query = "truyện cổ tích"; Await(model.SearchAsync());
+        if (model.Stories.Count != 2 || !model.Stories.All(story => story.Page.Scheme == "https" && story.Id.Contains("123"))) throw new Exception("Online story search did not retain source links");
+        Capture(library, output, "reading-library-search.png");
+        model.SuggestionsCommand.Execute(null);
+        handler.Fail = true; var preserved = reader.Text; Await(model.LoadStoryAsync(TransTools.Services.Reading.ReadingLibrary.Catalog[0]));
+        if (model.CanUsePart || reader.Text != preserved || !model.Status.StartsWith("Chưa tải")) throw new Exception("Failed story download changed the reader");
+        handler.Fail = false; handler.Oversized = true; Await(model.LoadStoryAsync(TransTools.Services.Reading.ReadingLibrary.Catalog[0]));
+        if (model.CanUsePart) throw new Exception("Oversized story download was accepted");
+        handler.Oversized = false; handler.Pending = new(TaskCreationOptions.RunContinuationsAsynchronously); model.Query = "old search";
+        var pending = model.SearchAsync(); model.SuggestionsCommand.Execute(null); handler.Pending.SetResult(ReadingFixtureHandler.SearchResponse()); Await(pending);
+        if (model.Stories.Count != 4 || model.IsBusy || model.Stories[0].Id != "tam-cam") throw new Exception("Canceled search overwrote the suggested catalog");
+        library.Close(); Console.WriteLine("PASS: story catalog, search, preview, import, Unicode, cancellation and download limits");
+    }
+    private static void CheckSubtitleHud(string output)
+    {
+        var prefs = TransTools.Services.Experience.SubtitlePreferences.Shared;
+        prefs.Light = false; prefs.Side = false; prefs.ShowMascot = false; prefs.ShowContext = true; prefs.ShowNext = true; prefs.ShowOriginal = true;
+        var hud = new FloatingSubtitleWindow(); hud.Show(); hud.SetMeetingState(true); Pump();
+        var paused = false; var started = false; hud.StopRequested += () => paused = true; hud.StartRequested += () => started = true;
+        ((Button)hud.FindName("StopButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        if (!paused) throw new Exception("HUD pause action did not reach the meeting");
+        hud.SetMeetingState(false); ((Button)hud.FindName("StopButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        if (!started) throw new Exception("HUD start action did not reach the meeting");
+        hud.SetMeetingState(true);
+        for (var i = 0; i < 33; i++) hud.UpdateCaption(new Caption { Start = i, Original = "Original sentence " + i, Vietnamese = "Câu hoàn chỉnh cần được giữ lại để người dùng có thể đọc đủ nội dung. " + i });
+        hud.UpdateIncoming(new Caption { Start = 34, Original = "A new sentence is arriving and should not replace the completed translation." });
+        Pump(); ValidateControlLayout(hud, "HUD live"); Capture(hud, output, "subtitles.png");
+        var last = ((TextBlock)hud.FindName("TranslatedText")).Text; hud.UpdateSubtitle("", ""); Pump();
+        if (hud.HistoryCount != 30 || ((TextBlock)hud.FindName("TranslatedText")).Text != last) throw new Exception("HUD lost a completed caption or retained unbounded history");
+        var original = (MenuItem)hud.FindName("ShowOriginal"); original.IsChecked = false; original.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+        hud.UpdateCaption(new Caption { Original = "Translation failed; the original must remain readable." }); Pump();
+        if (((TextBlock)hud.FindName("TranslatedText")).Text != "Translation failed; the original must remain readable.") throw new Exception("HUD translation failure erased its source text");
+        var light = (MenuItem)hud.FindName("LightBackground"); light.IsChecked = true; light.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+        ((Button)hud.FindName("ReviewButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+        Capture(hud, output, "subtitles-review-light.png");
+        var review = (ListBox)hud.FindName("ReviewList");
+        if (review.Visibility != Visibility.Visible || ((ScrollViewer)hud.FindName("CaptionScroll")).Visibility != Visibility.Collapsed) throw new Exception("HUD review did not isolate manual scrolling");
+        ((Button)hud.FindName("ReviewButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        ((MenuItem)hud.FindName("LayoutItem")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump(); ValidateControlLayout(hud, "HUD side"); Capture(hud, output, "subtitles-side.png");
+        ((MenuItem)hud.FindName("LayoutItem")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); hud.Width = 820;
+        var mascot = (MenuItem)hud.FindName("ShowMascot"); mascot.IsChecked = true; mascot.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump();
+        if (!hud.IsMascotDisplayed) throw new Exception("HUD mascot was not displayed in its own column");
+        ValidateControlLayout(hud, "HUD mascot"); Capture(hud, output, "subtitles-mascot.png");
+        var longCaption = new Caption { Original = string.Join("\n", Enumerable.Repeat("Long source line for checking scroll after content layout.", 25)), Vietnamese = string.Join("\n", Enumerable.Repeat("Nội dung dài cần tự cuộn đến dòng cuối sau khi bố cục hoàn tất.", 25)) };
+        hud.UpdateCaption(longCaption); Pump();
+        var scroll = (ScrollViewer)hud.FindName("CaptionScroll");
+        if (scroll.ScrollableHeight > .5 && scroll.VerticalOffset < scroll.ScrollableHeight - .5) throw new Exception("HUD did not scroll to its final line");
+        hud.ResetSession(); Pump(); if (hud.HistoryCount != 0) throw new Exception("HUD new session retained previous history");
+        hud.Hide(); Console.WriteLine("PASS: HUD controls, retained captions, review history, layouts, mascot and final-line scrolling");
     }
     private static void ValidateControlLayout(Window window, string route)
         => ValidateControlLayout((FrameworkElement)window.Content, route);

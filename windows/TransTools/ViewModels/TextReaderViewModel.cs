@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using TransTools.Services.Speech;
+using TransTools.Services.Reading;
 namespace TransTools.ViewModels;
 public partial class TextReaderViewModel : ObservableObject
 {
@@ -10,15 +11,28 @@ public partial class TextReaderViewModel : ObservableObject
     public string[] Engines => Language == "zh" ? new[] { "Edge", "Giọng cơ bản" } : Language == "vi" && VoiceService.HasVieNeuProcessor ? new[] { "Edge", "Supertonic 3", "VieNeu v3 Turbo", "Giọng cơ bản" } : new[] { "Edge", "Supertonic 3", "Giọng cơ bản" };
     public bool CanChangeRate => !IsBusy && Engine != "VieNeu v3 Turbo";
     public bool CanConfigureReader => !IsBusy;
-    [ObservableProperty] private string _text = "";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRead), nameof(CanExport))]
+    [NotifyCanExecuteChangedFor(nameof(ReadCommand), nameof(ExportCommand))]
+    private string _text = "";
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(HasStory))] private ReadingStory? _story;
+    public bool HasStory => Story != null;
+    public bool CanRead => !IsBusy && !string.IsNullOrWhiteSpace(Text);
+    public void UseStory(ReadingStory story, string content)
+    {
+        if (!CanConfigureReader) return;
+        Language = story.Language; Text = content; Story = story; Status = "Đã chọn " + story.Title + ".";
+    }
+    [RelayCommand(CanExecute = nameof(CanConfigureReader))] private void ClearText() { Text = ""; Story = null; Status = "Nhập đoạn văn để nghe hoặc chọn truyện từ thư viện"; }
     [ObservableProperty] private string _language = "vi";
     [ObservableProperty] private string _engine = "Edge";
     [ObservableProperty] private double _rate = 1;
     [ObservableProperty] private string _status = "Nhập đoạn văn để nghe hoặc lưu audio";
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanChangeRate), nameof(CanExport), nameof(CanConfigureReader))]
+    [NotifyPropertyChangedFor(nameof(CanChangeRate), nameof(CanExport), nameof(CanConfigureReader), nameof(CanRead))]
+    [NotifyCanExecuteChangedFor(nameof(ReadCommand), nameof(ExportCommand), nameof(ClearTextCommand))]
     private bool _isBusy;
-    public bool CanExport => !IsBusy && Engine != "Giọng cơ bản";
+    public bool CanExport => CanRead && Engine != "Giọng cơ bản";
     [ObservableProperty] private bool _normalizeReading = true;
     private CancellationTokenSource? _preparation;
     private bool _loadingPreference;
@@ -44,8 +58,8 @@ public partial class TextReaderViewModel : ObservableObject
     private void LoadPreference() { _loadingPreference = true; try { var preference = VoicePreferences.Get(Language); Engine = Engines.Contains(preference.Engine) ? preference.Engine : "Giọng cơ bản"; Rate = Engine == "VieNeu v3 Turbo" ? 1 : preference.Rate; } finally { _loadingPreference = false; } }
     partial void OnLanguageChanged(string value) { OnPropertyChanged(nameof(Engines)); LoadPreference(); }
     partial void OnRateChanged(double value) { if (!_loadingPreference) VoicePreferences.Save(Language, Engine, value); }
-    partial void OnEngineChanged(string value) { OnPropertyChanged(nameof(CanExport)); OnPropertyChanged(nameof(CanChangeRate)); if (value == "VieNeu v3 Turbo") Rate = 1; if (!_loadingPreference) VoicePreferences.Save(Language, value, Rate); }
-    [RelayCommand] private async Task ReadAsync()
+    partial void OnEngineChanged(string value) { OnPropertyChanged(nameof(CanExport)); ExportCommand.NotifyCanExecuteChanged(); OnPropertyChanged(nameof(CanChangeRate)); if (value == "VieNeu v3 Turbo") Rate = 1; if (!_loadingPreference) VoicePreferences.Save(Language, value, Rate); }
+    [RelayCommand(CanExecute = nameof(CanRead))] private async Task ReadAsync()
     {
         if (IsBusy || string.IsNullOrWhiteSpace(Text)) return; IsBusy = true;
         try {
@@ -58,7 +72,7 @@ public partial class TextReaderViewModel : ObservableObject
         finally { _preparation?.Dispose(); _preparation = null; IsBusy = false; }
     }
     [RelayCommand] private void Stop() { _preparation?.Cancel(); VoiceService.Shared.Stop(); }
-    [RelayCommand] private async Task ExportAsync()
+    [RelayCommand(CanExecute = nameof(CanExport))] private async Task ExportAsync()
     {
         if (IsBusy || !CanExport || string.IsNullOrWhiteSpace(Text)) return;
         var ext = Engine == "Edge" ? "mp3" : "wav";

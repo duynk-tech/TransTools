@@ -68,6 +68,8 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     public string[] TranslationModes { get; } = { "Google", "AI", "Tiếng gốc" };
     public ObservableCollection<Caption> Captions { get; } = new();
     public event Action<string, string>? OnSubtitleUpdated;
+    public event Action<Caption>? OnCaptionPresented;
+    public event Action<Caption>? OnCaptionIncoming;
     public event Action<MeetingSession>? OnSessionSaved;
     public MeetingViewModel()
     {
@@ -175,7 +177,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
                             var caption = new Caption { Original = text, Start = _offset + segment.Start + (segment.End - segment.Start) * consumed / chars,
                                 End = _offset + segment.Start + (segment.End - segment.Start) * (consumed + text.Length) / chars };
                             consumed += text.Length;
-                            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => { Captions.Add(caption); });
+                            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => { Captions.Add(caption); OnCaptionIncoming?.Invoke(caption); });
                             await _translationQueue!.Writer.WriteAsync(caption, token);
                         }
                     }
@@ -197,7 +199,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
                     translated = await new LLMTranslationService().TranslateWithAIAsync(caption.Original, _sessionTarget, "Tự nhiên, không thêm nội dung", config);
                 } else translated = await _google.TranslateAsync(caption.Original, _sessionSource, _sessionTarget, token);
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
-                    caption.Vietnamese = translated;
+                    caption.Vietnamese = translated; OnCaptionIncoming?.Invoke(caption);
                 });
                 await _displayQueue!.Writer.WriteAsync(caption,token);
             } catch (OperationCanceledException) { throw; }
@@ -209,9 +211,9 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         await foreach (var caption in _displayQueue!.Reader.ReadAllAsync(token)) {
             await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
                 CurrentLiveOriginal = caption.Original; CurrentLiveVietnamese = caption.Vietnamese;
-                OnSubtitleUpdated?.Invoke(caption.Original,caption.Vietnamese);
+                OnSubtitleUpdated?.Invoke(caption.Original,caption.Vietnamese); OnCaptionPresented?.Invoke(caption);
             });
-            var until = DateTime.UtcNow.AddSeconds(TransTools.Services.Speech.CaptionDisplayTiming.HoldSeconds(caption.Original,caption.Vietnamese));
+            var until = DateTime.UtcNow.AddSeconds(TransTools.Services.Speech.CaptionDisplayTiming.HoldSeconds(caption.Original,caption.Vietnamese, TransTools.Services.Experience.SubtitlePreferences.Shared.Pacing));
             while (!_flushPresentation && DateTime.UtcNow < until) await Task.Delay(100,token);
         }
     }

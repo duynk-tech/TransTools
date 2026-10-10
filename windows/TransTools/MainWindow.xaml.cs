@@ -23,6 +23,7 @@ public partial class MainWindow : Window
     private ConversationMiniWindow? _miniChat;
     private bool _closeAllowed;
     private bool _savingForClose;
+    private bool _mascotWasVisibleBeforeHud;
 
     public MainWindow()
     {
@@ -32,11 +33,8 @@ public partial class MainWindow : Window
         InitializeComponent();
         ApplyBackground();
 
-        // Connect subtitle updates to floating window
-        _meetingViewModel.OnSubtitleUpdated += (orig, vi) =>
-        {
-            _subtitleWindow?.UpdateSubtitle(orig, vi);
-        };
+        _meetingViewModel.OnCaptionPresented += caption => _subtitleWindow?.UpdateCaption(caption);
+        _meetingViewModel.OnCaptionIncoming += caption => _subtitleWindow?.UpdateIncoming(caption);
 
         _meetingViewModel.OnSessionSaved += session => _ = _notebookViewModel.LoadSessionsAsync();
 
@@ -162,9 +160,18 @@ public partial class MainWindow : Window
         {
             _subtitleWindow = new FloatingSubtitleWindow();
             _subtitleWindow.StopRequested += () => _meetingViewModel.StopRecordingCommand.Execute(null);
+            _subtitleWindow.StartRequested += async () => {
+                try { await _meetingViewModel.StartRecordingCommand.ExecuteAsync(null); }
+                catch (Exception ex) { _meetingViewModel.Status = ex.Message; }
+            };
+            _subtitleWindow.MascotVisibilityChanged += visible => {
+                if (visible) { _mascotWasVisibleBeforeHud |= _mascotWindow?.IsVisible == true; _mascotWindow?.Hide(); }
+                else if (_mascotWasVisibleBeforeHud) { _mascotWindow?.Show(); _mascotWasVisibleBeforeHud = false; }
+            };
             _meetingViewModel.PropertyChanged += (_, change) => {
-                if (change.PropertyName == nameof(MeetingViewModel.IsRecording))
-                    _subtitleWindow.SetMeetingState(_meetingViewModel.IsRecording);
+                if (change.PropertyName == nameof(MeetingViewModel.IsRecording) && _meetingViewModel.IsRecording) _subtitleWindow.ResetSession();
+                if (change.PropertyName is nameof(MeetingViewModel.IsRecording) or nameof(MeetingViewModel.IsPreparing) or nameof(MeetingViewModel.IsStopping))
+                    _subtitleWindow.SetMeetingState(_meetingViewModel.IsRecording, !_meetingViewModel.IsPreparing && !_meetingViewModel.IsStopping);
             };
         }
 
@@ -174,13 +181,14 @@ public partial class MainWindow : Window
         }
         else
         {
-            _subtitleWindow.SetMeetingState(_meetingViewModel.IsRecording);
+            _subtitleWindow.SetMeetingState(_meetingViewModel.IsRecording, !_meetingViewModel.IsPreparing && !_meetingViewModel.IsStopping);
             _subtitleWindow.Show();
         }
     }
 
     private void ToggleMascot_Click(object sender, RoutedEventArgs e)
     {
+        if (_subtitleWindow?.IsMascotDisplayed == true) { _subtitleWindow.Activate(); return; }
         if (_mascotWindow == null)
         {
             _mascotWindow = new ChipChipMascotWindow();

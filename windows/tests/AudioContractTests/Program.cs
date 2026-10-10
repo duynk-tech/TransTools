@@ -50,6 +50,10 @@ foreach (var bad in new[] { release with { Installer = asset with { Url = "https
 
 LearningTests.Run();
 
+Check(CaptionDisplayTiming.HoldSeconds("Hi", "", "contextual") == 3.6, "contextual HUD pacing preserves reading time");
+Check(CaptionDisplayTiming.HoldSeconds("Hi", "", "fast") == 1.6, "fast HUD pacing follows speech sooner");
+Check(CaptionDisplayTiming.HoldSeconds(new string('a',1000), "", "balanced") == 4.8, "balanced HUD hold remains bounded");
+Check(CaptionDisplayTiming.HoldSeconds(new string('a',1000), "", "contextual") == 6, "contextual HUD hold remains bounded");
 Check(CaptionDisplayTiming.HoldSeconds("Hi", "") == 1.5, "short captions retain minimum reading time");
 Check(CaptionDisplayTiming.HoldSeconds(new string('a',1000), new string('b',1000)) == 5, "long captions cannot stall display indefinitely");
 Check(CaptionDisplayTiming.HoldSeconds(new string('a',60), new string('b',60)) > CaptionDisplayTiming.HoldSeconds(new string('a',60), ""), "bilingual captions receive extra reading time");
