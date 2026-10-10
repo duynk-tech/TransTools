@@ -34,7 +34,7 @@
       <RadioButton x:Name="NavTranslate" Content="Dịch nhanh" Tag="&#xE8D2;" Style="{StaticResource NavButtonStyle}" Checked="NavTranslate_Checked"/>
       <RadioButton Content="Đọc văn bản" Tag="&#xE767;" Style="{StaticResource NavButtonStyle}" Checked="NavReader_Checked"/>
       <RadioButton Content="Học ngôn ngữ" Tag="&#xE7BE;" Style="{StaticResource NavButtonStyle}" Checked="NavLearning_Checked"/>
-      <RadioButton Content="Trò chuyện" Tag="&#xE8F2;" Style="{StaticResource NavButtonStyle}" Checked="NavConversation_Checked"/>
+      <RadioButton x:Name="NavConversation" Content="Trò chuyện" Tag="&#xE8F2;" Style="{StaticResource NavButtonStyle}" Checked="NavConversation_Checked"/>
       <RadioButton Content="Cài đặt" Tag="&#xE713;" Style="{StaticResource NavButtonStyle}" Checked="NavSettings_Checked"/>
      </UniformGrid>
     </Border>

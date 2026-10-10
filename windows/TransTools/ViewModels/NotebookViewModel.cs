@@ -185,17 +185,17 @@ public partial class NotebookViewModel : ObservableObject
     [RelayCommand]
     public void ExportSrt()
     {
-        if (!IsMeetingSelected) return;
+        if (SelectedSession is not { IsConversation: false } session) return;
 
         var sfd = new SaveFileDialog
         {
             Filter = "SubRip Subtitle (*.srt)|*.srt",
-            FileName = $"{SelectedSession.Title}.srt"
+            FileName = $"{session.Title}.srt"
         };
 
         if (sfd.ShowDialog() == true)
         {
-            var lines = SelectedSession.Captions.Select((c, idx) =>
+            var lines = session.Captions.Select((c, idx) =>
                 $"{idx + 1}\n{c.FormattedTimestamp} --> {TimeSpan.FromSeconds(Math.Max(c.End, c.Start + 1)):hh\\:mm\\:ss\\,fff}\n{c.Original}\n{c.Vietnamese}\n");
 
             File.WriteAllText(sfd.FileName, string.Join("\n", lines));
