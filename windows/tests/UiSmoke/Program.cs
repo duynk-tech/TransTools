@@ -139,6 +139,8 @@ internal static class Program
                         conversation.ShowVietnameseTranslation = false; Pump();
                         if (Descendants(list).OfType<TextBlock>().Any(t => t.IsVisible && conversation.Messages.Any(m => m.Translation.Length > 0 && m.Translation == t.Text))) throw new Exception("Conversation translation toggle left translations visible");
                         conversation.ShowVietnameseTranslation = originalToggle; Pump();
+                        list.UpdateLayout(); var chatScroll = Descendants(list).OfType<ScrollViewer>().First();
+                        if (chatScroll.ScrollableHeight > .5 && chatScroll.VerticalOffset < chatScroll.ScrollableHeight - .5) throw new Exception("Conversation did not reveal the final line after translation height changed");
                         ValidateControlLayout(chatView, "Conversation bubbles");
                     }
                     var notebook = Descendants(window).OfType<NotebookView>().FirstOrDefault()?.DataContext as NotebookViewModel;
