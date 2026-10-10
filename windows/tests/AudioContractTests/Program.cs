@@ -88,6 +88,9 @@ try {
     var preferences = new TransTools.Services.Conversation.ConversationPreferencesStore(conversationPath);
     preferences.Save(new(30, "Duy\n Nguyễn"));
     Check(preferences.Load() == new TransTools.Services.Conversation.ConversationPreferences(30, "Duy Nguyễn"), "Conversation name/delay did not survive reload or control character cleanup");
+    preferences.Save(new(3, "Duy", false)); Check(!preferences.Load().ShowMiniTranslation, "Mini translation preference did not survive reload");
+    File.WriteAllText(conversationPath, "{\"DelaySeconds\":2,\"LearnerName\":\"Duy\"}");
+    Check(preferences.Load().ShowMiniTranslation, "Existing conversation preferences disabled mini translation by default");
     preferences.Save(new(99, new string('a', 80))); Check(preferences.Load().DelaySeconds == 30 && preferences.Load().LearnerName.Length == 60, "Conversation preferences exceeded Mac limits");
     File.WriteAllText(conversationPath, "{broken"); Check(preferences.Load().DelaySeconds == 2 && File.ReadAllText(conversationPath) == "{broken", "Corrupt preferences prevented conversation or were erased");
 } finally { if (Directory.Exists(Path.GetDirectoryName(conversationPath))) Directory.Delete(Path.GetDirectoryName(conversationPath)!, true); }

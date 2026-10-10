@@ -427,13 +427,22 @@ internal static class Program
             for (var n = 0; n < 8; n++) chatModel.Messages.Add(new ChatMessageItem { IsUser = n % 2 == 0, Text = "A longer spoken reply should wrap without hiding its ending in the compact conversation window.", Translation = "Câu trả lời dài vẫn phải hiển thị đầy đủ trong cửa sổ trò chuyện nhỏ." });
             foreach (var width in new[] { 360, 460 }) {
                 mini.Width = width; Pump(); mini.UpdateLayout(); ValidateControlLayout(mini, "Mini chat");
-                chatModel.ShowVietnameseTranslation = false; Pump();
-                if (Descendants(mini).OfType<TextBlock>().Any(t => t.IsVisible && t.Text == chatModel.Messages.Last().Translation)) throw new Exception("Mini chat ignored bilingual toggle");
-                chatModel.ShowVietnameseTranslation = true; Pump();
+                var miniList = (ListBox)mini.FindName("MessagesList");
+                if (miniList.Items.Count != 6 || !ReferenceEquals(miniList.Items[^1], chatModel.Messages.Last()) || chatModel.Messages.Count != 9) throw new Exception("Mini chat subset discarded full transcript or missed latest reply");
+                chatModel.ShowVietnameseTranslation = true; chatModel.ShowMiniTranslation = true;
+                ((Button)mini.FindName("MiniTranslationButton")).Command.Execute(null); Pump();
+                if (chatModel.ShowMiniTranslation || !chatModel.ShowVietnameseTranslation) throw new Exception("Mini translation toggle changed full chat presentation");
+                if (Descendants(mini).OfType<TextBlock>().Any(t => t.IsVisible && t.Text == chatModel.Messages.Last().Translation)) throw new Exception("Mini chat ignored its own bilingual toggle");
+                ((Button)mini.FindName("MiniTranslationButton")).Command.Execute(null); Pump();
+                chatModel.IsConversationActive = true; chatModel.UserInput = "A recognized draft to send"; Pump();
+                if (!((Button)mini.FindName("MiniEndButton")).IsVisible || !((TextBlock)mini.FindName("MiniDraft")).IsVisible) throw new Exception("Active mini chat did not show stop/draft");
                 var scroll = Descendants((ListBox)mini.FindName("MessagesList")).OfType<ScrollViewer>().First();
                 if (scroll.ScrollableHeight - scroll.VerticalOffset > 1) throw new Exception("Mini chat missed final line after bilingual reflow");
                 Capture(mini, output, $"mini-chat-{width}.png");
             }
+            chatModel.EndConversationCommand.Execute(null); Pump();
+            if (((Button)mini.FindName("MiniEndButton")).IsVisible || chatModel.Messages.Count != 9) throw new Exception("Ending mini conversation did not hide stop or preserve history");
+            Capture(mini, output, "mini-chat-stopped.png");
             mini.CloseForExit(); chatModel.Dispose();
             CheckSubtitleHud(output);
             File.WriteAllLines(Path.Combine(output, "bindings.txt"), errors.Lines);

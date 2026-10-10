@@ -34,6 +34,9 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [ObservableProperty] private ConversationSession? _selectedSession;
     [ObservableProperty] private string _customPrompt = "";
     [ObservableProperty] private bool _showVietnameseTranslation = true;
+    [ObservableProperty] private bool _showMiniTranslation = true;
+    partial void OnShowMiniTranslationChanged(bool value) => SavePreferences();
+    [RelayCommand] private void ToggleMiniTranslation() => ShowMiniTranslation = !ShowMiniTranslation;
     [ObservableProperty] private string _status = "Sẵn sàng";
     private readonly Func<bool> _meetingBusy;
     private readonly Func<Task>? _beginListeningOverride;
@@ -49,7 +52,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     public string GreetingName => LearnerName.Trim();
     partial void OnLearnerNameChanged(string value) { var clean = TransTools.Services.Conversation.ConversationPreferencesStore.Normalize(new(SendDelaySeconds, value)).LearnerName; if (clean != value) { LearnerName = clean; return; } SavePreferences(); }
     partial void OnSendDelaySecondsChanged(int value) { var bounded = Math.Clamp(value, 1, 30); if (bounded != value) { SendDelaySeconds = bounded; return; } if (_recorder != null) _recorder.SilenceDelaySeconds = bounded; if (IsListening) Status = $"Đang nghe · chờ {bounded} giây khi bạn ngừng nói"; SavePreferences(); }
-    private void SavePreferences() { if (_preferences == null) return; try { _preferences.Save(new(SendDelaySeconds, LearnerName)); } catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException) { Status = "Chưa lưu được tùy chọn trò chuyện"; } }
+    private void SavePreferences() { if (_preferences == null) return; try { _preferences.Save(new(SendDelaySeconds, LearnerName, ShowMiniTranslation)); } catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException) { Status = "Chưa lưu được tùy chọn trò chuyện"; } }
     [RelayCommand] private void IncreaseSendDelay() => SendDelaySeconds = Math.Min(30, SendDelaySeconds + 1);
     [RelayCommand] private void DecreaseSendDelay() => SendDelaySeconds = Math.Max(1, SendDelaySeconds - 1);
     private int _conversationGeneration;
@@ -136,7 +139,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         _meetingBusy = meetingBusy ?? (() => false);
         _beginListeningOverride = beginListening;
         Messages.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(ConversationActionLabel)); OnPropertyChanged(nameof(CanSaveConversation)); };
-        _preferences = preferences ?? new(); var saved = _preferences.Load(); _sendDelaySeconds = saved.DelaySeconds; _learnerName = saved.LearnerName;
+        _preferences = preferences ?? new(); var saved = _preferences.Load(); _sendDelaySeconds = saved.DelaySeconds; _learnerName = saved.LearnerName; _showMiniTranslation = saved.ShowMiniTranslation;
         try { foreach (var session in _store.Load().OrderByDescending(s => s.UpdatedAt)) Sessions.Add(session); }
         catch (Exception ex) { Status = "Không đọc được hội thoại: " + ex.Message; }
     }
