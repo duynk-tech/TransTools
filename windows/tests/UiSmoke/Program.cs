@@ -706,6 +706,13 @@ internal static class Program
         var exportedText = TransTools.Services.Export.TextExportService.Format(exportSource);
         if (!exportedText.Contains(exportSource.Notes) || !exportedText.Contains(exportSource.Captions[0].Original) || !exportedText.Contains(exportSource.Captions[0].Vietnamese) || !exportedText.Contains("10:30")) throw new Exception("TXT export lost notes, Unicode transcript or original timestamps");
         exportSource.Notes = "";
+        var taskSession = new MeetingSession { Captions = [new Caption { Original = "Please review the project tomorrow.", Vietnamese = "Nhờ kiểm tra dự án vào ngày mai." }] };
+        var taskRequest = TransTools.Services.Notebook.MeetingTaskExtractor.ExtractAsync(taskSession, (_, _) => Task.FromResult("[{\"title\":\"Kiểm tra dự án\",\"assignee\":\"Duy\"},{\"title\":\"Kiểm tra dự án\"}]"), CancellationToken.None); Await(taskRequest);
+        if (taskRequest.Result.Count != 1 || taskRequest.Result[0].Assignee != "Duy") throw new Exception("Action item parser lost assignee or duplicate filtering");
+        var fallbackTasks = TransTools.Services.Notebook.MeetingTaskExtractor.ExtractAsync(taskSession, (_, _) => Task.FromResult("invalid JSON"), CancellationToken.None); Await(fallbackTasks);
+        if (fallbackTasks.Result.Count != 1 || fallbackTasks.Result[0].Title != taskSession.Captions[0].Vietnamese) throw new Exception("Action item fallback changed transcript text");
+        var emptyTasks = TransTools.Services.Notebook.MeetingTaskExtractor.ExtractAsync(new MeetingSession(), null, CancellationToken.None); Await(emptyTasks);
+        if (emptyTasks.Result.Count != 0) throw new Exception("Empty meeting fabricated an action item");
         var noteRecord = notebook.Sessions.Single(s => s.Id == saved.Id);
         var noteText = "# Ghi chú hội thoại\nGiữ nguyên chữ Việt và 日本語.";
         var noteSave = notebook.SaveRecordNotesAsync(noteRecord, noteText); Await(noteSave);

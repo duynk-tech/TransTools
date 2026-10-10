@@ -182,6 +182,15 @@ public partial class NotebookViewModel : ObservableObject
         Status = "Đã lưu vào Sổ tay.";
     }
 
+    [RelayCommand] private void OpenTasks()
+    {
+        if (!IsMeetingSelected || SelectedSession is not { } session) return;
+        var config = _credentialStore.LoadConfiguredProvider();
+        Func<string, CancellationToken, Task<string>>? generate = config == null ? null : (text, token) => _llmService.GenerateAsync(text,
+            "Trích xuất việc cần làm từ biên bản. Không tự thêm nhiệm vụ hay người phụ trách. Chỉ trả JSON array [{\"title\":\"Nhiệm vụ\",\"assignee\":\"Người phụ trách nếu được nêu\"}]. Không có nhiệm vụ thì trả [].", config, token);
+        new TransTools.Views.MeetingTasksWindow(session, generate) { Owner = System.Windows.Application.Current.MainWindow }.ShowDialog();
+    }
+
     [RelayCommand]
     public async Task GenerateSummaryAsync()
     {

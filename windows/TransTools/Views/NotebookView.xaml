@@ -57,6 +57,7 @@
             </StackPanel>
           <WrapPanel HorizontalAlignment="Left" Margin="0,12,0,0">
             <Button Content="Tiếp tục trò chuyện" Command="{Binding ResumeConversationCommand}" Visibility="{Binding IsConversationSelected,Converter={StaticResource BoolVisibility}}" Margin="0,0,8,0"/><Button Content="Ghi chú" Command="{Binding OpenNotesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" />
+            <Button Visibility="{Binding IsMeetingSelected,Converter={StaticResource BoolVisibility}}" Content="Việc cần làm (AI)" Command="{Binding OpenTasksCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
             <Button Visibility="{Binding IsMeetingSelected,Converter={StaticResource BoolVisibility}}" Content="Tóm tắt AI" Command="{Binding GenerateSummaryCommand}" Margin="0,0,8,0" Padding="12,6" Cursor="Hand" Style="{StaticResource SecondaryButton}" />
             <Grid>
               <Button x:Name="ExportButton" Content="Xuất ▾" Click="ShowExport_Click" Style="{StaticResource SecondaryButton}" />
