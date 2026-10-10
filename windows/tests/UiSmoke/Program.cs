@@ -21,6 +21,14 @@ internal static class Program
         try {
             var app = new TransTools.App(); app.InitializeComponent();
             var window = new TransTools.MainWindow(); app.MainWindow = window; window.Show();
+            var background = (Button)window.FindName("BackgroundButton");
+            foreach (var mode in new[] { "morning", "noon", "afternoon", "night", "mint" }) {
+                var item = background.ContextMenu.Items.OfType<MenuItem>().First(value => Equals(value.Tag, mode));
+                item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump();
+                if (!item.IsChecked) throw new Exception("Background selection did not update: " + mode);
+                Capture(window, output, "background-" + mode + ".png");
+            }
+            background.ContextMenu.Items.OfType<MenuItem>().First(value => Equals(value.Tag, "noon")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump();
             foreach (var (width, height) in new[] { (1280, 820), (1200, 740), (1440, 900) }) {
                 window.Width = width; window.Height = height;
                 foreach (var route in new[] { "Cuộc họp", "Sổ tay", "Dịch nhanh", "Đọc văn bản", "Học ngôn ngữ", "Trò chuyện", "Cài đặt" }) {

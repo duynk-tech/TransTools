@@ -14,6 +14,8 @@ public partial class MainWindow : Window
     private readonly TextReaderViewModel _readerViewModel = new();
     private readonly SettingsViewModel _settingsViewModel;
 
+    private readonly TransTools.Services.Experience.DashboardAppearance _appearance = new();
+
     private readonly Dictionary<string, System.Windows.Controls.UserControl> _views = new();
     private TransTools.Services.HotkeyService? _hotkeys;
     private FloatingSubtitleWindow? _subtitleWindow;
@@ -28,6 +30,7 @@ public partial class MainWindow : Window
         _settingsViewModel = new SettingsViewModel(() => _meetingViewModel.IsBusy || !_conversationViewModel.CanChangeSession);
         _meetingViewModel.OtherAudioBusy = () => !_conversationViewModel.CanChangeSession;
         InitializeComponent();
+        ApplyBackground();
 
         // Connect subtitle updates to floating window
         _meetingViewModel.OnSubtitleUpdated += (orig, vi) =>
@@ -57,6 +60,33 @@ public partial class MainWindow : Window
 
         // Default to Meeting View
         ShowMeetingView();
+    }
+
+    private void ShowBackground_Click(object sender, RoutedEventArgs e)
+    {
+        BackgroundButton.ContextMenu.PlacementTarget = BackgroundButton;
+        BackgroundButton.ContextMenu.IsOpen = true;
+    }
+    private void ChooseBackground_Click(object sender, RoutedEventArgs e)
+    {
+        try { if (sender is System.Windows.Controls.MenuItem { Tag: string mode }) { _appearance.Select(mode); ApplyBackground(); } }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "Chọn nền", MessageBoxButton.OK, MessageBoxImage.Information); }
+    }
+    private void ChoosePhoto_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog { Title = "Chọn ảnh nền", Filter = "Ảnh (*.jpg;*.jpeg;*.png;*.bmp)|*.jpg;*.jpeg;*.png;*.bmp" };
+        if (dialog.ShowDialog(this) != true) { ApplyBackground(); return; }
+        try { _appearance.SelectPhoto(dialog.FileName); ApplyBackground(); }
+        catch (Exception ex) { ApplyBackground(); MessageBox.Show(this, "Không thể dùng ảnh này. " + ex.Message, "Chọn nền", MessageBoxButton.OK, MessageBoxImage.Information); }
+    }
+    private void ApplyBackground()
+    {
+        DashboardGarden.SetPeriod(_appearance.Mode);
+        var photo = _appearance.Mode == "photo" && _appearance.Photo != null;
+        DashboardPhoto.Source = _appearance.Photo;
+        DashboardPhoto.Visibility = PhotoVeil.Visibility = photo ? Visibility.Visible : Visibility.Collapsed;
+        DashboardGarden.Visibility = photo ? Visibility.Collapsed : Visibility.Visible;
+        foreach (var item in BackgroundButton.ContextMenu.Items.OfType<System.Windows.Controls.MenuItem>()) item.IsChecked = Equals(item.Tag, _appearance.Mode);
     }
 
     private void ShowView(string route, Func<System.Windows.Controls.UserControl> create)
