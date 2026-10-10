@@ -233,6 +233,12 @@ internal static class Program
                             }
                             if (sections.SelectedItem is TabItem { Header: "Mô hình AI" }) {
                                 var modelSettings = (SettingsViewModel)Descendants(window).OfType<SettingsView>().First().DataContext;
+                                modelSettings.DownloadingModel = "supertonic";
+                                if (!modelSettings.DownloadingSupertonic || modelSettings.DownloadingVieNeu || modelSettings.ShowSupertonicInstall) throw new Exception("Supertonic download exposes wrong actions");
+                                modelSettings.DownloadingModel = "vieneu";
+                                if (!modelSettings.DownloadingVieNeu || modelSettings.DownloadingSupertonic || modelSettings.ShowVieNeuInstall) throw new Exception("VieNeu download exposes wrong actions");
+                                modelSettings.DownloadingModel = "";
+                                if (modelSettings.DownloadingSupertonic || modelSettings.DownloadingVieNeu) throw new Exception("Idle model exposes cancellation");
                                 modelSettings.UpdatingCatalog = true; Pump();
                                 if (modelSettings.CanManageModels || modelSettings.CatalogUpdateLabel != "Đang cập nhật…") throw new Exception("Catalog busy state is not visible or permits mutation");
                                 modelSettings.UpdatingCatalog = false; Pump();

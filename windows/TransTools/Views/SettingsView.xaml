@@ -95,10 +95,10 @@
                 <TextBlock Text="{Binding SupertonicSummary}" Foreground="#65756F" Margin="0,8" />
                 <TextBlock Text="{Binding LocalVoiceStatus}" Foreground="#75BBAE" Margin="0,8" />
                 <WrapPanel>
-                  <Button Content="Giấy phép" Command="{Binding OpenVoiceLicenseCommand}" Margin="0,0,8,0" />
-                  <Button Content="Tải mô hình" IsEnabled="{Binding CanManageModels}" Command="{Binding InstallVoiceCommand}" Margin="0,0,8,0" />
-                  <Button Content="Hủy tải" Command="{Binding CancelVoiceInstallCommand}" Margin="0,0,8,0" />
-                  <Button Content="Gỡ mô hình" IsEnabled="{Binding CanManageModels}" Style="{StaticResource DestructiveButton}" Command="{Binding RemoveVoiceCommand}" Foreground="#EF4444" />
+                  <Button Content="Giấy phép" Style="{StaticResource SecondaryButton}" Command="{Binding OpenVoiceLicenseCommand}" Margin="0,0,8,0" />
+                  <Button Content="Tải mô hình" Visibility="{Binding ShowSupertonicInstall,Converter={StaticResource BoolVisibility}}" IsEnabled="{Binding CanManageModels}" Command="{Binding InstallVoiceCommand}" Margin="0,0,8,0" />
+                  <Button Content="Hủy tải" Visibility="{Binding DownloadingSupertonic,Converter={StaticResource BoolVisibility}}" Style="{StaticResource SecondaryButton}" Command="{Binding CancelVoiceInstallCommand}" Margin="0,0,8,0" />
+                  <Button Content="Gỡ mô hình" Visibility="{Binding SupertonicInstalled,Converter={StaticResource BoolVisibility}}" IsEnabled="{Binding CanManageModels}" Style="{StaticResource DestructiveButton}" Command="{Binding RemoveVoiceCommand}" Foreground="#EF4444" />
                 </WrapPanel>
               </StackPanel>
             </Border>
@@ -106,7 +106,7 @@
               <StackPanel>
                 <TextBlock Text="VieNeu v3 Turbo · Tiếng Việt" FontSize="18" Foreground="#243D35" />
                 <TextBlock Text="{Binding VieNeuSummary}" Foreground="#65756F" TextWrapping="Wrap" Margin="0,8" />
-                <TextBlock Text="{Binding VieNeuInstallationStatus}" Foreground="#287568" Margin="0,0,0,12"/><WrapPanel><Button Content="Tải VieNeu" IsEnabled="{Binding CanInstallVieNeu}" Command="{Binding InstallVieNeuCommand}" Margin="0,0,8,0"/><Button Content="Gỡ mô hình" IsEnabled="{Binding CanManageModels}" Command="{Binding RemoveVieNeuCommand}" Style="{StaticResource DestructiveButton}"/></WrapPanel>
+                <TextBlock Text="{Binding VieNeuInstallationStatus}" Foreground="#287568" Margin="0,0,0,12"/><WrapPanel><Button Content="Tải VieNeu" Visibility="{Binding ShowVieNeuInstall,Converter={StaticResource BoolVisibility}}" IsEnabled="{Binding CanInstallVieNeu}" Command="{Binding InstallVieNeuCommand}" Margin="0,0,8,0"/><Button Content="Hủy tải" Visibility="{Binding DownloadingVieNeu,Converter={StaticResource BoolVisibility}}" Style="{StaticResource SecondaryButton}" Command="{Binding CancelVoiceInstallCommand}" Margin="0,0,8,0"/><Button Content="Gỡ mô hình" Visibility="{Binding VieNeuInstalled,Converter={StaticResource BoolVisibility}}" IsEnabled="{Binding CanManageModels}" Command="{Binding RemoveVieNeuCommand}" Style="{StaticResource DestructiveButton}"/></WrapPanel>
               </StackPanel>
             </Border>
           </StackPanel>

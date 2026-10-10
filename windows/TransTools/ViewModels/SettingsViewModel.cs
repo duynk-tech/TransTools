@@ -161,22 +161,34 @@ public partial class SettingsViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanManageModels))]
     [NotifyPropertyChangedFor(nameof(CanInstallVieNeu))]
     private bool _isInstallingVoice;
+    public bool SupertonicInstalled => VoiceService.Shared.IsInstalled;
+    public bool VieNeuInstalled => VoiceService.Shared.IsVieNeuInstalled;
+    public bool ShowSupertonicInstall => !SupertonicInstalled && DownloadingModel != "supertonic";
+    public bool ShowVieNeuInstall => !VieNeuInstalled && DownloadingModel != "vieneu";
+    public bool DownloadingSupertonic => DownloadingModel == "supertonic";
+    public bool DownloadingVieNeu => DownloadingModel == "vieneu";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSupertonicInstall))]
+    [NotifyPropertyChangedFor(nameof(ShowVieNeuInstall))]
+    [NotifyPropertyChangedFor(nameof(DownloadingSupertonic))]
+    [NotifyPropertyChangedFor(nameof(DownloadingVieNeu))]
+    private string _downloadingModel = "";
     private CancellationTokenSource? _installation;
     [RelayCommand] private void CancelVoiceInstall() => _installation?.Cancel();
     [RelayCommand] private async Task InstallVoiceAsync()
     {
         if (!CanManageModels) { LocalVoiceStatus = "Kết thúc phiên đang chạy hoặc chờ thao tác mô hình hoàn tất."; return; }
         if (new TransTools.Views.LicenseWindow("Supertonic 3", VoiceService.ResourceText("SpeechNative/Supertonic-Model-OpenRAIL.txt")).ShowDialog() != true) return;
-        IsInstallingVoice = true; _installation = new CancellationTokenSource();
+        DownloadingModel = "supertonic"; IsInstallingVoice = true; _installation = new CancellationTokenSource();
         try { await VoiceService.Shared.InstallAsync(new Progress<string>(message => LocalVoiceStatus = message), _installation.Token); }
         catch (OperationCanceledException) { LocalVoiceStatus = "Đã hủy tải; có thể tiếp tục sau."; }
         catch (Exception ex) { LocalVoiceStatus = ex.Message; }
-        finally { IsInstallingVoice = false; _installation?.Dispose(); _installation = null; CalculateCacheSize(); }
+        finally { IsInstallingVoice = false; _installation?.Dispose(); _installation = null; DownloadingModel = ""; CalculateCacheSize(); }
     }
     public string VieNeuInstallationStatus => VoiceService.Shared.IsVieNeuInstalled ? "Đã cài · dùng offline" : "Chưa tải mô hình";
     [RelayCommand] private async Task RemoveVieNeuAsync()
     {
-        if (!CanManageModels) return;
+        if (!CanManageModels || !VieNeuInstalled) return;
         if (System.Windows.MessageBox.Show("Chuyển VieNeu v3 Turbo vào Thùng rác? Bạn có thể tải lại để dùng tiếp.", "Gỡ mô hình", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question) != System.Windows.MessageBoxResult.Yes) return;
         IsInstallingVoice = true;
         try { await VoiceService.Shared.RemoveModelAsync(vieNeu: true); LocalVoiceStatus = "Đã gỡ VieNeu"; }
@@ -189,16 +201,18 @@ public partial class SettingsViewModel : ObservableObject
         if (!CanManageModels) { LocalVoiceStatus = "Kết thúc phiên đang chạy hoặc chờ thao tác mô hình hoàn tất."; return; }
         if (!HasVieNeuProcessor) { LocalVoiceStatus = "Bản app chưa có bộ chuyển âm native; cần build Windows với SEA-G2P."; return; }
         if (new TransTools.Views.LicenseWindow("VieNeu v3 Turbo", VoiceService.ResourceText("SpeechNative/VieNeu-LICENSE.txt")).ShowDialog() != true) return;
-        IsInstallingVoice = true; _installation = new CancellationTokenSource();
+        DownloadingModel = "vieneu"; IsInstallingVoice = true; _installation = new CancellationTokenSource();
         try { await VoiceService.Shared.InstallAsync(new Progress<string>(message => LocalVoiceStatus = message), _installation.Token, vieNeu: true); }
         catch (OperationCanceledException) { LocalVoiceStatus = "Đã hủy tải VieNeu"; }
         catch (Exception ex) { LocalVoiceStatus = ex.Message; }
-        finally { IsInstallingVoice = false; _installation.Dispose(); _installation = null; CalculateCacheSize(); }
+        finally { IsInstallingVoice = false; _installation.Dispose(); _installation = null; DownloadingModel = ""; CalculateCacheSize(); }
     }
     [RelayCommand] private void OpenVoiceLicense() => Process.Start(new ProcessStartInfo("https://huggingface.co/supertone-oss-archive/supertonic-3/blob/main/LICENSE") { UseShellExecute = true });
     [RelayCommand] private async Task RemoveVoiceAsync()
     {
         if (!CanManageModels) { LocalVoiceStatus = "Kết thúc phiên đang chạy hoặc chờ thao tác mô hình hoàn tất."; return; }
+        if (!SupertonicInstalled) return;
+        if (System.Windows.MessageBox.Show("Chuyển Supertonic 3 vào Thùng rác? Bạn có thể tải lại để dùng tiếp.", "Gỡ mô hình", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question) != System.Windows.MessageBoxResult.Yes) return;
         try { await VoiceService.Shared.RemoveModelAsync(); LocalVoiceStatus = "Đã chuyển mô hình vào Thùng rác"; CalculateCacheSize(); }
         catch (Exception ex) { LocalVoiceStatus = "Không gỡ được: " + ex.Message; }
     }
@@ -341,5 +355,7 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
-    private async void CalculateCacheSize() { OnPropertyChanged(nameof(VieNeuInstallationStatus)); try { await RefreshStorageAsync(); } catch (Exception ex) { Status = ex.Message; } }
+    private async void CalculateCacheSize() { OnPropertyChanged(nameof(VieNeuInstallationStatus));
+        foreach (var name in new[] { nameof(SupertonicInstalled), nameof(VieNeuInstalled), nameof(ShowSupertonicInstall), nameof(ShowVieNeuInstall) }) OnPropertyChanged(name);
+        try { await RefreshStorageAsync(); } catch (Exception ex) { Status = ex.Message; } }
 }
