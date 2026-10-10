@@ -220,6 +220,12 @@ internal static class Program
                             if (sections.SelectedItem is TabItem { Header: "Dịch & Phụ đề" } && width == 1280) {
                                 var settings = (SettingsViewModel)Descendants(window).OfType<SettingsView>().First().DataContext;
                                 var quick = new QuickTranslateViewModel();
+                                quick.SourceText = "a\u0301";
+                                if (quick.CharacterCountLabel != "1 ký tự") throw new Exception("Quick editor Unicode count is incorrect");
+                                for (var n = 0; n < 30; n++) quick.IncreaseEditorFontCommand.Execute(null);
+                                if (quick.EditorFontSize != 22 || quick.IncreaseEditorFontCommand.CanExecute(null)) throw new Exception("Quick editor upper font bound failed");
+                                for (var n = 0; n < 30; n++) quick.DecreaseEditorFontCommand.Execute(null);
+                                if (quick.EditorFontSize != 12 || quick.DecreaseEditorFontCommand.CanExecute(null) || quick.SourceText != "a\u0301") throw new Exception("Quick editor lower font bound or source preservation failed");
                                 var domain = settings.TranslationDomain; var pace = settings.SubtitlePacing; var size = settings.SubtitleFontSize; var light = settings.SubtitleLight;
                                 settings.TranslationDomain = "Công nghệ thông tin"; settings.SubtitlePacing = "Nhanh"; settings.SubtitleFontSize = 21; settings.SubtitleLight = true;
                                 settings.SaveSubtitlePreferencesCommand.Execute(null);
