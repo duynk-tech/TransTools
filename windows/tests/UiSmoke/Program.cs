@@ -193,6 +193,10 @@ internal static class Program
             if (progress.Difficulty != 1) throw new Exception("Repeated same-day answers increased difficulty");
             progress = progress.Record(true,day.AddDays(1)).Record(true,day.AddDays(2));
             if (progress.Difficulty != 2 || progress.Record(false,day.AddDays(3)).Difficulty != 1) throw new Exception("Adaptive multi-day difficulty progression failed");
+            var exportFixture = new MeetingSession { Title = "Tiếng Việt", Captions = [new Caption { Start = 1.25, End = 3.5, Original = "Hello", Vietnamese = "Xin chào" }] };
+            var exportSrt = MeetingViewModel.FormatExport(exportFixture, "srt");
+            if (!exportSrt.Contains("00:00:01,250 --> 00:00:03,500") || !exportSrt.Contains("Hello\nXin chào")) throw new Exception("Meeting SRT export lost timing or bilingual text");
+            if (!MeetingViewModel.FormatExport(exportFixture, "txt").Contains("Tiếng Việt")) throw new Exception("Meeting TXT export lost Unicode title");
             CheckNotebookRecords(window, output);
             CheckReadingLibrary(window, output);
             var chatModel = Descendants(window).OfType<ConversationView>().FirstOrDefault()?.DataContext as ConversationViewModel;

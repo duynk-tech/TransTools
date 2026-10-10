@@ -26,7 +26,7 @@
    </ListBox>
   </Grid></Border>
   <Border Grid.Row="3" Background="#FCFEFD" CornerRadius="12" BorderBrush="#C2DDD5" BorderThickness="1" Padding="12" Margin="0,12,0,0"><DockPanel><TextBlock Text="{Binding Captions.Count,StringFormat={}{0} đoạn phụ đề}" VerticalAlignment="Center" Foreground="#65756F"/>
-   <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button Content="Lưu Sổ tay" Command="{Binding SaveSessionCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button Content="Xóa nội dung" Command="{Binding ClearCaptionsCommand}" Style="{StaticResource DestructiveButton}"/></StackPanel>
+   <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button Content="Lưu Sổ tay" Command="{Binding SaveSessionCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button Content="Xuất Word" Command="{Binding ExportMeetingCommand}" CommandParameter="Word" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button Content="Xuất TXT" Command="{Binding ExportMeetingCommand}" CommandParameter="TXT" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button Content="Xuất SRT" Command="{Binding ExportMeetingCommand}" CommandParameter="SRT" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button Content="Xóa nội dung" Command="{Binding ClearCaptionsCommand}" Style="{StaticResource DestructiveButton}"/></StackPanel>
   </DockPanel></Border>
  </Grid>
 </UserControl>

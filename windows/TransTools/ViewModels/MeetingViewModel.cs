@@ -150,6 +150,31 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         await StopRecordingAsync(); if (Captions.Count == 0) return;
         await PersistCurrentSessionAsync(); Status = "Đã lưu Sổ tay";
     }
+    public MeetingSession CreateExportSnapshot() => new() {
+        Title = "Cuộc họp · " + (_started == default ? DateTime.Now : _started).ToString("dd/MM HH:mm"),
+        CreatedAt = _started == default ? DateTime.Now : _started,
+        AudioSource = _sessionSystemAudio ? "Âm thanh hệ thống" : "Microphone",
+        DurationSeconds = Captions.Count == 0 ? 0 : Captions.Max(c => c.End),
+        Captions = Captions.Select(c => new Caption { Id = c.Id, Start = c.Start, End = c.End, Original = c.Original, Vietnamese = c.Vietnamese }).ToList()
+    };
+    [RelayCommand] private void ExportMeeting(string? format)
+    {
+        if (Captions.Count == 0) { Status = "Chưa có nội dung để xuất."; return; }
+        var session = CreateExportSnapshot();
+        var extension = format == "Word" ? "docx" : format == "SRT" ? "srt" : "txt";
+        var dialog = new Microsoft.Win32.SaveFileDialog { FileName = "Cuộc họp " + session.CreatedAt.ToString("yyyy-MM-dd HH-mm") + "." + extension, Filter = $"{format} (*.{extension})|*.{extension}" };
+        if (dialog.ShowDialog() != true) return;
+        try {
+            if (extension == "docx") TransTools.Services.Export.DocxExportService.ExportMeetingSession(session, dialog.FileName);
+            else File.WriteAllText(dialog.FileName, FormatExport(session, extension), new System.Text.UTF8Encoding(false));
+            Status = "Đã xuất bản ghi " + format;
+        } catch (Exception ex) { Status = "Chưa xuất được bản ghi: " + ex.Message; }
+    }
+    public static string FormatExport(MeetingSession session, string format)
+    {
+        if (format == "srt") return string.Join("\n\n", session.Captions.Select((c,i) => $"{i+1}\n{TimeSpan.FromSeconds(c.Start):hh\\:mm\\:ss\\,fff} --> {TimeSpan.FromSeconds(Math.Max(c.Start,c.End)):hh\\:mm\\:ss\\,fff}\n{c.Original}\n{c.Vietnamese}")) + "\n";
+        return session.Title + "\n\n" + string.Join("\n\n",session.Captions.Select(c => $"[{c.FormattedTimestamp}]\n{c.Original}\n{c.Vietnamese}"));
+    }
     private async Task PersistCurrentSessionAsync()
     {
         if (Captions.Count == 0) return;
