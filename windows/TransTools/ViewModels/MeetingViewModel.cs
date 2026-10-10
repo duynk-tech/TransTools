@@ -57,6 +57,59 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _sourceLanguage = "en";
     [ObservableProperty] private string _targetLanguage = "vi";
     [ObservableProperty] private string _translationMode = "Google";
+    public ObservableCollection<PlaybackDevice> PlaybackDevices { get; } = new();
+    [ObservableProperty] private PlaybackDevice? _selectedPlaybackDevice;
+    [ObservableProperty] private bool _automaticReading;
+    [ObservableProperty] private string _readTarget = "Bản dịch";
+    [ObservableProperty] private string _earphoneStatus = "Chọn thiết bị nghe trước khi bật đọc tự động.";
+    public string[] ReadTargets { get; } = ["Bản dịch", "Tiếng gốc"];
+    public string EarphoneLabel => AutomaticReading ? "Tai nghe: BẬT" : "Tai nghe";
+    private MeetingSpeechQueue? _speechQueue;
+    private int _readingRevision;
+    public void RefreshPlaybackDevices()
+    {
+        var selected = SelectedPlaybackDevice?.Id;
+        try {
+            var devices = TransTools.Services.Audio.PlaybackDevices.List();
+            PlaybackDevices.Clear(); foreach (var device in devices) PlaybackDevices.Add(device);
+            SelectedPlaybackDevice = PlaybackDevices.FirstOrDefault(device => device.Id == selected);
+            EarphoneStatus = devices.Length == 0 ? "Chưa có thiết bị phát âm thanh. Kết nối tai nghe rồi làm mới." : "Giọng đọc dùng tùy chọn đã lưu trong Giọng đọc & Phát âm.";
+        } catch { EarphoneStatus = "Chưa đọc được danh sách thiết bị. Kết nối tai nghe rồi làm mới."; }
+    }
+    partial void OnSelectedPlaybackDeviceChanged(PlaybackDevice? value)
+    {
+        StopAutomaticReader();
+        if (AutomaticReading) StartAutomaticReader();
+    }
+    partial void OnAutomaticReadingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(EarphoneLabel)); StopAutomaticReader();
+        if (value) StartAutomaticReader();
+    }
+    partial void OnReadTargetChanged(string value) { StopAutomaticReader(); if (AutomaticReading) StartAutomaticReader(); }
+    private void StopAutomaticReader() { _readingRevision++; _speechQueue?.Dispose(); _speechQueue = null; }
+    private void StartAutomaticReader()
+    {
+        if (SelectedPlaybackDevice == null) { AutomaticReading = false; EarphoneStatus = "Chọn thiết bị nghe trước khi bật đọc tự động."; return; }
+        if (!IsRecording) { EarphoneStatus = "Sẽ đọc câu mới khi cuộc họp bắt đầu."; return; }
+        if (!TransTools.Services.Audio.PlaybackDevices.CanRead(_sessionSystemAudio, _audio.CapturedDeviceId, SelectedPlaybackDevice.Id)) {
+            AutomaticReading = false; EarphoneStatus = "Chọn thiết bị nghe khác thiết bị đang thu âm hệ thống để tránh thu lại giọng đọc."; return;
+        }
+        var revision = _readingRevision;
+        _speechQueue = new MeetingSpeechQueue(async (request, token) => {
+            if (!TransTools.Services.Audio.PlaybackDevices.CanRead(_sessionSystemAudio, _audio.CapturedDeviceId, request.DeviceId)) throw new InvalidOperationException("Thiết bị nghe trùng nguồn âm thanh đang thu.");
+            var preference = VoicePreferences.Get(request.Language);
+            await VoiceService.Shared.SpeakOnDeviceAsync(request.Text, request.Language, preference, request.DeviceId, token);
+        }, error => Ui(() => { if (revision != _readingRevision) return; AutomaticReading = false; EarphoneStatus = "Đã dừng đọc: " + error.Message; }));
+        EarphoneStatus = "Đọc câu mới qua thiết bị đã chọn; bỏ câu chờ cũ nếu giọng đọc không theo kịp.";
+    }
+    [RelayCommand] private void StopEarphoneReading() { AutomaticReading = false; EarphoneStatus = "Đã dừng đọc tai nghe."; }
+    private void EnqueueSpeech(Caption caption)
+    {
+        if (!AutomaticReading || SelectedPlaybackDevice == null || !IsRecording) return;
+        var original = ReadTarget == "Tiếng gốc" || DisplayModeKey == "original" || string.IsNullOrWhiteSpace(caption.Vietnamese);
+        _speechQueue?.Enqueue(new MeetingSpeechRequest(original ? caption.Original : caption.Vietnamese, original ? _sessionSource == "auto" ? "en" : _sessionSource : _sessionTarget, SelectedPlaybackDevice.Id));
+    }
     public string[] DisplayModes { get; } = ["Song ngữ", "Tiếng gốc", "Bản dịch"];
     public string DisplayModeKey => TransTools.Services.Experience.SubtitlePreferences.Shared.DisplayMode;
     public string SelectedDisplayMode
@@ -142,7 +195,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
             lock (_lock) { _buffer.SetLength(0); _lastVoice = DateTime.UtcNow; }
             var token = _cts.Token;
             _processing = Task.WhenAll(Task.Run(() => RecognizeAsync(token)), Task.Run(() => TranslateAsync(token)), Task.Run(() => PresentAsync(token)));
-            IsRecording = true; _audio.StartCapture(CaptureSystemAudio, CaptureMicrophone); Status = "Đang dịch...";
+            IsRecording = true; _audio.StartCapture(CaptureSystemAudio, CaptureMicrophone); if (AutomaticReading) StartAutomaticReader(); Status = "Đang dịch...";
         } catch (Exception ex) {
             _audio.StopCapture(); _audioQueue?.Writer.TryComplete(); _cts?.Cancel(); IsRecording = false;
             if (_processing != null) { try { await _processing; } catch { } }
@@ -153,6 +206,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     [RelayCommand] public async Task StopRecordingAsync()
     {
         if (!IsRecording || IsStopping) return;
+        StopAutomaticReader();
         _lastStopSucceeded = false;
         _flushPresentation = true; IsStopping = true; IsRecording = false; _audio.StopCapture(); Status = "Đang hoàn tất phần âm thanh cuối...";
         try {
@@ -280,6 +334,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         await foreach (var caption in _displayQueue!.Reader.ReadAllAsync(token)) {
             await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
                 CurrentLiveOriginal = caption.Original; CurrentLiveVietnamese = caption.Vietnamese;
+                EnqueueSpeech(caption);
                 OnSubtitleUpdated?.Invoke(caption.Original,caption.Vietnamese); OnCaptionPresented?.Invoke(caption);
             });
             var until = DateTime.UtcNow.AddSeconds(TransTools.Services.Speech.CaptionDisplayTiming.HoldSeconds(caption.Original,caption.Vietnamese, TransTools.Services.Experience.SubtitlePreferences.Shared.Pacing));
@@ -288,7 +343,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     }
     public void Dispose() {
         TransTools.Services.Experience.SubtitlePreferences.Shared.Changed -= DisplayPreferencesChanged;
-        _prepareCancellation?.Cancel(); _cts?.Cancel(); _audio.Dispose();
+        StopAutomaticReader(); _prepareCancellation?.Cancel(); _cts?.Cancel(); _audio.Dispose();
         var pending = _processing ?? Task.CompletedTask;
         _ = pending.ContinueWith(_ => { _stt.Dispose(); _cts?.Dispose(); _buffer.Dispose(); }, TaskScheduler.Default);
     }

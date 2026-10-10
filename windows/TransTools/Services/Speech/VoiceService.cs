@@ -104,6 +104,23 @@ public sealed class VoiceService
             }, token);
         } finally { _lastUse = DateTime.UtcNow; _gate.Release(); }
     }
+    public async Task SpeakOnDeviceAsync(string text, string language, VoicePreference preference, string deviceId, CancellationToken token)
+    {
+        await _speakerGate.WaitAsync(token);
+        try {
+            if (preference.Engine == "Giọng cơ bản") {
+                using var basic = new WindowsMediaTtsService();
+                await basic.SpeakAsync(text, language: language, token: token, rate: preference.Rate, playbackDeviceId: deviceId); return;
+            }
+            foreach (var part in CaptionTextSegmenter.Split(text)) {
+                token.ThrowIfCancellationRequested();
+                var bytes = await SynthesizeAsync(part, language, preference.Engine, preference.Rate, token);
+                using var stream = new MemoryStream(bytes);
+                using WaveStream reader = preference.Engine == "Edge" ? new Mp3FileReader(stream) : new WaveFileReader(stream);
+                await TransTools.Services.Audio.PlaybackDevices.PlayAsync(reader, deviceId, token);
+            }
+        } finally { _speakerGate.Release(); }
+    }
     public async Task SpeakAsync(string text, string language, string engine, double rate = 1)
     {
         Stop(); var cts = new CancellationTokenSource(); _playback = cts;

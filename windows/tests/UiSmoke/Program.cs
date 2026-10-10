@@ -20,6 +20,7 @@ internal static class Program
         PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Error;
         try {
             if (CaptionDisplayTextConverter.Select("source", "translated", "translation", false) != "translated" || CaptionDisplayTextConverter.Select("source", "", "translation", false) != "source" || CaptionDisplayTextConverter.Select("source", "translated", "original", true) != "") throw new Exception("Caption display fallback is incorrect");
+            CheckMeetingSpeechQueue();
             var app = new TransTools.App(); app.InitializeComponent();
             var window = new TransTools.MainWindow(); app.MainWindow = window; window.Show();
             System.Threading.SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(app.Dispatcher));
@@ -74,6 +75,13 @@ internal static class Program
                         ValidateControlLayout((FrameworkElement)translationPopup.Child, "Meeting translation settings");
                         if (width == 1280) CaptureElement((FrameworkElement)translationPopup.Child, output, "meeting-translation-settings.png");
                         translationPopup.IsOpen = false;
+                        var earphones = (Button)meetingView.FindName("EarphoneButton"); earphones.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        var earphonePopup = (System.Windows.Controls.Primitives.Popup)meetingView.FindName("EarphonePopup");
+                        if (!earphonePopup.IsOpen) throw new Exception("Earphone popup did not open");
+                        ValidateControlLayout((FrameworkElement)earphonePopup.Child, "Meeting earphones");
+                        if (width == 1280) CaptureElement((FrameworkElement)earphonePopup.Child, output, "meeting-earphones.png");
+                        meeting.StopEarphoneReadingCommand.Execute(null); if (meeting.AutomaticReading) throw new Exception("Earphone stop did not disable auto reading");
+                        earphonePopup.IsOpen = false;
                     }
                     var conversation = Descendants(window).OfType<ConversationView>().FirstOrDefault()?.DataContext as ConversationViewModel;
                     if (conversation != null && conversation.Messages.Count == 0) {
@@ -327,6 +335,29 @@ internal static class Program
         var pending = model.SearchAsync(); model.SuggestionsCommand.Execute(null); handler.Pending.SetResult(ReadingFixtureHandler.SearchResponse()); Await(pending);
         if (model.Stories.Count != 4 || model.IsBusy || model.Stories[0].Id != "tam-cam") throw new Exception("Canceled search overwrote the suggested catalog");
         library.Close(); Console.WriteLine("PASS: story catalog, search, preview, import, Unicode, cancellation and download limits");
+    }
+    private static void CheckMeetingSpeechQueue()
+    {
+        if (TransTools.Services.Audio.PlaybackDevices.CanRead(true, "device-a", "device-a") || TransTools.Services.Audio.PlaybackDevices.CanRead(true, null, "device-b") || !TransTools.Services.Audio.PlaybackDevices.CanRead(true, "device-a", "device-b") || !TransTools.Services.Audio.PlaybackDevices.CanRead(false, null, "device-a")) throw new Exception("Earphone feedback policy is incorrect");
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var spoken = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        using var queue = new TransTools.Services.Speech.MeetingSpeechQueue(async (request, token) => {
+            spoken.Enqueue(request.Text);
+            if (request.Text == "first") { entered.TrySetResult(); await release.Task.WaitAsync(token); }
+            if (request.Text == "fourth") done.TrySetResult();
+        }, error => done.TrySetException(error));
+        queue.Enqueue(new("first", "en", "device-b")); entered.Task.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+        foreach (var text in new[] { "second", "third", "fourth" }) queue.Enqueue(new(text, "en", "device-b"));
+        release.TrySetResult(); done.Task.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+        if (!spoken.SequenceEqual(new[] { "first", "third", "fourth" })) throw new Exception("Auto reading retained an unbounded stale backlog");
+        queue.Dispose(); queue.Completion.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+        if (queue.Enqueue(new("later", "en", "device-b"))) throw new Exception("Stopped auto reader accepted new speech");
+        var canceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var active = new TransTools.Services.Speech.MeetingSpeechQueue(async (_, token) => { canceled.TrySetResult(); await Task.Delay(Timeout.Infinite, token); }, _ => throw new Exception("Cancellation was reported as a playback failure"));
+        active.Enqueue(new("active", "en", "device-b")); canceled.Task.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult(); active.Dispose(); active.Completion.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+        Console.WriteLine("PASS: auto reading bounded backlog, owned cancellation and endpoint feedback policy");
     }
     private static void CheckSubtitleHud(string output)
     {

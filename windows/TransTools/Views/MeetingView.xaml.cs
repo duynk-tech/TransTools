@@ -12,6 +12,7 @@ public partial class MeetingView : UserControl
         Loaded += (_, _) => { viewModel.Captions.CollectionChanged -= CaptionsChanged; viewModel.Captions.CollectionChanged += CaptionsChanged; };
         Unloaded += (_, _) => viewModel.Captions.CollectionChanged -= CaptionsChanged;
     }
+    private void ShowEarphones_Click(object sender, System.Windows.RoutedEventArgs e) { ((MeetingViewModel)DataContext).RefreshPlaybackDevices(); EarphonePopup.IsOpen = !EarphonePopup.IsOpen; }
     private void ShowTranslationSettings_Click(object sender, System.Windows.RoutedEventArgs e) => TranslationSettingsPopup.IsOpen = !TranslationSettingsPopup.IsOpen;
     private void CaptionsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {

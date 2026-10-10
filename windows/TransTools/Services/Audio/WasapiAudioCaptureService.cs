@@ -8,6 +8,8 @@ namespace TransTools.Services.Audio;
 
 public class WasapiAudioCaptureService : IDisposable
 {
+    private MMDevice? _loopbackDevice;
+    public string? CapturedDeviceId { get; private set; }
     private WasapiLoopbackCapture? _loopbackCapture;
     private WasapiCapture? _micCapture;
     private bool _isCapturing;
@@ -28,7 +30,10 @@ public class WasapiAudioCaptureService : IDisposable
         {
             if (captureSystemAudio)
             {
-                _loopbackCapture = new WasapiLoopbackCapture();
+                using var enumerator = new MMDeviceEnumerator();
+                _loopbackDevice = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+                CapturedDeviceId = _loopbackDevice.ID;
+                _loopbackCapture = new WasapiLoopbackCapture(_loopbackDevice);
                 _loopbackCapture.DataAvailable += OnLoopbackDataAvailable;
                 _converter = new StreamingAudioConverter(_loopbackCapture.WaveFormat);
                 _loopbackCapture.StartRecording();
@@ -69,6 +74,7 @@ public class WasapiAudioCaptureService : IDisposable
             _micCapture = null;
         }
 
+        _loopbackDevice?.Dispose(); _loopbackDevice = null; CapturedDeviceId = null;
         _isCapturing = false;
         lock (_conversionLock) _converter = null;
     }

@@ -17,7 +17,7 @@ public class WindowsMediaTtsService : IDisposable
         return SpeechSynthesizer.AllVoices;
     }
 
-    public async Task SpeakAsync(string text, string? voiceId = null, string? language = null, System.Threading.CancellationToken token = default, double rate = 1)
+    public async Task SpeakAsync(string text, string? voiceId = null, string? language = null, System.Threading.CancellationToken token = default, double rate = 1, string? playbackDeviceId = null)
     {
         if (string.IsNullOrWhiteSpace(text)) return;
 
@@ -44,6 +44,7 @@ public class WindowsMediaTtsService : IDisposable
         using var stream = await _synthesizer.SynthesizeTextToStreamAsync(text);
         using var netStream = stream.AsStreamForRead();
         using var waveStream = new WaveFileReader(netStream);
+        if (playbackDeviceId != null) { await TransTools.Services.Audio.PlaybackDevices.PlayAsync(waveStream, playbackDeviceId, token); return; }
         using var waveOut = new WaveOutEvent();
         waveOut.Init(waveStream);
         token.ThrowIfCancellationRequested();
