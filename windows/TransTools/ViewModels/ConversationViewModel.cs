@@ -40,6 +40,28 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _status = "Sẵn sàng";
     private readonly Func<bool> _meetingBusy;
     private readonly Func<Task>? _beginListeningOverride;
+    private readonly Func<string, string, CancellationToken, Task<string>>? _generateReplyOverride;
+    private readonly Func<string, string, CancellationToken, Task>? _speakReplyOverride;
+    private CancellationTokenSource? _speechCancellation;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ConversationStateLabel)), NotifyPropertyChangedFor(nameof(CanInterruptReply)), NotifyCanExecuteChangedFor(nameof(InterruptReplyCommand))] private bool _isSpeakingResponse;
+    public string ConversationStateLabel => !IsConversationActive ? "Đã kết thúc" : IsSpeakingResponse ? "Đang trả lời" : IsThinking ? "Đang suy nghĩ" : IsListening ? "Đang lắng nghe" : "Đến lượt bạn";
+    public bool CanInterruptReply => IsConversationActive && IsSpeakingResponse && _speechCancellation is { IsCancellationRequested: false };
+    [RelayCommand(CanExecute = nameof(CanInterruptReply))] private void InterruptReply() {
+        _speechCancellation?.Cancel(); Status = "Đang chuyển sang nghe bạn...";
+        OnPropertyChanged(nameof(CanInterruptReply)); InterruptReplyCommand.NotifyCanExecuteChanged();
+    }
+    private Task<string> GenerateReplyAsync(string input, string prompt, CancellationToken token) => _generateReplyOverride?.Invoke(input, prompt, token)
+        ?? _llmService.GenerateAsync(input, prompt, _credentials.LoadConfiguredProvider() ?? throw new InvalidOperationException("Nhập API key và chọn mô hình trong Cài đặt để trò chuyện."), token);
+    private async Task SpeakReplyAsync(string text, CancellationToken token) {
+        using var speech = CancellationTokenSource.CreateLinkedTokenSource(token); _speechCancellation = speech;
+        IsSpeakingResponse = true; Status = "Đang trả lời...";
+        try {
+            if (_speakReplyOverride != null) await _speakReplyOverride(text, TargetLanguage, speech.Token);
+            else { var preference = VoicePreferences.Get(TargetLanguage); await VoiceService.Shared.SpeakAsync(text, VoicePreferences.LanguageCode(TargetLanguage), preference.Engine, preference.Rate, speech.Token); }
+        } catch (OperationCanceledException) when (speech.IsCancellationRequested && !token.IsCancellationRequested) { }
+        finally { if (ReferenceEquals(_speechCancellation, speech)) _speechCancellation = null; IsSpeakingResponse = false; }
+        token.ThrowIfCancellationRequested();
+    }
     private Task BeginListeningAsync()
     {
         if (!string.IsNullOrWhiteSpace(UserInput)) { Status = "Kiểm tra câu đã nhập rồi bấm Gửi."; return Task.CompletedTask; }
@@ -57,7 +79,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [RelayCommand] private void DecreaseSendDelay() => SendDelaySeconds = Math.Max(1, SendDelaySeconds - 1);
     private int _conversationGeneration;
     private CancellationTokenSource? _replyCancellation;
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(CanEditLearnerName)), NotifyPropertyChangedFor(nameof(ConversationActionLabel)), NotifyCanExecuteChangedFor(nameof(ToggleConversationCommand))] private bool _isConversationActive;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(CanEditLearnerName)), NotifyPropertyChangedFor(nameof(ConversationActionLabel)), NotifyPropertyChangedFor(nameof(ConversationStateLabel)), NotifyPropertyChangedFor(nameof(CanInterruptReply)), NotifyCanExecuteChangedFor(nameof(InterruptReplyCommand)), NotifyCanExecuteChangedFor(nameof(ToggleConversationCommand))] private bool _isConversationActive;
     public string ConversationActionLabel => IsConversationActive ? "Kết thúc" : Messages.Count == 0 ? "Bắt đầu trò chuyện" : "Tiếp tục nói";
     public bool CanToggleConversation => IsConversationActive || (!IsThinking && !IsListening);
     public bool CanSaveConversation => Messages.Count > 0;
@@ -69,7 +91,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [RelayCommand] private void EndConversation()
     {
         ++_conversationGeneration; IsConversationActive = false;
-        _replyCancellation?.Cancel(); _recognition?.Cancel();
+        _replyCancellation?.Cancel(); _speechCancellation?.Cancel(); _recognition?.Cancel();
         if (IsListening) { _recorder?.Dispose(); _recorder = null; IsListening = false; }
         VoiceService.Shared.Stop(); Status = "Đã kết thúc trò chuyện";
     }
@@ -82,16 +104,15 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         var generation = _conversationGeneration;
         using var replyCancellation = new CancellationTokenSource(); _replyCancellation = replyCancellation;
         try {
-            var config = _credentials.LoadConfiguredProvider() ?? throw new InvalidOperationException("Nhập API key và chọn mô hình trong Cài đặt để trò chuyện.");
             Status = "Đang chuẩn bị lời chào...";
-            var reply = await _llmService.GenerateAsync("Begin the conversation with a warm greeting and one opening question.",
-                $"Your name is {TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName}. You are my language practice partner. Speak in {TargetLanguage}. Topic: {CurrentTopic}. {(GreetingName.Length == 0 ? "Use a general greeting." : $"Address me as {GreetingName} naturally if appropriate.")} Keep it to 1–2 sentences. {CustomPrompt}", config, replyCancellation.Token);
+            var reply = await GenerateReplyAsync("Begin the conversation with a warm greeting and one opening question.",
+                $"Your name is {TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName}. You are my language practice partner. Speak in {TargetLanguage}. Topic: {CurrentTopic}. {(GreetingName.Length == 0 ? "Use a general greeting." : $"Address me as {GreetingName} naturally if appropriate.")} Keep it to 1–2 sentences. {CustomPrompt}", replyCancellation.Token);
             var translation = CanShowTranslation && ShowVietnameseTranslation ? await _googleService.TranslateAsync(reply, "auto", "vi", replyCancellation.Token) : "";
             if (generation != _conversationGeneration) return;
             Messages.Add(new ChatMessageItem { Text = reply, Translation = translation });
             await SaveConversationAsync();
             replyCancellation.Token.ThrowIfCancellationRequested();
-            if (AutoSpeakResponse) await VoicePreferences.SpeakAsync(reply, TargetLanguage);
+            if (AutoSpeakResponse) await SpeakReplyAsync(reply, replyCancellation.Token);
             Status = "Đến lượt bạn";
         } catch (Exception ex) { if (generation == _conversationGeneration) { IsConversationActive = false; Status = ex.Message; } }
         finally { _replyCancellation = null; IsThinking = false; if (generation != _conversationGeneration) Status = "Đã kết thúc trò chuyện"; }
@@ -104,7 +125,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     public bool InputReadOnly => IsThinking || IsListening;
     public bool CanEditLearnerName => !IsConversationActive && CanChangeSession;
     public string MicrophoneLabel => IsListening ? "Dừng thu" : "Nói bằng micro";
-    partial void OnIsListeningChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(MicrophoneLabel)); OnPropertyChanged(nameof(CanSendMessage)); OnPropertyChanged(nameof(InputReadOnly)); ToggleConversationCommand.NotifyCanExecuteChanged(); }
+    partial void OnIsListeningChanged(bool value) { OnPropertyChanged(nameof(ConversationStateLabel)); OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(MicrophoneLabel)); OnPropertyChanged(nameof(CanSendMessage)); OnPropertyChanged(nameof(InputReadOnly)); ToggleConversationCommand.NotifyCanExecuteChanged(); }
     [RelayCommand] private async Task ToggleMicrophoneAsync() {
         if (IsThinking) return;
         if (!IsListening) {
@@ -129,15 +150,15 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         if (IsConversationActive && SendRecognizedSpeechAutomatically && !string.IsNullOrWhiteSpace(UserInput)) await SendMessageAsync();
     }
     [RelayCommand] private void CancelRecognition() => _recognition?.Cancel();
-    public void Dispose() { _replyCancellation?.Cancel(); _recognition?.Cancel(); if (IsListening) { _recorder?.Dispose(); _recorder = null; IsListening = false; } }
+    public void Dispose() { _replyCancellation?.Cancel(); _speechCancellation?.Cancel(); _recognition?.Cancel(); if (IsListening) { _recorder?.Dispose(); _recorder = null; IsListening = false; } }
 
-    partial void OnIsThinkingChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(CanSendMessage)); OnPropertyChanged(nameof(InputReadOnly)); ToggleConversationCommand.NotifyCanExecuteChanged(); }
+    partial void OnIsThinkingChanged(bool value) { OnPropertyChanged(nameof(ConversationStateLabel)); OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(CanSendMessage)); OnPropertyChanged(nameof(InputReadOnly)); ToggleConversationCommand.NotifyCanExecuteChanged(); }
     public bool CanShowTranslation => !TargetLanguage.Contains("Việt", StringComparison.OrdinalIgnoreCase);
 
-    public ConversationViewModel(Func<bool>? meetingBusy = null, TransTools.Services.Conversation.ConversationPreferencesStore? preferences = null, Func<Task>? beginListening = null)
+    public ConversationViewModel(Func<bool>? meetingBusy = null, TransTools.Services.Conversation.ConversationPreferencesStore? preferences = null, Func<Task>? beginListening = null, Func<string, string, CancellationToken, Task<string>>? generateReply = null, Func<string, string, CancellationToken, Task>? speakReply = null)
     {
         _meetingBusy = meetingBusy ?? (() => false);
-        _beginListeningOverride = beginListening;
+        _beginListeningOverride = beginListening; _generateReplyOverride = generateReply; _speakReplyOverride = speakReply;
         Messages.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(ConversationActionLabel)); OnPropertyChanged(nameof(CanSaveConversation)); };
         _preferences = preferences ?? new(); var saved = _preferences.Load(); _sendDelaySeconds = saved.DelaySeconds; _learnerName = saved.LearnerName; _showMiniTranslation = saved.ShowMiniTranslation;
         try { foreach (var session in _store.Load().OrderByDescending(s => s.UpdatedAt)) Sessions.Add(session); }
@@ -244,11 +265,9 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
             replyCancellation.Token.ThrowIfCancellationRequested();
             var prompt = $"Your name is {TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName}. We are roleplaying: {CurrentTopic}. Reply naturally in {TargetLanguage} as my conversation partner. Keep reply concise (1-3 sentences) suitable for language learning practice. {CustomPrompt}";
 
-            var config = _credentials.LoadConfiguredProvider()
-                ?? throw new InvalidOperationException("Nhập API key và model trong Cài đặt để trò chuyện.");
             var history = string.Join("\n", Messages.TakeLast(20).Select(m =>
                 $"{(m.IsUser ? "User" : "Assistant")}: {m.Text}"));
-            var aiReply = await _llmService.GenerateAsync(history, prompt, config, replyCancellation.Token);
+            var aiReply = await GenerateReplyAsync(history, prompt, replyCancellation.Token);
             var aiVi = CanShowTranslation && ShowVietnameseTranslation ? await _googleService.TranslateAsync(aiReply, "auto", "vi", replyCancellation.Token) : "";
 
             if (generation != _conversationGeneration) return;
@@ -259,7 +278,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
             replyCancellation.Token.ThrowIfCancellationRequested();
             if (AutoSpeakResponse)
             {
-                await VoicePreferences.SpeakAsync(aiReply, TargetLanguage);
+                await SpeakReplyAsync(aiReply, replyCancellation.Token);
             }
             replyCompleted = true;
         }

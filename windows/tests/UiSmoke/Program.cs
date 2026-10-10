@@ -52,6 +52,25 @@ internal static class Program
             }
             var window = new TransTools.MainWindow(); app.MainWindow = window; window.Show();
             System.Threading.SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(app.Dispatcher));
+            foreach (var interrupt in new[] { true, false }) {
+                var speechStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously); var listenCount = 0;
+                using var speakingChat = new ConversationViewModel(beginListening: () => { listenCount++; return Task.CompletedTask; },
+                    generateReply: (_, _, _) => Task.FromResult("Hello! What would you like to practice today?"),
+                    speakReply: (_, _, token) => { speechStarted.SetResult(); return Task.Delay(Timeout.Infinite, token); });
+                speakingChat.ShowVietnameseTranslation = false;
+                var opening = speakingChat.StartConversationCommand.ExecuteAsync(null); Await(speechStarted.Task);
+                if (!speakingChat.IsSpeakingResponse || speakingChat.ConversationStateLabel != "Đang trả lời" || !speakingChat.InterruptReplyCommand.CanExecute(null)) throw new Exception("Conversation speech state/interrupt action is unavailable");
+                var speakingMini = new ConversationMiniWindow(speakingChat); speakingMini.Show(); Pump();
+                if (!((Button)speakingMini.FindName("MiniInterruptButton")).IsVisible) throw new Exception("Mini chat hides speak interruption action");
+                if (interrupt) {
+                    ValidateControlLayout(speakingMini, "Speaking mini chat"); Capture(speakingMini, output, "mini-chat-speaking.png");
+                    speakingChat.InterruptReplyCommand.Execute(null);
+                } else speakingChat.EndConversationCommand.Execute(null);
+                Await(opening); Pump();
+                if (speakingChat.IsSpeakingResponse || speakingChat.IsThinking || speakingChat.Messages.Count != 1) throw new Exception("Canceled speech lost reply or left conversation busy");
+                if (interrupt ? !speakingChat.IsConversationActive || listenCount != 1 : speakingChat.IsConversationActive || listenCount != 0) throw new Exception("Speech interruption/end restarted listening incorrectly");
+                speakingMini.CloseForExit();
+            }
             var background = (Button)window.FindName("BackgroundButton");
             foreach (var mode in new[] { "morning", "noon", "afternoon", "night", "mint" }) {
                 var item = background.ContextMenu.Items.OfType<MenuItem>().First(value => Equals(value.Tag, mode));
