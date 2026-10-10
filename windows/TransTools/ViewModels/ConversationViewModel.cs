@@ -59,7 +59,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     public bool CanToggleConversation => IsConversationActive || (!IsThinking && !IsListening);
     public bool CanSaveConversation => Messages.Count > 0;
     public bool CanSendMessage => !IsThinking && !IsListening && !string.IsNullOrWhiteSpace(UserInput);
-    [RelayCommand(CanExecute = nameof(CanToggleConversation))] private async Task ToggleConversationAsync()
+    [RelayCommand(CanExecute = nameof(CanToggleConversation), AllowConcurrentExecutions = true)] private async Task ToggleConversationAsync()
     {
         if (IsConversationActive) EndConversation(); else await StartConversationAsync();
     }

@@ -33,6 +33,15 @@ internal static class Program
                 Await(resumeFixture.ToggleConversationCommand.ExecuteAsync(null));
                 if (resumeListenCalls != 1 || resumeFixture.UserInput != "Keep my typed draft") throw new Exception("Resume discarded a typed draft or started recording over it");
             }
+            var beginGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            using (var pendingResume = new ConversationViewModel(beginListening: () => beginGate.Task)) {
+                pendingResume.Messages.Add(new ChatMessageItem { Text = "Keep this transcript" });
+                var pendingStart = pendingResume.ToggleConversationCommand.ExecuteAsync(null);
+                if (!pendingResume.IsConversationActive || !pendingResume.ToggleConversationCommand.CanExecute(null)) throw new Exception("Unified stop action is disabled while start is awaiting listening");
+                Await(pendingResume.ToggleConversationCommand.ExecuteAsync(null));
+                beginGate.SetResult(); Await(pendingStart);
+                if (pendingResume.IsConversationActive || pendingResume.Messages.Count != 1) throw new Exception("Late start completion reactivated or cleared a stopped conversation");
+            }
             var connected = true;
             using (var deviceFixture = new MeetingViewModel(() => connected ? [new("fixture-device", "USB tai nghe")] : [])) {
                 deviceFixture.RefreshPlaybackDevices(); deviceFixture.SelectedPlaybackDevice = deviceFixture.PlaybackDevices[0]; deviceFixture.AutomaticReading = true;
