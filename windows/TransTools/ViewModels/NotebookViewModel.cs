@@ -63,8 +63,9 @@ public partial class NotebookViewModel : ObservableObject
         try {
             if (target.IsConversation) { if (RenameConversationRequested == null || !await RenameConversationRequested(target.Id, title)) return false; }
             else await _sessionStore.UpdateSessionAsync(target.Id, () => target, stored => stored.Title = title);
-            target.Title = title; SessionsView.Refresh(); OnPropertyChanged(nameof(SelectedSession)); Status = "Đã đổi tên bản ghi"; return true;
-        } catch (Exception ex) { Status = "Chưa đổi được tên: " + ex.Message; return false; }
+            var finalTitle = title;
+            System.Windows.Application.Current.Dispatcher.Invoke(() => { target.Title = finalTitle; SessionsView.Refresh(); OnPropertyChanged(nameof(SelectedSession)); Status = "Đã đổi tên bản ghi"; }); return true;
+        } catch (Exception ex) { System.Windows.Application.Current.Dispatcher.Invoke(() => Status = "Chưa đổi được tên: " + ex.Message); return false; }
     }
 
     public bool IsConversationSelected => SelectedSession?.IsConversation == true;

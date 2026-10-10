@@ -133,7 +133,12 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         if (!session.HasCustomTitle) session.Title = CurrentTopic + " · " + DateTime.Now.ToString("dd/MM HH:mm");
         session.Topic = CurrentTopic; session.Language = TargetLanguage; session.Prompt = CustomPrompt;
         session.UpdatedAt = DateTime.Now; session.Messages = Messages.ToList();
-        await _store.SaveAsync(Sessions); SelectedSession = session; Status = "Đã lưu hội thoại"; SessionsSaved?.Invoke();
+        await _store.SaveAsync(Sessions); OnUi(() => { SelectedSession = session; Status = "Đã lưu hội thoại"; SessionsSaved?.Invoke(); });
+    }
+    private static void OnUi(Action action)
+    {
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher == null || dispatcher.CheckAccess()) action(); else dispatcher.Invoke(action);
     }
     public async Task<bool> RenameSessionAsync(Guid id, string title)
     {
@@ -141,7 +146,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         if (target == null || title.Length == 0 || title.Length > 200) return false;
         var old = target.Title; var custom = target.HasCustomTitle;
         target.Title = title; target.HasCustomTitle = true;
-        try { await _store.SaveAsync(Sessions); SessionsSaved?.Invoke(); return true; }
+        try { await _store.SaveAsync(Sessions); OnUi(() => SessionsSaved?.Invoke()); return true; }
         catch { target.Title = old; target.HasCustomTitle = custom; throw; }
     }
     [RelayCommand] private async Task DeleteConversationAsync()
