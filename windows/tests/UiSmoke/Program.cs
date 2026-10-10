@@ -129,11 +129,11 @@ internal static class Program
                     if (conversation != null) {
                         var chatView = Descendants(window).OfType<ConversationView>().First();
                         var list = (ListBox)chatView.FindName("MessageList"); Pump(); list.UpdateLayout();
-                        var bubbles = Descendants(list).OfType<Border>().Where(b => Equals(b.Tag, "ChatBubble") && b.IsVisible).Select(b => (Bubble: b, Bounds: new Rect(b.TransformToAncestor(list).Transform(new Point()), b.RenderSize))).OrderBy(b => b.Bounds.Top).ToArray();
+                        var bubbles = Descendants(list).OfType<Border>().Where(b => Equals(b.Tag, "ChatBubble") && b.IsVisible).Select(b => (Bubble: b, Bounds: new Rect(b.TransformToAncestor(list).Transform(new Point()), b.RenderSize))).Where(b => b.Bounds.Top >= 0 && b.Bounds.Bottom <= list.ActualHeight).OrderBy(b => b.Bounds.Top).ToArray();
                         if (bubbles.Length < 2) throw new Exception("Conversation fixture did not render adjacent bubbles");
                         for (var i = 1; i < bubbles.Length; i++) {
                             var gap = bubbles[i].Bounds.Top - bubbles[i - 1].Bounds.Bottom;
-                            if (gap < -1 || gap > 20) throw new Exception($"Conversation bubble spacing is not content driven: {gap}");
+                            if (gap < -1 || gap > 20) { Capture(window, output, $"{width}-conversation-spacing-failure.png"); throw new Exception($"Conversation bubble spacing is not content driven: {gap}; bounds={string.Join(";", bubbles.Select(b => b.Bounds.ToString()))}"); }
                         }
                         var originalToggle = conversation.ShowVietnameseTranslation;
                         conversation.ShowVietnameseTranslation = false; Pump();
