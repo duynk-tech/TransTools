@@ -27,6 +27,19 @@
              <Setter Property="CornerRadius" Value="14"/><Setter Property="Padding" Value="16"/>
              <Style.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter Property="BorderBrush" Value="#75BBAE"/></Trigger></Style.Triggers>
          </Style>
+         <Style TargetType="Slider">
+             <Setter Property="MinHeight" Value="32"/><Setter Property="Focusable" Value="True"/>
+             <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Slider">
+                 <Grid Margin="8,0"><Border Height="4" Background="#DCE6E2" CornerRadius="2" VerticalAlignment="Center"/>
+                     <Track x:Name="PART_Track" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{TemplateBinding Value}" Orientation="{TemplateBinding Orientation}" IsDirectionReversed="{TemplateBinding IsDirectionReversed}">
+                         <Track.DecreaseRepeatButton><RepeatButton Command="Slider.DecreaseLarge" Focusable="False"><RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Height="4" Background="#287568" CornerRadius="2" VerticalAlignment="Center"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>
+                         <Track.Thumb><Thumb x:Name="SliderThumb" Width="20" Height="20" Cursor="Hand"><Thumb.Template><ControlTemplate TargetType="Thumb"><Ellipse Fill="White" Stroke="#A8C8BE" StrokeThickness="1.5"/></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
+                         <Track.IncreaseRepeatButton><RepeatButton Command="Slider.IncreaseLarge" Focusable="False"><RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Background="Transparent"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.IncreaseRepeatButton>
+                     </Track>
+                 </Grid>
+                 <ControlTemplate.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="SliderThumb" Property="Opacity" Value="0.7"/></Trigger></ControlTemplate.Triggers>
+             </ControlTemplate></Setter.Value></Setter>
+         </Style>
          <Style TargetType="ComboBox">
              <Setter Property="Background" Value="White"/><Setter Property="Foreground" Value="#243D35"/><Setter Property="BorderBrush" Value="#B5D2C9"/><Setter Property="MinHeight" Value="40"/><Setter Property="Padding" Value="10,6"/>
              <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
