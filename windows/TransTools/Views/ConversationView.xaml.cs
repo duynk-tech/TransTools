@@ -61,6 +61,7 @@ public partial class ConversationView : UserControl
     {
         if (e.Key == Key.Enter)
         {
+            e.Handled = true;
             _ = _viewModel.SendMessageAsync();
         }
     }

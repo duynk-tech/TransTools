@@ -48,7 +48,15 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [RelayCommand] private void DecreaseSendDelay() => SendDelaySeconds = Math.Max(1, SendDelaySeconds - 1);
     private int _conversationGeneration;
     private CancellationTokenSource? _replyCancellation;
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(CanEditLearnerName))] private bool _isConversationActive;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(CanEditLearnerName)), NotifyPropertyChangedFor(nameof(ConversationActionLabel)), NotifyCanExecuteChangedFor(nameof(ToggleConversationCommand))] private bool _isConversationActive;
+    public string ConversationActionLabel => IsConversationActive ? "Kết thúc" : Messages.Count == 0 ? "Bắt đầu trò chuyện" : "Tiếp tục nói";
+    public bool CanToggleConversation => IsConversationActive || (!IsThinking && !IsListening);
+    public bool CanSaveConversation => Messages.Count > 0;
+    public bool CanSendMessage => !IsThinking && !IsListening && !string.IsNullOrWhiteSpace(UserInput);
+    [RelayCommand(CanExecute = nameof(CanToggleConversation))] private async Task ToggleConversationAsync()
+    {
+        if (IsConversationActive) EndConversation(); else await StartConversationAsync();
+    }
     [RelayCommand] private void EndConversation()
     {
         ++_conversationGeneration; IsConversationActive = false;
@@ -84,7 +92,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     public bool CanChangeSession => !IsThinking && !IsListening;
     public bool CanEditLearnerName => !IsConversationActive && CanChangeSession;
     public string MicrophoneLabel => IsListening ? "Dừng thu" : "Nói bằng micro";
-    partial void OnIsListeningChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(MicrophoneLabel)); }
+    partial void OnIsListeningChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(MicrophoneLabel)); OnPropertyChanged(nameof(CanSendMessage)); ToggleConversationCommand.NotifyCanExecuteChanged(); }
     [RelayCommand] private async Task ToggleMicrophoneAsync() {
         if (IsThinking) return;
         if (!IsListening) {
@@ -111,12 +119,13 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [RelayCommand] private void CancelRecognition() => _recognition?.Cancel();
     public void Dispose() { _replyCancellation?.Cancel(); _recognition?.Cancel(); if (IsListening) { _recorder?.Dispose(); _recorder = null; IsListening = false; } }
 
-    partial void OnIsThinkingChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); }
+    partial void OnIsThinkingChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(CanSendMessage)); ToggleConversationCommand.NotifyCanExecuteChanged(); }
     public bool CanShowTranslation => !TargetLanguage.Contains("Việt", StringComparison.OrdinalIgnoreCase);
 
     public ConversationViewModel(Func<bool>? meetingBusy = null, TransTools.Services.Conversation.ConversationPreferencesStore? preferences = null)
     {
         _meetingBusy = meetingBusy ?? (() => false);
+        Messages.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(ConversationActionLabel)); OnPropertyChanged(nameof(CanSaveConversation)); };
         _preferences = preferences ?? new(); var saved = _preferences.Load(); _sendDelaySeconds = saved.DelaySeconds; _learnerName = saved.LearnerName;
         try { foreach (var session in _store.Load().OrderByDescending(s => s.UpdatedAt)) Sessions.Add(session); }
         catch (Exception ex) { Status = "Không đọc được hội thoại: " + ex.Message; }
@@ -197,6 +206,8 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private bool _autoSpeakResponse = true;
+
+    partial void OnUserInputChanged(string value) => OnPropertyChanged(nameof(CanSendMessage));
 
     [RelayCommand]
     public async Task SendMessageAsync()

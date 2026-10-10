@@ -128,6 +128,13 @@ internal static class Program
                     }
                     if (conversation != null) {
                         var chatView = Descendants(window).OfType<ConversationView>().First();
+                        var actionButton = (Button)chatView.FindName("ConversationActionButton");
+                        if (!Equals(actionButton.Content, "Tiếp tục nói")) throw new Exception("Saved conversation did not show resume action");
+                        conversation.IsConversationActive = true; conversation.IsThinking = true; Pump();
+                        if (!Equals(actionButton.Content, "Kết thúc") || !actionButton.IsEnabled) throw new Exception("Active conversation cannot be stopped during AI processing");
+                        conversation.ToggleConversationCommand.Execute(null); Pump();
+                        if (conversation.IsConversationActive || !Equals(actionButton.Content, "Tiếp tục nói")) throw new Exception("Unified conversation action failed to end session without clearing messages");
+                        conversation.IsThinking = false; Pump();
                         var topicButton = (Button)chatView.FindName("TopicButton"); topicButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
                         var topicPopup = (System.Windows.Controls.Primitives.Popup)chatView.FindName("TopicPopup");
                         if (!topicPopup.IsOpen || topicPopup.Child == null) throw new Exception("Conversation name/options popup did not open");
