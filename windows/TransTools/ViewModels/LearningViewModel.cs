@@ -73,6 +73,7 @@ public partial class LearningViewModel : ObservableObject
     private bool _initialized;
     private TransTools.Views.LearningBoardWindow? _board;
 
+    public string[] Languages { get; } = ["en", "ja", "zh", "ko"];
     public ObservableCollection<VocabularyItem> VocabularyList { get; } = new();
     public ObservableCollection<AlphabetItem> AlphabetList { get; } = new();
 
