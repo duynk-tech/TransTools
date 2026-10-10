@@ -20,7 +20,7 @@
      <Button Height="36" MinHeight="36" Click="ToggleSubtitle_Click" Style="{StaticResource SecondaryButton}"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8F2;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock Text="Phụ đề"/></StackPanel></Button>
     </StackPanel>
     <Border CornerRadius="14" Background="#DFFFFFFF" BorderBrush="#BDD9D2" BorderThickness="1" Padding="4">
-     <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled"><StackPanel Orientation="Horizontal">
+     <UniformGrid Columns="7">
       <RadioButton Content="Cuộc họp" Tag="&#xE767;" Style="{StaticResource NavButtonStyle}" IsChecked="True" Checked="NavMeeting_Checked"/>
       <RadioButton Content="Sổ tay" Tag="&#xE8F1;" Style="{StaticResource NavButtonStyle}" Checked="NavNotebook_Checked"/>
       <RadioButton x:Name="NavTranslate" Content="Dịch nhanh" Tag="&#xE8D2;" Style="{StaticResource NavButtonStyle}" Checked="NavTranslate_Checked"/>
@@ -28,7 +28,7 @@
       <RadioButton Content="Học ngôn ngữ" Tag="&#xE7BE;" Style="{StaticResource NavButtonStyle}" Checked="NavLearning_Checked"/>
       <RadioButton Content="Trò chuyện" Tag="&#xE8F2;" Style="{StaticResource NavButtonStyle}" Checked="NavConversation_Checked"/>
       <RadioButton Content="Cài đặt" Tag="&#xE713;" Style="{StaticResource NavButtonStyle}" Checked="NavSettings_Checked"/>
-     </StackPanel></ScrollViewer>
+     </UniformGrid>
     </Border>
    </DockPanel>
   </Border>

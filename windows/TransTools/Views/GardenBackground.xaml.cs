@@ -8,10 +8,10 @@ public partial class GardenBackground : UserControl
         InitializeComponent();
         var hour = DateTime.Now.Hour;
         var (top, bottom) = hour switch {
-            < 6 or >= 19 => ("#CEDDE2", "#E0EBE5"),
-            < 11 => ("#DAEBEF", "#ECF5EE"),
-            < 15 => ("#D8ECF4", "#EAF3EC"),
-            _ => ("#EBDDD2", "#EAF0E4")
+            < 6 or >= 19 => ("#D4E0F2", "#DBEDEB"),
+            < 11 => ("#F0FAED", "#D9F0E3"),
+            < 15 => ("#E0F7FA", "#E0F5E3"),
+            _ => ("#FCEDD9", "#E6F0E0")
         };
         SkyTop.Color = (Color)ColorConverter.ConvertFromString(top);
         SkyBottom.Color = (Color)ColorConverter.ConvertFromString(bottom);

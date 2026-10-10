@@ -35,6 +35,7 @@ internal static class Program
                         options.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
                         if (!popup.IsOpen || popup.Child == null) throw new InvalidOperationException("Reading options did not open");
                         ValidateControlLayout((FrameworkElement)popup.Child, "Reading options");
+                        CaptureElement((FrameworkElement)popup.Child, output, $"{width}-reader-options-popup.png");
                         Capture(window, output, $"{width}-reader-options.png");
                         popup.IsOpen = false;
                     }
@@ -112,6 +113,16 @@ internal static class Program
             context.DrawRectangle(window.Background, null, bounds);
             context.DrawRectangle(new VisualBrush(root) { Stretch = Stretch.Fill }, null, bounds);
         }
+        bitmap.Render(drawing);
+        var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(bitmap));
+        using var file = File.Create(Path.Combine(output, name)); png.Save(file);
+    }
+    private static void CaptureElement(FrameworkElement element, string output, string name)
+    {
+        element.UpdateLayout();
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(element.ActualWidth), (int)Math.Ceiling(element.ActualHeight), 96, 96, PixelFormats.Pbgra32);
+        var drawing = new DrawingVisual();
+        using (var context = drawing.RenderOpen()) context.DrawRectangle(new VisualBrush(element), null, new Rect(0, 0, element.ActualWidth, element.ActualHeight));
         bitmap.Render(drawing);
         var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(bitmap));
         using var file = File.Create(Path.Combine(output, name)); png.Save(file);
