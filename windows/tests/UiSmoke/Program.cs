@@ -161,10 +161,10 @@ internal static class Program
                                     var blocked = new VoiceSettingsViewModel(management, () => true);
                                     Await(blocked.PreviewCommand.ExecuteAsync(null));
                                     if (blocked.IsPreviewing || !blocked.Status.Contains("Dừng phiên")) throw new Exception("Voice preview did not respect active audio session");
-                                    var reader = new TextReaderViewModel { Text = "Keep this original text unchanged." };
+                                    var voicePreviewReader = new TextReaderViewModel { Text = "Keep this original text unchanged." };
                                     var old = TransTools.Services.Speech.VoicePreferences.Get("vi");
                                     TransTools.Services.Speech.VoicePreferences.Save("vi", "Giọng cơ bản", 1.2);
-                                    if (reader.Engine != "Giọng cơ bản" || reader.Rate != 1.2 || reader.Text != "Keep this original text unchanged.") throw new Exception("Voice preference update failed or overwrote reader text");
+                                    if (voicePreviewReader.Engine != "Giọng cơ bản" || Math.Abs(voicePreviewReader.Rate - 1.2) > 0.000001 || voicePreviewReader.Text != "Keep this original text unchanged.") throw new Exception("Voice preference update failed or overwrote reader text");
                                     TransTools.Services.Speech.VoicePreferences.Save("vi", old.Engine, old.Rate);
                                 }
                             }

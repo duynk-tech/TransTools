@@ -34,6 +34,7 @@ public partial class VoiceSettingsViewModel : ObservableObject
         catch (Exception ex) { _canSave = false; Status = "Không đọc được cấu hình giọng; giữ nguyên dữ liệu: " + ex.Message; }
         finally { _loading = false; }
     }
+    partial void OnIsPreviewingChanged(bool value) { if (!value) LoadPreference(); }
     partial void OnLanguageChanged(string value)
     {
         OnPropertyChanged(nameof(Engines)); OnPropertyChanged(nameof(SupportsNatural)); LoadPreference();
