@@ -21,6 +21,7 @@ internal static class Program
         try {
             var app = new TransTools.App(); app.InitializeComponent();
             var window = new TransTools.MainWindow(); app.MainWindow = window; window.Show();
+            System.Threading.SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(app.Dispatcher));
             var background = (Button)window.FindName("BackgroundButton");
             foreach (var mode in new[] { "morning", "noon", "afternoon", "night", "mint" }) {
                 var item = background.ContextMenu.Items.OfType<MenuItem>().First(value => Equals(value.Tag, mode));
