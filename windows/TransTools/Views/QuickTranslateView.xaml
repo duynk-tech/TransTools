@@ -8,12 +8,12 @@
 <UserControl.InputBindings><KeyBinding Key="Enter" Modifiers="Control" Command="{Binding TranslateCommand}"/></UserControl.InputBindings>
 <DockPanel><Grid DockPanel.Dock="Top" Margin="0,4,0,18"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Dịch nhanh" FontSize="22" FontWeight="SemiBold" /><TextBlock Text="Dịch, sửa ngữ pháp và chọn cách diễn đạt phù hợp" Foreground="#65756F" Margin="0,4,0,0" /></StackPanel><StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0" Grid.Column="1">
                     <Button Content="Sửa ngữ pháp" Command="{Binding CheckGrammarCommand}" Margin="0,0,8,0" Padding="12,8" Cursor="Hand" Style="{StaticResource SecondaryButton}" />
-                    <Button Content="Chụp" Click="CaptureOcr_Click" Margin="0,0,8,0" Padding="12,8" Cursor="Hand" Style="{StaticResource SecondaryButton}" ToolTip="Chụp và dịch màn hình" />
+                    <Button Content="Chụp" IsEnabled="{Binding CanConfigure}" Click="CaptureOcr_Click" Margin="0,0,8,0" Padding="12,8" Cursor="Hand" Style="{StaticResource SecondaryButton}" ToolTip="Chụp và dịch màn hình" />
                     <Button Content="Dịch ngay" Command="{Binding TranslateCommand}" FontWeight="Bold" Padding="16,8" Cursor="Hand" Margin="0,0,16,0" />
                 <Button x:Name="ContextButton" Grid.Column="1" Content="Ngữ cảnh &amp; Mẫu câu" Style="{StaticResource SecondaryButton}" Click="ShowContext_Click" /></StackPanel>
             </Grid>
 <Grid><Grid x:Name="TranslationContent"><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-<Grid Margin="0,0,0,16"><Popup x:Name="ContextPopup" PlacementTarget="{Binding ElementName=ContextButton}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True"><Border Background="White" BorderBrush="#B5D2C9" BorderThickness="1" CornerRadius="12" Padding="16" Width="390"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="130" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions><TextBlock Text="Chuyên ngành" VerticalAlignment="Center" /><ComboBox Grid.Column="1" SelectedValuePath="Content" SelectedValue="{Binding SelectedDomain}" Width="165" Margin="0">
+<Grid Margin="0,0,0,16"><Popup x:Name="ContextPopup" PlacementTarget="{Binding ElementName=ContextButton}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True"><Border Background="White" BorderBrush="#B5D2C9" BorderThickness="1" CornerRadius="12" Padding="16" Width="390"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="130" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions><TextBlock Text="Chuyên ngành" VerticalAlignment="Center" /><ComboBox IsEnabled="{Binding CanConfigure}" Grid.Column="1" SelectedValuePath="Content" SelectedValue="{Binding SelectedDomain}" Width="165" Margin="0">
                         <ComboBoxItem Content="Thông dụng" />
                         <ComboBoxItem Content="Công nghệ thông tin" />
                         <ComboBoxItem Content="Y tế &amp; Sinh học" />
@@ -22,14 +22,14 @@
                         <ComboBoxItem Content="Pháp luật" />
                     </ComboBox>
 
-                    <TextBlock Grid.Row="1" Text="Phong cách" VerticalAlignment="Center" Margin="0,12,0,0" /><ComboBox Grid.Row="1" Grid.Column="1" SelectedValuePath="Content" SelectedValue="{Binding SelectedStyle}" Width="165" Margin="0">
+                    <TextBlock Grid.Row="1" Text="Phong cách" VerticalAlignment="Center" Margin="0,12,0,0" /><ComboBox IsEnabled="{Binding CanConfigure}" Grid.Row="1" Grid.Column="1" SelectedValuePath="Content" SelectedValue="{Binding SelectedStyle}" Width="165" Margin="0">
                         <ComboBoxItem Content="Tự nhiên" IsSelected="True" />
                         <ComboBoxItem Content="Trang trọng" />
                         <ComboBoxItem Content="Học thuật" />
                         <ComboBoxItem Content="Ngắn gọn" />
                     </ComboBox>
                 </Grid></Border></Popup>
-<Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><StackPanel Orientation="Horizontal" VerticalAlignment="Center"><ComboBox SelectedValuePath="Tag" SelectedValue="{Binding SourceLanguage}" Width="165" Margin="0">
+<Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><StackPanel Orientation="Horizontal" VerticalAlignment="Center"><ComboBox IsEnabled="{Binding CanConfigure}" SelectedValuePath="Tag" SelectedValue="{Binding SourceLanguage}" Width="165" Margin="0">
                         <ComboBoxItem Content="Tự động" Tag="auto" IsSelected="True" />
                         <ComboBoxItem Content="Tiếng Anh" Tag="en" />
                         <ComboBoxItem Content="Tiếng Việt" Tag="vi" />
@@ -38,7 +38,7 @@
                         <ComboBoxItem Content="Tiếng Hàn" Tag="ko" />
                     </ComboBox>
 
-                    <Button Content="⇄" Click="SwapLanguages_Click" Style="{StaticResource SecondaryButton}" Margin="10,0" /><ComboBox SelectedValuePath="Tag" SelectedValue="{Binding TargetLanguage}" Width="165" Margin="0">
+                    <Button Content="⇄" IsEnabled="{Binding CanConfigure}" Click="SwapLanguages_Click" Style="{StaticResource SecondaryButton}" Margin="10,0" /><ComboBox IsEnabled="{Binding CanConfigure}" SelectedValuePath="Tag" SelectedValue="{Binding TargetLanguage}" Width="165" Margin="0">
                         <ComboBoxItem Content="Tiếng Việt" Tag="vi" IsSelected="True" />
                         <ComboBoxItem Content="Tiếng Anh" Tag="en" />
                         <ComboBoxItem Content="Tiếng Nhật" Tag="ja" />

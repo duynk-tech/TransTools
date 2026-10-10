@@ -43,6 +43,8 @@ public partial class QuickTranslateViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CharacterCountLabel))]
+    [NotifyCanExecuteChangedFor(nameof(TranslateCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CheckGrammarCommand))]
     private string _sourceText = string.Empty;
 
     [ObservableProperty]
@@ -76,17 +78,24 @@ public partial class QuickTranslateViewModel : ObservableObject
     [ObservableProperty]
     private string _selectedStyle = "Tự nhiên"; // Tự nhiên, Trang trọng, Học thuật, Ngắn gọn
 
+    public bool CanConfigure => !IsTranslating;
+    private bool CanProcess() => !IsTranslating && !string.IsNullOrWhiteSpace(SourceText);
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanConfigure))]
+    [NotifyCanExecuteChangedFor(nameof(TranslateCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CheckGrammarCommand))]
     private bool _isTranslating;
 
     [ObservableProperty]
     private string _status = "Sẵn sàng";
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanProcess))]
     public async Task TranslateAsync()
     {
-        if (string.IsNullOrWhiteSpace(SourceText)) return;
-
+        if (!CanProcess()) return;
+        var source = SourceText; var sourceLanguage = SourceLanguage; var targetLanguage = TargetLanguage;
+        var domain = SelectedDomain; var style = SelectedStyle;
+        bool Current() => SourceText == source && SourceLanguage == sourceLanguage && TargetLanguage == targetLanguage && SelectedDomain == domain && SelectedStyle == style;
         IsTranslating = true;
         Status = "Đang dịch văn bản...";
         GrammarExplanation = string.Empty;
@@ -94,9 +103,11 @@ public partial class QuickTranslateViewModel : ObservableObject
         try
         {
             var config = _credentialStore.LoadConfiguredProvider();
-            TranslatedText = config != null
-                ? await _llmTranslate.TranslateWithAIAsync(SourceText, TargetLanguage, $"{SelectedDomain} • {SelectedStyle}", config)
-                : await _googleTranslate.TranslateAsync(SourceText, SourceLanguage, TargetLanguage);
+            var result = config != null
+                ? await _llmTranslate.TranslateWithAIAsync(source, targetLanguage, $"{domain} • {style}", config)
+                : await _googleTranslate.TranslateAsync(source, sourceLanguage, targetLanguage);
+            if (!Current()) { Status = "Nội dung đã thay đổi · nhấn Dịch lại."; return; }
+            TranslatedText = result;
 
             Status = "Hoàn tất dịch thuật";
         }
@@ -110,11 +121,13 @@ public partial class QuickTranslateViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanProcess))]
     public async Task CheckGrammarAsync()
     {
-        if (string.IsNullOrWhiteSpace(SourceText)) return;
-
+        if (!CanProcess()) return;
+        var source = SourceText; var sourceLanguage = SourceLanguage; var targetLanguage = TargetLanguage;
+        var domain = SelectedDomain; var style = SelectedStyle;
+        bool Current() => SourceText == source && SourceLanguage == sourceLanguage && TargetLanguage == targetLanguage && SelectedDomain == domain && SelectedStyle == style;
         IsTranslating = true;
         Status = "Đang kiểm tra ngữ pháp...";
 
@@ -124,7 +137,9 @@ public partial class QuickTranslateViewModel : ObservableObject
             if (config != null)
             {
                 var prompt = "Review this text for grammar, spelling and phrasing. Provide the corrected version followed by brief explanations in Vietnamese.";
-                TranslatedText = await _llmTranslate.GenerateAsync(SourceText, prompt, config);
+                var result = await _llmTranslate.GenerateAsync(source, prompt, config);
+                if (!Current()) { Status = "Nội dung đã thay đổi · kiểm tra lại ngữ pháp."; return; }
+                TranslatedText = result;
                 Status = "Đã hoàn thành sửa ngữ pháp!";
             }
             else

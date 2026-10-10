@@ -220,8 +220,13 @@ internal static class Program
                             if (sections.SelectedItem is TabItem { Header: "Dịch & Phụ đề" } && width == 1280) {
                                 var settings = (SettingsViewModel)Descendants(window).OfType<SettingsView>().First().DataContext;
                                 var quick = new QuickTranslateViewModel();
+                                if (quick.TranslateCommand.CanExecute(null) || quick.CheckGrammarCommand.CanExecute(null)) throw new Exception("Empty quick text enables AI actions");
                                 var originalQuickFont = quick.EditorFontSize;
                                 quick.SourceText = "a\u0301";
+                                if (!quick.TranslateCommand.CanExecute(null) || !quick.CheckGrammarCommand.CanExecute(null)) throw new Exception("Quick AI actions did not enable for text");
+                                quick.IsTranslating = true;
+                                if (quick.CanConfigure || quick.TranslateCommand.CanExecute(null) || quick.CheckGrammarCommand.CanExecute(null)) throw new Exception("Quick processing permits overlapping actions");
+                                quick.IsTranslating = false;
                                 if (quick.CharacterCountLabel != "1 ký tự") throw new Exception("Quick editor Unicode count is incorrect");
                                 for (var n = 0; n < 30; n++) quick.IncreaseEditorFontCommand.Execute(null);
                                 if (quick.EditorFontSize != 22 || quick.IncreaseEditorFontCommand.CanExecute(null)) throw new Exception("Quick editor upper font bound failed");
