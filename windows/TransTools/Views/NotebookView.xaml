@@ -19,7 +19,7 @@
         <RadioButton Content="Tất cả" Style="{StaticResource SegmentedOption}" GroupName="RecordKind" IsChecked="{Binding RecordKind,Mode=TwoWay,Converter={StaticResource OptionSelection},ConverterParameter=Tất cả}"/>
         <RadioButton Content="Cuộc họp" Style="{StaticResource SegmentedOption}" GroupName="RecordKind" IsChecked="{Binding RecordKind,Mode=TwoWay,Converter={StaticResource OptionSelection},ConverterParameter=Cuộc họp}"/>
         <RadioButton Content="Trò chuyện" Style="{StaticResource SegmentedOption}" GroupName="RecordKind" IsChecked="{Binding RecordKind,Mode=TwoWay,Converter={StaticResource OptionSelection},ConverterParameter=Trò chuyện}"/>
-        </UniformGrid><ListBox ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemsSource="{Binding SessionsView}" SelectedItem="{Binding SelectedSession}" Background="Transparent" BorderThickness="0">
+        </UniformGrid><DockPanel DockPanel.Dock="Bottom" Margin="0,12,0,0"><Button DockPanel.Dock="Right" Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" ToolTip="Xóa tất cả bản ghi" Width="32" MinHeight="32" Padding="4" Style="{StaticResource DestructiveButton}" Command="{Binding ConfirmDeleteAllRecordsCommand}"/><TextBlock Text="Quản lý bản ghi" Foreground="#73827C" FontSize="12" VerticalAlignment="Center"/></DockPanel><ListBox ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemsSource="{Binding SessionsView}" SelectedItem="{Binding SelectedSession}" Background="Transparent" BorderThickness="0">
           <ListBox.ItemTemplate>
             <DataTemplate>
               <Border Style="{StaticResource TranscriptCard}" Margin="0,0,0,6">

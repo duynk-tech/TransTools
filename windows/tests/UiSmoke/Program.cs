@@ -178,6 +178,7 @@ internal static class Program
             var about = new AboutWindow { Owner = window }; about.Show(); Pump(); ValidateControlLayout(about, "About"); Capture(about, output, "about.png"); about.Close();
             var rename = new RenameRecordWindow("Cuộc họp dự án"){ Owner = window }; rename.Show(); Pump(); ValidateControlLayout(rename, "Rename record"); Capture(rename, output, "rename-record.png"); rename.Close();
             var deleteConfirm = new ConfirmDeleteWindow("Cuộc họp dự án") { Owner = window }; deleteConfirm.Show(); Pump(); ValidateControlLayout(deleteConfirm, "Delete confirmation"); Capture(deleteConfirm, output, "delete-record.png"); deleteConfirm.Close();
+            var deleteAll = new ConfirmDeleteWindow("12 bản ghi đã lưu", true) { Owner = window }; deleteAll.Show(); Pump(); ValidateControlLayout(deleteAll, "Delete all confirmation"); Capture(deleteAll, output, "delete-all-records.png"); deleteAll.Close();
             CheckNotebookRecords(window, output);
             CheckReadingLibrary(window, output);
             var chatModel = Descendants(window).OfType<ConversationView>().FirstOrDefault()?.DataContext as ConversationViewModel;
@@ -242,6 +243,14 @@ internal static class Program
         var beforeDeleteCount = conversation.Sessions.Count;
         Await(notebook.DeleteRecordByIdAsync(notebook.Sessions.Single(s => s.Id == saved.Id)));
         if (conversation.Sessions.Count != beforeDeleteCount - 1 || conversation.Sessions.Any(s => s.Id == saved.Id) || new TransTools.Services.Storage.ConversationStore().Load().Any(s => s.Id == saved.Id) || notebook.Sessions.Any(s => s.Id == saved.Id)) throw new Exception("Deleting conversation did not remove only the selected shared record");
+        conversation.Sessions.Add(saved); notebook.SetConversations(conversation.Sessions);
+        notebook.RecordManagementBusy = () => true;
+        var busyDelete = notebook.DeleteAllRecordsAsync(); Await(busyDelete);
+        if (busyDelete.Result || !notebook.Sessions.Any(s => s.Id == saved.Id)) throw new Exception("Bulk deletion ignored busy guard");
+        notebook.RecordManagementBusy = () => false;
+        notebook.RecordKind = "Cuộc họp"; notebook.SearchKeyword = "does not match any record";
+        var allDelete = notebook.DeleteAllRecordsAsync(); Await(allDelete);
+        if (!allDelete.Result || notebook.Sessions.Count != 0 || conversation.Sessions.Count != 0 || new TransTools.Services.Storage.ConversationStore().Load().Count != 0) throw new Exception("Bulk delete left hidden records behind");
         Console.WriteLine("PASS: combined notebook filters, search, source timestamps and resume routing");
     }
 

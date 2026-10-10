@@ -149,6 +149,13 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         try { await _store.SaveAsync(Sessions); OnUi(() => SessionsSaved?.Invoke()); return true; }
         catch { target.Title = old; target.HasCustomTitle = custom; throw; }
     }
+    public async Task<bool> DeleteSessionsByIdsAsync(IEnumerable<Guid> ids)
+    {
+        if (!CanChangeSession) return false;
+        var targets = ids.ToHashSet(); var kept = Sessions.Where(s => !targets.Contains(s.Id)).ToList();
+        await _store.SaveAsync(kept);
+        OnUi(() => { foreach (var item in Sessions.Where(s => targets.Contains(s.Id)).ToList()) Sessions.Remove(item); if (SelectedSession != null && targets.Contains(SelectedSession.Id)) { SelectedSession = null; Messages.Clear(); IsConversationActive = false; } SessionsSaved?.Invoke(); }); return true;
+    }
     public async Task<bool> DeleteSessionByIdAsync(Guid id)
     {
         if (!CanChangeSession) return false;

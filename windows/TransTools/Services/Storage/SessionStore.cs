@@ -54,6 +54,12 @@ public class SessionStore
         try { var sessions = await LoadSessionsAsync(); sessions.RemoveAll(s => s.Id == id); await WriteCoreAsync(sessions); }
         finally { WriteLock.Release(); }
     }
+    public async Task DeleteSessionsAsync(IEnumerable<Guid> ids)
+    {
+        var targets = ids.ToHashSet(); await WriteLock.WaitAsync();
+        try { var sessions = await LoadSessionsAsync(); sessions.RemoveAll(s => targets.Contains(s.Id)); await WriteCoreAsync(sessions); }
+        finally { WriteLock.Release(); }
+    }
     private async Task WriteCoreAsync(List<MeetingSession> sessions)
     {
         var json = JsonSerializer.Serialize(sessions, new JsonSerializerOptions { WriteIndented = true });

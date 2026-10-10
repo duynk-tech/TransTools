@@ -50,6 +50,25 @@ public partial class NotebookViewModel : ObservableObject
     private readonly Dictionary<Guid, ConversationSession> _conversations = new();
     [ObservableProperty] private string _recordKind = "Tất cả";
     public event Action<Guid>? ResumeConversationRequested;
+    public Func<IEnumerable<Guid>, Task<bool>>? DeleteConversationsRequested { get; set; }
+    [RelayCommand] private async Task ConfirmDeleteAllRecordsAsync()
+    {
+        if (Sessions.Count == 0) return;
+        if (IsSummarizing || RecordManagementBusy?.Invoke() == true) { Status = "Dừng phiên hoặc chờ phân tích xong trước khi xóa bản ghi."; return; }
+        var confirm = new TransTools.Views.ConfirmDeleteWindow($"{Sessions.Count} bản ghi đã lưu", true) { Owner = System.Windows.Application.Current.MainWindow };
+        if (confirm.ShowDialog() == true) await DeleteAllRecordsAsync();
+    }
+    public async Task<bool> DeleteAllRecordsAsync()
+    {
+        if (IsSummarizing || RecordManagementBusy?.Invoke() == true) return false;
+        var records = Sessions.ToList();
+        try {
+            var chats = records.Where(s => s.IsConversation).Select(s => s.Id).ToArray();
+            if (chats.Length > 0 && (DeleteConversationsRequested == null || !await DeleteConversationsRequested(chats))) return false;
+            var meetings = records.Where(s => !s.IsConversation).ToList(); await _sessionStore.DeleteSessionsAsync(meetings.Select(s => s.Id));
+            System.Windows.Application.Current.Dispatcher.Invoke(() => { foreach (var record in records) Sessions.Remove(record); SessionsView.Refresh(); SelectedSession = SessionsView.Cast<MeetingSession>().FirstOrDefault(); Status = "Đã xóa tất cả bản ghi"; }); return true;
+        } catch (Exception ex) { System.Windows.Application.Current.Dispatcher.Invoke(() => Status = "Chưa xóa hết bản ghi: " + ex.Message); return false; }
+    }
     public Func<Guid, Task<bool>>? DeleteConversationRequested { get; set; }
     public Func<bool>? RecordManagementBusy { get; set; }
     [RelayCommand] private async Task ConfirmDeleteRecordAsync(MeetingSession? target)
@@ -61,7 +80,7 @@ public partial class NotebookViewModel : ObservableObject
     }
     public async Task<bool> DeleteRecordByIdAsync(MeetingSession target)
     {
-        if (RecordManagementBusy?.Invoke() == true) return false;
+        if (IsSummarizing || RecordManagementBusy?.Invoke() == true) return false;
         try {
             if (target.IsConversation) { if (DeleteConversationRequested == null || !await DeleteConversationRequested(target.Id)) return false; }
             else await _sessionStore.DeleteSessionAsync(target.Id);
