@@ -53,7 +53,7 @@ public sealed class GardenScene : FrameworkElement
         var afternoon = _hour >= 15 && _hour < 19;
         void Path(string data, Brush fill, double sx, double sy, double x = 0, double y = 0, Pen? stroke = null)
         {
-            var geometry = Geometry.Parse(data);
+            var geometry = Geometry.Parse(data).Clone();
             geometry.Transform = new MatrixTransform(sx, 0, 0, sy, x, y);
             dc.DrawGeometry(fill, stroke, geometry);
         }
