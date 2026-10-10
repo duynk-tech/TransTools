@@ -229,6 +229,14 @@ internal static class Program
         if (conversation.IsThinking || conversation.IsListening) throw new Exception("Resuming saved conversation triggered AI or microphone automatically");
         notebook.SetConversations(conversation.Sessions);
         if (notebook.Sessions.Count(s => s.Id == saved.Id) != 1) throw new Exception("Conversation refresh duplicated a saved session");
+        var beforeRenameText = conversation.Messages[0].Text;
+        Await(notebook.RenameRecordTitleAsync(notebook.Sessions.Single(s => s.Id == saved.Id), "Tên riêng của tôi"));
+        if (saved.Title != "Tên riêng của tôi" || !saved.HasCustomTitle) throw new Exception("Conversation rename did not update shared source");
+        Await(conversation.SaveConversationCommand.ExecuteAsync(null));
+        var storedTitle = new TransTools.Services.Storage.ConversationStore().Load().Single(s => s.Id == saved.Id);
+        if (storedTitle.Title != "Tên riêng của tôi" || !storedTitle.HasCustomTitle || storedTitle.Messages[0].Text != beforeRenameText) throw new Exception("Saving conversation overwrote custom title or messages");
+        var invalidRename = notebook.RenameRecordTitleAsync(notebook.Sessions.Single(s => s.Id == saved.Id), "   "); Await(invalidRename);
+        if (invalidRename.Result || saved.Title != "Tên riêng của tôi") throw new Exception("Empty rename changed source title");
         Console.WriteLine("PASS: combined notebook filters, search, source timestamps and resume routing");
     }
 
