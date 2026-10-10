@@ -68,15 +68,16 @@ public partial class FloatingSubtitleWindow : Window
         var original = _current?.Original ?? _incoming?.Original ?? "";
         var translation = _current?.Vietnamese ?? "";
         OriginalText.Text = original;
-        OriginalText.Visibility = _preferences.ShowOriginal && !string.IsNullOrWhiteSpace(translation) && !string.IsNullOrWhiteSpace(original) ? Visibility.Visible : Visibility.Collapsed;
-        TranslatedText.Text = !string.IsNullOrWhiteSpace(translation) ? translation : !string.IsNullOrWhiteSpace(original) ? original : _running ? "Đang lắng nghe cuộc họp…" : "Phụ đề sẽ hiển thị khi cuộc họp bắt đầu";
+        OriginalText.Visibility = _preferences.DisplayMode == "bilingual" && _preferences.ShowOriginal && !string.IsNullOrWhiteSpace(translation) && !string.IsNullOrWhiteSpace(original) ? Visibility.Visible : Visibility.Collapsed;
+        TranslatedText.Text = _preferences.DisplayMode == "original" && !string.IsNullOrWhiteSpace(original) ? original : !string.IsNullOrWhiteSpace(translation) ? translation : !string.IsNullOrWhiteSpace(original) ? original : _running ? "Đang lắng nghe cuộc họp…" : "Phụ đề sẽ hiển thị khi cuộc họp bắt đầu";
         var previous = _history.Count > 1 ? _history[^2] : null;
-        ContextText.Text = previous == null ? "" : string.IsNullOrWhiteSpace(previous.Vietnamese) ? previous.Original : previous.Vietnamese;
+        ContextText.Text = previous == null ? "" : _preferences.DisplayMode == "original" || string.IsNullOrWhiteSpace(previous.Vietnamese) ? previous.Original : previous.Vietnamese;
         ContextText.Visibility = _preferences.ShowContext && previous != null ? Visibility.Visible : Visibility.Collapsed;
         IncomingPanel.Visibility = _preferences.ShowNext && _current != null && _incoming != null && _incoming.Id != _current.Id ? Visibility.Visible : Visibility.Collapsed;
         IncomingText.Text = _incoming?.Original ?? "";
-        IncomingText.Visibility = _preferences.ShowOriginal ? Visibility.Visible : Visibility.Collapsed;
-        IncomingTranslation.Text = string.IsNullOrWhiteSpace(_incoming?.Vietnamese) ? "Đang dịch…" : _incoming.Vietnamese;
+        IncomingText.Visibility = _preferences.DisplayMode == "original" || (_preferences.DisplayMode == "bilingual" && _preferences.ShowOriginal) ? Visibility.Visible : Visibility.Collapsed;
+        IncomingTranslation.Visibility = _preferences.DisplayMode == "original" ? Visibility.Collapsed : Visibility.Visible;
+        IncomingTranslation.Text = string.IsNullOrWhiteSpace(_incoming?.Vietnamese) ? _preferences.DisplayMode == "translation" ? _incoming?.Original ?? "Đang dịch…" : "Đang dịch…" : _incoming.Vietnamese;
         ChromeChanged(this, new RoutedEventArgs()); FollowLatest();
     }
     private void FollowLatest()
@@ -91,6 +92,10 @@ public partial class FloatingSubtitleWindow : Window
     private void ToggleMeeting_Click(object sender, RoutedEventArgs e) { if (_running) StopRequested?.Invoke(); else StartRequested?.Invoke(); }
     private void Review_Click(object sender, RoutedEventArgs e) { _reviewing = !_reviewing; RenderContent(); }
     private void ShowSettings_Click(object sender, RoutedEventArgs e) { SettingsButton.ContextMenu.PlacementTarget = SettingsButton; SettingsButton.ContextMenu.IsOpen = true; }
+    private void DisplayMode_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: string mode }) { _preferences.DisplayMode = mode; SavePreferences(); }
+    }
     private void Pacing_Click(object sender, RoutedEventArgs e)
     {
         if (sender is MenuItem { Tag: string mode }) { _preferences.Pacing = mode; SavePreferences(); }
@@ -128,7 +133,9 @@ public partial class FloatingSubtitleWindow : Window
         StateLabel.Foreground = PacingLabel.Foreground = IncomingTranslation.Foreground = accent;
         StateBadge.Background = MakeBrush(_preferences.Light ? "#E0EFE9" : "#244A42");
         foreach (var button in ToolbarActions.Children.OfType<Button>()) { button.Background = StateBadge.Background; button.Foreground = accent; }
-        Resources["HudOriginalVisibility"] = _preferences.ShowOriginal ? Visibility.Visible : Visibility.Collapsed;
+        Resources["HudOriginalVisibility"] = _preferences.DisplayMode == "original" || (_preferences.DisplayMode == "bilingual" && _preferences.ShowOriginal) ? Visibility.Visible : Visibility.Collapsed;
+        Resources["HudDisplayMode"] = _preferences.DisplayMode;
+        ModeBilingual.IsChecked = _preferences.DisplayMode == "bilingual"; ModeOriginal.IsChecked = _preferences.DisplayMode == "original"; ModeTranslation.IsChecked = _preferences.DisplayMode == "translation";
         ContextText.Foreground = MakeBrush(_preferences.Light ? "#7C9187" : "#96B3A7");
         Resources["HudInkBrush"] = ink; Resources["HudMutedBrush"] = muted;
         Resources["HudMainFont"] = _preferences.FontSize; Resources["HudOriginalSize"] = Math.Max(12, _preferences.FontSize - 3.5);

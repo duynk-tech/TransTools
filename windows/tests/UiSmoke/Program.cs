@@ -19,6 +19,7 @@ internal static class Program
         PresentationTraceSources.DataBindingSource.Listeners.Add(errors);
         PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Error;
         try {
+            if (CaptionDisplayTextConverter.Select("source", "translated", "translation", false) != "translated" || CaptionDisplayTextConverter.Select("source", "", "translation", false) != "source" || CaptionDisplayTextConverter.Select("source", "translated", "original", true) != "") throw new Exception("Caption display fallback is incorrect");
             var app = new TransTools.App(); app.InitializeComponent();
             var window = new TransTools.MainWindow(); app.MainWindow = window; window.Show();
             System.Threading.SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(app.Dispatcher));
@@ -51,6 +52,28 @@ internal static class Program
                     var meeting = Descendants(window).OfType<MeetingView>().FirstOrDefault()?.DataContext as MeetingViewModel;
                     if (meeting != null && meeting.Captions.Count == 0) {
                         for (var n = 0; n < 12; n++) meeting.Captions.Add(new Caption { Start = n * 8, End = n * 8 + 7, Original = "We should preserve the full conversation, including longer sentences and the context needed to understand the discussion.", Vietnamese = "Cần giữ đầy đủ cuộc hội thoại, bao gồm những câu dài và ngữ cảnh để hiểu đúng nội dung đang thảo luận." });
+                    }
+                    if (meeting != null) {
+                        var meetingView = Descendants(window).OfType<MeetingView>().First();
+                        var snapshot = meeting.Captions.Select(c => (c.Id, c.Original, c.Vietnamese)).ToArray();
+                        foreach (var mode in meeting.DisplayModes) {
+                            meeting.SelectedDisplayMode = mode; Pump();
+                            ValidateControlLayout(meetingView, "Meeting display " + mode);
+                            var visibleText = Descendants(meetingView).OfType<TextBlock>().Where(t => t.IsVisible).Select(t => t.Text).ToArray();
+                            var hasOriginal = visibleText.Contains(snapshot[0].Original);
+                            var hasTranslation = visibleText.Contains(snapshot[0].Vietnamese);
+                            if (hasOriginal != (mode != "Bản dịch") || hasTranslation != (mode != "Tiếng gốc")) throw new Exception("Meeting display mode did not update existing captions: " + mode);
+                            if (!snapshot.SequenceEqual(meeting.Captions.Select(c => (c.Id, c.Original, c.Vietnamese)))) throw new Exception("Display mode modified stored captions");
+                            if (width == 1280) Capture(window, output, "meeting-display-" + meeting.DisplayModeKey + ".png");
+                        }
+                        meeting.SelectedDisplayMode = "Song ngữ"; Pump();
+                        var settings = (Button)meetingView.FindName("TranslationSettingsButton");
+                        settings.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        var translationPopup = (System.Windows.Controls.Primitives.Popup)meetingView.FindName("TranslationSettingsPopup");
+                        if (!translationPopup.IsOpen) throw new Exception("Meeting translation settings did not open");
+                        ValidateControlLayout((FrameworkElement)translationPopup.Child, "Meeting translation settings");
+                        if (width == 1280) CaptureElement((FrameworkElement)translationPopup.Child, output, "meeting-translation-settings.png");
+                        translationPopup.IsOpen = false;
                     }
                     var conversation = Descendants(window).OfType<ConversationView>().FirstOrDefault()?.DataContext as ConversationViewModel;
                     if (conversation != null && conversation.Messages.Count == 0) {
@@ -307,7 +330,7 @@ internal static class Program
     private static void CheckSubtitleHud(string output)
     {
         var prefs = TransTools.Services.Experience.SubtitlePreferences.Shared;
-        prefs.Light = false; prefs.Side = false; prefs.ShowMascot = false; prefs.ShowContext = true; prefs.ShowNext = true; prefs.ShowOriginal = true;
+        prefs.DisplayMode = "bilingual"; prefs.Light = false; prefs.Side = false; prefs.ShowMascot = false; prefs.ShowContext = true; prefs.ShowNext = true; prefs.ShowOriginal = true;
         var hud = new FloatingSubtitleWindow(); hud.Show(); hud.SetMeetingState(true); Pump();
         var paused = false; var started = false; hud.StopRequested += () => paused = true; hud.StartRequested += () => started = true;
         ((Button)hud.FindName("StopButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -318,6 +341,15 @@ internal static class Program
         for (var i = 0; i < 33; i++) hud.UpdateCaption(new Caption { Start = i, Original = "Original sentence " + i, Vietnamese = "Câu hoàn chỉnh cần được giữ lại để người dùng có thể đọc đủ nội dung. " + i });
         hud.UpdateIncoming(new Caption { Start = 34, Original = "A new sentence is arriving and should not replace the completed translation." });
         Pump(); ValidateControlLayout(hud, "HUD live"); Capture(hud, output, "subtitles.png");
+        foreach (var mode in new[] { "original", "translation", "bilingual" }) {
+            prefs.DisplayMode = mode; prefs.Save(); Pump();
+            var shown = ((TextBlock)hud.FindName("TranslatedText")).Text;
+            if (mode == "original" ? shown != "Original sentence 32" : !shown.EndsWith("32")) throw new Exception("HUD display mode lost the latest caption");
+            var sourceVisible = ((TextBlock)hud.FindName("OriginalText")).Visibility == Visibility.Visible;
+            if (sourceVisible != (mode == "bilingual")) throw new Exception("HUD source visibility differs from selected mode");
+            if (hud.HistoryCount != 30) throw new Exception("HUD display mode modified history");
+            Capture(hud, output, "subtitles-mode-" + mode + ".png");
+        }
         var last = ((TextBlock)hud.FindName("TranslatedText")).Text; hud.UpdateSubtitle("", ""); Pump();
         if (hud.HistoryCount != 30 || ((TextBlock)hud.FindName("TranslatedText")).Text != last) throw new Exception("HUD lost a completed caption or retained unbounded history");
         var original = (MenuItem)hud.FindName("ShowOriginal"); original.IsChecked = false; original.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));

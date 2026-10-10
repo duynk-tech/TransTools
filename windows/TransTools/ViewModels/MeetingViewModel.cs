@@ -56,6 +56,26 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _sourceLanguage = "en";
     [ObservableProperty] private string _targetLanguage = "vi";
     [ObservableProperty] private string _translationMode = "Google";
+    public string[] DisplayModes { get; } = ["Song ngữ", "Tiếng gốc", "Bản dịch"];
+    public string DisplayModeKey => TransTools.Services.Experience.SubtitlePreferences.Shared.DisplayMode;
+    public string SelectedDisplayMode
+    {
+        get => DisplayModeKey switch { "original" => "Tiếng gốc", "translation" => "Bản dịch", _ => "Song ngữ" };
+        set
+        {
+            var key = value switch { "Tiếng gốc" => "original", "Bản dịch" => "translation", _ => "bilingual" };
+            var preferences = TransTools.Services.Experience.SubtitlePreferences.Shared;
+            if (preferences.DisplayMode == key) return;
+            preferences.DisplayMode = key;
+            NotifyDisplayMode();
+            try { preferences.Save(); } catch { Status = "Chưa lưu được cách hiển thị phụ đề."; }
+        }
+    }
+    private void NotifyDisplayMode()
+    {
+        OnPropertyChanged(nameof(SelectedDisplayMode)); OnPropertyChanged(nameof(DisplayModeKey));
+    }
+    private void DisplayPreferencesChanged() => Ui(NotifyDisplayMode);
     public string[] CaptureSources { get; } = ["Âm thanh hệ thống", "Microphone"];
     [ObservableProperty] private string _captureSource = "Âm thanh hệ thống";
     partial void OnCaptureSourceChanged(string value) { CaptureSystemAudio = value == "Âm thanh hệ thống"; CaptureMicrophone = !CaptureSystemAudio; }
@@ -75,6 +95,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     public MeetingViewModel()
     {
         Captions.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(CanExportMeeting)); ExportMeetingCommand.NotifyCanExecuteChanged(); };
+        TransTools.Services.Experience.SubtitlePreferences.Shared.Changed += DisplayPreferencesChanged;
         _audio.OnAudioLevelChanged += level => Ui(() => AudioLevel = level);
         _audio.OnAudio16kHzMonoChunk += AcceptAudio;
         _stt.OnSegmentTranscribed += (text, start, end) => _segments.Add((text, start, end));
@@ -247,6 +268,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         }
     }
     public void Dispose() {
+        TransTools.Services.Experience.SubtitlePreferences.Shared.Changed -= DisplayPreferencesChanged;
         _prepareCancellation?.Cancel(); _cts?.Cancel(); _audio.Dispose();
         var pending = _processing ?? Task.CompletedTask;
         _ = pending.ContinueWith(_ => { _stt.Dispose(); _cts?.Dispose(); _buffer.Dispose(); }, TaskScheduler.Default);

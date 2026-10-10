@@ -6,6 +6,7 @@ public sealed class SubtitlePreferences
     private static string PathName => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TransTools", "subtitle-appearance.json");
     public static SubtitlePreferences Shared { get; } = Load();
     public static string[] Domains { get; } = ["Thông dụng", "Công nghệ thông tin", "Y tế & Sinh học", "Kinh tế & Tài chính", "Du lịch & Khách sạn", "Pháp luật"];
+    public string DisplayMode { get; set; } = "bilingual";
     public string Domain { get; set; } = "Thông dụng";
     public event Action? Changed;
     public bool Light { get; set; }
@@ -21,6 +22,7 @@ public sealed class SubtitlePreferences
     {
         try {
             var value = File.Exists(PathName) ? JsonSerializer.Deserialize<SubtitlePreferences>(File.ReadAllText(PathName)) ?? new SubtitlePreferences() : new SubtitlePreferences();
+            if (value.DisplayMode is not ("bilingual" or "original" or "translation")) value.DisplayMode = "bilingual";
             if (!Domains.Contains(value.Domain)) value.Domain = "Thông dụng";
             value.FontSize = Math.Clamp(value.FontSize, 15, 24);
             if (value.Pacing is not ("contextual" or "balanced" or "fast")) value.Pacing = "balanced";
