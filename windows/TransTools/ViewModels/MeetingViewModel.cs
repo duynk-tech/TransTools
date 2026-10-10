@@ -15,6 +15,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
 {
     private readonly WasapiAudioCaptureService _audio = new();
     private readonly WhisperSttService _stt = new();
+    private readonly string? _sessionDirectory;
     private readonly GoogleTranslationService _google = new();
     private readonly SecureCredentialStore _credentials = new();
     private readonly object _lock = new();
@@ -40,7 +41,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     public bool CanConfigureMeeting => !IsBusy;
     public bool CanToggleRecording => !IsStopping;
     partial void OnIsPreparingChanged(bool value) { NotifyMeetingActions(); OnPropertyChanged(nameof(IsBusy)); OnPropertyChanged(nameof(CanConfigureMeeting)); }
-    partial void OnIsRecordingChanged(bool value) { OnPropertyChanged(nameof(IsBusy)); OnPropertyChanged(nameof(CanConfigureMeeting)); }
+    partial void OnIsRecordingChanged(bool value) { NotifyMeetingActions(); OnPropertyChanged(nameof(IsBusy)); OnPropertyChanged(nameof(CanConfigureMeeting)); }
     partial void OnIsStoppingChanged(bool value) { NotifyMeetingActions(); OnPropertyChanged(nameof(IsBusy)); OnPropertyChanged(nameof(CanConfigureMeeting)); OnPropertyChanged(nameof(CanToggleRecording)); }
     [RelayCommand] public void CancelPreparation() => _prepareCancellation?.Cancel();
     private volatile bool _flushPresentation;
@@ -134,9 +135,12 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     }
     private void NotifyDisplayMode()
     {
-        OnPropertyChanged(nameof(SelectedDisplayMode)); OnPropertyChanged(nameof(DisplayModeKey));
+        OnPropertyChanged(nameof(SelectedDisplayMode)); OnPropertyChanged(nameof(DisplayModeKey)); OnPropertyChanged(nameof(FooterSummary));
     }
     private void DisplayPreferencesChanged() => Ui(NotifyDisplayMode);
+    public string FooterSummary => $"đoạn phụ đề • {SourceLanguage.ToUpperInvariant()} → {TargetLanguage.ToUpperInvariant()} • {SelectedDisplayMode}";
+    partial void OnSourceLanguageChanged(string value) => OnPropertyChanged(nameof(FooterSummary));
+    partial void OnTargetLanguageChanged(string value) => OnPropertyChanged(nameof(FooterSummary));
     public string[] CaptureSources { get; } = ["Âm thanh hệ thống", "Microphone"];
     [ObservableProperty] private string _captureSource = "Âm thanh hệ thống";
     partial void OnCaptureSourceChanged(string value) { CaptureSystemAudio = value == "Âm thanh hệ thống"; CaptureMicrophone = !CaptureSystemAudio; }
@@ -153,9 +157,10 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     public event Action<Caption>? OnCaptionPresented;
     public event Action<Caption>? OnCaptionIncoming;
     public event Action<MeetingSession>? OnSessionSaved;
-    public MeetingViewModel(Func<PlaybackDevice[]>? playbackDeviceProvider = null)
+    public MeetingViewModel(Func<PlaybackDevice[]>? playbackDeviceProvider = null, string? sessionDirectory = null)
     {
         _playbackDeviceProvider = playbackDeviceProvider ?? TransTools.Services.Audio.PlaybackDevices.List;
+        _sessionDirectory = sessionDirectory;
         Captions.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(CanExportMeeting)); ExportMeetingCommand.NotifyCanExecuteChanged(); NotifyMeetingActions(); };
         TransTools.Services.Experience.SubtitlePreferences.Shared.Changed += DisplayPreferencesChanged;
         _audio.OnAudioLevelChanged += level => Ui(() => AudioLevel = level);
@@ -231,13 +236,14 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         finally { if (_processing?.IsCompleted == true) _stt.Dispose(); IsStopping = false; AudioLevel = 0; }
     }
     public bool CanManageMeeting => Captions.Count > 0 && !IsStopping && !IsPreparing;
+    public bool CanClearMeeting => Captions.Count > 0 && !IsBusy;
     private void NotifyMeetingActions()
     {
-        OnPropertyChanged(nameof(CanManageMeeting)); SaveSessionCommand.NotifyCanExecuteChanged(); ClearCaptionsCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CanManageMeeting)); OnPropertyChanged(nameof(CanClearMeeting)); OnPropertyChanged(nameof(CanExportMeeting)); SaveSessionCommand.NotifyCanExecuteChanged(); ClearCaptionsCommand.NotifyCanExecuteChanged(); ExportMeetingCommand.NotifyCanExecuteChanged();
     }
-    [RelayCommand(CanExecute = nameof(CanManageMeeting))] public async Task ClearCaptionsAsync()
+    [RelayCommand(CanExecute = nameof(CanClearMeeting))] public async Task ClearCaptionsAsync()
     {
-        if (!CanManageMeeting) return;
+        if (!CanClearMeeting) return;
         var confirm = new TransTools.Views.ConfirmDeleteWindow("Nội dung cuộc họp hiện tại", currentMeeting: true) { Owner = System.Windows.Application.Current.MainWindow };
         if (confirm.ShowDialog() != true) return;
         var wasRecording = IsRecording;
@@ -250,8 +256,9 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(CanManageMeeting))] public async Task SaveSessionAsync()
     {
         if (IsStopping || IsPreparing) { Status = "Chờ hoàn tất âm thanh cuối trước khi lưu."; return; }
-        await StopRecordingAsync(); if (Captions.Count == 0) return;
-        await PersistCurrentSessionAsync(); Status = "Đã lưu Sổ tay";
+        if (Captions.Count == 0) return;
+        try { await PersistCurrentSessionAsync(); Status = IsRecording ? "Đang dịch..." : "Đã lưu Sổ tay"; }
+        catch (Exception ex) { Status = "Chưa lưu được Sổ tay: " + ex.Message; }
     }
     public MeetingSession CreateExportSnapshot() => new() {
         Title = "Cuộc họp · " + (_started == default ? DateTime.Now : _started).ToString("dd/MM HH:mm"),
@@ -260,10 +267,10 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         DurationSeconds = Captions.Count == 0 ? 0 : Captions.Max(c => c.End),
         Captions = Captions.Select(c => new Caption { Id = c.Id, Start = c.Start, End = c.End, Original = c.Original, Vietnamese = c.Vietnamese }).ToList()
     };
-    public bool CanExportMeeting => Captions.Count > 0;
+    public bool CanExportMeeting => Captions.Count > 0 && !IsBusy;
     [RelayCommand(CanExecute = nameof(CanExportMeeting))] private void ExportMeeting(string? format)
     {
-        if (Captions.Count == 0) { Status = "Chưa có nội dung để xuất."; return; }
+        if (!CanExportMeeting) { Status = IsBusy ? "Dừng cuộc họp trước khi xuất bản ghi." : "Chưa có nội dung để xuất."; return; }
         var session = CreateExportSnapshot();
         var extension = format == "Word" ? "docx" : format == "SRT" ? "srt" : "txt";
         var dialog = new Microsoft.Win32.SaveFileDialog { FileName = "Cuộc họp " + session.CreatedAt.ToString("yyyy-MM-dd HH-mm") + "." + extension, Filter = $"{format} (*.{extension})|*.{extension}" };
@@ -282,8 +289,8 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     private async Task PersistCurrentSessionAsync()
     {
         if (Captions.Count == 0) return;
-        var snapshot = Captions.ToList();
-        var store = new SessionStore();
+        var snapshot = CreateExportSnapshot().Captions;
+        var store = new SessionStore(_sessionDirectory);
         var session = await store.UpdateSessionAsync(_sessionId,
             () => new MeetingSession { Id = _sessionId, Title = "Cuộc họp · " + _started.ToString("dd/MM HH:mm"), CreatedAt = _started },
             stored => {

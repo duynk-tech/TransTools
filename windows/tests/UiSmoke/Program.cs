@@ -104,6 +104,21 @@ internal static class Program
                 disposedReply.SetResult("An obsolete opening reply"); Await(pendingReply);
                 if (disposedChat.IsConversationActive || disposedChat.Messages.Count != 0 || disposedListenCount != 0 || disposedChat.IsThinking) throw new Exception("Late reply reactivated a disposed conversation");
             }
+            var meetingSaveFolder = Path.Combine(Path.GetTempPath(), "trans-tools-meeting-save-" + Guid.NewGuid().ToString("N"));
+            try {
+                using var liveSave = new MeetingViewModel(sessionDirectory: meetingSaveFolder);
+                liveSave.Captions.Add(new Caption { Original = "Preserve this spoken sentence", Vietnamese = "Giữ lại câu đã nói", Start = 0, End = 4 });
+                liveSave.IsRecording = true;
+                if (!liveSave.SaveSessionCommand.CanExecute(null) || liveSave.ExportMeetingCommand.CanExecute("TXT") || liveSave.ClearCaptionsCommand.CanExecute(null)) throw new Exception("Live meeting save/export/delete availability differs from Mac");
+                Await(liveSave.SaveSessionCommand.ExecuteAsync(null));
+                if (!liveSave.IsRecording || liveSave.Captions.Count != 1) throw new Exception("Saving a live meeting stopped capture or removed captions");
+                var savedLive = new SessionStore(meetingSaveFolder).LoadSessionsAsync(); Await(savedLive);
+                if (savedLive.Result.Count != 1 || savedLive.Result[0].Captions[0].Original != "Preserve this spoken sentence") throw new Exception("Live meeting save did not persist the current transcript");
+                liveSave.IsRecording = false;
+                if (!liveSave.ExportMeetingCommand.CanExecute("TXT") || !liveSave.ClearCaptionsCommand.CanExecute(null)) throw new Exception("Stopped meeting export/delete did not re-enable");
+                liveSave.Captions.Clear();
+                if (liveSave.SaveSessionCommand.CanExecute(null) || liveSave.ExportMeetingCommand.CanExecute("TXT") || liveSave.ClearCaptionsCommand.CanExecute(null)) throw new Exception("Empty meeting exposes data actions");
+            } finally { if (Directory.Exists(meetingSaveFolder)) Directory.Delete(meetingSaveFolder, true); }
             CheckConversationHelp();
             var background = (Button)window.FindName("BackgroundButton");
             foreach (var mode in new[] { "morning", "noon", "afternoon", "night", "mint" }) {
@@ -188,6 +203,11 @@ internal static class Program
                             if (!snapshot.SequenceEqual(meeting.Captions.Select(c => (c.Id, c.Original, c.Vietnamese)))) throw new Exception("Display mode modified stored captions");
                             if (width == 1280) Capture(window, output, "meeting-display-" + meeting.DisplayModeKey + ".png");
                         }
+                        meeting.IsRecording = true; Pump();
+                        if (((Button)meetingView.FindName("ClearMeetingButton")).IsVisible || ((Button)meetingView.FindName("ExportWordButton")).IsEnabled || !((Button)meetingView.FindName("SaveMeetingButton")).IsEnabled) throw new Exception("Live meeting footer does not match Mac action states");
+                        Capture(window, output, $"{width}-meeting-active-footer.png");
+                        meeting.IsRecording = false; Pump();
+                        if (!((Button)meetingView.FindName("ClearMeetingButton")).IsVisible || !((Button)meetingView.FindName("ExportWordButton")).IsEnabled) throw new Exception("Stopped meeting footer did not restore export/delete");
                         meeting.SelectedDisplayMode = "Song ngữ"; Pump();
                         var settings = (Button)meetingView.FindName("TranslationSettingsButton");
                         settings.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
