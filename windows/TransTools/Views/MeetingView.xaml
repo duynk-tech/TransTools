@@ -12,11 +12,11 @@
     <ComboBox ItemsSource="{Binding TranslationModes}" SelectedItem="{Binding TranslationMode}" Width="120"/>
    </StackPanel></ScrollViewer></Grid>
   </Border>
-  <Border Grid.Row="1" Background="#F9FCFA" BorderBrush="#D8E5E1" BorderThickness="1" CornerRadius="10" Padding="12,8" Margin="0,12,0,12"><TextBlock Text="Ctrl + Alt + D · Dịch văn bản đã chọn       Ctrl + Alt + T · Mở dịch nhanh" Foreground="#65756F" TextWrapping="Wrap"/></Border>
+  <Border Grid.Row="1" Background="#F9FCFA" BorderBrush="#D8E5E1" BorderThickness="1" CornerRadius="10" Padding="12,8" Margin="0,12,0,12"><TextBlock Foreground="#65756F" TextWrapping="Wrap"><Run Text="PHÍM NÓNG TIỆN ÍCH" FontWeight="SemiBold" Foreground="#287568"/><Run Text="    Ctrl + Alt + D" FontWeight="SemiBold"/><Run Text="  Dịch văn bản đã chọn     "/><Run Text="Ctrl + Alt + T" FontWeight="SemiBold"/><Run Text="  Mở dịch nhanh"/></TextBlock></Border>
   <Border Grid.Row="2" CornerRadius="16" BorderBrush="#C2DDD5" BorderThickness="1" ClipToBounds="True"><Grid>
    <Border Background="#40FFFFFF"/>
    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"><StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding Captions.Count}" Value="0"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></StackPanel.Style>
-    <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="64" Foreground="#287568" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+    <Viewbox Width="68" Height="72" Margin="0,0,0,16"><Canvas Width="68" Height="72"><Path Stroke="#287568" StrokeThickness="5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M4,30 L4,42 M14,18 L14,54 M24,6 L24,66 M34,14 L34,58 M44,23 L44,46"/><Path Stroke="#287568" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Fill="Transparent" Data="M52,35 Q52,30 57,30 Q62,30 62,35 L62,48 Q62,53 57,53 Q52,53 52,48 Z M48,46 L48,49 Q48,58 57,58 Q66,58 66,49 L66,46 M57,58 L57,66 M51,66 L63,66"/></Canvas></Viewbox>
     <TextBlock Text="Sẵn sàng nghe &amp; phiên dịch" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,12,0,6"/>
     <TextBlock Text="Chọn nguồn âm để bắt đầu" FontSize="14" Foreground="#65756F" HorizontalAlignment="Center"/>
    </StackPanel>

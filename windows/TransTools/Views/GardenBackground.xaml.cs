@@ -6,7 +6,34 @@ public partial class GardenBackground : UserControl
     public GardenBackground()
     {
         InitializeComponent();
+        AddLeafHighlights();
         SetPeriod("auto");
+    }
+    // Deterministic vector details are created once, with frozen brushes and no timer.
+    private void AddLeafHighlights()
+    {
+        var random = new Random(47);
+        var leafBrush = new SolidColorBrush(Color.FromRgb(170, 207, 167));
+        leafBrush.Freeze();
+        foreach (var offset in new[] { new System.Windows.Point(0, 0), new System.Windows.Point(985, 43) })
+        {
+            for (var i = 0; i < 38; i++)
+            {
+                var angle = random.NextDouble() * Math.PI * 2;
+                var radius = Math.Sqrt(random.NextDouble());
+                var x = 113 + Math.Cos(angle) * radius * 57;
+                var y = 445 + Math.Sin(angle) * radius * 60;
+                var leaf = new System.Windows.Shapes.Ellipse
+                {
+                    Width = 6 + random.NextDouble() * 5, Height = 4 + random.NextDouble() * 3,
+                    Fill = leafBrush, Opacity = 0.22 + random.NextDouble() * 0.18,
+                    RenderTransform = new RotateTransform(-25), IsHitTestVisible = false
+                };
+                Canvas.SetLeft(leaf, x + offset.X);
+                Canvas.SetTop(leaf, y + offset.Y);
+                LandscapeCanvas.Children.Add(leaf);
+            }
+        }
     }
     public void SetPeriod(string mode)
     {
