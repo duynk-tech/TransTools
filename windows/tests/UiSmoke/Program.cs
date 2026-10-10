@@ -399,13 +399,17 @@ internal static class Program
     private static void Capture(Window window, string output, string name)
     {
         window.UpdateLayout(); var root = (FrameworkElement)window.Content;
-        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(root.ActualWidth), (int)Math.Ceiling(root.ActualHeight), 96, 96, PixelFormats.Pbgra32);
-        // VisualBrush removes the content's layout offset; include the Window background.
+        var margin = root.Margin;
+        var width = root.ActualWidth + margin.Left + margin.Right;
+        var height = root.ActualHeight + margin.Top + margin.Bottom;
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(width), (int)Math.Ceiling(height), 96, 96, PixelFormats.Pbgra32);
+        // Capture the client area including the content's outer margin. An explicit
+        // viewbox prevents VisualBrush from stretching descendant bounds into it.
         var drawing = new DrawingVisual();
         using (var context = drawing.RenderOpen()) {
-            var bounds = new Rect(0, 0, root.ActualWidth, root.ActualHeight);
-            context.DrawRectangle(window.Background, null, bounds);
-            context.DrawRectangle(new VisualBrush(root) { Stretch = Stretch.Fill }, null, bounds);
+            context.DrawRectangle(window.Background, null, new Rect(0, 0, width, height));
+            var brush = new VisualBrush(root) { Stretch = Stretch.Fill, ViewboxUnits = BrushMappingMode.Absolute, Viewbox = new Rect(0, 0, root.ActualWidth, root.ActualHeight) };
+            context.DrawRectangle(brush, null, new Rect(margin.Left, margin.Top, root.ActualWidth, root.ActualHeight));
         }
         bitmap.Render(drawing);
         var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(bitmap));
