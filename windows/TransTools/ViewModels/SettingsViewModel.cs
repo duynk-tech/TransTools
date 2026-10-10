@@ -173,6 +173,16 @@ public partial class SettingsViewModel : ObservableObject
         catch (Exception ex) { LocalVoiceStatus = ex.Message; }
         finally { IsInstallingVoice = false; _installation?.Dispose(); _installation = null; CalculateCacheSize(); }
     }
+    public string VieNeuInstallationStatus => VoiceService.Shared.IsVieNeuInstalled ? "Đã cài · dùng offline" : "Chưa tải mô hình";
+    [RelayCommand] private async Task RemoveVieNeuAsync()
+    {
+        if (!CanManageModels) return;
+        if (System.Windows.MessageBox.Show("Chuyển VieNeu v3 Turbo vào Thùng rác? Bạn có thể tải lại để dùng tiếp.", "Gỡ mô hình", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question) != System.Windows.MessageBoxResult.Yes) return;
+        IsInstallingVoice = true;
+        try { await VoiceService.Shared.RemoveModelAsync(vieNeu: true); LocalVoiceStatus = "Đã gỡ VieNeu"; }
+        catch (Exception ex) { LocalVoiceStatus = "Không gỡ được: " + ex.Message; }
+        finally { IsInstallingVoice = false; CalculateCacheSize(); }
+    }
     public bool HasVieNeuProcessor => VoiceService.HasVieNeuProcessor;
     [RelayCommand] private async Task InstallVieNeuAsync()
     {
@@ -331,5 +341,5 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
-    private async void CalculateCacheSize() { try { await RefreshStorageAsync(); } catch (Exception ex) { Status = ex.Message; } }
+    private async void CalculateCacheSize() { OnPropertyChanged(nameof(VieNeuInstallationStatus)); try { await RefreshStorageAsync(); } catch (Exception ex) { Status = ex.Message; } }
 }

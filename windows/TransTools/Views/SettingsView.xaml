@@ -106,7 +106,7 @@
               <StackPanel>
                 <TextBlock Text="VieNeu v3 Turbo · Tiếng Việt" FontSize="18" Foreground="#243D35" />
                 <TextBlock Text="{Binding VieNeuSummary}" Foreground="#65756F" TextWrapping="Wrap" Margin="0,8" />
-                <Button Content="Tải VieNeu" IsEnabled="{Binding CanInstallVieNeu}" Command="{Binding InstallVieNeuCommand}" HorizontalAlignment="Left" />
+                <TextBlock Text="{Binding VieNeuInstallationStatus}" Foreground="#287568" Margin="0,0,0,12"/><WrapPanel><Button Content="Tải VieNeu" IsEnabled="{Binding CanInstallVieNeu}" Command="{Binding InstallVieNeuCommand}" Margin="0,0,8,0"/><Button Content="Gỡ mô hình" IsEnabled="{Binding CanManageModels}" Command="{Binding RemoveVieNeuCommand}" Style="{StaticResource DestructiveButton}"/></WrapPanel>
               </StackPanel>
             </Border>
           </StackPanel>
