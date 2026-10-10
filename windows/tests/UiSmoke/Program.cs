@@ -233,6 +233,16 @@ internal static class Program
                             }
                             if (sections.SelectedItem is TabItem { Header: "Mô hình AI" }) {
                                 var modelSettings = (SettingsViewModel)Descendants(window).OfType<SettingsView>().First().DataContext;
+                                modelSettings.ModelFilter = "tts";
+                                if (!modelSettings.ShowSupertonicCard || !modelSettings.ShowVieNeuCard || modelSettings.ModelFilterEmpty) throw new Exception("TTS filter hides supported models");
+                                foreach (var filter in new[] { "stt", "translation", "languageModel" }) {
+                                    modelSettings.ModelFilter = filter;
+                                    if (!modelSettings.ModelFilterEmpty || modelSettings.ShowSupertonicCard || modelSettings.ShowVieNeuCard) throw new Exception("Unsupported category displays TTS models");
+                                }
+                                modelSettings.ModelFilter = "installed";
+                                if (modelSettings.ShowSupertonicCard != modelSettings.SupertonicInstalled || modelSettings.ShowVieNeuCard != modelSettings.VieNeuInstalled) throw new Exception("Installed model filter differs from inventory");
+                                Pump(); Capture(window, output, $"{width}-models-installed.png");
+                                modelSettings.ModelFilter = "recommended";
                                 modelSettings.DownloadingModel = "supertonic";
                                 if (!modelSettings.DownloadingSupertonic || modelSettings.DownloadingVieNeu || modelSettings.ShowSupertonicInstall) throw new Exception("Supertonic download exposes wrong actions");
                                 modelSettings.DownloadingModel = "vieneu";

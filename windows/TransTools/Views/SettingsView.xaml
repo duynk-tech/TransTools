@@ -89,7 +89,8 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
             <DockPanel Margin="0,8,0,16"><Button DockPanel.Dock="Right" Content="Làm mới dung lượng" Command="{Binding RefreshStorageCommand}" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0"/><Button DockPanel.Dock="Right" Content="{Binding CatalogUpdateLabel}" IsEnabled="{Binding CanManageModels}" Command="{Binding UpdateCatalogCommand}" Style="{StaticResource SecondaryButton}"/><TextBlock Text="Mô hình AI" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel><TextBlock Text="{Binding CatalogStatus}" Foreground="#65756F" Margin="0,0,0,16" TextWrapping="Wrap"/>
-            <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
+<UniformGrid Columns="6" Margin="0,0,0,16"><RadioButton Content="Đề xuất" GroupName="ModelFilter" Style="{StaticResource SegmentedOption}" Margin="0,0,4,0" IsChecked="{Binding ModelFilter,Converter={StaticResource OptionSelection},ConverterParameter=recommended}"/><RadioButton Content="TTS" GroupName="ModelFilter" Style="{StaticResource SegmentedOption}" Margin="0,0,4,0" IsChecked="{Binding ModelFilter,Converter={StaticResource OptionSelection},ConverterParameter=tts}"/><RadioButton Content="STT" GroupName="ModelFilter" Style="{StaticResource SegmentedOption}" Margin="0,0,4,0" IsChecked="{Binding ModelFilter,Converter={StaticResource OptionSelection},ConverterParameter=stt}"/><RadioButton Content="Dịch" GroupName="ModelFilter" Style="{StaticResource SegmentedOption}" Margin="0,0,4,0" IsChecked="{Binding ModelFilter,Converter={StaticResource OptionSelection},ConverterParameter=translation}"/><RadioButton Content="Ngôn ngữ" GroupName="ModelFilter" Style="{StaticResource SegmentedOption}" Margin="0,0,4,0" IsChecked="{Binding ModelFilter,Converter={StaticResource OptionSelection},ConverterParameter=languageModel}"/><RadioButton Content="Đã cài" GroupName="ModelFilter" Style="{StaticResource SegmentedOption}" Margin="0,0,4,0" IsChecked="{Binding ModelFilter,Converter={StaticResource OptionSelection},ConverterParameter=installed}"/></UniformGrid><TextBlock Text="Chưa có mô hình đã tích hợp trong nhóm này." Visibility="{Binding ModelFilterEmpty,Converter={StaticResource BoolVisibility}}" Foreground="#65756F" Margin="0,0,0,18"/>
+            <Border Visibility="{Binding ShowSupertonicCard,Converter={StaticResource BoolVisibility}}" Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
               <StackPanel>
                 <TextBlock Text="Giọng tự nhiên · Supertonic 3" FontSize="18" Foreground="#243D35" />
                 <TextBlock Text="{Binding SupertonicSummary}" Foreground="#65756F" Margin="0,8" />
@@ -102,7 +103,7 @@
                 </WrapPanel>
               </StackPanel>
             </Border>
-            <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
+            <Border Visibility="{Binding ShowVieNeuCard,Converter={StaticResource BoolVisibility}}" Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
               <StackPanel>
                 <TextBlock Text="VieNeu v3 Turbo · Tiếng Việt" FontSize="18" Foreground="#243D35" />
                 <TextBlock Text="{Binding VieNeuSummary}" Foreground="#65756F" TextWrapping="Wrap" Margin="0,8" />

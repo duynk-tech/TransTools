@@ -13,6 +13,17 @@ namespace TransTools.ViewModels;
 
 public partial class SettingsViewModel : ObservableObject
 {
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSupertonicCard))]
+    [NotifyPropertyChangedFor(nameof(ShowVieNeuCard))]
+    [NotifyPropertyChangedFor(nameof(ModelFilterEmpty))]
+    private string _modelFilter = "recommended";
+    private bool _supertonicRecommended = true;
+    private bool _vieNeuRecommended = true;
+    public bool ShowSupertonicCard => ModelFilter == "tts" || (ModelFilter == "recommended" && _supertonicRecommended) || (ModelFilter == "installed" && SupertonicInstalled);
+    public bool ShowVieNeuCard => ModelFilter == "tts" || (ModelFilter == "recommended" && _vieNeuRecommended) || (ModelFilter == "installed" && VieNeuInstalled);
+    public bool ModelFilterEmpty => !ShowSupertonicCard && !ShowVieNeuCard;
+    private void RefreshModelFilter() { OnPropertyChanged(nameof(ShowSupertonicCard)); OnPropertyChanged(nameof(ShowVieNeuCard)); OnPropertyChanged(nameof(ModelFilterEmpty)); }
     private readonly TransTools.Services.Models.RemoteModelCatalog _remoteCatalog = new();
     [ObservableProperty] private string _catalogStatus = "Danh mục có sẵn trong ứng dụng";
     public bool CanManageModels => !UpdatingCatalog && !IsInstallingVoice && !IsUpdating && !_meetingBusy();
@@ -36,6 +47,9 @@ public partial class SettingsViewModel : ObservableObject
     }
     private void ApplyCatalog(TransTools.Services.Models.CatalogFeed feed)
     {
+        _supertonicRecommended = feed.Models.FirstOrDefault(e => e.Id == "supertonic-3")?.Recommended ?? _supertonicRecommended;
+        _vieNeuRecommended = feed.Models.FirstOrDefault(e => e.Id == "vieneu-v3-turbo")?.Recommended ?? _vieNeuRecommended;
+        RefreshModelFilter();
         SupertonicSummary = feed.Models.FirstOrDefault(e => e.Id == "supertonic-3")?.Summary ?? SupertonicSummary;
         VieNeuSummary = feed.Models.FirstOrDefault(e => e.Id == "vieneu-v3-turbo")?.Summary ?? VieNeuSummary;
     }
@@ -144,6 +158,7 @@ public partial class SettingsViewModel : ObservableObject
             StorageGroups.Clear(); foreach (var entry in entries) StorageGroups.Add(entry);
             OnPropertyChanged(nameof(SupertonicStorageSize)); OnPropertyChanged(nameof(VieNeuStorageSize));
             foreach (var name in new[] { nameof(SupertonicInstalled), nameof(VieNeuInstalled), nameof(VieNeuInstallationStatus), nameof(ShowSupertonicInstall), nameof(ShowVieNeuInstall) }) OnPropertyChanged(name);
+            RefreshModelFilter();
             CacheSize = $"{entries.Sum(e => e.Bytes) / 1048576.0:F1} MB";
         } finally { IsScanningStorage = false; }
     }
