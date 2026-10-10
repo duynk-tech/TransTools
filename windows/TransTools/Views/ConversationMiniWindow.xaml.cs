@@ -26,7 +26,7 @@ public partial class ConversationMiniWindow : Window
         Closing += (_, e) => { if (!_exiting) { e.Cancel = true; Hide(); OpenMain(); } };
     }
     private void MessagesChanged(object? sender, NotifyCollectionChangedEventArgs e) { RefreshRecentMessages(); ScrollLatest(); }
-    private void PresentationChanged(object? sender, PropertyChangedEventArgs e) { if (e.PropertyName is nameof(ConversationViewModel.ShowMiniTranslation) or nameof(ConversationViewModel.TargetLanguage)) ScrollLatest(); }
+    private void PresentationChanged(object? sender, PropertyChangedEventArgs e) { if (e.PropertyName is nameof(ConversationViewModel.ShowMiniTranslation) or nameof(ConversationViewModel.TargetLanguage) or nameof(ConversationViewModel.UserInput) or nameof(ConversationViewModel.IsConversationActive)) ScrollLatest(); }
     private void ScrollLatest() => Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() => {
         if (!IsVisible || MessagesList.Items.Count == 0) return;
         MessagesList.ScrollIntoView(MessagesList.Items[^1]); MessagesList.UpdateLayout(); FindScroll(MessagesList)?.ScrollToEnd();
