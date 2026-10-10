@@ -74,6 +74,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     public event Action<MeetingSession>? OnSessionSaved;
     public MeetingViewModel()
     {
+        Captions.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(CanExportMeeting)); ExportMeetingCommand.NotifyCanExecuteChanged(); };
         _audio.OnAudioLevelChanged += level => Ui(() => AudioLevel = level);
         _audio.OnAudio16kHzMonoChunk += AcceptAudio;
         _stt.OnSegmentTranscribed += (text, start, end) => _segments.Add((text, start, end));
@@ -157,7 +158,8 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         DurationSeconds = Captions.Count == 0 ? 0 : Captions.Max(c => c.End),
         Captions = Captions.Select(c => new Caption { Id = c.Id, Start = c.Start, End = c.End, Original = c.Original, Vietnamese = c.Vietnamese }).ToList()
     };
-    [RelayCommand] private void ExportMeeting(string? format)
+    public bool CanExportMeeting => Captions.Count > 0;
+    [RelayCommand(CanExecute = nameof(CanExportMeeting))] private void ExportMeeting(string? format)
     {
         if (Captions.Count == 0) { Status = "Chưa có nội dung để xuất."; return; }
         var session = CreateExportSnapshot();
