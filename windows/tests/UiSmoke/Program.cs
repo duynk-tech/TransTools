@@ -423,7 +423,18 @@ internal static class Program
             // The cached conversation view may be hidden; create an isolated fixture instead.
             chatModel = new ConversationViewModel(() => false);
             chatModel.Messages.Add(new ChatMessageItem { Text = "A long reply should wrap and remain readable in the mini chat window. The user should be able to follow the conversation while the main window is closed.", Translation = "Câu trả lời dài cần xuống dòng và vẫn dễ đọc trong cửa sổ trò chuyện nhỏ." });
-            var mini = new ConversationMiniWindow(chatModel); mini.Show(); Pump(); ValidateControlLayout(mini, "Mini chat"); Capture(mini, output, "mini-chat.png"); mini.CloseForExit(); chatModel.Dispose();
+            var mini = new ConversationMiniWindow(chatModel); mini.Show();
+            for (var n = 0; n < 8; n++) chatModel.Messages.Add(new ChatMessageItem { IsUser = n % 2 == 0, Text = "A longer spoken reply should wrap without hiding its ending in the compact conversation window.", Translation = "Câu trả lời dài vẫn phải hiển thị đầy đủ trong cửa sổ trò chuyện nhỏ." });
+            foreach (var width in new[] { 360, 460 }) {
+                mini.Width = width; Pump(); mini.UpdateLayout(); ValidateControlLayout(mini, "Mini chat");
+                chatModel.ShowVietnameseTranslation = false; Pump();
+                if (Descendants(mini).OfType<TextBlock>().Any(t => t.IsVisible && t.Text == chatModel.Messages.Last().Translation)) throw new Exception("Mini chat ignored bilingual toggle");
+                chatModel.ShowVietnameseTranslation = true; Pump();
+                var scroll = Descendants((ListBox)mini.FindName("MessagesList")).OfType<ScrollViewer>().First();
+                if (scroll.ScrollableHeight - scroll.VerticalOffset > 1) throw new Exception("Mini chat missed final line after bilingual reflow");
+                Capture(mini, output, $"mini-chat-{width}.png");
+            }
+            mini.CloseForExit(); chatModel.Dispose();
             CheckSubtitleHud(output);
             File.WriteAllLines(Path.Combine(output, "bindings.txt"), errors.Lines);
             if (errors.Lines.Count != 0) throw new Exception("WPF binding errors detected; see bindings.txt.");
