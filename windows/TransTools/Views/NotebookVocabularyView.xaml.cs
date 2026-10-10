@@ -16,7 +16,7 @@ public partial class NotebookVocabularyView : UserControl
         DataContext = model;
         // Independent view: searching here cannot filter the learning/review collection.
         _words = new ListCollectionView(model.VisibleVocabulary);
-        _words.Filter = item => item is VocabularyItem word && (string.IsNullOrWhiteSpace(SearchBox.Text) ||
+        _words.Filter = item => item is VocabularyItem word && (AllWords.IsChecked == true || (MasteredWords.IsChecked == true ? word.MasteryScore >= 4 : word.MasteryScore < 4)) && (string.IsNullOrWhiteSpace(SearchBox.Text) ||
             word.Word.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase) ||
             word.Meaning.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase) ||
             word.ExampleSentence.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase));
@@ -24,6 +24,7 @@ public partial class NotebookVocabularyView : UserControl
         model.VisibleVocabulary.CollectionChanged += (_, _) => UpdateEmpty();
         UpdateEmpty();
     }
+    private void StateChanged(object sender, RoutedEventArgs e) { if (_words == null) return; _words.Refresh(); UpdateEmpty(); }
     private void SearchChanged(object sender, TextChangedEventArgs e) { if (_words == null) return; _words.Refresh(); UpdateEmpty(); }
     private void UpdateEmpty() => EmptyState.Visibility = _words.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
     private void ShowAdd_Click(object sender, RoutedEventArgs e) => AddWordPopup.IsOpen = true;

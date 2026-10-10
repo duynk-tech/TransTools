@@ -1,9 +1,10 @@
 <UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="TransTools.Views.NotebookView">
+  <UserControl.Resources><Style x:Key="NotebookTab" TargetType="RadioButton"><Setter Property="Cursor" Value="Hand"/><Setter Property="Foreground" Value="#73827C"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RadioButton"><Grid><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/><Border x:Name="Underline" Height="3" Background="Transparent" VerticalAlignment="Bottom" CornerRadius="1"/></Grid><ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter Property="Foreground" Value="#287568"/><Setter TargetName="Underline" Property="Background" Value="#287568"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter Property="Foreground" Value="#287568"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style></UserControl.Resources>
   <Grid Margin="-18" Background="#C7F5F8F7">
    <Grid.RowDefinitions><RowDefinition Height="58"/><RowDefinition Height="*"/></Grid.RowDefinitions>
    <Border Background="#EDFFFFFF" BorderBrush="#C2DDD5" BorderThickness="0,0,0,1"><UniformGrid Columns="2" Margin="18,6">
-    <RadioButton x:Name="RecordsTab" Content="Cuộc họp &amp; Hội thoại" GroupName="NotebookSections" Style="{StaticResource SegmentedOption}" IsChecked="True" Checked="Records_Checked" FontSize="15"/>
-    <RadioButton x:Name="WordsTab" Content="Từ vựng" GroupName="NotebookSections" Style="{StaticResource SegmentedOption}" Checked="Words_Checked" FontSize="15"/>
+    <RadioButton x:Name="RecordsTab" Content="Cuộc họp &amp; Hội thoại" GroupName="NotebookSections" Style="{StaticResource NotebookTab}" IsChecked="True" Checked="Records_Checked" FontSize="15"/>
+    <RadioButton x:Name="WordsTab" Content="Từ vựng" GroupName="NotebookSections" Style="{StaticResource NotebookTab}" Checked="Words_Checked" FontSize="15"/>
    </UniformGrid></Border>
    <Grid x:Name="RecordsPanel" Grid.Row="1">
     <Grid.ColumnDefinitions>
