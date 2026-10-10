@@ -71,6 +71,37 @@ internal static class Program
                 if (interrupt ? !speakingChat.IsConversationActive || listenCount != 1 : speakingChat.IsConversationActive || listenCount != 0) throw new Exception("Speech interruption/end restarted listening incorrectly");
                 speakingMini.CloseForExit();
             }
+            foreach (var action in new[] { "end", "cancel", "dispose" }) {
+                var finish = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var observedToken = CancellationToken.None; var generated = 0;
+                using var recognizing = new ConversationViewModel(recognize: (_, token) => { observedToken = token; return finish.Task; },
+                    generateReply: (_, _, _) => { generated++; return Task.FromResult("This must not be generated"); });
+                recognizing.Messages.Add(new ChatMessageItem { Text = "Keep the earlier turn" });
+                recognizing.IsConversationActive = true; recognizing.IsListening = true;
+                var pendingRecognition = recognizing.ToggleMicrophoneCommand.ExecuteAsync(null);
+                if (!recognizing.IsThinking) throw new Exception("Recognition fixture did not enter processing");
+                if (action == "end") recognizing.EndConversationCommand.Execute(null);
+                else if (action == "cancel") recognizing.CancelRecognitionCommand.Execute(null);
+                else recognizing.Dispose();
+                if (!observedToken.IsCancellationRequested) throw new Exception("Recognition cancellation was not propagated");
+                // Deliberately ignore cancellation in the recognizer to exercise the result boundary.
+                finish.SetResult("A stale recognition must never reappear"); Await(pendingRecognition);
+                if (generated != 0 || recognizing.UserInput.Length != 0 || recognizing.Messages.Count != 1 || recognizing.IsThinking) throw new Exception("Late recognition mutated or submitted the stopped turn");
+                if (recognizing.Status != (action == "cancel" ? "Đã hủy nhận diện" : "Đã kết thúc trò chuyện")) throw new Exception("Late recognition overwrote terminal status");
+                if (action == "dispose") { recognizing.UserInput = "Do not send after disposal"; Await(recognizing.SendMessageAsync()); if (generated != 0 || recognizing.Messages.Count != 1) throw new Exception("Disposed conversation accepted input"); }
+            }
+            using (var recognized = new ConversationViewModel(recognize: (_, _) => Task.FromResult("A current spoken sentence"))) {
+                recognized.SendRecognizedSpeechAutomatically = false; recognized.IsConversationActive = true; recognized.IsListening = true;
+                Await(recognized.ToggleMicrophoneCommand.ExecuteAsync(null));
+                if (recognized.UserInput != "A current spoken sentence" || recognized.IsThinking) throw new Exception("Current recognition was rejected by stale-result protection");
+            }
+            var disposedReply = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously); var disposedListenCount = 0;
+            using (var disposedChat = new ConversationViewModel(beginListening: () => { disposedListenCount++; return Task.CompletedTask; }, generateReply: (_, _, _) => disposedReply.Task)) {
+                disposedChat.ShowVietnameseTranslation = false;
+                var pendingReply = disposedChat.StartConversationCommand.ExecuteAsync(null); disposedChat.Dispose();
+                disposedReply.SetResult("An obsolete opening reply"); Await(pendingReply);
+                if (disposedChat.IsConversationActive || disposedChat.Messages.Count != 0 || disposedListenCount != 0 || disposedChat.IsThinking) throw new Exception("Late reply reactivated a disposed conversation");
+            }
             var background = (Button)window.FindName("BackgroundButton");
             foreach (var mode in new[] { "morning", "noon", "afternoon", "night", "mint" }) {
                 var item = background.ContextMenu.Items.OfType<MenuItem>().First(value => Equals(value.Tag, mode));

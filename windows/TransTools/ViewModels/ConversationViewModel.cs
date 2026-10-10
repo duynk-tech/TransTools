@@ -40,6 +40,8 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _status = "Sẵn sàng";
     private readonly Func<bool> _meetingBusy;
     private readonly Func<Task>? _beginListeningOverride;
+    private readonly Func<string, CancellationToken, Task<string>>? _recognizeOverride;
+    private bool _disposed;
     private readonly Func<string, string, CancellationToken, Task<string>>? _generateReplyOverride;
     private readonly Func<string, string, CancellationToken, Task>? _speakReplyOverride;
     private CancellationTokenSource? _speechCancellation;
@@ -64,6 +66,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     }
     private Task BeginListeningAsync()
     {
+        if (_disposed) return Task.CompletedTask;
         if (!string.IsNullOrWhiteSpace(UserInput)) { Status = "Kiểm tra câu đã nhập rồi bấm Gửi."; return Task.CompletedTask; }
         return _beginListeningOverride?.Invoke() ?? ToggleMicrophoneAsync();
     }
@@ -97,7 +100,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     }
     [RelayCommand] private async Task StartConversationAsync()
     {
-        if (IsThinking || IsListening) return;
+        if (_disposed || IsThinking || IsListening) return;
         if (_meetingBusy()) { Status = "Kết thúc cuộc họp trước khi luyện nói để tránh thu âm chồng nhau."; return; }
         if (Messages.Count != 0) { IsConversationActive = true; await BeginListeningAsync(); return; }
         IsThinking = true; IsConversationActive = true;
@@ -127,7 +130,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     public string MicrophoneLabel => IsListening ? "Dừng thu" : "Nói bằng micro";
     partial void OnIsListeningChanged(bool value) { OnPropertyChanged(nameof(ConversationStateLabel)); OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(MicrophoneLabel)); OnPropertyChanged(nameof(CanSendMessage)); OnPropertyChanged(nameof(InputReadOnly)); ToggleConversationCommand.NotifyCanExecuteChanged(); }
     [RelayCommand] private async Task ToggleMicrophoneAsync() {
-        if (IsThinking) return;
+        if (_disposed || IsThinking) return;
         if (!IsListening) {
             if (_meetingBusy()) { Status = "Kết thúc cuộc họp trước khi luyện nói để tránh thu âm chồng nhau."; return; }
             try {
@@ -138,27 +141,39 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
             } catch (Exception ex) { _recorder?.Dispose(); _recorder = null; Status = ex.Message; }
             return;
         }
-        UserInput = "";
-        IsListening = false; IsThinking = true; _recognition = new CancellationTokenSource();
+        var generation = _conversationGeneration;
+        var recorder = _recorder;
+        using var recognition = new CancellationTokenSource(); _recognition = recognition;
+        var accepted = false;
+        UserInput = ""; IsListening = false; IsThinking = true;
         try {
             Status = "Đang nhận diện giọng nói...";
-            var text = await _recorder!.FinishAsync(VoicePreferences.LanguageCode(TargetLanguage), _recognition.Token);
-            UserInput = text; Status = text.Length == 0 ? "Chưa nhận diện được lời nói." : "Kiểm tra câu vừa nói rồi bấm Gửi.";
-        } catch (OperationCanceledException) { Status = "Đã hủy nhận diện"; }
-        catch (Exception ex) { Status = "Không nhận diện được: " + ex.Message; }
-        finally { _recorder?.Dispose(); _recorder = null; _recognition.Dispose(); _recognition = null; IsThinking = false; }
-        if (IsConversationActive && SendRecognizedSpeechAutomatically && !string.IsNullOrWhiteSpace(UserInput)) await SendMessageAsync();
+            var language = VoicePreferences.LanguageCode(TargetLanguage);
+            var text = _recognizeOverride != null ? await _recognizeOverride(language, recognition.Token)
+                : await (recorder ?? throw new InvalidOperationException("Không còn bản thu để nhận diện.")).FinishAsync(language, recognition.Token);
+            recognition.Token.ThrowIfCancellationRequested();
+            if (_disposed || generation != _conversationGeneration) return;
+            accepted = true; UserInput = text;
+            Status = text.Length == 0 ? "Chưa nhận diện được lời nói." : "Kiểm tra câu vừa nói rồi bấm Gửi.";
+        } catch (OperationCanceledException) { if (!_disposed && generation == _conversationGeneration) Status = "Đã hủy nhận diện"; }
+        catch (Exception ex) { if (!_disposed && generation == _conversationGeneration) Status = "Không nhận diện được: " + ex.Message; }
+        finally {
+            recorder?.Dispose(); if (ReferenceEquals(_recorder, recorder)) _recorder = null;
+            if (ReferenceEquals(_recognition, recognition)) _recognition = null;
+            IsThinking = false;
+        }
+        if (accepted && !_disposed && generation == _conversationGeneration && IsConversationActive && SendRecognizedSpeechAutomatically && !string.IsNullOrWhiteSpace(UserInput)) await SendMessageAsync();
     }
     [RelayCommand] private void CancelRecognition() => _recognition?.Cancel();
-    public void Dispose() { _replyCancellation?.Cancel(); _speechCancellation?.Cancel(); _recognition?.Cancel(); if (IsListening) { _recorder?.Dispose(); _recorder = null; IsListening = false; } }
+    public void Dispose() { if (_disposed) return; _disposed = true; EndConversation(); }
 
     partial void OnIsThinkingChanged(bool value) { OnPropertyChanged(nameof(ConversationStateLabel)); OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(CanSendMessage)); OnPropertyChanged(nameof(InputReadOnly)); ToggleConversationCommand.NotifyCanExecuteChanged(); }
     public bool CanShowTranslation => !TargetLanguage.Contains("Việt", StringComparison.OrdinalIgnoreCase);
 
-    public ConversationViewModel(Func<bool>? meetingBusy = null, TransTools.Services.Conversation.ConversationPreferencesStore? preferences = null, Func<Task>? beginListening = null, Func<string, string, CancellationToken, Task<string>>? generateReply = null, Func<string, string, CancellationToken, Task>? speakReply = null)
+    public ConversationViewModel(Func<bool>? meetingBusy = null, TransTools.Services.Conversation.ConversationPreferencesStore? preferences = null, Func<Task>? beginListening = null, Func<string, string, CancellationToken, Task<string>>? generateReply = null, Func<string, string, CancellationToken, Task>? speakReply = null, Func<string, CancellationToken, Task<string>>? recognize = null)
     {
         _meetingBusy = meetingBusy ?? (() => false);
-        _beginListeningOverride = beginListening; _generateReplyOverride = generateReply; _speakReplyOverride = speakReply;
+        _beginListeningOverride = beginListening; _generateReplyOverride = generateReply; _speakReplyOverride = speakReply; _recognizeOverride = recognize;
         Messages.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(ConversationActionLabel)); OnPropertyChanged(nameof(CanSaveConversation)); };
         _preferences = preferences ?? new(); var saved = _preferences.Load(); _sendDelaySeconds = saved.DelaySeconds; _learnerName = saved.LearnerName; _showMiniTranslation = saved.ShowMiniTranslation;
         try { foreach (var session in _store.Load().OrderByDescending(s => s.UpdatedAt)) Sessions.Add(session); }
@@ -246,7 +261,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public async Task SendMessageAsync()
     {
-        if (IsThinking || IsListening || string.IsNullOrWhiteSpace(UserInput)) return;
+        if (_disposed || IsThinking || IsListening || string.IsNullOrWhiteSpace(UserInput)) return;
 
         var text = UserInput;
         UserInput = string.Empty;

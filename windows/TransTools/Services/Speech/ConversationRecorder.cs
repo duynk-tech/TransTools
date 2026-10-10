@@ -51,6 +51,7 @@ public sealed class ConversationRecorder : IDisposable
             using (var writer = new WaveFileWriter(new NonClosingStream(wav), new WaveFormat(16000, 16, 1))) writer.Write(bytes, 0, bytes.Length);
             wav.Position = 0; await recognition.ProcessAudioAsync(wav, token);
         }, token);
+        token.ThrowIfCancellationRequested();
         return text.ToString().Trim();
     }
     public void Dispose() { lock (_sync) _accepting = false; _capture.Dispose(); _audio.Dispose(); }
