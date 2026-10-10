@@ -128,6 +128,15 @@ internal static class Program
                     }
                     if (conversation != null) {
                         var chatView = Descendants(window).OfType<ConversationView>().First();
+                        var topicButton = (Button)chatView.FindName("TopicButton"); topicButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        var topicPopup = (System.Windows.Controls.Primitives.Popup)chatView.FindName("TopicPopup");
+                        if (!topicPopup.IsOpen || topicPopup.Child == null) throw new Exception("Conversation name/options popup did not open");
+                        ValidateControlLayout((FrameworkElement)topicPopup.Child, "Conversation name and options");
+                        CaptureElement((FrameworkElement)topicPopup.Child, output, $"{width}-conversation-options.png");
+                        var wasActive = conversation.IsConversationActive;
+                        conversation.IsConversationActive = true; Pump();
+                        if (((TextBox)chatView.FindName("LearnerNameInput")).IsEnabled) throw new Exception("Learner name can change during active conversation");
+                        conversation.IsConversationActive = wasActive; topicPopup.IsOpen = false; Pump();
                         var delay = (TextBox)chatView.FindName("SendDelayInput");
                         var oldDelay = conversation.SendDelaySeconds;
                         delay.Text = "30"; delay.GetBindingExpression(TextBox.TextProperty)!.UpdateSource(); Pump();
