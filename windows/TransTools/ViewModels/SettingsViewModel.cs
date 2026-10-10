@@ -15,7 +15,15 @@ public partial class SettingsViewModel : ObservableObject
 {
     private readonly TransTools.Services.Models.RemoteModelCatalog _remoteCatalog = new();
     [ObservableProperty] private string _catalogStatus = "Danh mục có sẵn trong ứng dụng";
-    [ObservableProperty] private bool _updatingCatalog;
+    public bool CanManageModels => !UpdatingCatalog && !IsInstallingVoice && !IsUpdating && !_meetingBusy();
+    public string CatalogUpdateLabel => UpdatingCatalog ? "Đang cập nhật…" : "Cập nhật danh mục";
+    public bool CanInstallVieNeu => CanManageModels && HasVieNeuProcessor;
+    public void RefreshModelAvailability() { OnPropertyChanged(nameof(CanManageModels)); OnPropertyChanged(nameof(CanInstallVieNeu)); }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanManageModels))]
+    [NotifyPropertyChangedFor(nameof(CanInstallVieNeu))]
+    [NotifyPropertyChangedFor(nameof(CatalogUpdateLabel))]
+    private bool _updatingCatalog;
     [ObservableProperty] private string _supertonicSummary = "Giọng đọc đa ngôn ngữ, chạy trên thiết bị.";
     [ObservableProperty] private string _vieNeuSummary = "Tiếng Việt tự nhiên, hỗ trợ hồ sơ giọng từ mẫu.";
     [RelayCommand] private async Task UpdateCatalogAsync()
@@ -75,7 +83,10 @@ public partial class SettingsViewModel : ObservableObject
     private CancellationTokenSource? _updateDownload;
     [ObservableProperty] private string _updateStatus = "Kiểm tra phiên bản mới khi bạn cần.";
     [ObservableProperty] private string _releaseNotes = "";
-    [ObservableProperty] private bool _isUpdating;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanManageModels))]
+    [NotifyPropertyChangedFor(nameof(CanInstallVieNeu))]
+    private bool _isUpdating;
     [ObservableProperty] private bool _canInstallUpdate;
     [ObservableProperty] private double _updateProgress;
     [RelayCommand] private async Task CheckUpdateAsync() {
@@ -146,12 +157,15 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     [ObservableProperty] private string _localVoiceStatus = VoiceService.Shared.IsInstalled ? "Supertonic 3 đã cài" : "Chưa tải Supertonic 3";
-    [ObservableProperty] private bool _isInstallingVoice;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanManageModels))]
+    [NotifyPropertyChangedFor(nameof(CanInstallVieNeu))]
+    private bool _isInstallingVoice;
     private CancellationTokenSource? _installation;
     [RelayCommand] private void CancelVoiceInstall() => _installation?.Cancel();
     [RelayCommand] private async Task InstallVoiceAsync()
     {
-        if (IsInstallingVoice) return;
+        if (!CanManageModels) { LocalVoiceStatus = "Kết thúc phiên đang chạy hoặc chờ thao tác mô hình hoàn tất."; return; }
         if (new TransTools.Views.LicenseWindow("Supertonic 3", VoiceService.ResourceText("SpeechNative/Supertonic-Model-OpenRAIL.txt")).ShowDialog() != true) return;
         IsInstallingVoice = true; _installation = new CancellationTokenSource();
         try { await VoiceService.Shared.InstallAsync(new Progress<string>(message => LocalVoiceStatus = message), _installation.Token); }
@@ -162,7 +176,7 @@ public partial class SettingsViewModel : ObservableObject
     public bool HasVieNeuProcessor => VoiceService.HasVieNeuProcessor;
     [RelayCommand] private async Task InstallVieNeuAsync()
     {
-        if (IsInstallingVoice) return;
+        if (!CanManageModels) { LocalVoiceStatus = "Kết thúc phiên đang chạy hoặc chờ thao tác mô hình hoàn tất."; return; }
         if (!HasVieNeuProcessor) { LocalVoiceStatus = "Bản app chưa có bộ chuyển âm native; cần build Windows với SEA-G2P."; return; }
         if (new TransTools.Views.LicenseWindow("VieNeu v3 Turbo", VoiceService.ResourceText("SpeechNative/VieNeu-LICENSE.txt")).ShowDialog() != true) return;
         IsInstallingVoice = true; _installation = new CancellationTokenSource();
@@ -174,7 +188,7 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand] private void OpenVoiceLicense() => Process.Start(new ProcessStartInfo("https://huggingface.co/supertone-oss-archive/supertonic-3/blob/main/LICENSE") { UseShellExecute = true });
     [RelayCommand] private async Task RemoveVoiceAsync()
     {
-        if (IsInstallingVoice) return;
+        if (!CanManageModels) { LocalVoiceStatus = "Kết thúc phiên đang chạy hoặc chờ thao tác mô hình hoàn tất."; return; }
         try { await VoiceService.Shared.RemoveModelAsync(); LocalVoiceStatus = "Đã chuyển mô hình vào Thùng rác"; CalculateCacheSize(); }
         catch (Exception ex) { LocalVoiceStatus = "Không gỡ được: " + ex.Message; }
     }

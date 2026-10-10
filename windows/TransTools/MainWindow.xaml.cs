@@ -43,6 +43,8 @@ public partial class MainWindow : Window
         };
         _settingsViewModel = new SettingsViewModel(() => _meetingViewModel.IsBusy || !_conversationViewModel.CanChangeSession);
         _meetingViewModel.OtherAudioBusy = () => !_conversationViewModel.CanChangeSession || _readerViewModel.IsBusy;
+        _meetingViewModel.PropertyChanged += (_, _) => _settingsViewModel.RefreshModelAvailability();
+        _conversationViewModel.PropertyChanged += (_, _) => _settingsViewModel.RefreshModelAvailability();
         InitializeComponent();
         ApplyBackground();
 

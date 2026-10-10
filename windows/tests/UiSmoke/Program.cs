@@ -231,6 +231,16 @@ internal static class Program
                                 }
                                 provider.SelectedItem = "openai"; Pump();
                             }
+                            if (sections.SelectedItem is TabItem { Header: "Mô hình AI" }) {
+                                var modelSettings = (SettingsViewModel)Descendants(window).OfType<SettingsView>().First().DataContext;
+                                modelSettings.UpdatingCatalog = true; Pump();
+                                if (modelSettings.CanManageModels || modelSettings.CatalogUpdateLabel != "Đang cập nhật…") throw new Exception("Catalog busy state is not visible or permits mutation");
+                                modelSettings.UpdatingCatalog = false; Pump();
+                                var busySettings = new SettingsViewModel(() => true);
+                                if (busySettings.CanManageModels) throw new Exception("Active session permits model management");
+                                Await(busySettings.UpdateCatalogCommand.ExecuteAsync(null));
+                                if (busySettings.UpdatingCatalog) throw new Exception("Busy session started catalog network request");
+                            }
                             ValidateControlLayout(window, "Settings section " + i);
                             if (sections.SelectedItem is TabItem { Header: "Dịch & Phụ đề" } && width == 1280) {
                                 var settings = (SettingsViewModel)Descendants(window).OfType<SettingsView>().First().DataContext;

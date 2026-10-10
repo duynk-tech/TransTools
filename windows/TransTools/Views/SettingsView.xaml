@@ -88,7 +88,7 @@
 <TabItem Header="Mô hình AI" Tag="">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
-            <DockPanel Margin="0,8,0,16"><Button DockPanel.Dock="Right" Content="Cập nhật danh mục" Command="{Binding UpdateCatalogCommand}" Style="{StaticResource SecondaryButton}"/><TextBlock Text="Mô hình AI" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel><TextBlock Text="{Binding CatalogStatus}" Foreground="#65756F" Margin="0,0,0,16" TextWrapping="Wrap"/>
+            <DockPanel Margin="0,8,0,16"><Button DockPanel.Dock="Right" Content="{Binding CatalogUpdateLabel}" IsEnabled="{Binding CanManageModels}" Command="{Binding UpdateCatalogCommand}" Style="{StaticResource SecondaryButton}"/><TextBlock Text="Mô hình AI" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel><TextBlock Text="{Binding CatalogStatus}" Foreground="#65756F" Margin="0,0,0,16" TextWrapping="Wrap"/>
             <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
               <StackPanel>
                 <TextBlock Text="Giọng tự nhiên · Supertonic 3" FontSize="18" Foreground="#243D35" />
@@ -96,9 +96,9 @@
                 <TextBlock Text="{Binding LocalVoiceStatus}" Foreground="#75BBAE" Margin="0,8" />
                 <WrapPanel>
                   <Button Content="Giấy phép" Command="{Binding OpenVoiceLicenseCommand}" Margin="0,0,8,0" />
-                  <Button Content="Tải mô hình" Command="{Binding InstallVoiceCommand}" Margin="0,0,8,0" />
+                  <Button Content="Tải mô hình" IsEnabled="{Binding CanManageModels}" Command="{Binding InstallVoiceCommand}" Margin="0,0,8,0" />
                   <Button Content="Hủy tải" Command="{Binding CancelVoiceInstallCommand}" Margin="0,0,8,0" />
-                  <Button Content="Gỡ mô hình" Style="{StaticResource DestructiveButton}" Command="{Binding RemoveVoiceCommand}" Foreground="#EF4444" />
+                  <Button Content="Gỡ mô hình" IsEnabled="{Binding CanManageModels}" Style="{StaticResource DestructiveButton}" Command="{Binding RemoveVoiceCommand}" Foreground="#EF4444" />
                 </WrapPanel>
               </StackPanel>
             </Border>
@@ -106,7 +106,7 @@
               <StackPanel>
                 <TextBlock Text="VieNeu v3 Turbo · Tiếng Việt" FontSize="18" Foreground="#243D35" />
                 <TextBlock Text="{Binding VieNeuSummary}" Foreground="#65756F" TextWrapping="Wrap" Margin="0,8" />
-                <Button Content="Tải VieNeu" IsEnabled="{Binding HasVieNeuProcessor}" Command="{Binding InstallVieNeuCommand}" HorizontalAlignment="Left" />
+                <Button Content="Tải VieNeu" IsEnabled="{Binding CanInstallVieNeu}" Command="{Binding InstallVieNeuCommand}" HorizontalAlignment="Left" />
               </StackPanel>
             </Border>
           </StackPanel>
