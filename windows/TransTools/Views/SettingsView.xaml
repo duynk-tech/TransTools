@@ -6,7 +6,7 @@
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="TabItem">
-            <Border x:Name="SectionChrome" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,0,8" MinHeight="50">
+            <Border x:Name="SectionChrome" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="10" Padding="14,9" Margin="0,0,0,4" MinHeight="46">
               <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><Border x:Name="SectionIconBackground" Background="#D8EAE5" CornerRadius="6" Width="28" Height="28" Margin="0,0,10,0"><TextBlock x:Name="SectionIcon" Text="{TemplateBinding Tag}" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="#287568" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ContentPresenter Grid.Column="1" x:Name="SectionLabel" ContentSource="Header" VerticalAlignment="Center" TextElement.Foreground="#65756F" TextElement.FontWeight="SemiBold"/><TextBlock Grid.Column="2" x:Name="SectionChevron" Text="›" Foreground="#243D35" FontSize="20" VerticalAlignment="Center" Margin="8,0,0,0" Visibility="Collapsed"/></Grid>
             </Border>
             <ControlTemplate.Triggers>
@@ -38,7 +38,7 @@
               <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <DockPanel Background="#DCF5F8F7">
-              <TextBlock DockPanel.Dock="Top" Text="Cài đặt" FontSize="22" FontWeight="SemiBold" Foreground="#243D35" Margin="14,8,0,24" />
+              <TextBlock DockPanel.Dock="Top" Text="Cài đặt" FontSize="22" FontWeight="SemiBold" Foreground="#243D35" Margin="14,8,0,16" />
               <TextBlock DockPanel.Dock="Bottom" Text="{Binding AppVersion}" FontFamily="Consolas" FontSize="11" Foreground="#73827C" Margin="14,16,0,16"/>
               <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <TabPanel IsItemsHost="True" />
@@ -189,40 +189,34 @@
         </ScrollViewer>
       </TabItem>
 <TabItem Header="Lưu trữ &amp; Dữ liệu" Tag="">
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-          <StackPanel>
-            <TextBlock Text="Lưu trữ &amp; Dữ liệu" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,24" />
-            <Border Background="#FFFFFF" CornerRadius="12" Padding="20" Margin="0,0,0,16" BorderBrush="#C2DDD5" BorderThickness="1">
-              <StackPanel>
-                <TextBlock Text="Dung lượng đang sử dụng" FontSize="15" FontWeight="Bold" Foreground="#243D35" Margin="0,0,0,12" />
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-                  <TextBlock Text="Dung lượng dữ liệu &amp; mô hình hiện tại:" Foreground="#65756F" VerticalAlignment="Center" />
-                  <TextBlock Text="{Binding CacheSize}" FontWeight="Bold" Foreground="#287568" Margin="8,0,0,0" VerticalAlignment="Center" />
-                </StackPanel>
-                <ListBox ItemsSource="{Binding StorageGroups}" SelectedItem="{Binding SelectedStorage}" Background="Transparent" BorderBrush="#75BBAE" Margin="0,0,0,12">
-                  <ListBox.ItemTemplate>
-                    <DataTemplate>
-                      <StackPanel Margin="8">
-                        <TextBlock Text="{Binding Title}" Foreground="#243D35" FontWeight="Bold" />
-                        <TextBlock Text="{Binding Detail}" Foreground="#65756F" TextWrapping="Wrap" />
-                        <TextBlock Text="{Binding Size}" Foreground="#75BBAE" />
-                      </StackPanel>
-                    </DataTemplate>
-                  </ListBox.ItemTemplate>
-                </ListBox>
-                <WrapPanel Margin="0,0,0,12">
-                  <Button Content="Làm mới" Command="{Binding RefreshStorageCommand}" Margin="0,0,8,0" />
-                  <Button Content="Gỡ / Dọn nhóm đã chọn" Style="{StaticResource DestructiveButton}" Command="{Binding RemoveStorageCommand}" Background="#FFF1F1" Foreground="#C84343" BorderBrush="#F3BABA" />
-                </WrapPanel>
-                <StackPanel Orientation="Horizontal">
-                  <Button Content="📂 Mở thư mục dữ liệu" Command="{Binding OpenDataFolderCommand}" Background="#D8E5E1" Foreground="#243D35" Padding="14,8" Margin="0,0,10,0" Cursor="Hand" />
-                  <Button Content="🧹 Dọn dẹp bộ nhớ đệm" Command="{Binding ClearCacheCommand}" Background="#FFF1F1" Foreground="#C84343" BorderBrush="#F3BABA" Padding="14,8" Cursor="Hand" />
-                </StackPanel>
-              </StackPanel>
-            </Border>
-          </StackPanel>
-        </ScrollViewer>
-      </TabItem>
+ <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+  <StackPanel>
+   <TextBlock Text="Lưu trữ &amp; Dữ liệu" FontSize="24" FontWeight="SemiBold" Margin="0,8,0,6"/>
+   <TextBlock Text="Mô hình đã cài và dữ liệu được lưu trên máy" Foreground="#65756F" Margin="0,0,0,24"/>
+   <Border Background="#E1EEE6" CornerRadius="18" Padding="24" Margin="0,0,0,20">
+    <DockPanel LastChildFill="True">
+     <Button DockPanel.Dock="Right" Content="↻  Làm mới" Command="{Binding RefreshStorageCommand}" Style="{StaticResource SecondaryButton}" VerticalAlignment="Center" Margin="20,0,0,0"/>
+     <StackPanel><TextBlock Text="{Binding CacheSize}" FontSize="32" FontWeight="SemiBold" Foreground="#243D35"/><TextBlock Text="Dung lượng dữ liệu đang sử dụng" Foreground="#65756F" Margin="0,6,0,0"/></StackPanel>
+    </DockPanel>
+   </Border>
+   <TextBlock Text="Dọn dữ liệu sẽ chuyển vào Thùng rác. Sổ tay, hội thoại, từ vựng và khóa API được giữ lại khi dọn bộ nhớ đệm." Foreground="#65756F" TextWrapping="Wrap" Margin="0,0,0,20" LineHeight="21"/>
+   <ItemsControl ItemsSource="{Binding StorageGroups}">
+    <ItemsControl.ItemTemplate><DataTemplate>
+     <Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="16" Padding="20" Margin="0,0,0,16">
+      <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+       <StackPanel Margin="0,0,20,0"><TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" Foreground="#243D35" TextWrapping="Wrap"/><TextBlock Text="{Binding Detail}" Foreground="#65756F" TextWrapping="Wrap" Margin="0,6,0,6"/><TextBlock Text="{Binding Size}" Foreground="#73827C" FontSize="12"/></StackPanel>
+       <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+        <Button Width="40" Padding="0" ToolTip="Mở thư mục" Style="{StaticResource SecondaryButton}" Command="{Binding DataContext.OpenStorageFolderCommand,RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Margin="0,0,8,0"><TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets"/></Button>
+        <Button Width="40" Padding="0" ToolTip="Chuyển nhóm dữ liệu vào Thùng rác" Style="{StaticResource DestructiveButton}" Command="{Binding DataContext.RemoveStorageCommand,RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Visibility="{Binding Removable,Converter={StaticResource BoolVisibility}}"><TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"/></Button>
+       </StackPanel>
+      </Grid>
+     </Border>
+    </DataTemplate></ItemsControl.ItemTemplate>
+   </ItemsControl>
+   <DockPanel Margin="0,4,0,12"><Button DockPanel.Dock="Right" Content="Dọn bộ nhớ đệm" Command="{Binding ClearCacheCommand}" Style="{StaticResource DestructiveButton}"/><Button Content="Mở thư mục dữ liệu" Command="{Binding OpenDataFolderCommand}" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"/></DockPanel>
+  </StackPanel>
+ </ScrollViewer>
+</TabItem>
     </TabControl>
   </DockPanel>
 </UserControl>

@@ -53,7 +53,7 @@
              <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ScrollBar">
                  <Grid Background="Transparent"><Track x:Name="PART_Track" IsDirectionReversed="True" Orientation="{TemplateBinding Orientation}" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{TemplateBinding Value}" ViewportSize="{TemplateBinding ViewportSize}">
                      <Track.DecreaseRepeatButton><RepeatButton Command="ScrollBar.PageUpCommand" Focusable="False"><RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Background="Transparent"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>
-                     <Track.Thumb><Thumb x:Name="ScrollThumb" MinHeight="28"><Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="#A2C5BA" CornerRadius="4" Margin="2"/></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
+                     <Track.Thumb><Thumb x:Name="ScrollThumb" MinHeight="28"><Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="#B6C9C2" CornerRadius="4" Margin="2"/></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
                      <Track.IncreaseRepeatButton><RepeatButton Command="ScrollBar.PageDownCommand" Focusable="False"><RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Background="Transparent"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.IncreaseRepeatButton>
                  </Track></Grid>
                  <ControlTemplate.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0"/></Trigger></ControlTemplate.Triggers>
@@ -61,7 +61,7 @@
              <Style.Triggers><Trigger Property="Orientation" Value="Horizontal"><Setter Property="Width" Value="Auto"/><Setter Property="Height" Value="10"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ScrollBar">
                  <Grid Background="Transparent"><Track x:Name="PART_Track" IsDirectionReversed="False" Orientation="{TemplateBinding Orientation}" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{TemplateBinding Value}" ViewportSize="{TemplateBinding ViewportSize}">
                      <Track.DecreaseRepeatButton><RepeatButton Command="ScrollBar.PageLeftCommand" Focusable="False"><RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Background="Transparent"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>
-                     <Track.Thumb><Thumb x:Name="ScrollThumb" MinWidth="28"><Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="#A2C5BA" CornerRadius="4" Margin="2"/></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
+                     <Track.Thumb><Thumb x:Name="ScrollThumb" MinWidth="28"><Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="#B6C9C2" CornerRadius="4" Margin="2"/></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
                      <Track.IncreaseRepeatButton><RepeatButton Command="ScrollBar.PageRightCommand" Focusable="False"><RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Background="Transparent"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.IncreaseRepeatButton>
                  </Track></Grid>
                  <ControlTemplate.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0"/></Trigger></ControlTemplate.Triggers>

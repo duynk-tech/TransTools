@@ -189,9 +189,16 @@ public partial class SettingsViewModel : ObservableObject
             CacheSize = $"{entries.Sum(e => e.Bytes) / 1048576.0:F1} MB";
         } finally { IsScanningStorage = false; }
     }
-    [RelayCommand] private async Task RemoveStorageAsync()
+    [RelayCommand] private void OpenStorageFolder(StorageEntry? entry)
     {
-        var entry = SelectedStorage;
+        if (entry == null) return;
+        if (!Directory.Exists(entry.Path)) { Status = "Thư mục này chưa có dữ liệu."; return; }
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(entry.Path) { UseShellExecute = true }); }
+        catch (Exception ex) { Status = "Không mở được thư mục: " + ex.Message; }
+    }
+    [RelayCommand] private async Task RemoveStorageAsync(StorageEntry? requestedEntry)
+    {
+        var entry = requestedEntry ?? SelectedStorage;
         if (entry == null || !entry.Removable) { Status = "Chọn nhóm mô hình hoặc cache có thể dọn."; return; }
         if (IsInstallingVoice || IsUpdating || _meetingBusy()) { Status = "Kết thúc cuộc họp và tải mô hình trước khi dọn dữ liệu."; return; }
         if (System.Windows.MessageBox.Show($"Chuyển {entry.Title} vào Thùng rác? Cần tải hoặc nhập lại để sử dụng tiếp.", "Dọn dữ liệu", System.Windows.MessageBoxButton.YesNo) != System.Windows.MessageBoxResult.Yes) return;
