@@ -2,6 +2,7 @@ using System.Diagnostics;
 using TransTools.ViewModels;
 using TransTools.Models;
 using TransTools.Services.Conversation;
+using TransTools.Services.Storage;
 using TransTools.Views;
 using System.IO;
 using System.Windows;
@@ -352,6 +353,18 @@ internal static class Program
                         var sections = Descendants(window).OfType<TabControl>().First();
                         for (var i = 0; i < sections.Items.Count; i++) {
                             sections.SelectedIndex = i; Pump(); window.UpdateLayout();
+                            if (sections.SelectedItem is TabItem { Header: "Lưu trữ & Dữ liệu" }) {
+                                var settingsView = Descendants(window).OfType<SettingsView>().First();
+                                var storageVm = (SettingsViewModel)settingsView.DataContext;
+                                storageVm.StorageGroups.Clear();
+                                storageVm.StorageGroups.Add(new StorageEntry("supertonic", "Supertonic 3 · Offline", "Giọng tự nhiên đã tải; gỡ sẽ chuyển về giọng cơ bản.", Path.GetTempPath(), true, 687026995, 13));
+                                storageVm.StorageGroups.Add(new StorageEntry("personal", "Sổ tay, hội thoại và từ vựng", "Dữ liệu học tập được giữ lại khi dọn bộ nhớ đệm.", Path.GetTempPath(), false, 2097152, 12));
+                                Pump(); window.UpdateLayout();
+                                var rowActions = Descendants(settingsView).OfType<Button>().Where(button => button.CommandParameter is StorageEntry && button.IsVisible).ToList();
+                                if (rowActions.Count != 3 || rowActions.Any(button => button.Command == null)) throw new Exception("Storage cards lost their per-row actions or expose deletion for protected data");
+                                ValidateControlLayout(settingsView, "Storage cards");
+                                Capture(window, output, $"{width}-storage-cards.png");
+                            }
                             if (sections.SelectedItem is TabItem { Header: "AI & Kết nối" } && width == 1280) {
                                 var provider = Descendants(window).OfType<ComboBox>().First(control => control.ItemsSource is string[] values && values.Contains("openai"));
                                 foreach (var name in new[] { "openai", "gemini", "claude", "deepseek" }) {
