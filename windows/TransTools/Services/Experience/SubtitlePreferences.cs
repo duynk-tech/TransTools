@@ -5,7 +5,7 @@ public sealed class SubtitlePreferences
 {
     private static string PathName => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TransTools", "subtitle-appearance.json");
     public static SubtitlePreferences Shared { get; } = Load();
-    public static string[] Domains { get; } = ["Thông dụng", "Công nghệ thông tin", "Y tế & Sinh học", "Kinh tế & Tài chính", "Du lịch & Khách sạn", "Pháp luật"];
+    public static string[] Domains { get; } = ["Thông dụng", "Kinh doanh & Hội họp", "Công nghệ thông tin", "Y tế & Sinh học", "Kinh tế & Tài chính", "Du lịch & Khách sạn", "Pháp luật"];
     public string DisplayMode { get; set; } = "bilingual";
     public string Domain { get; set; } = "Thông dụng";
     public event Action? Changed;

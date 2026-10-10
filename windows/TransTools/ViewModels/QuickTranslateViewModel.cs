@@ -12,6 +12,24 @@ namespace TransTools.ViewModels;
 
 public partial class QuickTranslateViewModel : ObservableObject
 {
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ContextButtonLabel))]
+    private bool _showContext;
+    public string ContextButtonLabel => ShowContext ? "Thu gọn" : "Ngữ cảnh & Mẫu câu";
+    public string[] QuickPhrases => SelectedDomain switch
+    {
+        "Công nghệ thông tin" => ["Nhờ bạn review PR này giúp mình nhé", "Mình đã deploy bản fix lên staging để kiểm thử", "API đang trả về mã lỗi 500 do thiếu tham số", "Cần họp sync lại về database schema và endpoint", "Tính năng này đã hoàn thành và sẵn sàng merge"],
+        "Kinh doanh & Hội họp" => ["Chúng ta có thể lên lịch họp sync-up vào ngày mai không?", "Xin gửi bạn tài liệu tổng kết biên bản cuộc họp", "Dự án hiện tại đang triển khai đúng tiến độ", "Nhờ anh/chị xác nhận lại ngân sách và thời hạn", "Rất vui được hợp tác cùng quý đối tác"],
+        "Thông dụng" => ["Cảm ơn bạn rất nhiều vì đã hỗ trợ nhiệt tình!", "Hôm nay công việc của bạn có thuận lợi không?", "Hẹn gặp lại bạn vào buổi họp tiếp theo nhé", "Tôi hoàn toàn đồng ý với ý kiến của bạn", "Cho mình xin lỗi vì đã phản hồi chậm trễ"],
+        "Kinh tế & Tài chính" => ["Báo cáo doanh thu quý này ghi nhận mức tăng trưởng tốt", "Các khoản chi phí phát sinh cần được ban giám đốc duyệt", "Chỉ số ROI và dòng tiền của quý này đang rất khả quan", "Kế hoạch phân bổ ngân sách dự kiến cho quý sau"],
+        "Y tế & Sinh học" => ["Bệnh nhân cần được kiểm tra các chỉ số sinh hiệu định kỳ", "Phác đồ điều trị này đã được hội đồng chuyên môn thông qua", "Xin lưu ý về tiền sử dị ứng thuốc của người bệnh"],
+        _ => []
+    };
+    public void SelectQuickPhrase(string phrase)
+    {
+        if (!CanConfigure || !Array.Exists(QuickPhrases, item => item == phrase)) return;
+        SourceText = phrase;
+    }
     public string CharacterCountLabel => new StringInfo(SourceText).LengthInTextElements.ToString("N0", CultureInfo.GetCultureInfo("vi-VN")) + " ký tự";
 
     [ObservableProperty]
@@ -60,6 +78,7 @@ public partial class QuickTranslateViewModel : ObservableObject
     private string _targetLanguage = "vi";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(QuickPhrases))]
     private string _selectedDomain = TransTools.Services.Experience.SubtitlePreferences.Shared.Domain;
     public QuickTranslateViewModel()
     {

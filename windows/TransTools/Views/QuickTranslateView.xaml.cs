@@ -18,7 +18,13 @@ public partial class QuickTranslateView : UserControl
         DataContext = viewModel;
     }
 
-    private void ShowContext_Click(object sender, RoutedEventArgs e) => ContextPopup.IsOpen = true;
+    private void ShowContext_Click(object sender, RoutedEventArgs e) => _viewModel.ShowContext = !_viewModel.ShowContext;
+    private async void ChoosePhrase_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: string phrase } || !_viewModel.CanConfigure) return;
+        _viewModel.SelectQuickPhrase(phrase);
+        await _viewModel.TranslateAsync();
+    }
     private void SwapLanguages_Click(object sender, RoutedEventArgs e)
     {
         if (_viewModel.SourceLanguage == "auto") return;

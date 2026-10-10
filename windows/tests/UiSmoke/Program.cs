@@ -46,6 +46,21 @@ internal static class Program
                     var button = Descendants(window).OfType<RadioButton>().First(b => Equals(b.Content, route));
                     button.IsChecked = true; Pump(); window.UpdateLayout();
                     if (width == 1280) Capture(window, output, $"{width}-idle-{route}.png");
+                    var quickView = Descendants(window).OfType<QuickTranslateView>().FirstOrDefault();
+                    if (quickView != null) {
+                        var quickModel = (QuickTranslateViewModel)quickView.DataContext;
+                        var originalDomain = quickModel.SelectedDomain; var originalText = quickModel.SourceText;
+                        quickModel.SelectedDomain = "Công nghệ thông tin";
+                        if (quickModel.QuickPhrases.Length != 5) throw new Exception("Mac developer phrases missing");
+                        quickModel.SelectQuickPhrase(quickModel.QuickPhrases[0]);
+                        if (quickModel.SourceText != "Nhờ bạn review PR này giúp mình nhé") throw new Exception("Phrase selection lost text");
+                        quickModel.IsTranslating = true; quickModel.SelectQuickPhrase(quickModel.QuickPhrases[1]);
+                        if (quickModel.SourceText != "Nhờ bạn review PR này giúp mình nhé") throw new Exception("Busy phrase selection replaced request");
+                        quickModel.IsTranslating = false; quickModel.ShowContext = true; Pump(); window.UpdateLayout();
+                        ValidateControlLayout(window, "Quick context expanded");
+                        Capture(window, output, $"{width}-quick-context.png");
+                        quickModel.ShowContext = false; quickModel.SelectedDomain = originalDomain; quickModel.SourceText = originalText; Pump();
+                    }
                     var reader = Descendants(window).OfType<TextReaderView>().FirstOrDefault();
                     if (reader != null) {
                         var options = (Button)reader.FindName("ReadingOptionsButton");
