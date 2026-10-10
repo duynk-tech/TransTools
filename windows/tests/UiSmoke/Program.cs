@@ -184,6 +184,10 @@ internal static class Program
             if (generated.Count != 3 || generated.Any(l => l.Goal != "Giao tiếp đời sống")) throw new Exception("Generated lessons lost goal context");
             var rejected = false; try { TransTools.Services.Learning.AdaptiveLessons.ParseGenerated("{\"lessons\":[]}", "en", "test"); } catch { rejected = true; }
             if (!rejected) throw new Exception("Invalid AI lesson response accepted");
+            var lessonRoot = Path.Combine(output, "adaptive-fixture"); var lessonStore = new TransTools.Services.Learning.AdaptiveLessons(lessonRoot);
+            lessonStore.AddGenerated(generated);
+            var restoredLessons = new TransTools.Services.Learning.AdaptiveLessons(lessonRoot);
+            if (restoredLessons.Lessons.Count != 3 || restoredLessons.Lessons[0].Goal != "Giao tiếp đời sống") throw new Exception("Generated lesson persistence lost goal");
             var progress = new TransTools.Services.Learning.LessonProgress(); var day = new DateTime(2026,10,10);
             for (var i=0;i<10;i++) progress = progress.Record(true,day);
             if (progress.Difficulty != 1) throw new Exception("Repeated same-day answers increased difficulty");

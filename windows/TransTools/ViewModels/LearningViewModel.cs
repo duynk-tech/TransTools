@@ -61,6 +61,7 @@ public partial class LearningViewModel : ObservableObject
     public bool ShowLessonChoices => CurrentLesson != null && LessonDifficulty < 3;
     public bool ShowLessonWriting => CurrentLesson != null && LessonDifficulty == 3;
     public bool HasLessonFeedback => !string.IsNullOrEmpty(LessonFeedback);
+    public string LessonSourceText => CurrentLesson != null && _adaptive.Lessons.Any(l => l.Id == CurrentLesson.Id) ? "Bài do AI tạo theo mục tiêu · Có thể có sai sót." : "Câu có sẵn · Chủ yếu về công việc. Ưu tiên câu đến hạn; tăng thử thách sau nhiều ngày làm tốt.";
     public string LessonStage => LessonDifficulty == 1 ? "Hiểu câu" : LessonDifficulty == 2 ? "Nghe và hiểu" : "Nhớ và viết lại";
     partial void OnLessonFeedbackChanged(string value) { OnPropertyChanged(nameof(CanAnswerLesson)); OnPropertyChanged(nameof(HasLessonFeedback)); }
     partial void OnLessonRevealedChanged(bool value) => OnPropertyChanged(nameof(ShowLessonText));
@@ -71,7 +72,7 @@ public partial class LearningViewModel : ObservableObject
         LessonDifficulty = CurrentLesson == null ? 1 : _adaptive.Get(CurrentLesson.Id).Difficulty;
         LessonChoices.Clear();
         if (CurrentLesson != null) foreach (var choice in Scenarios.SelectMany(s => s.Dialogues).Select(d => d.Translation).Concat(_adaptive.Lessons.Where(l => l.Language == SelectedLanguage).Select(l => l.Meaning)).Where(t => t != CurrentLesson.Meaning).Distinct().Take(2).Append(CurrentLesson.Meaning).OrderBy(_ => Random.Shared.Next())) LessonChoices.Add(choice);
-        foreach (var name in new[] { nameof(CanAnswerLesson), nameof(ShowLessonText), nameof(ShowLessonChoices), nameof(ShowLessonWriting), nameof(LessonStage) }) OnPropertyChanged(name);
+        foreach (var name in new[] { nameof(CanAnswerLesson), nameof(ShowLessonText), nameof(ShowLessonChoices), nameof(ShowLessonWriting), nameof(LessonStage), nameof(LessonSourceText) }) OnPropertyChanged(name);
     }
     [RelayCommand] private void AnswerLesson(string? choice) { if (choice != null) GradeLesson(choice == CurrentLesson?.Meaning); }
     [RelayCommand] private void CheckWrittenLesson() { if (!string.IsNullOrWhiteSpace(LessonAnswer)) GradeLesson(LessonAnswer.Trim().Equals(CurrentLesson?.Original.Trim(), StringComparison.OrdinalIgnoreCase)); }
