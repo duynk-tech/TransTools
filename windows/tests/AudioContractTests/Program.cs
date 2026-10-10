@@ -69,6 +69,19 @@ Check(!endpoint.Accept(silence), "one-second hesitation preserves utterance with
 Check(!endpoint.Accept(voice), "resumed speech resets pause counter");
 Check(!endpoint.Accept(silence) && endpoint.Accept(silence), "utterance ends only after full configured pause");
 
+var longEndpoint = new TransTools.Services.Speech.UtteranceEndpoint(30);
+longEndpoint.Accept(voice);
+for (var second = 1; second < 30; second++) Check(!longEndpoint.Accept(silence), "Thirty-second conversation pause was shortened");
+Check(longEndpoint.Accept(silence), "Thirty-second conversation pause never finished");
+var conversationPath = Path.Combine(Path.GetTempPath(), "trans-tools-chat-prefs-" + Guid.NewGuid(), "prefs.json");
+try {
+    var preferences = new TransTools.Services.Conversation.ConversationPreferencesStore(conversationPath);
+    preferences.Save(new(30, "Duy\n Nguyễn"));
+    Check(preferences.Load() == new TransTools.Services.Conversation.ConversationPreferences(30, "Duy Nguyễn"), "Conversation name/delay did not survive reload or control character cleanup");
+    preferences.Save(new(99, new string('a', 80))); Check(preferences.Load().DelaySeconds == 30 && preferences.Load().LearnerName.Length == 60, "Conversation preferences exceeded Mac limits");
+    File.WriteAllText(conversationPath, "{broken"); Check(preferences.Load().DelaySeconds == 2 && File.ReadAllText(conversationPath) == "{broken", "Corrupt preferences prevented conversation or were erased");
+} finally { if (Directory.Exists(Path.GetDirectoryName(conversationPath))) Directory.Delete(Path.GetDirectoryName(conversationPath)!, true); }
+
 var sessionFolder = Path.Combine(Path.GetTempPath(), "trans-tools-session-contract-" + Guid.NewGuid());
 try {
     var sessionStore = new TransTools.Services.Storage.SessionStore(sessionFolder);

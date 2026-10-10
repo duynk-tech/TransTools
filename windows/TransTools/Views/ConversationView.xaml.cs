@@ -16,6 +16,9 @@ public partial class ConversationView : UserControl
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = viewModel;
+        DataObject.AddPastingHandler(SendDelayInput, (_, e) => {
+            if (!e.DataObject.GetDataPresent(DataFormats.UnicodeText) || e.DataObject.GetData(DataFormats.UnicodeText) is not string text || text.Length == 0 || text.Any(c => c < '0' || c > '9')) e.CancelCommand();
+        });
         Loaded += (_, _) => { _viewModel.Messages.CollectionChanged -= MessagesChanged; _viewModel.Messages.CollectionChanged += MessagesChanged; _viewModel.PropertyChanged -= PresentationChanged; _viewModel.PropertyChanged += PresentationChanged; ScrollLatest(); };
         Unloaded += (_, _) => { _viewModel.Messages.CollectionChanged -= MessagesChanged; _viewModel.PropertyChanged -= PresentationChanged; };
     }
@@ -42,6 +45,13 @@ public partial class ConversationView : UserControl
             var found = FindScrollViewer(VisualTreeHelper.GetChild(root, i)); if (found != null) return found;
         }
         return null;
+    }
+
+    private void SendDelay_PreviewTextInput(object sender, TextCompositionEventArgs e) => e.Handled = e.Text.Any(c => c < '0' || c > '9');
+    private void SendDelay_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (int.TryParse(SendDelayInput.Text, out var seconds)) _viewModel.SendDelaySeconds = Math.Clamp(seconds, 1, 30);
+        SendDelayInput.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();
     }
 
     private void ShowLibrary_Click(object sender, System.Windows.RoutedEventArgs e) => LibraryPopup.IsOpen = true;

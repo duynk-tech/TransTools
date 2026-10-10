@@ -36,13 +36,19 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _showVietnameseTranslation = true;
     [ObservableProperty] private string _status = "Sẵn sàng";
     private readonly Func<bool> _meetingBusy;
-    public int[] SendDelays { get; } = [1, 2, 3, 4, 5, 6, 8, 10];
+    private readonly TransTools.Services.Conversation.ConversationPreferencesStore _preferences;
+    [ObservableProperty] private string _learnerName = "";
     [ObservableProperty] private int _sendDelaySeconds = 2;
     [ObservableProperty] private bool _sendRecognizedSpeechAutomatically = true;
-    public string GreetingName => Environment.UserName;
+    public string GreetingName => LearnerName.Trim();
+    partial void OnLearnerNameChanged(string value) { var clean = TransTools.Services.Conversation.ConversationPreferencesStore.Normalize(new(SendDelaySeconds, value)).LearnerName; if (clean != value) { LearnerName = clean; return; } SavePreferences(); }
+    partial void OnSendDelaySecondsChanged(int value) { var bounded = Math.Clamp(value, 1, 30); if (bounded != value) { SendDelaySeconds = bounded; return; } SavePreferences(); }
+    private void SavePreferences() { if (_preferences == null) return; try { _preferences.Save(new(SendDelaySeconds, LearnerName)); } catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException) { Status = "Chưa lưu được tùy chọn trò chuyện"; } }
+    [RelayCommand] private void IncreaseSendDelay() => SendDelaySeconds = Math.Min(30, SendDelaySeconds + 1);
+    [RelayCommand] private void DecreaseSendDelay() => SendDelaySeconds = Math.Max(1, SendDelaySeconds - 1);
     private int _conversationGeneration;
     private CancellationTokenSource? _replyCancellation;
-    [ObservableProperty] private bool _isConversationActive;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(CanEditLearnerName))] private bool _isConversationActive;
     [RelayCommand] private void EndConversation()
     {
         ++_conversationGeneration; IsConversationActive = false;
@@ -61,7 +67,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
             var config = _credentials.LoadConfiguredProvider() ?? throw new InvalidOperationException("Nhập API key và chọn mô hình trong Cài đặt để trò chuyện.");
             Status = "Đang chuẩn bị lời chào...";
             var reply = await _llmService.GenerateAsync("Begin the conversation with a warm greeting and one opening question.",
-                $"Your name is {TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName}. You are my language practice partner. Speak in {TargetLanguage}. Topic: {CurrentTopic}. Address me as {GreetingName} naturally if appropriate. Keep it to 1–2 sentences. {CustomPrompt}", config, replyCancellation.Token);
+                $"Your name is {TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName}. You are my language practice partner. Speak in {TargetLanguage}. Topic: {CurrentTopic}. {(GreetingName.Length == 0 ? "Use a general greeting." : $"Address me as {GreetingName} naturally if appropriate.")} Keep it to 1–2 sentences. {CustomPrompt}", config, replyCancellation.Token);
             var translation = CanShowTranslation && ShowVietnameseTranslation ? await _googleService.TranslateAsync(reply, "auto", "vi", replyCancellation.Token) : "";
             if (generation != _conversationGeneration) return;
             Messages.Add(new ChatMessageItem { Text = reply, Translation = translation });
@@ -74,8 +80,9 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     }
     private ConversationRecorder? _recorder;
     private CancellationTokenSource? _recognition;
-    [ObservableProperty] private bool _isListening;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(CanEditLearnerName))] private bool _isListening;
     public bool CanChangeSession => !IsThinking && !IsListening;
+    public bool CanEditLearnerName => !IsConversationActive && CanChangeSession;
     public string MicrophoneLabel => IsListening ? "Dừng thu" : "Nói bằng micro";
     partial void OnIsListeningChanged(bool value) { OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(MicrophoneLabel)); }
     [RelayCommand] private async Task ToggleMicrophoneAsync() {
@@ -107,9 +114,10 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     partial void OnIsThinkingChanged(bool value) => OnPropertyChanged(nameof(CanChangeSession));
     public bool CanShowTranslation => !TargetLanguage.Contains("Việt", StringComparison.OrdinalIgnoreCase);
 
-    public ConversationViewModel(Func<bool>? meetingBusy = null)
+    public ConversationViewModel(Func<bool>? meetingBusy = null, TransTools.Services.Conversation.ConversationPreferencesStore? preferences = null)
     {
         _meetingBusy = meetingBusy ?? (() => false);
+        _preferences = preferences ?? new(); var saved = _preferences.Load(); _sendDelaySeconds = saved.DelaySeconds; _learnerName = saved.LearnerName;
         try { foreach (var session in _store.Load().OrderByDescending(s => s.UpdatedAt)) Sessions.Add(session); }
         catch (Exception ex) { Status = "Không đọc được hội thoại: " + ex.Message; }
     }
@@ -184,6 +192,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     private string _userInput = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanEditLearnerName))]
     private bool _isThinking;
 
     [ObservableProperty]

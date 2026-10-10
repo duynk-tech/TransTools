@@ -128,6 +128,13 @@ internal static class Program
                     }
                     if (conversation != null) {
                         var chatView = Descendants(window).OfType<ConversationView>().First();
+                        var delay = (TextBox)chatView.FindName("SendDelayInput");
+                        var oldDelay = conversation.SendDelaySeconds;
+                        delay.Text = "30"; delay.GetBindingExpression(TextBox.TextProperty)!.UpdateSource(); Pump();
+                        if (conversation.SendDelaySeconds != 30) throw new Exception("Conversation numeric delay did not accept 30 seconds");
+                        conversation.IncreaseSendDelayCommand.Execute(null); if (conversation.SendDelaySeconds != 30) throw new Exception("Conversation stepper exceeded upper limit");
+                        conversation.SendDelaySeconds = 1; conversation.DecreaseSendDelayCommand.Execute(null); if (conversation.SendDelaySeconds != 1) throw new Exception("Conversation stepper exceeded lower limit");
+                        conversation.SendDelaySeconds = oldDelay;
                         var list = (ListBox)chatView.FindName("MessageList"); Pump(); list.UpdateLayout();
                         var bubbles = Descendants(list).OfType<Border>().Where(b => Equals(b.Tag, "ChatBubble") && b.IsVisible).Select(b => (Bubble: b, Bounds: new Rect(b.TransformToAncestor(list).Transform(new Point()), b.RenderSize))).Where(b => b.Bounds.IntersectsWith(new Rect(0, 0, list.ActualWidth, list.ActualHeight))).OrderBy(b => b.Bounds.Top).ToArray();
                         if (bubbles.Length < 2) { Capture(window, output, $"{width}-conversation-spacing-failure.png"); throw new Exception("Conversation fixture did not render adjacent bubbles"); }

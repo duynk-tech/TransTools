@@ -3,7 +3,7 @@ namespace TransTools.Services.Speech;
 // Counts PCM time, not wall-clock time: UI scheduling cannot shorten a pause.
 public sealed class UtteranceEndpoint(int delaySeconds)
 {
-    private readonly int _requiredBytes = Math.Clamp(delaySeconds, 1, 10) * 32000;
+    private readonly int _requiredBytes = Math.Clamp(delaySeconds, 1, 30) * 32000;
     private bool _heardSpeech;
     private int _silentBytes;
     public bool Accept(ReadOnlySpan<byte> pcm)
