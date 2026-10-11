@@ -23,7 +23,7 @@ public partial class PersonalVoiceRecorderWindow : Window
         var active = _model.IsRecording && _model.GuideEnabled ? Math.Min(words.Length - 1, (int)(_model.RecordedSeconds / 8 * words.Length)) : -1;
         for (var i = 0; i < words.Length; i++) {
             var word = new Run(words[i] + (i + 1 < words.Length ? " " : ""));
-            if (i == active) { word.Background = new SolidColorBrush(Color.FromRgb(214, 237, 228)); word.Foreground = new SolidColorBrush(Color.FromRgb(40, 117, 104)); word.FontWeight = FontWeights.SemiBold; }
+            if (i == active) { word.Background = new SolidColorBrush(Color.FromRgb(214, 237, 228)); word.Foreground = new SolidColorBrush(Color.FromRgb(40, 117, 104)); }
             ReadingBoard.Inlines.Add(word);
         }
     }
