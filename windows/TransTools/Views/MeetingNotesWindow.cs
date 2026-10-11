@@ -30,6 +30,7 @@ public sealed class MeetingNotesWindow : Window
         _generate = generate; _save = saveNotes; _savedNotes = notes;
         Title = "Ghi chú"; Width = 720; Height = 560; MinWidth = 600; MinHeight = 400;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        PreviewKeyDown += (_, e) => { if (e.Key == System.Windows.Input.Key.Escape && _save != null) { e.Handled = true; Close(); } };
         Background = new SolidColorBrush(Color.FromRgb(245, 248, 247));
         var layout = new DockPanel { Margin = new Thickness(24) };
         Content = layout;

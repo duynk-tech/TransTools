@@ -933,7 +933,9 @@ internal static class Program
         if (canceledNotes.Notes != "Giữ nguyên") throw new Exception("Closed notes window accepted a late AI response");
         var savedNotes = new List<string>(); var firstSave = new TaskCompletionSource<bool>();
         var autoNotes = new MeetingNotesWindow("Ban đầu", "", "Hội thoại", saveNotes: text => { savedNotes.Add(text); return savedNotes.Count == 1 ? firstSave.Task : Task.FromResult(true); }) { Owner = window };
-        autoNotes.Show(); Pump(); var autoEditor = Descendants(autoNotes).OfType<TextBox>().Single();
+        autoNotes.Show(); Pump();
+        if (Descendants(autoNotes).OfType<Button>().Any(button => Equals(button.Content, "Lưu ghi chú") && button.IsVisible)) throw new Exception("Autosaving notes retain a redundant Save action");
+        if (autoNotes.Width != 720 || autoNotes.Height != 560) throw new Exception("Notes popup dimensions differ from macOS"); var autoEditor = Descendants(autoNotes).OfType<TextBox>().Single();
         autoEditor.Text = "Bản sửa đầu"; var flushingNotes = autoNotes.FlushNotesAsync(); Pump();
         autoEditor.Text = "Bản sửa mới nhất 日本語"; firstSave.SetResult(true); Await(flushingNotes);
         if (!flushingNotes.Result || savedNotes.Last() != autoEditor.Text || savedNotes.Count != 2) throw new Exception("Autosave lost edits made during pending save");
