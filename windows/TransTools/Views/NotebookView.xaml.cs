@@ -41,5 +41,6 @@ public partial class NotebookView : UserControl
         InitializeComponent();
         DataContext = viewModel;
         _learning = learning ?? new LearningViewModel();
+        WordTabCount.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("VocabularyList.Count") { Source = _learning, Mode = System.Windows.Data.BindingMode.OneWay });
     }
 }
