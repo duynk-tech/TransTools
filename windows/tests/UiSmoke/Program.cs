@@ -468,7 +468,7 @@ internal static class Program
                         ValidateControlLayout((FrameworkElement)popup.Child, "Learning goal");
                         CaptureElement((FrameworkElement)popup.Child, output, $"{width}-learning-goal.png");
                         popup.IsOpen = false;
-                        Descendants(learning).OfType<RadioButton>().First(item => Equals(item.Content, "Hôm nay")).IsChecked = true;
+                        ((RadioButton)learning.FindName("TodayTab")).IsChecked = true;
                     }
                     if (route == "Cài đặt") {
                         var sections = Descendants(window).OfType<TabControl>().First();

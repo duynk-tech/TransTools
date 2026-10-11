@@ -53,6 +53,7 @@ public sealed class PersonalVoiceStore(string root)
     {
         if(string.IsNullOrWhiteSpace(name) || name.Length>100 || referenceText.Length>2000) throw new ArgumentException("Tên hoặc đoạn đọc không hợp lệ.");
         if(samples.Length<48000 || samples.Length>128000 || samples.Any(value=>!float.IsFinite(value))) throw new ArgumentException("Bản thu cần từ 3 đến 8 giây.");
+        if (!PersonalVoiceQuality.Analyze(samples).IsUsable) throw new ArgumentException("Bản thu quá nhỏ hoặc bị vỡ tiếng. Hãy thu lại.");
         VieNeuSpeakerEncoder.ValidateEmbedding(embedding);
         Directory.CreateDirectory(root);
         var profile=new PersonalVoiceProfile(Guid.NewGuid(),name.Trim(),DateTime.UtcNow,referenceText,samples.Length/16000.0);

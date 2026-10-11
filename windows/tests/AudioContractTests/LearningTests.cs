@@ -32,6 +32,7 @@ public static class LearningTests
         Check(SrsScheduler.Streak(history,now)==2 && SrsScheduler.Streak(history,now.AddDays(1))==0,"daily streak tolerates current unstudied day and stops at gaps");
         var root=Path.Combine(Path.GetTempPath(),"trans-tools-learning-"+Guid.NewGuid()); Directory.CreateDirectory(root);
         try {
+            Check(!PersonalVoiceQuality.Analyze(new float[48000]).IsUsable && !PersonalVoiceQuality.Analyze(Enumerable.Repeat(1f,48000).ToArray()).IsUsable && PersonalVoiceQuality.Analyze(ReadFloats("speaker-input.f32")).IsUsable,"personal voice quality rejects silence and clipping but accepts Mac reference audio");
             var voiceStore=new PersonalVoiceStore(Path.Combine(root,"PersonalVoice"));
             var profile=voiceStore.Save("Giọng của tôi","Xin chào 日本語",ReadFloats("speaker-input.f32"),Enumerable.Repeat(.1f,192).ToArray());
             Check(voiceStore.Load().Single().ReferenceText=="Xin chào 日本語" && File.Exists(voiceStore.VoicePath(profile.Id)),"personal voice profile and embedding persist atomically");
