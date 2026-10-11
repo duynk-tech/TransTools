@@ -8,6 +8,18 @@ public partial class VoiceSettingsView : UserControl
     public VoiceSettingsView(VoiceSettingsViewModel model) { InitializeComponent(); DataContext = model; }
     private void Default_Checked(object sender, RoutedEventArgs e) { if (DefaultPanel == null) return; DefaultPanel.Visibility = Visibility.Visible; AdvancedPanel.Visibility = Visibility.Collapsed; }
     private void Advanced_Checked(object sender, RoutedEventArgs e) { if (AdvancedPanel == null) return; DefaultPanel.Visibility = Visibility.Collapsed; AdvancedPanel.Visibility = Visibility.Visible; }
+    private void RenameVoice_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not VoiceSettingsViewModel model || !model.CanManagePersonalVoice || model.SelectedPersonalVoice is not { } voice) return;
+        var dialog = new RenameRecordWindow(voice.Name, personalVoice: true) { Owner = Window.GetWindow(this) };
+        if (dialog.ShowDialog() == true) model.RenamePersonalVoice(dialog.RecordTitle);
+    }
+    private void DeleteVoice_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not VoiceSettingsViewModel model || !model.CanManagePersonalVoice || model.SelectedPersonalVoice?.Id is not Guid id) return;
+        var dialog = ConfirmDeleteWindow.ForPersonalVoice(model.SelectedPersonalVoice.Name); dialog.Owner = Window.GetWindow(this);
+        if (dialog.ShowDialog() == true) model.DeletePersonalVoice(id);
+    }
     private void RecordVoice_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is not VoiceSettingsViewModel model || !model.CanConfigure || !model.SupportsPersonalVoice) return;

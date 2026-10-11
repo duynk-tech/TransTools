@@ -14,9 +14,10 @@ public partial class VoiceSettingsViewModel : ObservableObject
     public string[] Languages { get; } = ["vi", "en", "ja", "zh", "ko"];
     public string[] Engines => Language == "zh" ? ["Giọng cơ bản", "Edge"] : Language == "vi" && VoiceService.HasVieNeuProcessor ? ["Supertonic 3", "Giọng cơ bản", "Edge", "VieNeu v3 Turbo"] : ["Supertonic 3", "Giọng cơ bản", "Edge"];
     public bool SupportsNatural => Language != "zh";
+    public bool CanManagePersonalVoice => CanConfigure && SupportsPersonalVoice && SelectedPersonalVoice?.Id != null;
     public bool SupportsPersonalVoice => Language == "vi" && Engine == "VieNeu v3 Turbo";
     public ObservableCollection<PersonalVoiceOption> PersonalVoices { get; } = new();
-    [ObservableProperty] private PersonalVoiceOption? _selectedPersonalVoice;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanManagePersonalVoice))] private PersonalVoiceOption? _selectedPersonalVoice;
     public string PersonalVoiceHint => PersonalVoices.Count > 1 ? "Chọn hồ sơ giọng đã lưu để đọc và xuất audio." : "Chưa có giọng cá nhân. Giọng dựng sẵn vẫn dùng được.";
     public bool CanChangeRate => !IsPreviewing && Engine != "VieNeu v3 Turbo";
     public bool CanConfigure => !IsPreviewing;
@@ -25,7 +26,7 @@ public partial class VoiceSettingsViewModel : ObservableObject
     [ObservableProperty] private double _rate = 1;
     [ObservableProperty] private string _sampleText = "Xin chào! Hãy cùng Trans Tools nghe và học ngôn ngữ mỗi ngày.";
     [ObservableProperty] private string _status = "Chọn giọng và nghe thử một đoạn văn.";
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanChangeRate), nameof(CanConfigure))] private bool _isPreviewing;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanChangeRate), nameof(CanConfigure), nameof(CanManagePersonalVoice))] private bool _isPreviewing;
     public VoiceSettingsViewModel(SettingsViewModel management, Func<bool>? audioBusy = null)
     {
         Management = management; _audioBusy = audioBusy ?? (() => false); LoadPreference();
@@ -50,10 +51,10 @@ public partial class VoiceSettingsViewModel : ObservableObject
     partial void OnIsPreviewingChanged(bool value) { if (!value) LoadPreference(); }
     partial void OnLanguageChanged(string value)
     {
-        OnPropertyChanged(nameof(Engines)); OnPropertyChanged(nameof(SupportsNatural)); OnPropertyChanged(nameof(SupportsPersonalVoice)); LoadPreference();
+        OnPropertyChanged(nameof(Engines)); OnPropertyChanged(nameof(SupportsNatural)); OnPropertyChanged(nameof(SupportsPersonalVoice)); OnPropertyChanged(nameof(CanManagePersonalVoice)); LoadPreference();
         SampleText = value switch { "en" => "Hello! Let us listen and learn together every day.", "ja" => "こんにちは。一緒に言語を学びましょう。", "zh" => "你好！让我们一起学习语言。", "ko" => "안녕하세요! 함께 언어를 배워요.", _ => "Xin chào! Hãy cùng Trans Tools nghe và học ngôn ngữ mỗi ngày." };
     }
-    partial void OnEngineChanged(string value) { OnPropertyChanged(nameof(CanChangeRate)); OnPropertyChanged(nameof(SupportsPersonalVoice)); if (value == "VieNeu v3 Turbo") Rate = 1; SavePreference(); }
+    partial void OnEngineChanged(string value) { OnPropertyChanged(nameof(CanChangeRate)); OnPropertyChanged(nameof(SupportsPersonalVoice)); OnPropertyChanged(nameof(CanManagePersonalVoice)); if (value == "VieNeu v3 Turbo") Rate = 1; SavePreference(); }
     partial void OnRateChanged(double value) => SavePreference();
     partial void OnSelectedPersonalVoiceChanged(PersonalVoiceOption? value)
     {
@@ -63,6 +64,23 @@ public partial class VoiceSettingsViewModel : ObservableObject
         catch (Exception ex) { LoadPreference(); Status = "Chưa chọn được giọng: " + ex.Message; }
     }
     [RelayCommand] private void RefreshPersonalVoices() => LoadPreference();
+    public void RenamePersonalVoice(string name)
+    {
+        if (!CanManagePersonalVoice || SelectedPersonalVoice?.Id is not Guid id) return;
+        if (_audioBusy()) { Status = "Dừng phiên đang dùng âm thanh trước khi đổi tên giọng."; return; }
+        try { new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot).Rename(id, name); LoadPreference(); Status = "Đã đổi tên giọng."; }
+        catch (Exception ex) { Status = "Chưa đổi được tên: " + ex.Message; }
+    }
+    public void DeletePersonalVoice(Guid id)
+    {
+        if (!CanManagePersonalVoice || SelectedPersonalVoice?.Id != id) return;
+        if (_audioBusy()) { Status = "Dừng phiên đang dùng âm thanh trước khi xóa giọng."; return; }
+        try {
+            new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot).MoveToTrash(id);
+            if (VoicePreferences.Get("vi").PersonalVoiceId == id) VoicePreferences.SelectPersonalVoice(null);
+            LoadPreference(); Status = "Đã chuyển giọng vào Thùng rác và dùng giọng dựng sẵn.";
+        } catch (Exception ex) { LoadPreference(); Status = "Chưa hoàn tất xóa giọng: " + ex.Message; }
+    }
     private void SavePreference()
     {
         if (_loading || !_canSave || !Engines.Contains(Engine)) return;

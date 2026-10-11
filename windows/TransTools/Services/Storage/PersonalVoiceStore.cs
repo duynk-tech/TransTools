@@ -25,6 +25,12 @@ public sealed class PersonalVoiceStore(string root)
         }
         return profiles.OrderByDescending(profile=>profile.CreatedAt).ToArray();
     }
+    public void MoveToTrash(Guid id)
+    {
+        if (!Load().Any(profile => profile.Id == id)) throw new FileNotFoundException("Không tìm thấy hồ sơ giọng.");
+        Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(Folder(id), Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs, Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+        if (Directory.Exists(Folder(id))) throw new IOException("Hồ sơ giọng chưa được chuyển vào Thùng rác.");
+    }
     public PersonalVoiceProfile Rename(Guid id, string name)
     {
         if (string.IsNullOrWhiteSpace(name) || name.Length > 100) throw new ArgumentException("Tên giọng không hợp lệ.");
