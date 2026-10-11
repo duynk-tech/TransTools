@@ -435,12 +435,12 @@ internal static class Program
                     if (route == "Học ngôn ngữ") {
                         var learning = Descendants(window).OfType<LearningView>().First();
                         foreach (var label in new[] { "Hôm nay", "Chữ & Viết", "Từ vựng của tôi", "Luyện giao tiếp" }) {
-                            var section = Descendants(learning).OfType<RadioButton>().First(item => Equals(item.Content, label));
+                            var section = Descendants(learning).OfType<RadioButton>().First(item => System.Windows.Automation.AutomationProperties.GetName(item) == label);
                             section.IsChecked = true; Pump(); window.UpdateLayout();
                             ValidateControlLayout(window, "Learning: " + label);
                             Capture(window, output, $"{width}-learning-{Array.IndexOf(new[] { "Hôm nay", "Chữ & Viết", "Từ vựng của tôi", "Luyện giao tiếp" }, label)}.png");
                         }
-                        Descendants(learning).OfType<RadioButton>().First(item => Equals(item.Content, "Từ vựng của tôi")).IsChecked = true; Pump();
+                        Descendants(learning).OfType<RadioButton>().First(item => System.Windows.Automation.AutomationProperties.GetName(item) == "Từ vựng của tôi").IsChecked = true; Pump();
                         var library = (FrameworkElement)learning.FindName("VocabularyLibrary");
                         var review = (FrameworkElement)learning.FindName("VocabTabGrid");
                         if (library.Visibility != Visibility.Visible || review.Visibility != Visibility.Collapsed) throw new Exception("Vocabulary should open the library before review");
