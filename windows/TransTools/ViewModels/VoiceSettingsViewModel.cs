@@ -19,14 +19,14 @@ public partial class VoiceSettingsViewModel : ObservableObject
     public ObservableCollection<PersonalVoiceOption> PersonalVoices { get; } = new();
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanManagePersonalVoice))] private PersonalVoiceOption? _selectedPersonalVoice;
     public string PersonalVoiceHint => PersonalVoices.Count > 1 ? "Chọn hồ sơ giọng đã lưu để đọc và xuất audio." : "Chưa có giọng cá nhân. Giọng dựng sẵn vẫn dùng được.";
-    public bool CanChangeRate => !IsPreviewing && Engine != "VieNeu v3 Turbo";
-    public bool CanConfigure => !IsPreviewing;
+    public bool CanChangeRate => CanConfigure && Engine != "VieNeu v3 Turbo";
+    public bool CanConfigure => !IsPreviewing && !IsBuildingVoice;
     [ObservableProperty] private string _language = "vi";
     [ObservableProperty] private string _engine = "Giọng cơ bản";
     [ObservableProperty] private double _rate = 1;
     [ObservableProperty] private string _sampleText = "Xin chào! Hãy cùng Trans Tools nghe và học ngôn ngữ mỗi ngày.";
     [ObservableProperty] private string _status = "Chọn giọng và nghe thử một đoạn văn.";
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanChangeRate), nameof(CanConfigure), nameof(CanManagePersonalVoice))] private bool _isPreviewing;
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(CreateRecordingVoiceCommand))] [NotifyPropertyChangedFor(nameof(CanChangeRate), nameof(CanConfigure), nameof(CanManagePersonalVoice))] private bool _isPreviewing;
     public VoiceSettingsViewModel(SettingsViewModel management, Func<bool>? audioBusy = null)
     {
         Management = management; _audioBusy = audioBusy ?? (() => false); LoadPreference();
@@ -41,7 +41,7 @@ public partial class VoiceSettingsViewModel : ObservableObject
         _loading = true;
         try { var p = VoicePreferences.Get(Language); Engine = Engines.Contains(p.Engine) ? p.Engine : "Giọng cơ bản"; Rate = Engine == "VieNeu v3 Turbo" ? 1 : p.Rate;
             PersonalVoices.Clear(); PersonalVoices.Add(new(null, "Giọng dựng sẵn"));
-            var store = new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot);
+            var store = new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot); RefreshRecordings(store);
             foreach (var profile in store.Load().Where(profile => store.HasModel(profile.Id))) PersonalVoices.Add(new(profile.Id, profile.Name));
             if (p.PersonalVoiceId is Guid missingId && PersonalVoices.All(voice => voice.Id != missingId)) PersonalVoices.Add(new(missingId, "Giọng đã chọn không còn dữ liệu — chọn lại giọng"));
             SelectedPersonalVoice = PersonalVoices.FirstOrDefault(voice => voice.Id == p.PersonalVoiceId) ?? PersonalVoices[0];

@@ -18,6 +18,13 @@
     <DockPanel Margin="0,0,0,12"><Button DockPanel.Dock="Right" Content="Thu giọng mới" Click="RecordVoice_Click" Style="{StaticResource SecondaryButton}" IsEnabled="{Binding CanConfigure}"/><TextBlock Text="Giọng của tôi" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel>
     <DockPanel><Button DockPanel.Dock="Right" Command="{Binding RefreshPersonalVoicesCommand}" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" ToolTip="Làm mới danh sách giọng" AutomationProperties.Name="Làm mới giọng cá nhân"><TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"/></Button><ComboBox ItemsSource="{Binding PersonalVoices}" DisplayMemberPath="Name" SelectedItem="{Binding SelectedPersonalVoice}" IsEnabled="{Binding CanConfigure}" AutomationProperties.Name="Giọng cá nhân"/></DockPanel>
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0"><Button Content="Đổi tên" Click="RenameVoice_Click" IsEnabled="{Binding CanManagePersonalVoice}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button Content="Xóa giọng" Click="DeleteVoice_Click" IsEnabled="{Binding CanManagePersonalVoice}" Style="{StaticResource DestructiveButton}"/></StackPanel>
+    <Border BorderBrush="#D8E5E1" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,14,0,0"><StackPanel>
+     <TextBlock Text="Bản thu đã lưu" FontSize="13" FontWeight="Bold"/>
+     <TextBlock Text="Lưu âm thanh gốc trước, tạo hồ sơ VieNeu khi cần. Tạo hồ sơ giữ nguyên bản thu." FontSize="11" Foreground="#65756F" TextWrapping="Wrap" Margin="0,6,0,10"/>
+     <ComboBox ItemsSource="{Binding Recordings}" DisplayMemberPath="Name" SelectedItem="{Binding SelectedRecording}" IsEnabled="{Binding CanConfigure}" AutomationProperties.Name="Bản thu đã lưu"/>
+     <TextBlock Text="{Binding SelectedRecording.ReferenceText}" FontSize="12" Foreground="#65756F" TextWrapping="Wrap" Margin="0,8,0,0"/>
+     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0"><Button Content="Hủy tạo giọng" Command="{Binding CancelRecordingVoiceCommand}" Visibility="{Binding IsBuildingVoice,Converter={StaticResource BoolVisibility}}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button Content="Tạo hồ sơ VieNeu" Command="{Binding CreateRecordingVoiceCommand}" IsEnabled="{Binding CanConfigure}" Style="{StaticResource SecondaryButton}"/></StackPanel>
+    </StackPanel></Border>
     <TextBlock Text="{Binding PersonalVoiceHint}" TextWrapping="Wrap" Foreground="#65756F" Margin="0,10,0,0"/>
    </StackPanel></Border>
   </StackPanel></Border>

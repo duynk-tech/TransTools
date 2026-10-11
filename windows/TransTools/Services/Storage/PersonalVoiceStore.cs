@@ -55,6 +55,35 @@ public sealed class PersonalVoiceStore(string root)
         return embedding;
     }
 
+    public string RecordingPath(Guid id) => Path.Combine(Folder(id), "reference.wav");
+    public float[] LoadRecording(Guid id)
+    {
+        var profile = Load().SingleOrDefault(item => item.Id == id) ?? throw new FileNotFoundException("Không tìm thấy bản thu.");
+        using var reader = new BinaryReader(File.OpenRead(RecordingPath(id)));
+        if (reader.BaseStream.Length < 96044 || reader.BaseStream.Length > 256044) throw new InvalidDataException("Bản thu không đúng thời lượng.");
+        string Four() => System.Text.Encoding.ASCII.GetString(reader.ReadBytes(4));
+        if (Four() != "RIFF" || reader.ReadInt32() != reader.BaseStream.Length - 8 || Four() != "WAVE" || Four() != "fmt " || reader.ReadInt32() != 16 || reader.ReadInt16() != 1 || reader.ReadInt16() != 1 || reader.ReadInt32() != 16000 || reader.ReadInt32() != 32000 || reader.ReadInt16() != 2 || reader.ReadInt16() != 16 || Four() != "data")
+            throw new InvalidDataException("Bản thu cần WAV PCM 16 kHz, một kênh.");
+        var bytes = reader.ReadInt32();
+        if (bytes != reader.BaseStream.Length - 44 || bytes % 2 != 0 || Math.Abs(bytes / 32000.0 - profile.DurationSeconds) > .001)
+            throw new InvalidDataException("Dữ liệu bản thu không khớp hồ sơ.");
+        var samples = new float[bytes / 2];
+        for (var i = 0; i < samples.Length; i++) samples[i] = reader.ReadInt16() / 32768f;
+        if (!PersonalVoiceQuality.Analyze(samples).IsUsable) { Array.Clear(samples); throw new InvalidDataException("Bản thu quá nhỏ hoặc bị vỡ tiếng."); }
+        return samples;
+    }
+    public void SaveModel(Guid id, float[] embedding)
+    {
+        VieNeuSpeakerEncoder.ValidateEmbedding(embedding);
+        if (!Load().Any(item => item.Id == id)) throw new FileNotFoundException("Bản thu không còn tồn tại.");
+        var directory = Path.Combine(Folder(id), "Models", "vieneu");
+        Directory.CreateDirectory(directory);
+        var temporary = Path.Combine(directory, ".voice-" + Guid.NewGuid().ToString("N") + ".tmp");
+        try {
+            File.WriteAllText(temporary, JsonSerializer.Serialize(new { speaker_emb = embedding }));
+            File.Move(temporary, VoicePath(id), true);
+        } finally { if (File.Exists(temporary)) File.Delete(temporary); }
+    }
     public bool HasModel(Guid id) => File.Exists(VoicePath(id));
     public PersonalVoiceProfile SaveRecording(string name, string referenceText, float[] samples) => SaveCore(name, referenceText, samples, null);
     public PersonalVoiceProfile Save(string name,string referenceText,float[] samples,float[] embedding)

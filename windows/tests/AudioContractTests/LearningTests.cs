@@ -39,6 +39,13 @@ public static class LearningTests
             Check(!voiceStore.HasModel(raw.Id), "Raw recording incorrectly has synthesized voice model");
             Check(File.Exists(Path.Combine(root, "PersonalVoice", raw.Id.ToString("D"), "reference.wav")), "Raw reference recording was not saved");
             Check(voiceStore.Load().Any(item => item.Id == raw.Id), "Raw recording missing from inventory");
+            var rawBytes = File.ReadAllBytes(voiceStore.RecordingPath(raw.Id));
+            var decodedRaw = voiceStore.LoadRecording(raw.Id);
+            Check(decodedRaw.Length == ReadFloats("speaker-input.f32").Length, "Saved raw recording reloads exact sample count");
+            Array.Clear(decodedRaw);
+            voiceStore.SaveModel(raw.Id, Enumerable.Repeat(.1f,192).ToArray());
+            Check(voiceStore.HasModel(raw.Id) && voiceStore.LoadEmbedding(raw.Id).Length == 192, "Raw recording model can be created separately");
+            Check(rawBytes.SequenceEqual(File.ReadAllBytes(voiceStore.RecordingPath(raw.Id))) && voiceStore.Load().Single(item => item.Id == raw.Id) == raw, "Model creation preserves recording identity and audio");
             var profile=voiceStore.Save("Giọng của tôi","Xin chào 日本語",ReadFloats("speaker-input.f32"),Enumerable.Repeat(.1f,192).ToArray());
             Check(voiceStore.Load().Single(item => item.Id == profile.Id).ReferenceText=="Xin chào 日本語" && File.Exists(voiceStore.VoicePath(profile.Id)),"personal voice profile and embedding persist atomically");
             Check(voiceStore.LoadEmbedding(profile.Id).Length==192,"saved personal embedding validates before synthesis");
