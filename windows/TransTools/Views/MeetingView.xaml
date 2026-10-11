@@ -17,9 +17,9 @@
    </StackPanel>
    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"><StackPanel Orientation="Horizontal" VerticalAlignment="Center">
     <ComboBox IsEnabled="{Binding CanConfigureMeeting}" ItemsSource="{Binding CaptureSources}" SelectedItem="{Binding CaptureSource}" Width="190" Margin="0,0,8,0"/>
-    <ComboBox IsEnabled="{Binding CanConfigureMeeting}" ItemsSource="{Binding Languages}" ItemTemplate="{StaticResource LanguageItem}" SelectedItem="{Binding SourceLanguage}" Width="125" Margin="0,0,8,0"/>
+    <ComboBox IsEnabled="{Binding CanConfigureMeeting}" ItemsSource="{Binding Languages}" ItemTemplate="{StaticResource LanguageItem}" SelectedItem="{Binding SourceLanguage}" Width="150" Margin="0,0,8,0"/>
     <Button IsEnabled="{Binding CanConfigureMeeting}" Content="⇄" Command="{Binding SwapLanguagesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
-    <ComboBox IsEnabled="{Binding CanConfigureMeeting}" ItemsSource="{Binding TargetLanguages}" ItemTemplate="{StaticResource LanguageItem}" SelectedItem="{Binding TargetLanguage}" Width="125" Margin="0,0,8,0"/>
+    <ComboBox IsEnabled="{Binding CanConfigureMeeting}" ItemsSource="{Binding TargetLanguages}" ItemTemplate="{StaticResource LanguageItem}" SelectedItem="{Binding TargetLanguage}" Width="150" Margin="0,0,8,0"/>
     <ComboBox ItemsSource="{Binding DisplayModes}" SelectedItem="{Binding SelectedDisplayMode}" Width="125" ToolTip="Cách hiển thị phụ đề" Margin="0,0,8,0"/>
     <Button x:Name="EarphoneButton" Content="{Binding EarphoneLabel}" Style="{StaticResource SecondaryButton}" Click="ShowEarphones_Click" Margin="0,0,8,0"/>
     <Button x:Name="TranslationSettingsButton" Content="Công cụ dịch" Style="{StaticResource SecondaryButton}" Click="ShowTranslationSettings_Click"/>

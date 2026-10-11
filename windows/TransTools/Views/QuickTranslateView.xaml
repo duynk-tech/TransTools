@@ -35,20 +35,20 @@
                     </ComboBox>
                 </Grid></Border><ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12"><ItemsControl ItemsSource="{Binding QuickPhrases}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate><Button Content="{Binding}" Click="ChoosePhrase_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" MinHeight="32" Padding="10,5" FontSize="12" IsEnabled="{Binding DataContext.CanConfigure,RelativeSource={RelativeSource AncestorType=UserControl}}"/></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer></StackPanel>
 <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><StackPanel Orientation="Horizontal" VerticalAlignment="Center"><ComboBox IsEnabled="{Binding CanConfigure}" SelectedValuePath="Tag" SelectedValue="{Binding SourceLanguage}" Width="165" Margin="0">
-                        <ComboBoxItem Content="Tự động" Tag="auto" IsSelected="True" />
-                        <ComboBoxItem Content="Tiếng Anh" Tag="en" />
-                        <ComboBoxItem Content="Tiếng Việt" Tag="vi" />
-                        <ComboBoxItem Content="Tiếng Nhật" Tag="ja" />
-                        <ComboBoxItem Content="Tiếng Trung" Tag="zh" />
-                        <ComboBoxItem Content="Tiếng Hàn" Tag="ko" />
+                        <ComboBoxItem Content="Tự động" Tag="auto" IsSelected="True"  ContentTemplate="{StaticResource LanguageItem}"/>
+                        <ComboBoxItem Content="Tiếng Anh" Tag="en"  ContentTemplate="{StaticResource LanguageItem}"/>
+                        <ComboBoxItem Content="Tiếng Việt" Tag="vi"  ContentTemplate="{StaticResource LanguageItem}"/>
+                        <ComboBoxItem Content="Tiếng Nhật" Tag="ja"  ContentTemplate="{StaticResource LanguageItem}"/>
+                        <ComboBoxItem Content="Tiếng Trung" Tag="zh"  ContentTemplate="{StaticResource LanguageItem}"/>
+                        <ComboBoxItem Content="Tiếng Hàn" Tag="ko"  ContentTemplate="{StaticResource LanguageItem}"/>
                     </ComboBox>
 
                     <Button Content="⇄" IsEnabled="{Binding CanConfigure}" Click="SwapLanguages_Click" Style="{StaticResource SecondaryButton}" Margin="10,0" /><ComboBox IsEnabled="{Binding CanConfigure}" SelectedValuePath="Tag" SelectedValue="{Binding TargetLanguage}" Width="165" Margin="0">
-                        <ComboBoxItem Content="Tiếng Việt" Tag="vi" IsSelected="True" />
-                        <ComboBoxItem Content="Tiếng Anh" Tag="en" />
-                        <ComboBoxItem Content="Tiếng Nhật" Tag="ja" />
-                        <ComboBoxItem Content="Tiếng Trung" Tag="zh" />
-                        <ComboBoxItem Content="Tiếng Hàn" Tag="ko" />
+                        <ComboBoxItem Content="Tiếng Việt" Tag="vi" IsSelected="True"  ContentTemplate="{StaticResource LanguageItem}"/>
+                        <ComboBoxItem Content="Tiếng Anh" Tag="en"  ContentTemplate="{StaticResource LanguageItem}"/>
+                        <ComboBoxItem Content="Tiếng Nhật" Tag="ja"  ContentTemplate="{StaticResource LanguageItem}"/>
+                        <ComboBoxItem Content="Tiếng Trung" Tag="zh"  ContentTemplate="{StaticResource LanguageItem}"/>
+                        <ComboBoxItem Content="Tiếng Hàn" Tag="ko"  ContentTemplate="{StaticResource LanguageItem}"/>
                     </ComboBox>
                     </StackPanel><TextBlock Text="{Binding SelectedDomain}" VerticalAlignment="Center" Foreground="#65756F" Grid.Column="1" HorizontalAlignment="Right" /></Grid></StackPanel>
 <Grid Grid.Row="1">

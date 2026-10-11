@@ -24,7 +24,8 @@
  </DataTemplate>
          <Style TargetType="Window"><Setter Property="FontFamily" Value="Segoe UI"/><Setter Property="FontSize" Value="14"/><Setter Property="Foreground" Value="#292F2D"/></Style>
          <ui:ProviderLabelConverter x:Key="ProviderLabel"/><ui:LanguageLabelConverter x:Key="LanguageLabel"/><ui:OptionSelectionConverter x:Key="OptionSelection"/>
-         <DataTemplate x:Key="LanguageItem"><TextBlock Text="{Binding Converter={StaticResource LanguageLabel}}"/></DataTemplate>
+         <ui:LanguageFlagConverter x:Key="LanguageFlag"/>
+         <DataTemplate x:Key="LanguageItem"><StackPanel Orientation="Horizontal"><Image Source="{Binding Converter={StaticResource LanguageFlag}}" Width="20" Height="14" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"/><TextBlock Text="{Binding Converter={StaticResource LanguageLabel}}" VerticalAlignment="Center"/></StackPanel></DataTemplate>
          <ui:CaptionDisplayTextConverter x:Key="CaptionDisplayText"/>
          <BooleanToVisibilityConverter x:Key="BoolVisibility"/>
          <Style TargetType="Button">

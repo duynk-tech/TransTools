@@ -24,6 +24,12 @@ internal static class Program
             if (CaptionDisplayTextConverter.Select("source", "translated", "translation", false) != "translated" || CaptionDisplayTextConverter.Select("source", "", "translation", false) != "source" || CaptionDisplayTextConverter.Select("source", "translated", "original", true) != "") throw new Exception("Caption display fallback is incorrect");
             CheckMeetingSpeechQueue();
             var app = new TransTools.App(); app.InitializeComponent();
+            var languageFlags = new LanguageFlagConverter();
+            foreach (var code in new[] { "en", "vi", "ja", "zh", "ko", "auto" }) {
+                var flag = languageFlags.Convert(code, typeof(ImageSource), null!, System.Globalization.CultureInfo.InvariantCulture) as DrawingImage;
+                if (flag == null || !flag.IsFrozen || !ReferenceEquals(flag, languageFlags.Convert(code, typeof(ImageSource), null!, System.Globalization.CultureInfo.InvariantCulture))) throw new Exception("Language vector is missing, mutable or recreated during rendering: " + code);
+            }
+
             var resumeListenCalls = 0;
             using (var resumeFixture = new ConversationViewModel(beginListening: () => { resumeListenCalls++; return Task.CompletedTask; })) {
                 resumeFixture.Messages.Add(new ChatMessageItem { Text = "A saved reply" });
@@ -203,6 +209,11 @@ internal static class Program
                     var activeTab = tabs.Children.OfType<RadioButton>().Single(tab => tab.IsChecked == true);
                     var tabBounds = activeTab.TransformToAncestor(headerScroll).TransformBounds(new Rect(activeTab.RenderSize));
                     if (tabBounds.Left < -1 || tabBounds.Right > headerScroll.ActualWidth + 1) throw new Exception("Selected header tab is outside the scroll viewport");
+                    foreach (var languagePicker in Descendants(window).OfType<ComboBox>().Where(picker => picker.IsVisible && Descendants(picker).OfType<Image>().Any(image => image.IsVisible && image.Source is DrawingImage))) {
+                        var label = Descendants(languagePicker).OfType<TextBlock>().First(text => text.IsVisible);
+                        var labelBounds = label.TransformToAncestor(languagePicker).TransformBounds(new Rect(label.RenderSize));
+                        if (labelBounds.Right > languagePicker.ActualWidth - 30) throw new Exception("Language label overlaps the dropdown arrow: " + label.Text);
+                    }
                     var quickView = Descendants(window).OfType<QuickTranslateView>().FirstOrDefault();
                     if (quickView != null) {
                         var quickModel = (QuickTranslateViewModel)quickView.DataContext;
