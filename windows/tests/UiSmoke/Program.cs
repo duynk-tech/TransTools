@@ -632,6 +632,21 @@ internal static class Program
             if (mascotMenu.IsOpen) throw new Exception("Hidden mascot retained action popup");
             mascotFixture.Close();
             Console.WriteLine("PASS: mascot popup opens, dispatches meeting once and closes on hide");
+            using (var voiceCaptureModel = new PersonalVoiceRecorderViewModel(() => true)) {
+                var voiceCaptureWindow = new PersonalVoiceRecorderWindow(voiceCaptureModel) { Owner = window };
+                voiceCaptureWindow.Show(); Pump();
+                var recordControl = (Button)voiceCaptureWindow.FindName("RecordVoiceButton");
+                var previewControl = (Button)voiceCaptureWindow.FindName("PreviewVoiceButton");
+                var saveControl = (Button)voiceCaptureWindow.FindName("SaveVoiceButton");
+                if (!recordControl.IsEnabled || previewControl.IsEnabled || saveControl.IsEnabled) throw new Exception("Empty personal voice recording enables playback or profile creation");
+                voiceCaptureModel.ToggleRecordingCommand.Execute(null); Pump();
+                if (voiceCaptureModel.IsRecording || !voiceCaptureModel.Status.Contains("Dừng phiên")) throw new Exception("Personal voice capture ignores active audio session");
+                voiceCaptureModel.IsProcessing = true; Pump();
+                if (recordControl.IsEnabled || previewControl.IsEnabled || saveControl.IsEnabled) throw new Exception("Personal voice processing allows concurrent recording or playback");
+                voiceCaptureModel.IsProcessing = false; Pump();
+                ValidateControlLayout(voiceCaptureWindow, "Personal voice recorder"); Capture(voiceCaptureWindow, output, "personal-voice-recorder.png");
+                voiceCaptureWindow.Close();
+            }
             var about = new AboutWindow { Owner = window }; about.Show(); Pump(); ValidateControlLayout(about, "About"); Capture(about, output, "about.png"); about.Close();
             var rename = new RenameRecordWindow("Cuộc họp dự án"){ Owner = window }; rename.Show(); Pump(); ValidateControlLayout(rename, "Rename record"); Capture(rename, output, "rename-record.png"); rename.Close();
             var deleteConfirm = new ConfirmDeleteWindow("Cuộc họp dự án") { Owner = window }; deleteConfirm.Show(); Pump(); ValidateControlLayout(deleteConfirm, "Delete confirmation"); Capture(deleteConfirm, output, "delete-record.png"); deleteConfirm.Close();
