@@ -168,6 +168,18 @@ internal static class Program
                         throw new Exception($"Navigation label clipped at {width}: {nav.Content}");
                 }
 
+                var meetingNav = (RadioButton)window.FindName("NavMeeting");
+                var headerMeeting = (MeetingViewModel)meetingNav.DataContext;
+                headerMeeting.IsRecording = true; Pump();
+                try {
+                    var liveBadge = (Border)meetingNav.Template.FindName("MeetingLiveBadge", meetingNav);
+                    if (!liveBadge.IsVisible || liveBadge.ActualWidth <= 0) throw new Exception("Recording state does not show meeting LIVE badge");
+                    var badgeRight = liveBadge.TranslatePoint(new Point(liveBadge.ActualWidth, 0), meetingNav).X;
+                    if (badgeRight > meetingNav.ActualWidth + 1) throw new Exception("Meeting LIVE badge overflows navigation tab");
+                    Capture(window, output, $"{width}-meeting-live-header.png");
+                } finally { headerMeeting.IsRecording = false; Pump(); }
+                if (((Border)meetingNav.Template.FindName("MeetingLiveBadge", meetingNav)).IsVisible) throw new Exception("Meeting LIVE badge remains after recording stops");
+
                 foreach (var route in new[] { "Cuộc họp", "Sổ tay", "Dịch nhanh", "Đọc văn bản", "Học ngôn ngữ", "Trò chuyện", "Cài đặt" }) {
                     var button = Descendants(window).OfType<RadioButton>().First(b => Equals(b.Content, route));
                     button.IsChecked = true; Pump(); window.UpdateLayout();
