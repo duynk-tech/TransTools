@@ -10,17 +10,19 @@ public partial class ChipChipMascotWindow : Window
     public event Action? LearningRequested;
     public event Action? MeetingRequested;
     public event Action? SubtitleRequested;
-    private void StartMeeting_Click(object sender, RoutedEventArgs e) => MeetingRequested?.Invoke();
-    private void OpenSubtitle_Click(object sender, RoutedEventArgs e) => SubtitleRequested?.Invoke();
-    private void StartLearning_Click(object sender, RoutedEventArgs e) => LearningRequested?.Invoke();
-    private void OpenApplication_Click(object sender, RoutedEventArgs e) { Application.Current.MainWindow.Show(); Application.Current.MainWindow.Activate(); }
+    private void StartMeeting_Click(object sender, RoutedEventArgs e) { MascotMenu.IsOpen = false; MeetingRequested?.Invoke(); }
+    private void OpenSubtitle_Click(object sender, RoutedEventArgs e) { MascotMenu.IsOpen = false; SubtitleRequested?.Invoke(); }
+    private void StartLearning_Click(object sender, RoutedEventArgs e) { MascotMenu.IsOpen = false; LearningRequested?.Invoke(); }
+    private void OpenApplication_Click(object sender, RoutedEventArgs e) { MascotMenu.IsOpen = false; Application.Current.MainWindow.Show(); Application.Current.MainWindow.Activate(); }
+    private void ShowMenu(object sender, MouseButtonEventArgs e) { MascotMenu.IsOpen = true; e.Handled = true; }
+    private void CloseMenu(object sender, RoutedEventArgs e) => MascotMenu.IsOpen = false;
     public void ShowReminder(string text) {
         _wasVisible = IsVisible; _reminding = true; BubbleText.Text = text; Show(); SpeechBubble.Visibility = Visibility.Visible;
         _reminderTimer.Stop(); _reminderTimer.Start();
     }
     public ChipChipMascotWindow() {
         InitializeComponent(); SetBinding(TitleProperty, new System.Windows.Data.Binding("DisplayName") { Source = TransTools.Services.Experience.AssistantIdentity.Shared }); Left = SystemParameters.WorkArea.Right - Width - 30; Top = SystemParameters.WorkArea.Bottom - Height - 30;
-        IsVisibleChanged += (_, _) => { if (!IsVisible) ResetAnimation(); };
+        IsVisibleChanged += (_, _) => { if (!IsVisible) { MascotMenu.IsOpen = false; ResetAnimation(); } };
         _reminderTimer.Tick += (_, _) => { _reminderTimer.Stop(); _reminding = false; ResetAnimation(); if (!_wasVisible) Hide(); };
         Closed += (_, _) => { _reminderTimer.Stop(); ResetAnimation(); };
     }
