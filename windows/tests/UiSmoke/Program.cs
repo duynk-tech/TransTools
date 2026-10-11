@@ -261,7 +261,15 @@ internal static class Program
                         pendingCaption.Vietnamese = "Xin chờ câu đã được dịch."; Pump();
                         if (Descendants(pendingCard).OfType<Button>().Count(button => button.IsVisible && button.IsEnabled) != 4 || Descendants(pendingCard).OfType<TextBlock>().Any(text => text.IsVisible && text.Text == "Đang dịch...")) throw new Exception("Arriving translation did not update its actions and placeholder");
                         var translatedText = Descendants(pendingCard).OfType<TextBlock>().First(text => text.Text == pendingCaption.Vietnamese);
-                        if (translatedText.FontSize != 16 || translatedText.FontWeight != FontWeights.SemiBold) throw new Exception("Translation lost Mac text emphasis");
+                        if (translatedText.FontSize != 16 || translatedText.FontWeight != FontWeights.Normal) throw new Exception("Translation lost mint reading style");
+                        var captionTools = Descendants(pendingCard).OfType<StackPanel>().First(panel => ReferenceEquals(panel.Style, meetingView.FindResource("CaptionTools")));
+                        var cardSize = pendingCard.RenderSize;
+                        var copyAction = Descendants(captionTools).OfType<Button>().First(button => button.IsEnabled && System.Windows.Automation.AutomationProperties.GetName(button) == "Sao chép câu gốc");
+                        if (!copyAction.Focus()) throw new Exception("Caption action is not keyboard accessible");
+                        Pump();
+                        if (captionTools.Opacity != 1 || pendingCard.RenderSize != cardSize) throw new Exception("Revealing caption tools reflowed the card or hid keyboard actions");
+                        Capture(window, output, $"{width}-meeting-card-focused.png");
+                        ((Button)window.FindName("BackgroundButton")).Focus(); Pump();
                         Capture(window, output, $"{width}-meeting-ready-card.png");
                         pendingCaption.Vietnamese = string.Join("\n", Enumerable.Range(1, 28).Select(index => $"Dòng bản dịch {index}: nội dung dài cần theo dõi đến cuối.")); Pump();
                         var meetingScroll = Descendants(captionList).OfType<ScrollViewer>().First();
