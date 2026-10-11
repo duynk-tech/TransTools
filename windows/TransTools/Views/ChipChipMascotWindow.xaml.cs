@@ -16,6 +16,17 @@ public partial class ChipChipMascotWindow : Window
     private void OpenApplication_Click(object sender, RoutedEventArgs e) { MascotMenu.IsOpen = false; Application.Current.MainWindow.Show(); Application.Current.MainWindow.Activate(); }
     private void ShowMenu(object sender, MouseButtonEventArgs e) { MascotMenu.IsOpen = true; e.Handled = true; }
     private void CloseMenu(object sender, RoutedEventArgs e) => MascotMenu.IsOpen = false;
+    public void AttachQuickTranslation(TransTools.ViewModels.QuickTranslateViewModel model)
+    {
+        QuickTranslationPanel.DataContext = model;
+        QuickTranslationPanel.Visibility = Visibility.Visible;
+    }
+    private void CopyQuickTranslation(object sender, RoutedEventArgs e)
+    {
+        if (QuickTranslationPanel.DataContext is not TransTools.ViewModels.QuickTranslateViewModel model || string.IsNullOrWhiteSpace(model.TranslatedText)) return;
+        try { Clipboard.SetText(model.TranslatedText); model.Status = "Đã sao chép"; }
+        catch (Exception) { model.Status = "Chưa sao chép được. Hãy thử lại."; }
+    }
     public void SetMeetingState(bool recording, bool canToggle)
     {
         MeetingActionButton.IsEnabled = canToggle;

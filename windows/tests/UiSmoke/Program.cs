@@ -582,12 +582,15 @@ internal static class Program
             var routedSettings = Descendants(window).OfType<SettingsView>().First();
             if (((TabControl)routedSettings.FindName("SettingsSections")).SelectedIndex != 4 || Descendants(routedSettings).OfType<VoiceSettingsView>().First().DataContext is not VoiceSettingsViewModel routedVoice || routedVoice.Language != ((MeetingViewModel)routedMeeting.DataContext).TargetLanguage) throw new Exception("Earphone voice settings route lost the target language");
             var mascotFixture = new ChipChipMascotWindow { Left = 700, Top = 220 };
+            var mascotQuickModel = new QuickTranslateViewModel { SourceText = "Xin chào", TranslatedText = "Hello", SourceLanguage = "vi", TargetLanguage = "en" };
+            mascotFixture.AttachQuickTranslation(mascotQuickModel);
             mascotFixture.Show(); Pump();
             var mascotMenu = (System.Windows.Controls.Primitives.Popup)mascotFixture.FindName("MascotMenu");
             var mascotImage = (Image)mascotFixture.FindName("MascotImage");
             mascotImage.RaiseEvent(new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount, System.Windows.Input.MouseButton.Right) { RoutedEvent = UIElement.MouseRightButtonUpEvent });
             Pump();
             if (!mascotMenu.IsOpen) throw new Exception("Mascot right click did not open action popup");
+            if (((TextBox)mascotFixture.FindName("MascotQuickInput")).Text != "Xin chào" || ((TextBox)mascotFixture.FindName("MascotQuickResult")).Text != "Hello") throw new Exception("Mascot inline translation lost shared editor state");
             ValidateControlLayout((FrameworkElement)mascotMenu.Child, "Mascot actions");
             var mascotPopupBody = (FrameworkElement)mascotMenu.Child;
             var targetCenter = mascotImage.PointToScreen(new Point(mascotImage.ActualWidth / 2, mascotImage.ActualHeight / 2));

@@ -222,6 +222,7 @@ public partial class MainWindow : Window
         if (_mascotWindow == null)
         {
             _mascotWindow = new ChipChipMascotWindow();
+            _mascotWindow.AttachQuickTranslation(_translateViewModel);
             _mascotWindow.SetMeetingState(_meetingViewModel.IsRecording, !_meetingViewModel.IsPreparing && !_meetingViewModel.IsStopping);
             _mascotWindow.LearningRequested += () => _learningViewModel.LearnWithChipChipCommand.Execute(null);
             _mascotWindow.MeetingRequested += StartMeetingFromMascot;
@@ -241,6 +242,7 @@ public partial class MainWindow : Window
     private void ShowBreakReminder() {
         if (_mascotWindow == null) {
             _mascotWindow = new ChipChipMascotWindow();
+            _mascotWindow.AttachQuickTranslation(_translateViewModel);
             _mascotWindow.SetMeetingState(_meetingViewModel.IsRecording, !_meetingViewModel.IsPreparing && !_meetingViewModel.IsStopping);
             _mascotWindow.LearningRequested += () => _learningViewModel.LearnWithChipChipCommand.Execute(null);
             _mascotWindow.MeetingRequested += StartMeetingFromMascot;
