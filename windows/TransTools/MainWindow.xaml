@@ -23,9 +23,9 @@
   </Style>
  </Window.Resources>
  <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-  <ui:GardenBackground x:Name="DashboardGarden" Grid.RowSpan="2"/><Image x:Name="DashboardPhoto" Grid.RowSpan="2" Stretch="UniformToFill" IsHitTestVisible="False" Visibility="Collapsed"/><Border x:Name="PhotoVeil" Grid.RowSpan="2" Background="#65FFFFFF" IsHitTestVisible="False" Visibility="Collapsed"/><Border Background="#EBF8F5" BorderBrush="#BDD9D2" BorderThickness="0,0,0,1" Padding="18,12">
+  <ui:GardenBackground x:Name="DashboardGarden" Grid.RowSpan="2"/><Image x:Name="DashboardPhoto" Grid.RowSpan="2" Stretch="UniformToFill" IsHitTestVisible="False" Visibility="Collapsed"/><Border x:Name="PhotoVeil" Grid.RowSpan="2" Background="#65FFFFFF" IsHitTestVisible="False" Visibility="Collapsed"/><Border Background="#33FFFFFF" BorderBrush="#1A287568" BorderThickness="0,0,0,1" Padding="18,8">
    <DockPanel LastChildFill="True">
-    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"><Button x:Name="BackgroundButton" Width="40" Height="40" MinHeight="40" Padding="0" ToolTip="Chọn nền" Style="{StaticResource SecondaryButton}" Click="ShowBackground_Click"><TextBlock Text="&#xEB9F;" FontFamily="Segoe MDL2 Assets"/><Button.ContextMenu><ContextMenu>
+    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"><Button x:Name="BackgroundButton" Width="36" Height="36" MinHeight="36" Padding="0" ToolTip="Chọn nền" Style="{StaticResource SecondaryButton}" Click="ShowBackground_Click"><TextBlock Text="&#xEB9F;" FontFamily="Segoe MDL2 Assets"/><Button.ContextMenu><ContextMenu>
 <MenuItem Header="Tự động theo thời gian" Tag="auto" IsCheckable="True" Click="ChooseBackground_Click"/>
 <MenuItem Header="Buổi sáng" Tag="morning" IsCheckable="True" Click="ChooseBackground_Click"/>
 <MenuItem Header="Buổi trưa" Tag="noon" IsCheckable="True" Click="ChooseBackground_Click"/>
@@ -34,8 +34,8 @@
 <MenuItem Header="Xanh mint" Tag="mint" IsCheckable="True" Click="ChooseBackground_Click"/><Separator/>
 <MenuItem Header="Chọn ảnh từ máy…" Tag="photo" IsCheckable="True" Click="ChoosePhoto_Click"/>
 </ContextMenu></Button.ContextMenu></Button>
-     <Button Height="40" MinHeight="40" Width="110" ToolTip="{Binding DisplayName,Source={x:Static experience:AssistantIdentity.Shared}}" Click="ToggleMascot_Click" Background="#E1EEE6" Foreground="#287568" Margin="12,0,8,0"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock Text="{Binding DisplayName,Source={x:Static experience:AssistantIdentity.Shared}}" MaxWidth="72" TextTrimming="CharacterEllipsis"/></StackPanel></Button>
-     <Button Height="40" MinHeight="40" Click="ShowSubtitleMenu_Click" Style="{StaticResource SecondaryButton}"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8F2;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock Text="Phụ đề"/></StackPanel><Button.ContextMenu><ContextMenu>
+     <Button Height="36" MinHeight="36" Width="110" ToolTip="{Binding DisplayName,Source={x:Static experience:AssistantIdentity.Shared}}" Click="ToggleMascot_Click" Background="#E1EEE6" Foreground="#287568" Margin="6,0,6,0"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock Text="{Binding DisplayName,Source={x:Static experience:AssistantIdentity.Shared}}" MaxWidth="72" TextTrimming="CharacterEllipsis"/></StackPanel></Button>
+     <Button Height="36" MinHeight="36" Click="ShowSubtitleMenu_Click" Style="{StaticResource SecondaryButton}"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8F2;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock Text="Phụ đề"/></StackPanel><Button.ContextMenu><ContextMenu>
 <MenuItem Header="Hiện ở phía trên" Tag="top" Click="ChooseSubtitlePosition_Click"/>
 <MenuItem Header="Hiện ở phía dưới" Tag="bottom" Click="ChooseSubtitlePosition_Click"/>
 <Separator/><MenuItem x:Name="SubtitleVisibilityMenuItem" Header="Hiện vị trí đã lưu" Tag="toggle" Click="ChooseSubtitlePosition_Click"/>
