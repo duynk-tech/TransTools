@@ -8,6 +8,23 @@ namespace TransTools.Views;
 
 public sealed class MeetingTasksWindow : Window
 {
+    // This template is fixed application markup, never user or AI content.
+    private static readonly Style CompletionStyle = (Style)System.Windows.Markup.XamlReader.Parse("""
+        <Style xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" TargetType="CheckBox">
+          <Setter Property="Width" Value="24"/><Setter Property="Height" Value="24"/><Setter Property="Cursor" Value="Hand"/>
+          <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="CheckBox">
+            <Border x:Name="Circle" Width="22" Height="22" CornerRadius="11" Background="Transparent" BorderBrush="#8CA69C" BorderThickness="1.5">
+              <TextBlock x:Name="Tick" Text="✓" Visibility="Collapsed" Foreground="White" FontSize="14" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsChecked" Value="True"><Setter TargetName="Circle" Property="Background" Value="#287568"/><Setter TargetName="Circle" Property="BorderBrush" Value="#287568"/><Setter TargetName="Tick" Property="Visibility" Value="Visible"/></Trigger>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Circle" Property="BorderBrush" Value="#287568"/></Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Circle" Property="BorderBrush" Value="#287568"/></Trigger>
+              <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate></Setter.Value></Setter>
+        </Style>
+        """);
     private readonly MeetingSession _session;
     private readonly Func<string, CancellationToken, Task<string>>? _generate;
     private readonly CancellationTokenSource _lifetime = new();
@@ -60,8 +77,10 @@ public sealed class MeetingTasksWindow : Window
         grid.ColumnDefinitions.Add(new ColumnDefinition());
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var check = new CheckBox { VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 10, 12, 0) }; grid.Children.Add(check);
+        var check = new CheckBox { Style = CompletionStyle, ToolTip = "Đánh dấu hoàn thành", VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 10, 12, 0) }; grid.Children.Add(check);
         var text = new TextBox { Text = task.Title, TextWrapping = TextWrapping.Wrap, AcceptsReturn = true, MaxLength = 600, MaxHeight = 170, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Margin = new Thickness(0), Padding = new Thickness(8) }; Grid.SetColumn(text, 1); grid.Children.Add(text);
+        check.Checked += (_, _) => { text.TextDecorations = TextDecorations.Strikethrough; text.Foreground = new SolidColorBrush(Color.FromRgb(115, 130, 124)); };
+        check.Unchecked += (_, _) => { text.TextDecorations = null; text.Foreground = new SolidColorBrush(Color.FromRgb(36, 61, 53)); };
         var remove = new Button { Content = "\uE74D", FontFamily = new FontFamily("Segoe MDL2 Assets"), Width = 32, Padding = new Thickness(4), MinHeight = 32, Style = (Style)FindResource("DestructiveButton"), Margin = new Thickness(8, 0, 0, 0), ToolTip = "Xóa việc", VerticalAlignment = VerticalAlignment.Top }; Grid.SetColumn(remove, 3); grid.Children.Add(remove);
         if (task.Assignee.Length > 0) {
             var badge = new Border { Background = Mint(), CornerRadius = new CornerRadius(10), Padding = new Thickness(7, 4, 7, 4), Margin = new Thickness(8, 4, 0, 0), VerticalAlignment = VerticalAlignment.Top,

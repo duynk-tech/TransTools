@@ -723,6 +723,14 @@ internal static class Program
         taskInput.Text = "Việc tự thêm có dấu";
         Descendants(tasksWindow).OfType<Button>().Single(b => Equals(b.Content, "Thêm việc")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
         if (!Descendants(tasksWindow).OfType<TextBox>().Any(t => t.Text == "Việc tự thêm có dấu")) throw new Exception("Manual task was not added");
+        var completion = Descendants(tasksWindow).OfType<CheckBox>().First();
+        var taskEditor = Descendants((Grid)completion.Parent).OfType<TextBox>().First();
+        var originalTaskText = taskEditor.Text;
+        completion.IsChecked = true; Pump();
+        if (taskEditor.Text != originalTaskText || taskEditor.TextDecorations != TextDecorations.Strikethrough) throw new Exception("Task completion changed text or failed to strike it through");
+        Capture(tasksWindow, output, "780-meeting-action-items-completed.png");
+        completion.IsChecked = false; Pump();
+        if (taskEditor.Text != originalTaskText || taskEditor.TextDecorations?.Count > 0) throw new Exception("Unchecking task did not restore original presentation");
         tasksWindow.Close(); Pump();
         var noteRecord = notebook.Sessions.Single(s => s.Id == saved.Id);
         var noteText = "# Ghi chú hội thoại\nGiữ nguyên chữ Việt và 日本語.";
