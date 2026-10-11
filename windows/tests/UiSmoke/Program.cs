@@ -165,10 +165,21 @@ internal static class Program
                     var label = new TextBlock { Text = (string)nav.Content, FontFamily = nav.FontFamily, FontSize = nav.FontSize, FontWeight = nav.FontWeight };
                     label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                     var icon = Descendants(nav).OfType<System.Windows.Shapes.Path>().First();
-                    var badgeWidth = new[] { "NotebookBadge", "MeetingLiveBadge" }.Select(name => nav.Template.FindName(name, nav)).OfType<Border>().Where(badge => badge.IsVisible).Sum(badge => badge.ActualWidth + badge.Margin.Left + badge.Margin.Right);
+                    var badgeWidth = new[] { "NotebookBadge", "LearningBadge", "MeetingLiveBadge" }.Select(name => nav.Template.FindName(name, nav)).OfType<Border>().Where(badge => badge.IsVisible).Sum(badge => badge.ActualWidth + badge.Margin.Left + badge.Margin.Right);
                     if (label.DesiredSize.Width + icon.ActualWidth + icon.Margin.Left + icon.Margin.Right + nav.Padding.Left + nav.Padding.Right + 2 + badgeWidth > nav.ActualWidth + 1)
                         throw new Exception($"Navigation label clipped at {width}: {nav.Content}");
                 }
+
+                var headerScroll = (ScrollViewer)window.FindName("HeaderTabsScroll");
+                var notebookNav = (RadioButton)window.FindName("NavNotebook");
+                var notebookBadge = (Border)notebookNav.Template.FindName("NotebookBadge", notebookNav);
+                if (notebookBadge.IsVisible != (window.NotebookState.Sessions.Count > 0)) throw new Exception("Notebook header badge does not follow nonempty session count");
+                if (tabs.ColumnDefinitions.Any(column => !column.Width.IsAuto)) throw new Exception("Header tabs distribute widths instead of following their labels");
+                var learningNav = tabs.Children.OfType<RadioButton>().Single(tab => Equals(tab.Content, "Học ngôn ngữ"));
+                var learningBadge = (Border)learningNav.Template.FindName("LearningBadge", learningNav);
+                if (learningBadge.IsVisible != (window.LearningState.DueCount > 0)) throw new Exception("Learning header badge does not follow due vocabulary count");
+                var dueLabel = Descendants(learningBadge).OfType<TextBlock>().Single();
+                if (dueLabel.Text != window.LearningState.DueCount.ToString()) throw new Exception("Learning header badge count is stale");
 
                 var meetingNav = (RadioButton)window.FindName("NavMeeting");
                 var headerMeeting = (MeetingViewModel)meetingNav.DataContext;
@@ -186,6 +197,9 @@ internal static class Program
                     var button = Descendants(window).OfType<RadioButton>().First(b => Equals(b.Content, route));
                     button.IsChecked = true; Pump(); window.UpdateLayout();
                     if (width == 1280) Capture(window, output, $"{width}-idle-{route}.png");
+                    var activeTab = tabs.Children.OfType<RadioButton>().Single(tab => tab.IsChecked == true);
+                    var tabBounds = activeTab.TransformToAncestor(headerScroll).TransformBounds(new Rect(activeTab.RenderSize));
+                    if (tabBounds.Left < -1 || tabBounds.Right > headerScroll.ActualWidth + 1) throw new Exception("Selected header tab is outside the scroll viewport");
                     var quickView = Descendants(window).OfType<QuickTranslateView>().FirstOrDefault();
                     if (quickView != null) {
                         var quickModel = (QuickTranslateViewModel)quickView.DataContext;

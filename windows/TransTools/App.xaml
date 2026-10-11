@@ -90,14 +90,14 @@
              <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
              <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBox">
                  <Grid>
-                     <Border x:Name="Chrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="9"/>
+                     <Border x:Name="Chrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="10"/>
                      <ToggleButton Focusable="False" IsChecked="{Binding IsDropDownOpen,Mode=TwoWay,RelativeSource={RelativeSource TemplatedParent}}" Cursor="Hand">
                          <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border Background="Transparent"/></ControlTemplate></ToggleButton.Template>
                      </ToggleButton>
                      <ContentPresenter IsHitTestVisible="False" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" Margin="10,6,34,6" VerticalAlignment="Center"/>
                      <Border Width="24" Height="26" Background="#E0EFE9" CornerRadius="6" HorizontalAlignment="Right" Margin="0,0,5,0" IsHitTestVisible="False"><Path Data="M 0 0 L 4 4 L 8 0" Stroke="#287568" StrokeThickness="1.8" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
                      <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="None">
-                         <Border Background="White" BorderBrush="#75BBAE" BorderThickness="1" CornerRadius="9" MinWidth="{Binding ActualWidth,RelativeSource={RelativeSource TemplatedParent}}" MaxHeight="{TemplateBinding MaxDropDownHeight}" Margin="0,3,0,0" Padding="4">
+                         <Border Background="White" BorderBrush="#75BBAE" BorderThickness="1" CornerRadius="10" MinWidth="{Binding ActualWidth,RelativeSource={RelativeSource TemplatedParent}}" MaxHeight="{TemplateBinding MaxDropDownHeight}" Margin="0,3,0,0" Padding="4">
                              <ScrollViewer CanContentScroll="True"><ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/></ScrollViewer>
                          </Border>
                      </Popup>

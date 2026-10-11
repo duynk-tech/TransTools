@@ -8,6 +8,8 @@ public partial class MainWindow : Window
 {
     private readonly MeetingViewModel _meetingViewModel = new();
     public MeetingViewModel MeetingState => _meetingViewModel;
+    public NotebookViewModel NotebookState => _notebookViewModel;
+    public LearningViewModel LearningState => _learningViewModel;
     private readonly NotebookViewModel _notebookViewModel = new();
     private readonly QuickTranslateViewModel _translateViewModel = new();
     private readonly ConversationViewModel _conversationViewModel;
@@ -54,6 +56,8 @@ public partial class MainWindow : Window
         InitializeComponent();
         NavMeeting.DataContext = _meetingViewModel;
         NavNotebook.DataContext = _notebookViewModel;
+        foreach (var tab in NavigationTabs.Children.OfType<System.Windows.Controls.RadioButton>())
+            tab.Checked += (_, _) => Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() => tab.BringIntoView()));
         ApplyBackground();
 
         _meetingViewModel.OnCaptionPresented += caption => _subtitleWindow?.UpdateCaption(caption);
