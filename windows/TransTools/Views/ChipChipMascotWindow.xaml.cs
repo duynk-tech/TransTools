@@ -19,6 +19,7 @@ public partial class ChipChipMascotWindow : Window
     public void SetMeetingState(bool recording, bool canToggle)
     {
         MeetingActionButton.IsEnabled = canToggle;
+        MeetingActionIcon.Text = recording ? "\uE71A" : "\uE768";
         MeetingActionLabel.Text = recording ? "Dừng cuộc họp" : "Bắt đầu cuộc họp";
         System.Windows.Automation.AutomationProperties.SetName(MeetingActionButton, MeetingActionLabel.Text);
         MeetingStateLabel.Text = !canToggle ? "Đang xử lý cuộc họp…" : recording ? "Đang ghi chú cuộc họp" : "Hỗ trợ cuộc họp và học ngôn ngữ";

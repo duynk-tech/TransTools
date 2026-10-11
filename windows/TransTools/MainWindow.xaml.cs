@@ -47,7 +47,7 @@ public partial class MainWindow : Window
         _meetingViewModel.PropertyChanged += (_, change) => {
             _settingsViewModel.RefreshModelAvailability();
             if (change.PropertyName is nameof(MeetingViewModel.IsRecording) or nameof(MeetingViewModel.IsPreparing) or nameof(MeetingViewModel.IsStopping))
-                _mascotWindow?.SetMeetingState(_meetingViewModel.IsRecording, _meetingViewModel.CanToggleRecording);
+                _mascotWindow?.SetMeetingState(_meetingViewModel.IsRecording, !_meetingViewModel.IsPreparing && !_meetingViewModel.IsStopping);
         };
         _conversationViewModel.PropertyChanged += (_, _) => _settingsViewModel.RefreshModelAvailability();
         InitializeComponent();
@@ -173,7 +173,7 @@ public partial class MainWindow : Window
     private async void StartMeetingFromMascot()
     {
         try {
-            if (!_meetingViewModel.CanToggleRecording) return;
+            if (_meetingViewModel.IsPreparing || _meetingViewModel.IsStopping) return;
             if (_meetingViewModel.IsRecording) { await _meetingViewModel.StopRecordingAsync(); return; }
             await _meetingViewModel.StartRecordingCommand.ExecuteAsync(null);
             if (_meetingViewModel.IsRecording) { ShowSubtitle(); Hide(); }
@@ -222,7 +222,7 @@ public partial class MainWindow : Window
         if (_mascotWindow == null)
         {
             _mascotWindow = new ChipChipMascotWindow();
-            _mascotWindow.SetMeetingState(_meetingViewModel.IsRecording, _meetingViewModel.CanToggleRecording);
+            _mascotWindow.SetMeetingState(_meetingViewModel.IsRecording, !_meetingViewModel.IsPreparing && !_meetingViewModel.IsStopping);
             _mascotWindow.LearningRequested += () => _learningViewModel.LearnWithChipChipCommand.Execute(null);
             _mascotWindow.MeetingRequested += StartMeetingFromMascot;
             _mascotWindow.SubtitleRequested += ShowSubtitle;
@@ -241,7 +241,7 @@ public partial class MainWindow : Window
     private void ShowBreakReminder() {
         if (_mascotWindow == null) {
             _mascotWindow = new ChipChipMascotWindow();
-            _mascotWindow.SetMeetingState(_meetingViewModel.IsRecording, _meetingViewModel.CanToggleRecording);
+            _mascotWindow.SetMeetingState(_meetingViewModel.IsRecording, !_meetingViewModel.IsPreparing && !_meetingViewModel.IsStopping);
             _mascotWindow.LearningRequested += () => _learningViewModel.LearnWithChipChipCommand.Execute(null);
             _mascotWindow.MeetingRequested += StartMeetingFromMascot;
             _mascotWindow.SubtitleRequested += ShowSubtitle;
