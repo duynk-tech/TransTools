@@ -164,7 +164,7 @@ internal static class Program
                 foreach (var nav in tabs.Children.OfType<RadioButton>()) {
                     var label = new TextBlock { Text = (string)nav.Content, FontFamily = nav.FontFamily, FontSize = nav.FontSize, FontWeight = nav.FontWeight };
                     label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-                    if (label.DesiredSize.Width + 17 + 7 + nav.Padding.Left + nav.Padding.Right + 2 > nav.ActualWidth + 1)
+                    if (label.DesiredSize.Width + 17 + 7 + nav.Padding.Left + nav.Padding.Right + 2 + (Equals(nav.Content, "Sổ tay") ? 26 : 0) > nav.ActualWidth + 1)
                         throw new Exception($"Navigation label clipped at {width}: {nav.Content}");
                 }
 

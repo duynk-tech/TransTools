@@ -47,6 +47,7 @@ public partial class MainWindow : Window
         _meetingViewModel.PropertyChanged += (_, _) => _settingsViewModel.RefreshModelAvailability();
         _conversationViewModel.PropertyChanged += (_, _) => _settingsViewModel.RefreshModelAvailability();
         InitializeComponent();
+        NavNotebook.DataContext = _notebookViewModel;
         ApplyBackground();
 
         _meetingViewModel.OnCaptionPresented += caption => _subtitleWindow?.UpdateCaption(caption);
