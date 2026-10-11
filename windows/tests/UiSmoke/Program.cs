@@ -247,7 +247,7 @@ internal static class Program
                         pendingCaption.Vietnamese = "Xin chờ câu đã được dịch."; Pump();
                         if (Descendants(pendingCard).OfType<Button>().Count(button => button.IsVisible && button.IsEnabled) != 4 || Descendants(pendingCard).OfType<TextBlock>().Any(text => text.IsVisible && text.Text == "Đang dịch...")) throw new Exception("Arriving translation did not update its actions and placeholder");
                         var translatedText = Descendants(pendingCard).OfType<TextBlock>().First(text => text.Text == pendingCaption.Vietnamese);
-                        if (translatedText.FontSize != 15 || translatedText.FontWeight != FontWeights.SemiBold) throw new Exception("Translation lost Mac text emphasis");
+                        if (translatedText.FontSize != 16 || translatedText.FontWeight != FontWeights.SemiBold) throw new Exception("Translation lost Mac text emphasis");
                         Capture(window, output, $"{width}-meeting-ready-card.png");
                         pendingCaption.Vietnamese = string.Join("\n", Enumerable.Range(1, 28).Select(index => $"Dòng bản dịch {index}: nội dung dài cần theo dõi đến cuối.")); Pump();
                         var meetingScroll = Descendants(captionList).OfType<ScrollViewer>().First();
