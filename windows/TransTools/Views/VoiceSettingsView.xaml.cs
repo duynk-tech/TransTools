@@ -39,5 +39,12 @@ public partial class VoiceSettingsView : UserControl
         var dialog = ConfirmDeleteWindow.ForPersonalVoice(model.SelectedRecording.Name); dialog.Owner = Window.GetWindow(this);
         if (dialog.ShowDialog() == true) model.DeleteRecording(id);
     }
+    private void RemoveRecordingModel_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not VoiceSettingsViewModel model || !model.CanManageRecording || model.SelectedRecording == null) return;
+        var id = model.SelectedRecording.Id;
+        var dialog = ConfirmDeleteWindow.ForVoiceModel(model.SelectedRecording.Name); dialog.Owner = Window.GetWindow(this);
+        if (dialog.ShowDialog() == true) model.RemoveRecordingModel(id);
+    }
     private void ManageModels_Click(object sender, RoutedEventArgs e) => ManageModelsRequested?.Invoke();
 }

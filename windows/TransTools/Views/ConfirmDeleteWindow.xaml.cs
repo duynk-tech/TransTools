@@ -11,6 +11,14 @@ public partial class ConfirmDeleteWindow : Window
         dialog.ConfirmButton.Content = "Chuyển vào Thùng rác";
         return dialog;
     }
+    public static ConfirmDeleteWindow ForVoiceModel(string name)
+    {
+        var dialog = new ConfirmDeleteWindow(name) { Title = "Gỡ hồ sơ VieNeu" };
+        dialog.Question.Text = "Gỡ hồ sơ VieNeu của bản thu này?";
+        dialog.Detail.Text = "Giữ nguyên bản thu gốc. Bạn có thể tạo lại hồ sơ khi cần. Giọng đang chọn trở về giọng dựng sẵn.";
+        dialog.ConfirmButton.Content = "Gỡ hồ sơ";
+        return dialog;
+    }
     private void Confirm_Click(object sender, RoutedEventArgs e) => DialogResult = true;
     private void Cancel_Click(object sender, RoutedEventArgs e) => Close();
 }

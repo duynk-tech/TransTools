@@ -124,9 +124,9 @@ public sealed class VoiceService
             }
         } finally { _speakerGate.Release(); }
     }
-    public async Task SpeakAsync(string text, string language, string engine, double rate = 1, CancellationToken cancellationToken = default, double? sentencePause = null, double? paragraphPause = null)
+    public async Task SpeakAsync(string text, string language, string engine, double rate = 1, CancellationToken cancellationToken = default, double? sentencePause = null, double? paragraphPause = null, Guid? personalVoiceOverride = null)
     {
-        var personalVoiceId = VoicePreferences.PersonalVoiceFor(language, engine);
+        var personalVoiceId = personalVoiceOverride ?? VoicePreferences.PersonalVoiceFor(language, engine);
         Stop(); var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken); _playback = cts;
         bool entered = false;
         try {

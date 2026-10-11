@@ -10,14 +10,47 @@ namespace TransTools.ViewModels;
 public partial class VoiceSettingsViewModel
 {
     public ObservableCollection<PersonalVoiceProfile> Recordings { get; } = new();
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanManageRecording))] [NotifyCanExecuteChangedFor(nameof(CreateRecordingVoiceCommand))] private PersonalVoiceProfile? _selectedRecording;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanManageRecording), nameof(CanUseRecordingVoice))] [NotifyCanExecuteChangedFor(nameof(CreateRecordingVoiceCommand))] private PersonalVoiceProfile? _selectedRecording;
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CreateRecordingVoiceCommand))]
-    [NotifyPropertyChangedFor(nameof(CanConfigure), nameof(CanManagePersonalVoice), nameof(CanChangeRate), nameof(CanManageRecording))]
+    [NotifyPropertyChangedFor(nameof(CanConfigure), nameof(CanManagePersonalVoice), nameof(CanChangeRate), nameof(CanManageRecording), nameof(CanUseRecordingVoice))]
     private bool _isBuildingVoice;
     private CancellationTokenSource? _buildingVoice;
     private CancellationTokenSource? _recordingPreview;
     public bool CanManageRecording => CanConfigure && SelectedRecording != null;
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(CreateRecordingVoiceCommand))] [NotifyPropertyChangedFor(nameof(RecordingModelStatus), nameof(CanUseRecordingVoice))] private bool _hasSelectedModel;
+    public string RecordingModelStatus => SelectedRecording == null ? "Chưa có bản thu" : HasSelectedModel ? "Hồ sơ VieNeu đã tạo" : "Chưa tạo hồ sơ VieNeu";
+    public bool CanUseRecordingVoice => CanManageRecording && HasSelectedModel && VoiceService.Shared.IsVieNeuInstalled;
+    partial void OnSelectedRecordingChanged(PersonalVoiceProfile? value) => UpdateRecordingModelState();
+    private void UpdateRecordingModelState()
+    {
+        HasSelectedModel = SelectedRecording != null && new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot).HasModel(SelectedRecording.Id);
+        OnPropertyChanged(nameof(RecordingModelStatus)); OnPropertyChanged(nameof(CanUseRecordingVoice));
+    }
+    public void RemoveRecordingModel(Guid id)
+    {
+        if (!CanManageRecording || SelectedRecording?.Id != id || _audioBusy()) return;
+        try {
+            new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot).MoveModelToTrash(id);
+            if (VoicePreferences.Get("vi").PersonalVoiceId == id) VoicePreferences.SelectPersonalVoice(null);
+            LoadPreference(); Status = "Đã gỡ hồ sơ VieNeu, giữ nguyên bản thu gốc.";
+        } catch (Exception ex) { LoadPreference(); Status = "Chưa gỡ được hồ sơ: " + ex.Message; }
+    }
+    [RelayCommand] private void UseRecordingVoice()
+    {
+        if (!CanUseRecordingVoice || SelectedRecording == null || _audioBusy()) return;
+        try { VoicePreferences.SelectPersonalVoice(SelectedRecording.Id); Status = "Đã dùng giọng này cho tiếng Việt."; }
+        catch (Exception ex) { Status = "Chưa chọn được giọng: " + ex.Message; }
+    }
+    [RelayCommand] private async Task TestRecordingVoiceAsync()
+    {
+        if (!CanUseRecordingVoice || SelectedRecording == null) return;
+        if (_audioBusy()) { Status = "Dừng phiên đang dùng âm thanh trước khi đọc thử."; return; }
+        var id = SelectedRecording.Id; IsPreviewing = true;
+        try { Status = "Đang đọc thử câu mới…"; await VoiceService.Shared.SpeakAsync("Hôm nay là một ngày mới. Tôi muốn cùng bạn học thêm điều thú vị.", "vi", "VieNeu v3 Turbo", personalVoiceOverride: id); Status = "Đã đọc thử bằng hồ sơ đã chọn."; }
+        catch (Exception ex) { Status = "Chưa đọc thử được: " + ex.Message; }
+        finally { IsPreviewing = false; }
+    }
     public void RenameRecording(string name)
     {
         if (!CanManageRecording || SelectedRecording == null || _audioBusy()) return;
@@ -64,12 +97,12 @@ public partial class VoiceSettingsViewModel
         Recordings.Clear();
         foreach (var recording in store.Load()) Recordings.Add(recording);
         SelectedRecording = Recordings.FirstOrDefault(item => item.Id == selected) ?? Recordings.FirstOrDefault();
-        OnPropertyChanged(nameof(HasRecordings));
+        UpdateRecordingModelState(); OnPropertyChanged(nameof(HasRecordings));
     }
-    private bool CanCreateSavedVoice() => CanConfigure && SelectedRecording != null;
+    private bool CanCreateSavedVoice() => CanConfigure && SelectedRecording != null && !HasSelectedModel && VoiceService.Shared.IsVieNeuInstalled;
     [RelayCommand(CanExecute = nameof(CanCreateSavedVoice))] private async Task CreateRecordingVoiceAsync()
     {
-        if (!CanConfigure || SelectedRecording == null) return;
+        if (!CanCreateSavedVoice() || SelectedRecording == null) return;
         if (_audioBusy()) { Status = "Dừng phiên đang dùng âm thanh trước khi tạo giọng."; return; }
         var id = SelectedRecording.Id;
         var store = new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot);

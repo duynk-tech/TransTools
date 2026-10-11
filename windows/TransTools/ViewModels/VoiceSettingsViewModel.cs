@@ -26,10 +26,10 @@ public partial class VoiceSettingsViewModel : ObservableObject
     [ObservableProperty] private double _rate = 1;
     [ObservableProperty] private string _sampleText = "Xin chào! Hãy cùng Trans Tools nghe và học ngôn ngữ mỗi ngày.";
     [ObservableProperty] private string _status = "Chọn giọng và nghe thử một đoạn văn.";
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(CreateRecordingVoiceCommand))] [NotifyPropertyChangedFor(nameof(CanChangeRate), nameof(CanConfigure), nameof(CanManagePersonalVoice), nameof(CanManageRecording))] private bool _isPreviewing;
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(CreateRecordingVoiceCommand))] [NotifyPropertyChangedFor(nameof(CanChangeRate), nameof(CanConfigure), nameof(CanManagePersonalVoice), nameof(CanManageRecording), nameof(CanUseRecordingVoice))] private bool _isPreviewing;
     public VoiceSettingsViewModel(SettingsViewModel management, Func<bool>? audioBusy = null)
     {
-        Management = management; _audioBusy = audioBusy ?? (() => false); LoadPreference();
+        Management = management; Management.PropertyChanged += (_, _) => { OnPropertyChanged(nameof(CanUseRecordingVoice)); CreateRecordingVoiceCommand.NotifyCanExecuteChanged(); }; _audioBusy = audioBusy ?? (() => false); LoadPreference();
         VoicePreferences.Changed += code => {
             if (code != Language || IsPreviewing) return;
             var dispatcher = System.Windows.Application.Current?.Dispatcher;

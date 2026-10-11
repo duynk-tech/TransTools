@@ -72,6 +72,14 @@ public sealed class PersonalVoiceStore(string root)
         if (!PersonalVoiceQuality.Analyze(samples).IsUsable) { Array.Clear(samples); throw new InvalidDataException("Bản thu quá nhỏ hoặc bị vỡ tiếng."); }
         return samples;
     }
+    public void MoveModelToTrash(Guid id)
+    {
+        if (!Load().Any(item => item.Id == id)) throw new FileNotFoundException("Không tìm thấy bản thu.");
+        var folder = Path.GetDirectoryName(VoicePath(id))!;
+        if (!Directory.Exists(folder)) return;
+        Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(folder, Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs, Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+        if (Directory.Exists(folder)) throw new IOException("Hồ sơ mô hình chưa được gỡ.");
+    }
     public void SaveModel(Guid id, float[] embedding)
     {
         VieNeuSpeakerEncoder.ValidateEmbedding(embedding);
