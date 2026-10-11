@@ -14,6 +14,11 @@ public static class LearningTests
         var good = SrsScheduler.Review(word,ReviewGrade.Good,now); good = SrsScheduler.Review(good,ReviewGrade.Good,now.AddDays(1)); Check(good.IntervalDays == 3 && good.Repetition == 2,"SRS first and second remembered reviews match macOS");
         var easy = SrsScheduler.Review(word,ReviewGrade.Easy,now); Check(easy.IntervalDays == 4 && easy.Repetition == 2 && Math.Abs(easy.EaseFactor - 2.65)<.001,"easy word uses longer review interval");
         Check(word.LastReviewedAt == null && word.Repetition == 0,"review leaves original word untouched until persistence");
+        var manual = good with { MasteredOverride = true };
+        Check(manual.IsMastered && manual.DueAt == good.DueAt && manual.Repetition == good.Repetition, "manual mastery preserves review schedule");
+        Check(!SrsScheduler.Review(manual,ReviewGrade.Again,now).IsMastered, "forgotten review clears manual mastery");
+        Check(JsonSerializer.Deserialize<VocabularyItem>(JsonSerializer.Serialize(manual))!.IsMastered, "manual mastery survives serialization");
+        Check(new VocabularyItem { MasteryScore = 5 }.IsMastered, "legacy mastery score remains compatible");
         var history = new Dictionary<string,int> { ["2026-10-04"]=2,["2026-10-03"]=1,["2026-10-01"]=1 };
         Check(SrsScheduler.Streak(history,now)==2 && SrsScheduler.Streak(history,now.AddDays(1))==0,"daily streak tolerates current unstudied day and stops at gaps");
         var root=Path.Combine(Path.GetTempPath(),"trans-tools-learning-"+Guid.NewGuid()); Directory.CreateDirectory(root);

@@ -233,6 +233,20 @@ public partial class LearningViewModel : ObservableObject
 
     }
 
+    [RelayCommand] private void ToggleWordMastery(VocabularyItem? word)
+    {
+        if (word == null || !_canSaveVocabulary) return;
+        var index = VocabularyList.ToList().FindIndex(item => item.Id == word.Id);
+        if (index < 0) return;
+        var updated = VocabularyList[index] with { MasteredOverride = !word.IsMastered };
+        try {
+            var items = VocabularyList.ToList(); items[index] = updated;
+            Persist(items);
+            VocabularyList[index] = updated; RefreshVocabulary(); SelectedWord = updated;
+            Status = updated.IsMastered ? "Đã đánh dấu thuộc từ" : "Đã chuyển từ về đang học";
+        } catch (Exception ex) { Status = "Không lưu được trạng thái từ: " + ex.Message; }
+    }
+
     [RelayCommand] private void DeleteWord()
     {
         if (SelectedWord == null || !_canSaveVocabulary) return;

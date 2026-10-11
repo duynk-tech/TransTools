@@ -10,15 +10,16 @@ public static class SrsScheduler
         item.Repetition = Math.Clamp(item.Repetition, 0, 1000);
         switch (grade) {
             case ReviewGrade.Again:
+                item.MasteredOverride = false;
                 item.MasteryScore = 0; item.Repetition = 0; item.IntervalDays = 1; item.EaseFactor = Math.Max(1.3, item.EaseFactor - .2); item.DueAt = now.AddMinutes(10); break;
             case ReviewGrade.Hard:
                 item.Repetition = Math.Max(1, item.Repetition); item.IntervalDays = Math.Min(3650, Math.Max(1, (int)(item.IntervalDays * 1.2))); item.EaseFactor = Math.Max(1.3, item.EaseFactor - .15); item.DueAt = now.AddDays(item.IntervalDays); break;
             case ReviewGrade.Good:
                 item.IntervalDays = item.Repetition == 0 ? 1 : item.Repetition == 1 ? 3 : Math.Min(3650, Math.Max(item.IntervalDays + 1, (int)(item.IntervalDays * item.EaseFactor)));
-                item.Repetition++; item.MasteryScore = Math.Min(5, item.Repetition); item.DueAt = now.AddDays(item.IntervalDays); break;
+                item.Repetition++; item.MasteredOverride = word.IsMastered || item.Repetition >= 5; item.MasteryScore = Math.Min(5, item.Repetition); item.DueAt = now.AddDays(item.IntervalDays); break;
             case ReviewGrade.Easy:
                 item.IntervalDays = item.Repetition == 0 ? 4 : Math.Min(3650, Math.Max(item.IntervalDays + 2, (int)(item.IntervalDays * (item.EaseFactor + .5))));
-                item.Repetition += 2; item.EaseFactor = Math.Min(3, item.EaseFactor + .15); item.MasteryScore = Math.Min(5, item.Repetition); item.DueAt = now.AddDays(item.IntervalDays); break;
+                item.Repetition += 2; item.MasteredOverride = word.IsMastered || item.Repetition >= 4; item.EaseFactor = Math.Min(3, item.EaseFactor + .15); item.MasteryScore = Math.Min(5, item.Repetition); item.DueAt = now.AddDays(item.IntervalDays); break;
             default: throw new ArgumentOutOfRangeException(nameof(grade));
         }
         return item;
