@@ -632,6 +632,8 @@ internal static class Program
             if (mascotMenu.IsOpen) throw new Exception("Hidden mascot retained action popup");
             mascotFixture.Close();
             Console.WriteLine("PASS: mascot popup opens, dispatches meeting once and closes on hide");
+            var validVoiceScript = "Buổi sáng trong khu vườn, tiếng chim vang nhẹ giữa những tán lá xanh và làn gió dịu dàng.";
+            if (!PersonalVoiceRecorderViewModel.IsValidReferenceText(validVoiceScript) || PersonalVoiceRecorderViewModel.IsValidReferenceText(validVoiceScript + " 123") || PersonalVoiceRecorderViewModel.IsValidReferenceText(validVoiceScript + "\n") || PersonalVoiceRecorderViewModel.IsValidReferenceText("Xin chào.")) throw new Exception("AI voice script accepts invalid recording content or rejects suitable script");
             using (var voiceCaptureModel = new PersonalVoiceRecorderViewModel(() => true)) {
                 var voiceCaptureWindow = new PersonalVoiceRecorderWindow(voiceCaptureModel) { Owner = window };
                 voiceCaptureWindow.Show(); Pump();

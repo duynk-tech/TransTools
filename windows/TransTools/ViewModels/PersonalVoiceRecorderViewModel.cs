@@ -7,13 +7,14 @@ using System.IO;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Windows.Threading;
+using TransTools.Services.Translation;
 namespace TransTools.ViewModels;
 
 public partial class PersonalVoiceRecorderViewModel : ObservableObject, IDisposable
 {
     private PersonalVoiceRecorder? _recorder;
     private float[]? _samples;
-    private CancellationTokenSource? _creation, _preview;
+    private CancellationTokenSource? _creation, _preview, _script;
     private bool _disposed;
     private readonly Stopwatch _clock = new();
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(200) };
@@ -102,10 +103,33 @@ public partial class PersonalVoiceRecorderViewModel : ObservableObject, IDisposa
         finally { Array.Clear(pcm); _preview = null; if (!_disposed) IsPreviewing = false; }
     }
     [RelayCommand] private void StopPreview() => _preview?.Cancel();
-    [RelayCommand] private void CancelCreation() => _creation?.Cancel();
+    public static bool IsValidReferenceText(string text)
+    {
+        var words = text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        return words.Length is >= 18 and <= 24 && text.Length <= 240 && !text.Contains('\n') && !text.Contains('\r') && !text.Any(char.IsDigit) && !text.Contains('#') && !text.Contains('*');
+    }
+    [RelayCommand] private async Task GenerateScriptAsync()
+    {
+        if (_disposed || !CanEdit) return;
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20)); _script = cts; IsProcessing = true;
+        try {
+            var config = new SecureCredentialStore().LoadConfiguredProvider();
+            if (config == null) { Status = "Chưa cấu hình AI. Bạn vẫn có thể đọc đoạn mẫu có sẵn."; return; }
+            Status = "AI đang chuẩn bị đoạn đọc mẫu…";
+            const string prompt = "Viết đúng một đoạn tiếng Việt tự nhiên để người lớn thu giọng trong 6 đến 8 giây. Chỉ 18 đến 24 từ cách nhau bằng khoảng trắng, một hoặc hai câu ngắn, đa dạng dấu thanh. Chủ đề đời sống nhẹ nhàng, không tên riêng, số, viết tắt, quảng cáo hoặc nội dung nhạy cảm. Chỉ trả về đoạn văn, không tiêu đề, Markdown hay giải thích.";
+            var text = (await new LLMTranslationService().GenerateAsync("Tạo đoạn đọc mẫu mới.", prompt, config, cts.Token)).Trim();
+            cts.Token.ThrowIfCancellationRequested(); if (_disposed) return;
+            if (!IsValidReferenceText(text)) { Status = "Đoạn AI chưa phù hợp thời lượng. Giữ mẫu hiện tại; bạn có thể thử lại."; return; }
+            if (_samples != null) Array.Clear(_samples); _samples = null; HasUsableRecording = false; OnPropertyChanged(nameof(CanPreview));
+            ReferenceText = text; RecordedSeconds = 0; Status = "Đã có đoạn mới. Đọc thử một lần trước khi thu.";
+        } catch (OperationCanceledException) { if (!_disposed) Status = "Đã dừng tạo đoạn đọc. Giữ mẫu hiện tại."; }
+        catch (Exception) { if (!_disposed) Status = "Chưa tạo được đoạn AI. Bạn có thể dùng mẫu có sẵn."; }
+        finally { _script = null; if (!_disposed) IsProcessing = false; }
+    }
+    [RelayCommand] private void CancelCreation() { _creation?.Cancel(); _script?.Cancel(); }
     public void Dispose()
     {
-        if (_disposed) return; _disposed = true; _timer.Stop(); _clock.Stop(); _creation?.Cancel(); _preview?.Cancel(); _recorder?.Dispose(); _recorder = null;
+        if (_disposed) return; _disposed = true; _timer.Stop(); _clock.Stop(); _creation?.Cancel(); _preview?.Cancel(); _script?.Cancel(); _recorder?.Dispose(); _recorder = null;
         if (_samples != null) Array.Clear(_samples); _samples = null;
     }
 }
