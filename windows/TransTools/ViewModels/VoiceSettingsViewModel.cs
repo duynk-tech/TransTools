@@ -26,7 +26,7 @@ public partial class VoiceSettingsViewModel : ObservableObject
     [ObservableProperty] private double _rate = 1;
     [ObservableProperty] private string _sampleText = "Xin chào! Hãy cùng Trans Tools nghe và học ngôn ngữ mỗi ngày.";
     [ObservableProperty] private string _status = "Chọn giọng và nghe thử một đoạn văn.";
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(CreateRecordingVoiceCommand))] [NotifyPropertyChangedFor(nameof(CanChangeRate), nameof(CanConfigure), nameof(CanManagePersonalVoice))] private bool _isPreviewing;
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(CreateRecordingVoiceCommand))] [NotifyPropertyChangedFor(nameof(CanChangeRate), nameof(CanConfigure), nameof(CanManagePersonalVoice), nameof(CanManageRecording))] private bool _isPreviewing;
     public VoiceSettingsViewModel(SettingsViewModel management, Func<bool>? audioBusy = null)
     {
         Management = management; _audioBusy = audioBusy ?? (() => false); LoadPreference();
@@ -97,5 +97,5 @@ public partial class VoiceSettingsViewModel : ObservableObject
         catch (Exception ex) { Status = ex.Message; }
         finally { IsPreviewing = false; }
     }
-    [RelayCommand] private void StopPreview() { if (IsPreviewing) VoiceService.Shared.Stop(); }
+    [RelayCommand] private void StopPreview() { _recordingPreview?.Cancel(); if (IsPreviewing) VoiceService.Shared.Stop(); }
 }

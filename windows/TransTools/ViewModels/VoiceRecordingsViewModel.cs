@@ -1,6 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
+using NAudio.Wave;
+using System.Diagnostics;
 using TransTools.Services.Storage;
 using TransTools.Services.Speech;
 namespace TransTools.ViewModels;
@@ -8,12 +10,53 @@ namespace TransTools.ViewModels;
 public partial class VoiceSettingsViewModel
 {
     public ObservableCollection<PersonalVoiceProfile> Recordings { get; } = new();
-    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(CreateRecordingVoiceCommand))] private PersonalVoiceProfile? _selectedRecording;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanManageRecording))] [NotifyCanExecuteChangedFor(nameof(CreateRecordingVoiceCommand))] private PersonalVoiceProfile? _selectedRecording;
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CreateRecordingVoiceCommand))]
-    [NotifyPropertyChangedFor(nameof(CanConfigure), nameof(CanManagePersonalVoice), nameof(CanChangeRate))]
+    [NotifyPropertyChangedFor(nameof(CanConfigure), nameof(CanManagePersonalVoice), nameof(CanChangeRate), nameof(CanManageRecording))]
     private bool _isBuildingVoice;
     private CancellationTokenSource? _buildingVoice;
+    private CancellationTokenSource? _recordingPreview;
+    public bool CanManageRecording => CanConfigure && SelectedRecording != null;
+    public void RenameRecording(string name)
+    {
+        if (!CanManageRecording || SelectedRecording == null || _audioBusy()) return;
+        try { new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot).Rename(SelectedRecording.Id, name); LoadPreference(); Status = "Đã đổi tên bản thu."; }
+        catch (Exception ex) { Status = "Chưa đổi được tên: " + ex.Message; }
+    }
+    public void DeleteRecording(Guid id)
+    {
+        if (!CanManageRecording || SelectedRecording?.Id != id || _audioBusy()) return;
+        try {
+            new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot).MoveToTrash(id);
+            if (VoicePreferences.Get("vi").PersonalVoiceId == id) VoicePreferences.SelectPersonalVoice(null);
+            LoadPreference(); Status = "Đã chuyển bản thu và hồ sơ giọng vào Thùng rác.";
+        } catch (Exception ex) { LoadPreference(); Status = "Chưa xóa được bản thu: " + ex.Message; }
+    }
+    [RelayCommand] private void OpenRecordingFolder()
+    {
+        if (!CanManageRecording || SelectedRecording == null) return;
+        try { Process.Start(new ProcessStartInfo("explorer.exe", "/select,\"" + new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot).RecordingPath(SelectedRecording.Id) + "\"") { UseShellExecute = true }); }
+        catch (Exception ex) { Status = "Chưa mở được thư mục: " + ex.Message; }
+    }
+    [RelayCommand] private async Task PreviewOriginalRecordingAsync()
+    {
+        if (!CanManageRecording || SelectedRecording == null) return;
+        if (_audioBusy()) { Status = "Dừng phiên đang dùng âm thanh trước khi nghe bản thu."; return; }
+        var id = SelectedRecording.Id;
+        using var cancellation = new CancellationTokenSource(); _recordingPreview = cancellation; IsPreviewing = true;
+        try {
+            var store = new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot);
+            var samples = store.LoadRecording(id); Array.Clear(samples);
+            using var reader = new WaveFileReader(store.RecordingPath(id));
+            using var output = new WaveOutEvent(); output.Init(reader); output.Play();
+            Status = "Đang nghe bản thu gốc…";
+            while (output.PlaybackState == PlaybackState.Playing) await Task.Delay(50, cancellation.Token);
+            Status = "Đã nghe bản thu gốc.";
+        } catch (OperationCanceledException) { Status = "Đã dừng nghe bản thu."; }
+        catch (Exception ex) { Status = "Chưa nghe được bản thu: " + ex.Message; }
+        finally { _recordingPreview = null; IsPreviewing = false; }
+    }
     public bool HasRecordings => Recordings.Count > 0;
     private void RefreshRecordings(PersonalVoiceStore store)
     {
