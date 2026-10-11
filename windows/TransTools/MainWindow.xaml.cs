@@ -7,6 +7,7 @@ namespace TransTools;
 public partial class MainWindow : Window
 {
     private readonly MeetingViewModel _meetingViewModel = new();
+    public MeetingViewModel MeetingState => _meetingViewModel;
     private readonly NotebookViewModel _notebookViewModel = new();
     private readonly QuickTranslateViewModel _translateViewModel = new();
     private readonly ConversationViewModel _conversationViewModel;
