@@ -799,6 +799,14 @@ internal static class Program
             var clearMeeting = new ConfirmDeleteWindow("Nội dung cuộc họp hiện tại", currentMeeting: true) { Owner = window }; clearMeeting.Show(); Pump(); ValidateControlLayout(clearMeeting, "Clear current meeting"); Capture(clearMeeting, output, "clear-current-meeting.png"); clearMeeting.Close();
             var deleteAll = new ConfirmDeleteWindow("12 bản ghi đã lưu", true) { Owner = window }; deleteAll.Show(); Pump(); ValidateControlLayout(deleteAll, "Delete all confirmation"); Capture(deleteAll, output, "delete-all-records.png"); deleteAll.Close();
             var generatedJson = "{\"lessons\":[{\"original\":\"Hello.\",\"meaning\":\"Xin chào.\",\"context\":\"Chào hỏi\"},{\"original\":\"Thank you.\",\"meaning\":\"Cảm ơn.\",\"context\":\"Cảm ơn\"},{\"original\":\"Goodbye.\",\"meaning\":\"Tạm biệt.\",\"context\":\"Tạm biệt\"}]}";
+            var notebookPairs = new[] {
+                new Caption { Original = "Hello", Vietnamese = "Xin chào", SourceLanguage = "en", TargetLanguage = "vi", TranslationSource = "Hello" },
+                new Caption { Original = "Hello again", Vietnamese = "Xin chào", SourceLanguage = "en", TargetLanguage = "vi", TranslationSource = "Hello" },
+                new Caption { Original = "Hallo", Vietnamese = "Xin chào", SourceLanguage = "de", TargetLanguage = "vi" },
+                new Caption { Original = "Legacy", Vietnamese = "Bản cũ" }
+            };
+            var validNotebookPairs = TransTools.Services.Learning.NotebookLearningPolicy.Candidates(notebookPairs, "en").ToList();
+            if (validNotebookPairs.Count != 2 || validNotebookPairs.Any(row => row.Original == "Hello again" || row.Original == "Hallo")) throw new Exception("Notebook learning accepts mismatched translation or source language");
             var generated = TransTools.Services.Learning.AdaptiveLessons.ParseGenerated(generatedJson, "en", "Giao tiếp đời sống");
             if (generated.Count != 3 || generated.Any(l => l.Goal != "Giao tiếp đời sống")) throw new Exception("Generated lessons lost goal context");
             var rejected = false; try { TransTools.Services.Learning.AdaptiveLessons.ParseGenerated("{\"lessons\":[]}", "en", "test"); } catch { rejected = true; }

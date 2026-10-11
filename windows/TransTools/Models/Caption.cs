@@ -8,6 +8,9 @@ public class Caption : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
     public double Start { get; set; }
     public double End { get; set; }
     public string Original { get; set; } = string.Empty;
+    public string? SourceLanguage { get; set; }
+    public string? TargetLanguage { get; set; }
+    public string? TranslationSource { get; set; }
     private string _vietnamese = string.Empty;
     public string Vietnamese { get => _vietnamese; set => SetProperty(ref _vietnamese, value); }
 

@@ -362,7 +362,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         CreatedAt = _started == default ? DateTime.Now : _started,
         AudioSource = _sessionSystemAudio ? "Âm thanh hệ thống" : "Microphone",
         DurationSeconds = Captions.Count == 0 ? 0 : Captions.Max(c => c.End),
-        Captions = Captions.Select(c => new Caption { Id = c.Id, Start = c.Start, End = c.End, Original = c.Original, Vietnamese = c.Vietnamese }).ToList()
+        Captions = Captions.Select(c => new Caption { Id = c.Id, Start = c.Start, End = c.End, Original = c.Original, Vietnamese = c.Vietnamese, SourceLanguage = c.SourceLanguage, TargetLanguage = c.TargetLanguage, TranslationSource = c.TranslationSource }).ToList()
     };
     public bool CanExportMeeting => Captions.Count > 0 && !IsBusy;
     [RelayCommand(CanExecute = nameof(CanExportMeeting))] private void ExportMeeting(string? format)
@@ -409,7 +409,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
                         var pieces = CaptionTextSegmenter.Split(segment.Text);
                         var chars = Math.Max(1, pieces.Sum(t => t.Length)); var consumed = 0;
                         foreach (var text in pieces) {
-                            var caption = new Caption { Original = text, Start = _offset + segment.Start + (segment.End - segment.Start) * consumed / chars,
+                            var caption = new Caption { Original = text, SourceLanguage = VoicePreferences.LanguageCode(_sessionSource), TargetLanguage = VoicePreferences.LanguageCode(_sessionTarget), Start = _offset + segment.Start + (segment.End - segment.Start) * consumed / chars,
                                 End = _offset + segment.Start + (segment.End - segment.Start) * (consumed + text.Length) / chars };
                             consumed += text.Length;
                             await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => { Captions.Add(caption); OnCaptionIncoming?.Invoke(caption); });
@@ -438,7 +438,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
                         cancellation.ThrowIfCancellationRequested();
                         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
                             cancellation.ThrowIfCancellationRequested();
-                            caption.Vietnamese = translated;
+                            caption.TranslationSource = caption.Original; caption.Vietnamese = translated;
                         });
                     } catch (OperationCanceledException) { throw; }
                     catch (Exception ex) { Ui(() => Status = "Lỗi dịch: " + ex.Message); }

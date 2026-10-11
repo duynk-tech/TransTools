@@ -53,6 +53,19 @@ public partial class LearningViewModel : ObservableObject
         catch (Exception ex) { LessonGenerationStatus = "Chưa tạo được bài mới: " + ex.Message; }
         finally { IsGeneratingLessons = false; }
     }
+    public string ImportNotebook(MeetingSession session)
+    {
+        if (IsGeneratingLessons) return "Chờ tạo bài xong trước khi thêm câu từ Sổ tay.";
+        try {
+            var lessons = NotebookLearningPolicy.Candidates(session.Captions, SelectedLanguage).Take(20).Select(row => {
+                var id = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(SelectedLanguage + "|" + LearningGoal + "|" + row.Original)));
+                return new AdaptiveLesson(id, SelectedLanguage, row.Original, row.Vietnamese, "Câu từ Sổ tay", LearningGoal);
+            }).ToList();
+            var before = _adaptive.Lessons.Count; _adaptive.AddGenerated(lessons); NextLesson();
+            LessonGenerationStatus = $"Đã thêm {_adaptive.Lessons.Count - before} câu từ Sổ tay. Không gửi dữ liệu lên AI.";
+            return LessonGenerationStatus;
+        } catch (Exception ex) { return "Chưa thêm được câu từ Sổ tay: " + ex.Message; }
+    }
     private readonly AdaptiveLessons _adaptive = new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TransTools"));
     [ObservableProperty] private AdaptiveLesson? _currentLesson;
     [ObservableProperty] private string _lessonFeedback = "";

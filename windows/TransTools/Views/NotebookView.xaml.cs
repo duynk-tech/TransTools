@@ -36,6 +36,10 @@ public partial class NotebookView : UserControl
         VocabularyPanel.Visibility = System.Windows.Visibility.Visible;
         RecordsPanel.Visibility = System.Windows.Visibility.Collapsed;
     }
+    private void ImportLearning_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (_learning != null && DataContext is NotebookViewModel model && model.SelectedSession is { } session) model.Status = _learning.ImportNotebook(session);
+    }
     public NotebookView(NotebookViewModel viewModel, LearningViewModel? learning = null)
     {
         InitializeComponent();
