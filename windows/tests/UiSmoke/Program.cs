@@ -950,6 +950,14 @@ internal static class Program
         hud.SetMeetingState(true);
         for (var i = 0; i < 33; i++) hud.UpdateCaption(new Caption { Start = i, Original = "Original sentence " + i, Vietnamese = "Câu hoàn chỉnh cần được giữ lại để người dùng có thể đọc đủ nội dung. " + i });
         hud.UpdateIncoming(new Caption { Start = 34, Original = "A new sentence is arriving and should not replace the completed translation." });
+        var historyBeforePosition = hud.HistoryCount;
+        hud.PositionAt(true); Pump();
+        var workArea = SystemParameters.WorkArea;
+        if (Math.Abs(hud.Top - (workArea.Top + 24)) > 1) throw new Exception("HUD top placement differs from requested position");
+        hud.PositionAt(false); Pump();
+        if (Math.Abs(hud.Top - Math.Max(workArea.Top + 16, workArea.Bottom - hud.Height - 80)) > 1) throw new Exception("HUD bottom placement differs from requested position");
+        hud.Hide(); hud.Show(); Pump();
+        if (hud.HistoryCount != historyBeforePosition) throw new Exception("HUD position or visibility action cleared subtitle history");
         Pump(); ValidateControlLayout(hud, "HUD live"); Capture(hud, output, "subtitles.png");
         foreach (var mode in new[] { "original", "translation", "bilingual" }) {
             prefs.DisplayMode = mode; prefs.Save(); Pump();
