@@ -732,6 +732,16 @@ internal static class Program
         completion.IsChecked = false; Pump();
         if (taskEditor.Text != originalTaskText || taskEditor.TextDecorations?.Count > 0) throw new Exception("Unchecking task did not restore original presentation");
         tasksWindow.Close(); Pump();
+        var notesWindow = new MeetingNotesWindow("# Ghi chú\n- Giữ chữ Việt và 日本語.", "Tóm tắt mới", "Cuộc họp dự án") { Owner = window };
+        notesWindow.Show(); Pump();
+        if (Descendants(notesWindow).OfType<TextBox>().Any(t => t.IsVisible)) throw new Exception("Notes default view is not Markdown preview");
+        ValidateControlLayout(notesWindow, "Notes preview"); Capture(notesWindow, output, "760-notes-markdown.png");
+        Descendants(notesWindow).OfType<Button>().Single(b => Equals(b.Content, "Chỉnh sửa")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+        var notesEditor = Descendants(notesWindow).OfType<TextBox>().Single();
+        notesEditor.Text += "\nNội dung tự sửa.";
+        Descendants(notesWindow).OfType<Button>().Single(b => Equals(b.Content, "Thêm bản tóm tắt")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+        if (!notesWindow.Notes.Contains("Nội dung tự sửa.") || !notesWindow.Notes.Contains("Tóm tắt mới")) throw new Exception("Appending summary replaced existing notes");
+        Capture(notesWindow, output, "760-notes-editor.png"); notesWindow.Close(); Pump();
         var noteRecord = notebook.Sessions.Single(s => s.Id == saved.Id);
         var noteText = "# Ghi chú hội thoại\nGiữ nguyên chữ Việt và 日本語.";
         var noteSave = notebook.SaveRecordNotesAsync(noteRecord, noteText); Await(noteSave);

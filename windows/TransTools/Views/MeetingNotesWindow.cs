@@ -9,21 +9,28 @@ namespace TransTools.Views;
 public sealed class MeetingNotesWindow : Window
 {
     private readonly TextBox _editor;
+    private FlowDocumentScrollViewer _preview = null!;
+    private void RefreshPreview() { if (_preview != null) _preview.Document = Format(string.IsNullOrWhiteSpace(Notes) ? "Chưa có ghi chú. Chọn Chỉnh sửa để tự viết." : Notes); }
     public string Notes => _editor.Text;
-    public MeetingNotesWindow(string notes, string summary)
+    public MeetingNotesWindow(string notes, string summary, string sessionTitle = "")
     {
-        Title = "Ghi chú cuộc họp"; Width = 760; Height = 560; MinWidth = 600; MinHeight = 400;
+        Title = "Ghi chú"; Width = 760; Height = 560; MinWidth = 600; MinHeight = 400;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Background = new SolidColorBrush(Color.FromRgb(245, 248, 247));
         var layout = new DockPanel { Margin = new Thickness(20) };
         Content = layout;
-        var title = new TextBlock { Text = "Ghi chú", FontSize = 22, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 16) };
-        DockPanel.SetDock(title, Dock.Top); layout.Children.Add(title);
+        var heading = new StackPanel { Margin = new Thickness(0, 0, 0, 16) };
+        heading.Children.Add(new TextBlock { Text = "Ghi chú", FontSize = 22, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Color.FromRgb(40, 117, 104)) });
+        heading.Children.Add(new TextBlock { Text = sessionTitle, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 6, 0, 0), Foreground = Brushes.Gray });
+        DockPanel.SetDock(heading, Dock.Top); layout.Children.Add(heading);
         var footer = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
         DockPanel.SetDock(footer, Dock.Bottom); layout.Children.Add(footer);
         if (!string.IsNullOrWhiteSpace(summary)) {
-            var useSummary = new Button { Content = "Dùng bản tóm tắt", Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 8, 0) };
-            useSummary.Click += (_, _) => _editor!.Text = summary;
+            var useSummary = new Button { Content = "Thêm bản tóm tắt", Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 8, 0) };
+            useSummary.Click += (_, _) => {
+                _editor!.Text += (string.IsNullOrWhiteSpace(_editor.Text) ? "" : "\n\n---\n\n") + summary;
+                RefreshPreview();
+            };
             footer.Children.Add(useSummary);
         }
         var close = new Button { Content = "Đóng", Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 8, 0) };
@@ -32,17 +39,27 @@ public sealed class MeetingNotesWindow : Window
         save.Click += (_, _) => { DialogResult = true; }; footer.Children.Add(save);
         _editor = new TextBox { Text = notes, AcceptsReturn = true, AcceptsTab = true, TextWrapping = TextWrapping.Wrap,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto, FontSize = 14, Padding = new Thickness(14) };
-        var preview = new FlowDocumentScrollViewer { IsToolBarVisible = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-        var tabs = new TabControl();
-        tabs.Items.Add(new TabItem { Header = "Viết", Content = _editor });
-        var previewTab = new TabItem { Header = "Xem trước", Content = preview }; tabs.Items.Add(previewTab);
-        tabs.SelectionChanged += (_, _) => { if (previewTab.IsSelected) preview.Document = Format(Notes); };
-        layout.Children.Add(tabs);
+        _editor.Visibility = Visibility.Collapsed;
+        _preview = new FlowDocumentScrollViewer { IsToolBarVisible = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Background = Brushes.White };
+        RefreshPreview();
+        var tools = new DockPanel { Margin = new Thickness(0, 0, 0, 12) };
+        var edit = new Button { Content = "Chỉnh sửa", Style = (Style)FindResource("SecondaryButton"), HorizontalAlignment = HorizontalAlignment.Right };
+        edit.Click += (_, _) => {
+            var editing = _editor.Visibility != Visibility.Visible;
+            _editor.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
+            _preview.Visibility = editing ? Visibility.Collapsed : Visibility.Visible;
+            edit.Content = editing ? "Xem Markdown" : "Chỉnh sửa";
+            if (editing) _editor.Focus(); else RefreshPreview();
+        };
+        tools.Children.Add(edit); DockPanel.SetDock(tools, Dock.Top); layout.Children.Add(tools);
+        var reading = new Grid(); reading.Children.Add(_preview); reading.Children.Add(_editor);
+        layout.Children.Add(new Border { Child = reading, Background = Brushes.White, BorderBrush = new SolidColorBrush(Color.FromRgb(194, 221, 213)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(8) });
+
     }
     // Parse text as document content; never execute HTML or load user-provided XAML.
     private static FlowDocument Format(string markdown)
     {
-        var document = new FlowDocument { FontSize = 14, PagePadding = new Thickness(16) };
+        var document = new FlowDocument { FontSize = 14, FontFamily = new FontFamily("Segoe UI"), Foreground = new SolidColorBrush(Color.FromRgb(36, 61, 53)), PagePadding = new Thickness(16) };
         foreach (var line in markdown.Replace("\r", "").Split('\n')) {
             var content = line; var size = 14.0; var heading = false;
             if (line.StartsWith("### ")) { content = line[4..]; size = 16; heading = true; }

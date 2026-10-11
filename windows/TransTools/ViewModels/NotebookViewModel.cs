@@ -27,7 +27,7 @@ public partial class NotebookViewModel : ObservableObject
     [RelayCommand] private async Task OpenNotesAsync()
     {
         if (SelectedSession is not { } session) return;
-        var editor = new TransTools.Views.MeetingNotesWindow(session.Notes, session.Summary ?? "") { Owner = System.Windows.Application.Current.MainWindow };
+        var editor = new TransTools.Views.MeetingNotesWindow(session.Notes, session.Summary ?? "", session.Title) { Owner = System.Windows.Application.Current.MainWindow };
         if (editor.ShowDialog() == true) await SaveRecordNotesAsync(session, editor.Notes);
     }
     public async Task<bool> SaveRecordNotesAsync(MeetingSession session, string notes)
