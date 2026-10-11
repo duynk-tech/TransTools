@@ -713,6 +713,17 @@ internal static class Program
         if (fallbackTasks.Result.Count != 1 || fallbackTasks.Result[0].Title != taskSession.Captions[0].Vietnamese) throw new Exception("Action item fallback changed transcript text");
         var emptyTasks = TransTools.Services.Notebook.MeetingTaskExtractor.ExtractAsync(new MeetingSession(), null, CancellationToken.None); Await(emptyTasks);
         if (emptyTasks.Result.Count != 0) throw new Exception("Empty meeting fabricated an action item");
+        var tasksWindow = new MeetingTasksWindow(taskSession, (_, _) => Task.FromResult("[{\"title\":\"Kiểm tra đầy đủ các thay đổi của dự án, chuẩn bị tài liệu và báo cáo kết quả trước cuộc họp tiếp theo để mọi người có thể xem lại.\",\"assignee\":\"Duy\"}]")) { Owner = window };
+        tasksWindow.Show(); Pump();
+        if (!Descendants(tasksWindow).OfType<TextBlock>().Any(t => t.IsVisible && t.Text == "Duy")) throw new Exception("Action items assignee is not visible");
+        foreach (var taskWidth in new[] {600, 780}) {
+            tasksWindow.Width = taskWidth; Pump(); ValidateControlLayout(tasksWindow, "Action items"); Capture(tasksWindow, output, $"{taskWidth}-meeting-action-items.png");
+        }
+        var taskInput = Descendants(tasksWindow).OfType<TextBox>().Single(t => Equals(t.ToolTip, "Nội dung việc mới"));
+        taskInput.Text = "Việc tự thêm có dấu";
+        Descendants(tasksWindow).OfType<Button>().Single(b => Equals(b.Content, "Thêm việc")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+        if (!Descendants(tasksWindow).OfType<TextBox>().Any(t => t.Text == "Việc tự thêm có dấu")) throw new Exception("Manual task was not added");
+        tasksWindow.Close(); Pump();
         var noteRecord = notebook.Sessions.Single(s => s.Id == saved.Id);
         var noteText = "# Ghi chú hội thoại\nGiữ nguyên chữ Việt và 日本語.";
         var noteSave = notebook.SaveRecordNotesAsync(noteRecord, noteText); Await(noteSave);
