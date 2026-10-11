@@ -22,6 +22,7 @@ public sealed class MeetingNotesWindow : Window
     private CancellationTokenSource? _request;
     private bool _closed;
     private FlowDocumentScrollViewer _preview = null!;
+    private readonly TextBlock _editingHint = new() { FontSize = 12, Foreground = new SolidColorBrush(Color.FromRgb(101, 117, 111)), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0), Text = "AI tạo từ bản ghi và thêm vào cuối ghi chú hiện có. Hãy kiểm tra lại nội dung." };
     private void RefreshPreview() { if (_preview != null) _preview.Document = Format(string.IsNullOrWhiteSpace(Notes) ? "Chưa có ghi chú. Chọn Chỉnh sửa để tự viết." : Notes); }
     public string Notes => _editor.Text;
     public MeetingNotesWindow(string notes, string summary, string sessionTitle = "", Func<CancellationToken, Task<string>>? generate = null, Func<string, Task<bool>>? saveNotes = null)
@@ -34,10 +35,11 @@ public sealed class MeetingNotesWindow : Window
         Content = layout;
         var heading = new StackPanel { Margin = new Thickness(0, 0, 0, 16) };
         heading.Children.Add(new TextBlock { Text = "Ghi chú", FontSize = 22, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Color.FromRgb(40, 117, 104)) });
-        heading.Children.Add(new TextBlock { Text = sessionTitle, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 6, 0, 0), Foreground = Brushes.Gray });
+        heading.Children.Add(new TextBlock { Text = sessionTitle, TextWrapping = TextWrapping.Wrap, MaxHeight = 42, ToolTip = sessionTitle, Margin = new Thickness(0, 6, 0, 0), Foreground = Brushes.Gray });
         DockPanel.SetDock(heading, Dock.Top); layout.Children.Add(heading);
         var footer = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
         DockPanel.SetDock(footer, Dock.Bottom); layout.Children.Add(footer);
+        DockPanel.SetDock(_editingHint, Dock.Bottom); layout.Children.Add(_editingHint);
         if (!string.IsNullOrWhiteSpace(summary)) {
             var useSummary = new Button { Content = "Thêm bản tóm tắt", Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 8, 0) };
             useSummary.Click += (_, _) => {
@@ -64,6 +66,7 @@ public sealed class MeetingNotesWindow : Window
             _editor.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
             _preview.Visibility = editing ? Visibility.Collapsed : Visibility.Visible;
             edit.Content = editing ? "Xem Markdown" : "Chỉnh sửa";
+            _editingHint.Text = editing ? (_save != null ? "Tự động lưu khi nhập · Hỗ trợ Markdown" : "Chọn Lưu ghi chú để giữ thay đổi · Hỗ trợ Markdown") : "AI tạo từ bản ghi và thêm vào cuối ghi chú hiện có. Hãy kiểm tra lại nội dung.";
             if (editing) _editor.Focus(); else RefreshPreview();
         };
         DockPanel.SetDock(edit, Dock.Right); tools.Children.Add(edit);
