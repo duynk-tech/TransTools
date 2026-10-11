@@ -14,7 +14,7 @@ public partial class LearningView : UserControl
         _viewModel = viewModel;
         InitializeComponent();
         DataContext = viewModel;
-        VocabularyLibraryHost.Content = new NotebookVocabularyView(viewModel);
+        VocabularyLibraryHost.Content = new NotebookVocabularyView(viewModel, embeddedInLearning: true);
         Unloaded += (_, _) => { if (_viewModel.IsGeneratingLessons) _viewModel.GenerateLessonsCancelCommand.Execute(null); };
     }
 

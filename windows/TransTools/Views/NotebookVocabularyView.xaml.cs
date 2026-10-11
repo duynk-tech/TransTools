@@ -9,11 +9,16 @@ public partial class NotebookVocabularyView : UserControl
 {
     private readonly LearningViewModel _model;
     private readonly ICollectionView _words;
-    public NotebookVocabularyView(LearningViewModel model)
+    public NotebookVocabularyView(LearningViewModel model, bool embeddedInLearning = false)
     {
         _model = model;
         InitializeComponent();
         DataContext = model;
+        // Learning already owns the language selector and status above this library.
+        if (embeddedInLearning) {
+            LanguagePicker.Visibility = Visibility.Collapsed;
+            VocabularyStatus.Visibility = Visibility.Collapsed;
+        }
         // Independent view: searching here cannot filter the learning/review collection.
         _words = new ListCollectionView(model.VisibleVocabulary);
         _words.Filter = item => item is VocabularyItem word && (AllWords.IsChecked == true || (DueWords.IsChecked == true ? word.DueAt <= DateTime.Now : MasteredWords.IsChecked == true ? word.MasteryScore >= 4 : word.MasteryScore < 4)) && (string.IsNullOrWhiteSpace(SearchBox.Text) ||
