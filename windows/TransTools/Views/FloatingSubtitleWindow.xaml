@@ -4,8 +4,8 @@
 <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
 <Border x:Name="MascotColumn" BorderBrush="#507E70" BorderThickness="0,0,1,0" Margin="0,4,16,4" Padding="0,0,12,0" Visibility="Collapsed"><Image Source="/TransTools;component/Resources/Mascot/MascotSprites/angles/angle_front.png" Width="76" Stretch="Uniform"/></Border>
 <Grid Grid.Column="1"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-<DockPanel Margin="0,0,0,8" Height="28" LastChildFill="True">
-<StackPanel x:Name="ToolbarActions" DockPanel.Dock="Right" Orientation="Horizontal" Opacity="0" IsHitTestVisible="False">
+<Grid Margin="0,0,0,8" Height="28"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+<StackPanel x:Name="ToolbarActions" Grid.Column="1" Orientation="Horizontal" Opacity="0" IsHitTestVisible="False">
 <Button x:Name="StopButton" Content="Bắt đầu" Style="{StaticResource HudButton}" Click="ToggleMeeting_Click" Margin="0,0,6,0"/>
 <Button x:Name="ReviewButton" Style="{StaticResource HudButton}" ToolTip="Xem lại 30 câu gần nhất" Click="Review_Click" Width="28" Padding="0" Margin="0,0,6,0"><TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets"/></Button>
 <Button x:Name="SettingsButton" Style="{StaticResource HudButton}" ToolTip="Cài đặt nhịp độ, cỡ chữ và vị trí" Click="ShowSettings_Click" Width="28" Padding="0" Margin="0,0,6,0"><TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets"/><Button.ContextMenu><ContextMenu>
@@ -17,8 +17,8 @@
 <Button Style="{StaticResource HudButton}" ToolTip="Mở cửa sổ chính" Click="OpenMain_Click" Width="28" Padding="0" Margin="0,0,6,0"><TextBlock Text="&#xE737;" FontFamily="Segoe MDL2 Assets"/></Button>
 <Button Style="{StaticResource HudButton}" ToolTip="Ẩn phụ đề nổi" Click="CloseButton_Click" Width="28" Padding="0"><TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets"/></Button>
 </StackPanel>
-<StackPanel Orientation="Horizontal" VerticalAlignment="Center"><Border x:Name="StateBadge" Background="#244A42" CornerRadius="9" Padding="7,3"><TextBlock x:Name="StateLabel" Text="Tạm dừng" Foreground="#A6E0CA" FontSize="11" FontWeight="SemiBold"/></Border><TextBlock x:Name="PacingLabel" Text="Nhịp cân bằng" FontSize="10" Foreground="#89BFA9" VerticalAlignment="Center" Margin="8,0,0,0"/></StackPanel>
-</DockPanel>
+<StackPanel Orientation="Horizontal" VerticalAlignment="Center" ClipToBounds="True" Margin="0,0,8,0"><Border x:Name="StateBadge" Background="#244A42" CornerRadius="9" Padding="7,3"><TextBlock x:Name="StateLabel" Text="Tạm dừng" Foreground="#A6E0CA" FontSize="11" FontWeight="SemiBold"/></Border><TextBlock x:Name="PacingLabel" Text="Nhịp cân bằng" FontSize="10" Foreground="#89BFA9" VerticalAlignment="Center" Margin="8,0,0,0"/></StackPanel>
+</Grid>
 <Grid Grid.Row="1"><Border BorderBrush="#407E6C" BorderThickness="0,1,0,0"/>
 <ScrollViewer x:Name="CaptionScroll" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0" ScrollChanged="CaptionScroll_Changed"><StackPanel>
 <TextBlock x:Name="ContextText" FontSize="12" Foreground="#96B3A7" TextWrapping="Wrap" Margin="0,0,0,8" Visibility="Collapsed"/>

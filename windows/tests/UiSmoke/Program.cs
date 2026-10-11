@@ -944,6 +944,7 @@ internal static class Program
         var scroll = (ScrollViewer)hud.FindName("CaptionScroll");
         if (scroll.ScrollableHeight > .5 && scroll.VerticalOffset < scroll.ScrollableHeight - .5) throw new Exception("HUD did not scroll to its final line");
         hud.ResetSession(); Pump(); if (hud.HistoryCount != 0) throw new Exception("HUD new session retained previous history");
+        hud.Width = 360; Pump(); ValidateControlLayout(hud, "HUD minimum width"); Capture(hud, output, "subtitles-minimum-width.png");
         hud.Hide(); Console.WriteLine("PASS: HUD controls, retained captions, review history, layouts, mascot and final-line scrolling");
     }
     private static void ValidateControlLayout(Window window, string route)
