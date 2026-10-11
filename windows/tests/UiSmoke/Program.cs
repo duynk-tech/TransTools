@@ -954,6 +954,10 @@ internal static class Program
         hud.PositionAt(true); Pump();
         var workArea = SystemParameters.WorkArea;
         if (Math.Abs(hud.Top - (workArea.Top + 24)) > 1) throw new Exception("HUD top placement differs from requested position");
+        var restoredHud = new FloatingSubtitleWindow();
+        restoredHud.Show(); Pump();
+        if (Math.Abs(restoredHud.Top - (workArea.Top + 24)) > 1) throw new Exception("HUD recreated window lost selected top placement");
+        restoredHud.Close();
         hud.PositionAt(false); Pump();
         if (Math.Abs(hud.Top - Math.Max(workArea.Top + 16, workArea.Bottom - hud.Height - 80)) > 1) throw new Exception("HUD bottom placement differs from requested position");
         hud.Hide(); hud.Show(); Pump();

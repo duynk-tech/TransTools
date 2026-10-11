@@ -15,6 +15,7 @@ public sealed class SubtitlePreferences
     public bool ShowNext { get; set; } = true;
     public bool ShowMascot { get; set; }
     public bool Side { get; set; }
+    public bool AtTop { get; set; }
     public bool Locked { get; set; }
     public double FontSize { get; set; } = 18;
     public string Pacing { get; set; } = "balanced";

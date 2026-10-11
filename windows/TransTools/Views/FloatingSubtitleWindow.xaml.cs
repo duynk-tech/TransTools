@@ -110,8 +110,10 @@ public partial class FloatingSubtitleWindow : Window
     private void Position_Click(object sender, RoutedEventArgs e) => PositionAt(sender is MenuItem { Tag: "top" });
     public void PositionAt(bool atTop)
     {
+        _preferences.AtTop = atTop;
         var area = SystemParameters.WorkArea; Left = Math.Clamp(Left, area.Left + 16, Math.Max(area.Left + 16, area.Right - Width - 16));
         Top = atTop ? area.Top + 24 : Math.Max(area.Top + 16, area.Bottom - Height - 80);
+        SavePreferences();
     }
     private void FontSize_Click(object sender, RoutedEventArgs e)
     {
@@ -155,7 +157,7 @@ public partial class FloatingSubtitleWindow : Window
     private void SetBounds()
     {
         var area = SystemParameters.WorkArea; Width = _preferences.Side ? Math.Min(440, area.Width - 32) : Math.Min(900, area.Width * .60); Height = _preferences.Side ? 300 : 180;
-        Left = _preferences.Side ? area.Right - Width - 20 : area.Left + (area.Width - Width) / 2; Top = Math.Max(area.Top + 16, area.Bottom - Height - 80);
+        Left = _preferences.Side ? area.Right - Width - 20 : area.Left + (area.Width - Width) / 2; Top = _preferences.AtTop ? area.Top + 24 : Math.Max(area.Top + 16, area.Bottom - Height - 80);
     }
     private void ChromeChanged(object sender, RoutedEventArgs e)
     {
