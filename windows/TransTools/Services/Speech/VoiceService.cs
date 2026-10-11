@@ -117,7 +117,7 @@ public sealed class VoiceService
             }
             foreach (var part in CaptionTextSegmenter.Split(text)) {
                 token.ThrowIfCancellationRequested();
-                var bytes = await SynthesizeAsync(part, language, preference.Engine, preference.Rate, token);
+                var bytes = await SynthesizeAsync(part, language, preference.Engine, preference.Rate, token, preference.PersonalVoiceId);
                 using var stream = new MemoryStream(bytes);
                 using WaveStream reader = preference.Engine == "Edge" ? new Mp3FileReader(stream) : new WaveFileReader(stream);
                 await TransTools.Services.Audio.PlaybackDevices.PlayAsync(reader, deviceId, token);
@@ -126,6 +126,7 @@ public sealed class VoiceService
     }
     public async Task SpeakAsync(string text, string language, string engine, double rate = 1, CancellationToken cancellationToken = default, double? sentencePause = null, double? paragraphPause = null)
     {
+        var personalVoiceId = VoicePreferences.PersonalVoiceFor(language, engine);
         Stop(); var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken); _playback = cts;
         bool entered = false;
         try {
@@ -138,7 +139,7 @@ public sealed class VoiceService
                 // Hold the playback gate for the whole reading plan, but keep only one phrase of audio in RAM.
                 foreach (var part in CaptionTextSegmenter.Split(phrase)) {
                     token.ThrowIfCancellationRequested();
-                    var bytes = await SynthesizeAsync(part, language, engine, rate, token);
+                    var bytes = await SynthesizeAsync(part, language, engine, rate, token, personalVoiceId);
                     using var stream = new MemoryStream(bytes);
                     using WaveStream reader = engine == "Edge" ? new Mp3FileReader(stream) : new WaveFileReader(stream);
                     token.ThrowIfCancellationRequested();
@@ -151,6 +152,7 @@ public sealed class VoiceService
     }
     public async Task ExportAsync(string text, string language, string engine, double rate, string destination, CancellationToken token)
     {
+        var personalVoiceId = VoicePreferences.PersonalVoiceFor(language, engine);
         var temporary = destination + "." + Guid.NewGuid().ToString("N") + ".partial";
         try {
             if (engine == "Edge") {
@@ -164,11 +166,12 @@ public sealed class VoiceService
                 try {
                     await Task.Run(async () => {
                         LoadEngine(engine, token);
+                        var embedding = personalVoiceId is Guid id ? new TransTools.Services.Storage.PersonalVoiceStore(TransTools.Services.Storage.PersonalVoiceStore.DefaultRoot).LoadEmbedding(id) : null;
                         using var writer = new WaveFileWriter(temporary, new WaveFormat(engine == "VieNeu v3 Turbo" ? 48000 : _engine!.SampleRate, 16, 1));
                         foreach (var part in CaptionTextSegmenter.Split(text)) {
                             token.ThrowIfCancellationRequested();
                             void Write(float[] samples) { if (writer.Length + samples.Length * 2L > 60 * 1024 * 1024) throw new InvalidOperationException("Audio vượt giới hạn 60 MB; chia đoạn văn để xuất tiếp."); foreach (var sample in samples) writer.WriteSample(Math.Clamp(sample, -1f, 1f)); }
-                            if (engine == "VieNeu v3 Turbo") await _vieNeu!.SynthesizeAsync(part, "Hải Đăng", samples => { Write(samples); return Task.CompletedTask; }, token);
+                            if (engine == "VieNeu v3 Turbo") await _vieNeu!.SynthesizeAsync(part, "Hải Đăng", samples => { Write(samples); return Task.CompletedTask; }, token, embedding);
                             else Write(_engine!.Synthesize(part, language, (float)rate, token));
                         }
                         if (writer.Length == 0) throw new InvalidDataException("Không có audio để xuất.");
