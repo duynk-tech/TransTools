@@ -909,13 +909,13 @@ internal static class Program
         var notesWindow = new MeetingNotesWindow("# Ghi chú\n- Giữ chữ Việt và 日本語.", string.Join("\n", Enumerable.Range(0, 40).Select(n => "Tóm tắt mới — giữ nội dung dài đầy đủ. " + n)), "Cuộc họp dự án") { Owner = window };
         notesWindow.Show(); Pump();
         if (Descendants(notesWindow).OfType<TextBox>().Any(t => t.IsVisible)) throw new Exception("Notes default view is not Markdown preview");
-        ValidateControlLayout(notesWindow, "Notes preview"); Capture(notesWindow, output, "760-notes-markdown.png");
+        ValidateControlLayout(notesWindow, "Notes preview"); Capture(notesWindow, output, "720-notes-markdown.png");
         Descendants(notesWindow).OfType<Button>().Single(b => Equals(b.Content, "Chỉnh sửa")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
         var notesEditor = Descendants(notesWindow).OfType<TextBox>().Single();
         notesEditor.Text += "\nNội dung tự sửa.";
         Descendants(notesWindow).OfType<Button>().Single(b => Equals(b.Content, "Thêm bản tóm tắt")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
         if (!notesWindow.Notes.Contains("Nội dung tự sửa.") || !notesWindow.Notes.Contains("Tóm tắt mới")) throw new Exception("Appending summary replaced existing notes");
-        Capture(notesWindow, output, "760-notes-editor.png");
+        Capture(notesWindow, output, "720-notes-editor.png");
         Descendants(notesWindow).OfType<Button>().Single(b => Equals(b.Content, "Xem Markdown")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
         if (!Descendants(notesWindow).OfType<ScrollViewer>().Any(s => s.IsVisible && s.ScrollableHeight > 0)) throw new Exception("Long notes cannot scroll in Markdown preview");
         notesWindow.Close(); Pump();

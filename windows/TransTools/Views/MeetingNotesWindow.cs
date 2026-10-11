@@ -28,13 +28,20 @@ public sealed class MeetingNotesWindow : Window
     public MeetingNotesWindow(string notes, string summary, string sessionTitle = "", Func<CancellationToken, Task<string>>? generate = null, Func<string, Task<bool>>? saveNotes = null)
     {
         _generate = generate; _save = saveNotes; _savedNotes = notes;
-        Title = "Ghi chú"; Width = 760; Height = 560; MinWidth = 600; MinHeight = 400;
+        Title = "Ghi chú"; Width = 720; Height = 560; MinWidth = 600; MinHeight = 400;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Background = new SolidColorBrush(Color.FromRgb(245, 248, 247));
-        var layout = new DockPanel { Margin = new Thickness(20) };
+        var layout = new DockPanel { Margin = new Thickness(24) };
         Content = layout;
         var heading = new StackPanel { Margin = new Thickness(0, 0, 0, 16) };
-        heading.Children.Add(new TextBlock { Text = "Ghi chú", FontSize = 22, FontWeight = FontWeights.SemiBold, Foreground = new SolidColorBrush(Color.FromRgb(40, 117, 104)) });
+        var titleRow = new DockPanel();
+        var close = new Button { Content = "Đóng", Style = (Style)FindResource("SecondaryButton"), HorizontalAlignment = HorizontalAlignment.Right, IsCancel = _save == null };
+        close.Click += (_, _) => { if (_save != null) Close(); else DialogResult = false; };
+        DockPanel.SetDock(close, Dock.Right); titleRow.Children.Add(close);
+        var titleLabel = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        titleLabel.Children.Add(new TextBlock { Text = "\uE70B", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 20, Foreground = new SolidColorBrush(Color.FromRgb(40, 117, 104)), Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center });
+        titleLabel.Children.Add(new TextBlock { Text = "Ghi chú", FontSize = 20, FontWeight = FontWeights.Bold, Foreground = new SolidColorBrush(Color.FromRgb(40, 117, 104)), VerticalAlignment = VerticalAlignment.Center });
+        titleRow.Children.Add(titleLabel); heading.Children.Add(titleRow);
         heading.Children.Add(new TextBlock { Text = sessionTitle, TextWrapping = TextWrapping.Wrap, MaxHeight = 42, ToolTip = sessionTitle, Margin = new Thickness(0, 6, 0, 0), Foreground = Brushes.Gray });
         DockPanel.SetDock(heading, Dock.Top); layout.Children.Add(heading);
         var footer = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
@@ -48,9 +55,7 @@ public sealed class MeetingNotesWindow : Window
             };
             footer.Children.Add(useSummary);
         }
-        var close = new Button { Content = "Đóng", Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 8, 0) };
-        close.Click += (_, _) => { if (_save != null) Close(); else DialogResult = false; }; footer.Children.Add(close);
-        var save = new Button { Content = "Lưu ghi chú", IsDefault = true };
+        var save = new Button { Content = "Lưu ghi chú", IsDefault = _save == null, Visibility = _save == null ? Visibility.Visible : Visibility.Collapsed };
         save.Click += async (_, _) => { if (_save != null) await FlushNotesAsync(); else DialogResult = true; }; footer.Children.Add(save);
         _editor = new TextBox { Text = notes, AcceptsReturn = true, AcceptsTab = true, TextWrapping = TextWrapping.Wrap,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto, FontSize = 14, Padding = new Thickness(14) };
@@ -87,7 +92,7 @@ public sealed class MeetingNotesWindow : Window
         };
         Closed += (_, _) => { _closed = true; _saveTimer.Stop(); _request?.Cancel(); };
         var reading = new Grid(); reading.Children.Add(_preview); reading.Children.Add(_editor);
-        layout.Children.Add(new Border { Child = reading, Background = Brushes.White, BorderBrush = new SolidColorBrush(Color.FromRgb(194, 221, 213)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(8) });
+        layout.Children.Add(new Border { Child = reading, Background = Brushes.White, BorderBrush = new SolidColorBrush(Color.FromRgb(194, 221, 213)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(0) });
 
     }
     public async Task<bool> FlushNotesAsync()
@@ -133,7 +138,7 @@ public sealed class MeetingNotesWindow : Window
     // Parse text as document content; never execute HTML or load user-provided XAML.
     private static FlowDocument Format(string markdown)
     {
-        var document = new FlowDocument { FontSize = 14, FontFamily = new FontFamily("Segoe UI"), Foreground = new SolidColorBrush(Color.FromRgb(36, 61, 53)), PagePadding = new Thickness(16) };
+        var document = new FlowDocument { FontSize = 14, FontFamily = new FontFamily("Segoe UI"), Foreground = new SolidColorBrush(Color.FromRgb(36, 61, 53)), PagePadding = new Thickness(14) };
         foreach (var line in markdown.Replace("\r", "").Split('\n')) {
             var content = line; var size = 14.0; var heading = false;
             if (line.StartsWith("### ")) { content = line[4..]; size = 16; heading = true; }
