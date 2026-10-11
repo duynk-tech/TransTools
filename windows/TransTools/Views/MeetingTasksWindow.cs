@@ -36,15 +36,21 @@ public sealed class MeetingTasksWindow : Window
     public MeetingTasksWindow(MeetingSession session, Func<string, CancellationToken, Task<string>>? generate)
     {
         _session = session; _generate = generate;
-        Title = "Việc cần làm sau cuộc họp"; Width = 780; Height = 620; MinWidth = 600; MinHeight = 400;
+        Title = "Việc cần làm sau cuộc họp"; Width = 640; Height = 500; MinWidth = 600; MinHeight = 400;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Background = Brushes.White;
         var layout = new DockPanel(); Content = layout;
-        var heading = new StackPanel { Margin = new Thickness(24, 18, 24, 18) };
-        heading.Children.Add(new TextBlock { Text = "Việc cần làm sau cuộc họp", FontSize = 22, FontWeight = FontWeights.SemiBold });
-        heading.Children.Add(new TextBlock { Text = session.Title, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 6, 0, 0) });
+        var heading = new DockPanel { Margin = new Thickness(20, 16, 20, 16) };
+        var close = new Button { Content = "\uE711", FontFamily = new FontFamily("Segoe MDL2 Assets"), Width = 32, MinHeight = 32, Padding = new Thickness(0), Style = (Style)FindResource("SecondaryButton"), ToolTip = "Đóng", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
+        close.Click += (_, _) => Close(); DockPanel.SetDock(close, Dock.Right); heading.Children.Add(close);
+        var icon = new TextBlock { Text = "\uE9D5", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 20, Foreground = new SolidColorBrush(Color.FromRgb(40, 117, 104)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
+        DockPanel.SetDock(icon, Dock.Left); heading.Children.Add(icon);
+        var titles = new StackPanel();
+        titles.Children.Add(new TextBlock { Text = "Việc cần làm sau cuộc họp (AI)", FontSize = 16, FontWeight = FontWeights.Bold });
+        titles.Children.Add(new TextBlock { Text = session.Title, FontSize = 12, Foreground = new SolidColorBrush(Color.FromRgb(101, 117, 111)), TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = session.Title, Margin = new Thickness(0, 2, 0, 0) });
+        heading.Children.Add(titles);
         var header = new Border { Background = Mint(), Child = heading }; DockPanel.SetDock(header, Dock.Top); layout.Children.Add(header);
-        var footer = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(20) };
+        var footer = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(20, 12, 20, 12) };
         _analyze = new Button { Content = "Phân tích lại", Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 8, 0) };
         _analyze.Click += async (_, _) => await AnalyzeAsync(); footer.Children.Add(_analyze);
         var copy = new Button { Content = "Sao chép danh sách", Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 8, 0) };
@@ -53,8 +59,8 @@ public sealed class MeetingTasksWindow : Window
             var text = string.Join(Environment.NewLine, lines);
             if (text.Length > 0) { Clipboard.SetText(text); _status.Text = "Đã sao chép danh sách"; }
         }; footer.Children.Add(copy);
-        var close = new Button { Content = "Đóng", Style = (Style)FindResource("SecondaryButton") }; close.Click += (_, _) => Close(); footer.Children.Add(close);
-        DockPanel.SetDock(footer, Dock.Bottom); layout.Children.Add(footer);
+        var footerSurface = new Border { Background = Mint(), Child = footer };
+        DockPanel.SetDock(footerSurface, Dock.Bottom); layout.Children.Add(footerSurface);
         var body = new DockPanel { Margin = new Thickness(24, 10, 24, 0) };
         DockPanel.SetDock(_status, Dock.Top); body.Children.Add(_status);
         var addRow = new DockPanel { Margin = new Thickness(0, 12, 0, 12) };
