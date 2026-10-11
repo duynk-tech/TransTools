@@ -749,6 +749,7 @@ internal static class Program
                 countdownModel.Dispose(); Pump();
                 if (countdownModel.IsRecording) throw new Exception("Closing voice recorder started microphone after countdown");
             }
+            if (!TransTools.Services.Speech.ReferenceWordCheck.IsNearMatch("Xin chào, tôi rất vui được gặp bạn.", "xin chao toi rat vui duoc gap ban") || TransTools.Services.Speech.ReferenceWordCheck.IsNearMatch("Xin chào, tôi rất vui được gặp bạn.", "xin chào bạn") || TransTools.Services.Speech.ReferenceWordCheck.IsNearMatch("xin chào", "") || TransTools.Services.Speech.ReferenceWordCheck.IsNearMatch("một hai ba bốn năm", "năm bốn ba hai một")) throw new Exception("Reference word comparison loses missing-word or order checks");
             var recordingFixtureRoot = Path.Combine(Path.GetTempPath(), "TransTools-recordings-" + Guid.NewGuid());
             var originalVoicePreference = TransTools.Services.Speech.VoicePreferences.Get("vi");
             try {

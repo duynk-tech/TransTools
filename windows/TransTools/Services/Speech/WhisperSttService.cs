@@ -26,7 +26,7 @@ public class WhisperSttService : IDisposable
         Directory.CreateDirectory(_modelsDirectory);
     }
 
-    public async Task InitializeModelAsync(GgmlType modelType = GgmlType.Base, string language = "auto", IProgress<double>? progress = null, CancellationToken cancellationToken = default)
+    public async Task InitializeModelAsync(GgmlType modelType = GgmlType.Base, string language = "auto", IProgress<double>? progress = null, CancellationToken cancellationToken = default, bool allowDownload = true)
     {
         var modelFileName = $"ggml-{modelType.ToString().ToLower()}.bin";
         _currentModelPath = Path.Combine(_modelsDirectory, modelFileName);
@@ -34,6 +34,7 @@ public class WhisperSttService : IDisposable
         await DownloadGate.WaitAsync(cancellationToken);
         try {
             if (!File.Exists(_currentModelPath)) {
+                if (!allowDownload) throw new FileNotFoundException("Cần tải mô hình nhận diện giọng nói trước khi kiểm tra lời đọc.");
                 OnStatusChanged?.Invoke($"Đang tải mô hình nhận diện giọng nói {modelType}...");
                 await DownloadModelAsync(modelType, _currentModelPath, progress, cancellationToken);
             }

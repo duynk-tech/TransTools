@@ -14,7 +14,8 @@ public partial class PersonalVoiceRecorderViewModel : ObservableObject, IDisposa
 {
     private PersonalVoiceRecorder? _recorder;
     private float[]? _samples;
-    private CancellationTokenSource? _creation, _preview, _script, _leadIn;
+    private CancellationTokenSource? _creation, _preview, _script, _leadIn, _wordCheck;
+    [ObservableProperty] private string _transcript = "";
     private bool _disposed;
     private readonly Stopwatch _clock = new();
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(200) };
@@ -62,7 +63,7 @@ public partial class PersonalVoiceRecorderViewModel : ObservableObject, IDisposa
             if (_audioBusy()) { Status = "Dừng phiên đang dùng âm thanh trước khi thu giọng."; return; }
             _recorder?.Dispose(); _recorder = new PersonalVoiceRecorder();
             _recorder.LimitReached += () => System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => { if (!_disposed && IsRecording) FinishRecording(); });
-            _samples = null; HasUsableRecording = false;
+            _samples = null; HasUsableRecording = false; Transcript = "";
             _recorder.Start(); IsRecording = true; Status = "Đang thu — đọc rõ, tự nhiên. Tự dừng sau 8 giây.";
         } catch (OperationCanceledException) { if (!_disposed) Status = "Đã hủy đếm ngược. Bản thu trước được giữ nguyên."; }
         catch (Exception ex) { _recorder?.Dispose(); _recorder = null; IsRecording = false; if (!_disposed) Status = "Chưa thu được: " + ex.Message; }
@@ -127,6 +128,38 @@ public partial class PersonalVoiceRecorderViewModel : ObservableObject, IDisposa
         catch (Exception ex) { if (!_disposed) Status = "Chưa nghe được bản thu: " + ex.Message; }
         finally { Array.Clear(pcm); _preview = null; if (!_disposed) IsPreviewing = false; }
     }
+    [RelayCommand] private async Task CheckWordsAsync()
+    {
+        if (_disposed || !CanPreview || _samples == null) return;
+        if (_audioBusy()) { Status = "Dừng phiên đang dùng âm thanh trước khi kiểm tra lời đọc."; return; }
+        var samples = _samples.ToArray(); var reference = ReferenceText;
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        _wordCheck = cancellation; IsProcessing = true; Transcript = "";
+        try {
+            Status = "Đang kiểm tra lời đọc trên thiết bị…";
+            var text = await Task.Run(async () => {
+                using var stt = new WhisperSttService();
+                var segments = new List<string>(); stt.OnSegmentTranscribed += (value, _, _) => segments.Add(value);
+                await stt.InitializeModelAsync(language: "vi", cancellationToken: cancellation.Token, allowDownload: false);
+                var pcm = new byte[samples.Length * 2];
+                try {
+                    for (var i = 0; i < samples.Length; i++) BinaryPrimitives.WriteInt16LittleEndian(pcm.AsSpan(i * 2, 2), (short)Math.Round(Math.Clamp(samples[i], -1f, 1f) * 32767));
+                    using var buffer = new MemoryStream(); byte[] wav;
+                    using (var writer = new WaveFileWriter(buffer, new WaveFormat(16000, 16, 1))) { writer.Write(pcm); writer.Flush(); wav = buffer.ToArray(); }
+                    try { using var stream = new MemoryStream(wav); await stt.ProcessAudioAsync(stream, cancellation.Token); }
+                    finally { Array.Clear(wav); }
+                    return string.Join(" ", segments);
+                } finally { Array.Clear(pcm); }
+            }, cancellation.Token);
+            cancellation.Token.ThrowIfCancellationRequested(); if (_disposed) return;
+            Transcript = text;
+            Status = ReferenceWordCheck.IsNearMatch(reference, text)
+                ? "Lời đọc nhận diện gần khớp mẫu. Hãy nghe lại để xác nhận chất lượng."
+                : "Lời đọc có thể thiếu chữ hoặc nhận diện chưa đúng. Xem nội dung nhận diện, nghe lại và thu lại nếu cần.";
+        } catch (OperationCanceledException) { if (!_disposed) Status = "Đã dừng kiểm tra lời đọc. Bản thu vẫn được giữ nguyên."; }
+        catch (Exception ex) { if (!_disposed) Status = "Chưa kiểm tra được lời đọc: " + ex.Message + " Bạn vẫn có thể nghe lại bản thu."; }
+        finally { Array.Clear(samples); _wordCheck = null; if (!_disposed) IsProcessing = false; }
+    }
     [RelayCommand] private void StopPreview() => _preview?.Cancel();
     public static bool IsValidReferenceText(string text)
     {
@@ -146,15 +179,15 @@ public partial class PersonalVoiceRecorderViewModel : ObservableObject, IDisposa
             cts.Token.ThrowIfCancellationRequested(); if (_disposed) return;
             if (!IsValidReferenceText(text)) { Status = "Đoạn AI chưa phù hợp thời lượng. Giữ mẫu hiện tại; bạn có thể thử lại."; return; }
             if (_samples != null) Array.Clear(_samples); _samples = null; HasUsableRecording = false; OnPropertyChanged(nameof(CanPreview));
-            ReferenceText = text; RecordedSeconds = 0; Status = "Đã có đoạn mới. Đọc thử một lần trước khi thu.";
+            ReferenceText = text; Transcript = ""; RecordedSeconds = 0; Status = "Đã có đoạn mới. Đọc thử một lần trước khi thu.";
         } catch (OperationCanceledException) { if (!_disposed) Status = "Đã dừng tạo đoạn đọc. Giữ mẫu hiện tại."; }
         catch (Exception) { if (!_disposed) Status = "Chưa tạo được đoạn AI. Bạn có thể dùng mẫu có sẵn."; }
         finally { _script = null; if (!_disposed) IsProcessing = false; }
     }
-    [RelayCommand] private void CancelCreation() { _creation?.Cancel(); _script?.Cancel(); }
+    [RelayCommand] private void CancelCreation() { _creation?.Cancel(); _script?.Cancel(); _wordCheck?.Cancel(); }
     public void Dispose()
     {
-        if (_disposed) return; _disposed = true; _timer.Stop(); _clock.Stop(); _creation?.Cancel(); _preview?.Cancel(); _script?.Cancel(); _leadIn?.Cancel(); _recorder?.Dispose(); _recorder = null;
+        if (_disposed) return; _disposed = true; _timer.Stop(); _clock.Stop(); _creation?.Cancel(); _preview?.Cancel(); _script?.Cancel(); _leadIn?.Cancel(); _wordCheck?.Cancel(); _recorder?.Dispose(); _recorder = null;
         if (_samples != null) Array.Clear(_samples); _samples = null;
     }
 }

@@ -7,6 +7,8 @@ public static class LearningTests
 {
     private static void Check(bool value,string label) { if (!value) throw new Exception(label); Console.WriteLine("PASS: " + label); }
     public static void Run() {
+        Check(ReferenceWordCheck.IsNearMatch("Xin chào, tôi rất vui được gặp bạn.", "xin chao toi rat vui duoc gap ban"), "reference comparison accepts punctuation and accent variations");
+        Check(!ReferenceWordCheck.IsNearMatch("Xin chào, tôi rất vui được gặp bạn.", "xin chào bạn") && !ReferenceWordCheck.IsNearMatch("xin chào", "") && !ReferenceWordCheck.IsNearMatch("một hai ba bốn năm", "năm bốn ba hai một"), "reference comparison flags missing or reordered speech");
         var fixtureRoot = Path.Combine(AppContext.BaseDirectory,"Fixtures");
         float[] ReadFloats(string name) { var bytes=File.ReadAllBytes(Path.Combine(fixtureRoot,name)); var values=new float[bytes.Length/4]; Buffer.BlockCopy(bytes,0,values,0,bytes.Length); return values; }
         var expected=ReadFloats("speaker-features.f32");
