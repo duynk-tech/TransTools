@@ -27,7 +27,11 @@ public partial class NotebookViewModel : ObservableObject
     [RelayCommand] private async Task OpenNotesAsync()
     {
         if (SelectedSession is not { } session) return;
-        var editor = new TransTools.Views.MeetingNotesWindow(session.Notes, session.Summary ?? "", session.Title) { Owner = System.Windows.Application.Current.MainWindow };
+        var config = _credentialStore.LoadConfiguredProvider();
+        var transcript = string.Join("\n", session.Captions.Select(c => $"[{c.FormattedTimestamp}] {c.Original}"));
+        Func<CancellationToken, Task<string>>? generate = config == null || string.IsNullOrWhiteSpace(transcript) ? null : token => _llmService.GenerateAsync(transcript[..Math.Min(transcript.Length, 12000)],
+            "Tạo ghi chú cuộc họp bằng tiếng Việt dưới dạng Markdown: tổng quan, ý chính, quyết định, việc cần làm. Giữ thuật ngữ chuyên ngành và tên riêng. Không thêm thông tin không có trong bản ghi.", config, token);
+        var editor = new TransTools.Views.MeetingNotesWindow(session.Notes, session.Summary ?? "", session.Title, generate) { Owner = System.Windows.Application.Current.MainWindow };
         if (editor.ShowDialog() == true) await SaveRecordNotesAsync(session, editor.Notes);
     }
     public async Task<bool> SaveRecordNotesAsync(MeetingSession session, string notes)

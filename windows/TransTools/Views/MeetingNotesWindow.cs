@@ -9,11 +9,18 @@ namespace TransTools.Views;
 public sealed class MeetingNotesWindow : Window
 {
     private readonly TextBox _editor;
+    private readonly Func<CancellationToken, Task<string>>? _generate;
+    private readonly Button _generateButton;
+    private readonly Button _cancelGeneration;
+    private readonly TextBlock _message = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 8) };
+    private CancellationTokenSource? _request;
+    private bool _closed;
     private FlowDocumentScrollViewer _preview = null!;
     private void RefreshPreview() { if (_preview != null) _preview.Document = Format(string.IsNullOrWhiteSpace(Notes) ? "Chưa có ghi chú. Chọn Chỉnh sửa để tự viết." : Notes); }
     public string Notes => _editor.Text;
-    public MeetingNotesWindow(string notes, string summary, string sessionTitle = "")
+    public MeetingNotesWindow(string notes, string summary, string sessionTitle = "", Func<CancellationToken, Task<string>>? generate = null)
     {
+        _generate = generate;
         Title = "Ghi chú"; Width = 760; Height = 560; MinWidth = 600; MinHeight = 400;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Background = new SolidColorBrush(Color.FromRgb(245, 248, 247));
@@ -51,10 +58,41 @@ public sealed class MeetingNotesWindow : Window
             edit.Content = editing ? "Xem Markdown" : "Chỉnh sửa";
             if (editing) _editor.Focus(); else RefreshPreview();
         };
-        tools.Children.Add(edit); DockPanel.SetDock(tools, Dock.Top); layout.Children.Add(tools);
+        DockPanel.SetDock(edit, Dock.Right); tools.Children.Add(edit);
+        _generateButton = new Button { Content = "Tạo ghi chú AI", IsEnabled = generate != null, HorizontalAlignment = HorizontalAlignment.Left, ToolTip = generate == null ? "Cấu hình AI và có bản ghi để tạo ghi chú" : "Thêm ghi chú AI từ bản ghi" };
+        _generateButton.Click += async (_, _) => await GenerateNotesAsync();
+        _cancelGeneration = new Button { Content = "Hủy", Visibility = Visibility.Collapsed, Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(8, 0, 0, 0) };
+        _cancelGeneration.Click += (_, _) => _request?.Cancel();
+        var aiActions = new StackPanel { Orientation = Orientation.Horizontal }; aiActions.Children.Add(_generateButton); aiActions.Children.Add(_cancelGeneration); tools.Children.Add(aiActions);
+        DockPanel.SetDock(tools, Dock.Top); layout.Children.Add(tools);
+        DockPanel.SetDock(_message, Dock.Bottom); layout.Children.Add(_message);
+        Closed += (_, _) => { _closed = true; _request?.Cancel(); };
         var reading = new Grid(); reading.Children.Add(_preview); reading.Children.Add(_editor);
         layout.Children.Add(new Border { Child = reading, Background = Brushes.White, BorderBrush = new SolidColorBrush(Color.FromRgb(194, 221, 213)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(8) });
 
+    }
+    public async Task GenerateNotesAsync()
+    {
+        if (_closed || _request != null || _generate == null) return;
+        using var request = new CancellationTokenSource(TimeSpan.FromSeconds(40));
+        _request = request; _generateButton.IsEnabled = false; _generateButton.Content = "Đang tạo…";
+        _cancelGeneration.Visibility = Visibility.Visible; _message.Text = "";
+        try {
+            var result = await _generate(request.Token);
+            if (_closed || request.IsCancellationRequested || !ReferenceEquals(_request, request)) return;
+            if (string.IsNullOrWhiteSpace(result)) { _message.Text = "AI chưa trả về nội dung ghi chú."; return; }
+            if (result.Length > 32000) { _message.Text = "Ghi chú AI quá dài. Hãy thử lại với bản ghi ngắn hơn."; return; }
+            _editor.Text += (string.IsNullOrWhiteSpace(Notes) ? "" : "\n\n---\n\n") + result.Trim();
+            RefreshPreview(); _message.Text = "Đã thêm ghi chú AI. Kiểm tra nội dung trước khi lưu.";
+        } catch (OperationCanceledException) when (request.IsCancellationRequested) {
+            if (!_closed) _message.Text = "Đã dừng tạo ghi chú.";
+        } catch (Exception ex) { if (!_closed && !request.IsCancellationRequested) _message.Text = "Chưa tạo được ghi chú: " + ex.Message; }
+        finally {
+            if (ReferenceEquals(_request, request)) {
+                _request = null;
+                if (!_closed) { _generateButton.IsEnabled = true; _generateButton.Content = "Tạo ghi chú AI"; _cancelGeneration.Visibility = Visibility.Collapsed; }
+            }
+        }
     }
     // Parse text as document content; never execute HTML or load user-provided XAML.
     private static FlowDocument Format(string markdown)

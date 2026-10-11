@@ -742,6 +742,18 @@ internal static class Program
         Descendants(notesWindow).OfType<Button>().Single(b => Equals(b.Content, "Thêm bản tóm tắt")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
         if (!notesWindow.Notes.Contains("Nội dung tự sửa.") || !notesWindow.Notes.Contains("Tóm tắt mới")) throw new Exception("Appending summary replaced existing notes");
         Capture(notesWindow, output, "760-notes-editor.png"); notesWindow.Close(); Pump();
+        var notesReply = new TaskCompletionSource<string>();
+        var aiNotes = new MeetingNotesWindow("Ghi chú ban đầu", "", "Hội thoại", _ => notesReply.Task) { Owner = window };
+        aiNotes.Show(); Pump(); var pendingNotes = aiNotes.GenerateNotesAsync(); Pump();
+        Descendants(aiNotes).OfType<TextBox>().Single().Text += "\nSửa khi đang tạo.";
+        notesReply.SetResult("## Kết quả AI"); Await(pendingNotes); Pump();
+        if (!aiNotes.Notes.Contains("Sửa khi đang tạo.") || !aiNotes.Notes.Contains("## Kết quả AI")) throw new Exception("AI notes overwrote concurrent user edits");
+        aiNotes.Close(); Pump();
+        var lateReply = new TaskCompletionSource<string>();
+        var canceledNotes = new MeetingNotesWindow("Giữ nguyên", "", "Hội thoại", _ => lateReply.Task) { Owner = window };
+        canceledNotes.Show(); Pump(); var lateNotes = canceledNotes.GenerateNotesAsync(); Pump();
+        canceledNotes.Close(); lateReply.SetResult("Không được thêm"); Await(lateNotes);
+        if (canceledNotes.Notes != "Giữ nguyên") throw new Exception("Closed notes window accepted a late AI response");
         var noteRecord = notebook.Sessions.Single(s => s.Id == saved.Id);
         var noteText = "# Ghi chú hội thoại\nGiữ nguyên chữ Việt và 日本語.";
         var noteSave = notebook.SaveRecordNotesAsync(noteRecord, noteText); Await(noteSave);
