@@ -10,6 +10,7 @@ public partial class VoiceSettingsViewModel : ObservableObject
     public PersonalVoiceRecorderViewModel CreateRecorder() => new(() => _audioBusy() || IsPreviewing);
     public SettingsViewModel Management { get; }
     private readonly Func<bool> _audioBusy;
+    private readonly PersonalVoiceStore _personalVoiceStore;
     private bool _loading, _canSave = true;
     public string[] Languages { get; } = ["vi", "en", "ja", "zh", "ko"];
     public string[] Engines => Language == "zh" ? ["Giọng cơ bản", "Edge"] : Language == "vi" && VoiceService.HasVieNeuProcessor ? ["Supertonic 3", "Giọng cơ bản", "Edge", "VieNeu v3 Turbo"] : ["Supertonic 3", "Giọng cơ bản", "Edge"];
@@ -27,8 +28,9 @@ public partial class VoiceSettingsViewModel : ObservableObject
     [ObservableProperty] private string _sampleText = "Xin chào! Hãy cùng Trans Tools nghe và học ngôn ngữ mỗi ngày.";
     [ObservableProperty] private string _status = "Chọn giọng và nghe thử một đoạn văn.";
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(CreateRecordingVoiceCommand))] [NotifyPropertyChangedFor(nameof(CanChangeRate), nameof(CanConfigure), nameof(CanManagePersonalVoice), nameof(CanManageRecording), nameof(CanUseRecordingVoice))] private bool _isPreviewing;
-    public VoiceSettingsViewModel(SettingsViewModel management, Func<bool>? audioBusy = null)
+    public VoiceSettingsViewModel(SettingsViewModel management, Func<bool>? audioBusy = null, PersonalVoiceStore? personalVoiceStore = null)
     {
+        _personalVoiceStore = personalVoiceStore ?? new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot);
         Management = management; Management.PropertyChanged += (_, _) => { OnPropertyChanged(nameof(CanUseRecordingVoice)); CreateRecordingVoiceCommand.NotifyCanExecuteChanged(); }; _audioBusy = audioBusy ?? (() => false); LoadPreference();
         VoicePreferences.Changed += code => {
             if (code != Language || IsPreviewing) return;
@@ -41,7 +43,7 @@ public partial class VoiceSettingsViewModel : ObservableObject
         _loading = true;
         try { var p = VoicePreferences.Get(Language); Engine = Engines.Contains(p.Engine) ? p.Engine : "Giọng cơ bản"; Rate = Engine == "VieNeu v3 Turbo" ? 1 : p.Rate;
             PersonalVoices.Clear(); PersonalVoices.Add(new(null, "Giọng dựng sẵn"));
-            var store = new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot); RefreshRecordings(store);
+            var store = _personalVoiceStore; RefreshRecordings(store);
             foreach (var profile in store.Load().Where(profile => store.HasModel(profile.Id))) PersonalVoices.Add(new(profile.Id, profile.Name));
             if (p.PersonalVoiceId is Guid missingId && PersonalVoices.All(voice => voice.Id != missingId)) PersonalVoices.Add(new(missingId, "Giọng đã chọn không còn dữ liệu — chọn lại giọng"));
             SelectedPersonalVoice = PersonalVoices.FirstOrDefault(voice => voice.Id == p.PersonalVoiceId) ?? PersonalVoices[0];
@@ -69,7 +71,7 @@ public partial class VoiceSettingsViewModel : ObservableObject
     {
         if (!CanManagePersonalVoice || SelectedPersonalVoice?.Id is not Guid id) return;
         if (_audioBusy()) { Status = "Dừng phiên đang dùng âm thanh trước khi đổi tên giọng."; return; }
-        try { new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot).Rename(id, name); LoadPreference(); Status = "Đã đổi tên giọng."; }
+        try { _personalVoiceStore.Rename(id, name); LoadPreference(); Status = "Đã đổi tên giọng."; }
         catch (Exception ex) { Status = "Chưa đổi được tên: " + ex.Message; }
     }
     public void DeletePersonalVoice(Guid id)
@@ -77,7 +79,7 @@ public partial class VoiceSettingsViewModel : ObservableObject
         if (!CanManagePersonalVoice || SelectedPersonalVoice?.Id != id) return;
         if (_audioBusy()) { Status = "Dừng phiên đang dùng âm thanh trước khi xóa giọng."; return; }
         try {
-            new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot).MoveToTrash(id);
+            _personalVoiceStore.MoveToTrash(id);
             if (VoicePreferences.Get("vi").PersonalVoiceId == id) VoicePreferences.SelectPersonalVoice(null);
             LoadPreference(); Status = "Đã chuyển giọng vào Thùng rác và dùng giọng dựng sẵn.";
         } catch (Exception ex) { LoadPreference(); Status = "Chưa hoàn tất xóa giọng: " + ex.Message; }

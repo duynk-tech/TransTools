@@ -744,6 +744,37 @@ internal static class Program
                 countdownModel.Dispose(); Pump();
                 if (countdownModel.IsRecording) throw new Exception("Closing voice recorder started microphone after countdown");
             }
+            var recordingFixtureRoot = Path.Combine(Path.GetTempPath(), "TransTools-recordings-" + Guid.NewGuid());
+            var originalVoicePreference = TransTools.Services.Speech.VoicePreferences.Get("vi");
+            try {
+                var store = new PersonalVoiceStore(recordingFixtureRoot);
+                var samples = Enumerable.Range(0, 64000).Select(i => .05f * (float)Math.Sin(i / 20.0)).ToArray();
+                var raw = store.SaveRecording("Bản thu thử chưa xử lý", "Đoạn đọc mẫu để kiểm tra bố cục bản thu.", samples);
+                var ready = store.Save("Bản thu thử có hồ sơ", "Một câu gốc khác để kiểm tra trạng thái hồ sơ.", samples, Enumerable.Repeat(.1f, 192).ToArray());
+                Array.Clear(samples);
+                var busy = false;
+                var model = new VoiceSettingsViewModel(new SettingsViewModel(), () => busy, store);
+                model.Engine = "VieNeu v3 Turbo";
+                var view = new VoiceSettingsView(model);
+                var fixture = new Window { Owner = window, Width = 960, Height = 820, Content = new ScrollViewer { Content = view, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
+                fixture.Show(); ((RadioButton)view.FindName("AdvancedTab")).IsChecked = true; Pump();
+                model.SelectedRecording = model.Recordings.Single(item => item.Id == raw.Id); Pump();
+                if (model.HasSelectedModel || model.PersonalVoices.Any(item => item.Id == raw.Id)) throw new Exception("Unprocessed reference appears as synthesized voice");
+                ValidateControlLayout(fixture, "Saved raw recording"); Capture(fixture, output, "personal-voice-raw-management.png");
+                model.RenameRecording("Bản thu đã đổi tên"); Pump();
+                if (store.Load().Single(item => item.Id == raw.Id).Name != "Bản thu đã đổi tên") throw new Exception("Raw recording rename did not persist");
+                model.SelectedRecording = model.Recordings.Single(item => item.Id == ready.Id); Pump();
+                if (!model.HasSelectedModel || !model.PersonalVoices.Any(item => item.Id == ready.Id)) throw new Exception("Ready personal profile is missing from voice options");
+                ValidateControlLayout(fixture, "Ready personal voice profile"); Capture(fixture, output, "personal-voice-ready-management.png");
+                busy = true; model.RenameRecording("Không được đổi");
+                if (store.Load().Single(item => item.Id == ready.Id).Name != ready.Name) throw new Exception("Active audio session allows recording mutation");
+                busy = false; fixture.Close();
+                var removeModel = ConfirmDeleteWindow.ForVoiceModel(ready.Name); removeModel.Owner = window; removeModel.Show(); Pump();
+                ValidateControlLayout(removeModel, "Remove voice model confirmation"); Capture(removeModel, output, "personal-voice-remove-model.png"); removeModel.Close();
+            } finally {
+                TransTools.Services.Speech.VoicePreferences.Save("vi", originalVoicePreference.Engine, originalVoicePreference.Rate);
+                if (Directory.Exists(recordingFixtureRoot)) Directory.Delete(recordingFixtureRoot, true);
+            }
             var license = new LicenseWindow("Supertonic 3", "Fixture license text for visual review.\n" + string.Join("\n", Enumerable.Repeat("Keep the original license readable and selectable.", 25))) { Owner = window }; license.Show(); Pump(); ValidateControlLayout(license, "Model license"); Capture(license, output, "model-license.png"); license.Close();
             var missingLicense = new LicenseWindow("Supertonic 3", "") { Owner = window }; missingLicense.Show(); Pump();
             if (Descendants(missingLicense).OfType<Button>().Any(b => Equals(b.Content, "Đồng ý & Tải") && b.IsEnabled)) throw new Exception("Model install remains enabled without license text"); missingLicense.Close();
