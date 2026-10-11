@@ -8,5 +8,11 @@ public partial class VoiceSettingsView : UserControl
     public VoiceSettingsView(VoiceSettingsViewModel model) { InitializeComponent(); DataContext = model; }
     private void Default_Checked(object sender, RoutedEventArgs e) { if (DefaultPanel == null) return; DefaultPanel.Visibility = Visibility.Visible; AdvancedPanel.Visibility = Visibility.Collapsed; }
     private void Advanced_Checked(object sender, RoutedEventArgs e) { if (AdvancedPanel == null) return; DefaultPanel.Visibility = Visibility.Collapsed; AdvancedPanel.Visibility = Visibility.Visible; }
+    private void RecordVoice_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not VoiceSettingsViewModel model || !model.CanConfigure || !model.SupportsPersonalVoice) return;
+        new PersonalVoiceRecorderWindow(model.CreateRecorder()) { Owner = Window.GetWindow(this) }.ShowDialog();
+        model.RefreshPersonalVoicesCommand.Execute(null);
+    }
     private void ManageModels_Click(object sender, RoutedEventArgs e) => ManageModelsRequested?.Invoke();
 }

@@ -7,6 +7,7 @@ namespace TransTools.ViewModels;
 public sealed record PersonalVoiceOption(Guid? Id, string Name);
 public partial class VoiceSettingsViewModel : ObservableObject
 {
+    public PersonalVoiceRecorderViewModel CreateRecorder() => new(() => _audioBusy() || IsPreviewing);
     public SettingsViewModel Management { get; }
     private readonly Func<bool> _audioBusy;
     private bool _loading, _canSave = true;
