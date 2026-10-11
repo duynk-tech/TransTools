@@ -450,6 +450,18 @@ internal static class Program
                     Capture(window, output, filename);
                     Console.WriteLine($"PASS: rendered {route} at {width}x{height}");
                     if (route == "Sổ tay" && width == 1280) {
+                        var split = Descendants(window).OfType<GridSplitter>().Single();
+                        var splitGrid = (Grid)split.Parent;
+                        var beforeSplit = splitGrid.ColumnDefinitions[0].ActualWidth;
+                        split.RaiseEvent(new System.Windows.Controls.Primitives.DragStartedEventArgs(0, 0) { RoutedEvent = System.Windows.Controls.Primitives.Thumb.DragStartedEvent });
+                        split.RaiseEvent(new System.Windows.Controls.Primitives.DragDeltaEventArgs(20, 0) { RoutedEvent = System.Windows.Controls.Primitives.Thumb.DragDeltaEvent });
+                        split.RaiseEvent(new System.Windows.Controls.Primitives.DragCompletedEventArgs(20, 0, false) { RoutedEvent = System.Windows.Controls.Primitives.Thumb.DragCompletedEvent });
+                        Pump();
+                        if (splitGrid.ColumnDefinitions[0].ActualWidth <= beforeSplit + 10 || splitGrid.ColumnDefinitions[0].ActualWidth > 350)
+                            throw new Exception("Notebook divider did not resize sidebar within macOS bounds");
+                        ValidateControlLayout(window, "Notebook resized split");
+                        Capture(window, output, "1280-notebook-resized-split.png");
+
                         var copyMenu = Descendants(window).OfType<MenuItem>().First(item => Equals(item.Header, "Sao chép"));
                         copyMenu.IsSubmenuOpen = true; Pump();
                         var copy = (MenuItem)copyMenu.Items[2];
