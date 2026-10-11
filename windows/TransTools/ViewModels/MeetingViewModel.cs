@@ -203,7 +203,9 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(SelectedDisplayMode)); OnPropertyChanged(nameof(DisplayModeKey)); OnPropertyChanged(nameof(FooterSummary));
     }
     private void DisplayPreferencesChanged() => Ui(NotifyDisplayMode);
-    public string FooterSummary => $"đoạn phụ đề • {SourceLanguage.ToUpperInvariant()} → {TargetLanguage.ToUpperInvariant()} • {SelectedDisplayMode}";
+    public string FooterSummary => DisplayModeKey == "original"
+        ? $"đoạn phụ đề • {SourceLanguage.ToUpperInvariant()} • {SelectedDisplayMode}"
+        : $"đoạn phụ đề • {SourceLanguage.ToUpperInvariant()} → {TargetLanguage.ToUpperInvariant()} • {SelectedDisplayMode}";
     partial void OnSourceLanguageChanged(string value) => OnPropertyChanged(nameof(FooterSummary));
     partial void OnTargetLanguageChanged(string value) => OnPropertyChanged(nameof(FooterSummary));
     public string[] CaptureSources { get; } = ["Âm thanh hệ thống", "Microphone"];
