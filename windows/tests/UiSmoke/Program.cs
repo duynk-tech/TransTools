@@ -768,7 +768,12 @@ internal static class Program
                 ValidateControlLayout(fixture, "Ready personal voice profile"); Capture(fixture, output, "personal-voice-ready-management.png");
                 busy = true; model.RenameRecording("Không được đổi");
                 if (store.Load().Single(item => item.Id == ready.Id).Name != ready.Name) throw new Exception("Active audio session allows recording mutation");
-                busy = false; fixture.Close();
+                busy = false;
+                model.RecordingQuery = "không có bản thu này"; Pump();
+                if (model.VisibleRecordings.Count != 0 || model.SelectedRecording != null || model.CanManageRecording) throw new Exception("Empty recording search keeps actionable stale selection");
+                model.RecordingQuery = ""; Pump();
+                if (model.VisibleRecordings.Count != 2 || model.SelectedRecording == null) throw new Exception("Clearing recording search does not restore inventory");
+                fixture.Close();
                 var removeModel = ConfirmDeleteWindow.ForVoiceModel(ready.Name); removeModel.Owner = window; removeModel.Show(); Pump();
                 ValidateControlLayout(removeModel, "Remove voice model confirmation"); Capture(removeModel, output, "personal-voice-remove-model.png"); removeModel.Close();
             } finally {

@@ -21,7 +21,11 @@
     <Border BorderBrush="#D8E5E1" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,14,0,0"><StackPanel>
      <TextBlock Text="Bản thu đã lưu" FontSize="13" FontWeight="Bold"/>
      <TextBlock Text="Lưu âm thanh gốc trước, tạo hồ sơ VieNeu khi cần. Tạo hồ sơ giữ nguyên bản thu." FontSize="11" Foreground="#65756F" TextWrapping="Wrap" Margin="0,6,0,10"/>
-     <ComboBox ItemsSource="{Binding Recordings}" DisplayMemberPath="Name" SelectedItem="{Binding SelectedRecording}" IsEnabled="{Binding CanConfigure}" AutomationProperties.Name="Bản thu đã lưu"/>
+     <TextBlock Text="Tìm bản thu theo tên" FontSize="12" Foreground="#65756F" Margin="0,0,0,6"/>
+     <TextBox Text="{Binding RecordingQuery,UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanConfigure}" AutomationProperties.Name="Tìm bản thu theo tên" ToolTip="Tìm bản thu theo tên" Margin="0,0,0,8"/>
+     <TextBlock Text="{Binding RecordingSearchStatus}" FontSize="11" Foreground="#65756F" Margin="0,0,0,8"/>
+     <ComboBox ItemsSource="{Binding VisibleRecordings}" DisplayMemberPath="Name" SelectedItem="{Binding SelectedRecording}" IsEnabled="{Binding CanConfigure}" AutomationProperties.Name="Bản thu đã lưu"/>
+     <TextBlock Text="{Binding RecordingDetails}" FontSize="11" Foreground="#287568" Margin="0,8,0,0"/>
      <WrapPanel Margin="0,10,0,0"><Button Content="Nghe bản gốc" Command="{Binding PreviewOriginalRecordingCommand}" IsEnabled="{Binding CanManageRecording}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/><Button Content="Dừng" Command="{Binding StopPreviewCommand}" IsEnabled="{Binding IsPreviewing}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/><Button Content="Đổi tên" Click="RenameRecording_Click" IsEnabled="{Binding CanManageRecording}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/><Button Content="Thư mục" Command="{Binding OpenRecordingFolderCommand}" IsEnabled="{Binding CanManageRecording}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/><Button Content="Xóa bản thu" Click="DeleteRecording_Click" IsEnabled="{Binding CanManageRecording}" Style="{StaticResource DestructiveButton}" Margin="0,0,0,8"/></WrapPanel>
      <TextBlock Text="{Binding SelectedRecording.ReferenceText}" FontSize="12" Foreground="#65756F" TextWrapping="Wrap" Margin="0,8,0,0"/>
      <TextBlock Text="{Binding RecordingModelStatus}" FontSize="11" Foreground="#287568" Margin="0,12,0,0"/>

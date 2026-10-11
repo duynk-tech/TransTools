@@ -10,6 +10,20 @@ namespace TransTools.ViewModels;
 public partial class VoiceSettingsViewModel
 {
     public ObservableCollection<PersonalVoiceProfile> Recordings { get; } = new();
+    public ObservableCollection<PersonalVoiceProfile> VisibleRecordings { get; } = new();
+    [ObservableProperty] private string _recordingQuery = "";
+    public string RecordingSearchStatus => Recordings.Count == 0 ? "Chưa có bản thu. Thu một đoạn ngắn để bắt đầu." : VisibleRecordings.Count == 0 ? "Không có bản thu phù hợp." : $"{VisibleRecordings.Count} / {Recordings.Count} bản thu · Lưu trên thiết bị";
+    public string RecordingDetails => SelectedRecording is { } recording ? $"{recording.DurationSeconds:0.#} giây · {recording.CreatedAt.ToLocalTime():dd/MM/yyyy} · Bản thu gốc" : "";
+    partial void OnRecordingQueryChanged(string value) => FilterRecordings();
+    private void FilterRecordings(Guid? preferred = null)
+    {
+        var selected = preferred ?? SelectedRecording?.Id;
+        var query = RecordingQuery.Trim();
+        VisibleRecordings.Clear();
+        foreach (var item in Recordings.Where(item => query.Length == 0 || item.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase))) VisibleRecordings.Add(item);
+        SelectedRecording = VisibleRecordings.FirstOrDefault(item => item.Id == selected) ?? VisibleRecordings.FirstOrDefault();
+        OnPropertyChanged(nameof(RecordingSearchStatus));
+    }
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanManageRecording), nameof(CanUseRecordingVoice))] [NotifyCanExecuteChangedFor(nameof(CreateRecordingVoiceCommand))] private PersonalVoiceProfile? _selectedRecording;
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CreateRecordingVoiceCommand))]
@@ -21,7 +35,7 @@ public partial class VoiceSettingsViewModel
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(CreateRecordingVoiceCommand))] [NotifyPropertyChangedFor(nameof(RecordingModelStatus), nameof(CanUseRecordingVoice))] private bool _hasSelectedModel;
     public string RecordingModelStatus => SelectedRecording == null ? "Chưa có bản thu" : HasSelectedModel ? "Hồ sơ VieNeu đã tạo" : "Chưa tạo hồ sơ VieNeu";
     public bool CanUseRecordingVoice => CanManageRecording && HasSelectedModel && VoiceService.Shared.IsVieNeuInstalled;
-    partial void OnSelectedRecordingChanged(PersonalVoiceProfile? value) => UpdateRecordingModelState();
+    partial void OnSelectedRecordingChanged(PersonalVoiceProfile? value) { UpdateRecordingModelState(); OnPropertyChanged(nameof(RecordingDetails)); }
     private void UpdateRecordingModelState()
     {
         HasSelectedModel = SelectedRecording != null && _personalVoiceStore.HasModel(SelectedRecording.Id);
@@ -96,7 +110,7 @@ public partial class VoiceSettingsViewModel
         var selected = SelectedRecording?.Id;
         Recordings.Clear();
         foreach (var recording in store.Load()) Recordings.Add(recording);
-        SelectedRecording = Recordings.FirstOrDefault(item => item.Id == selected) ?? Recordings.FirstOrDefault();
+        FilterRecordings(selected);
         UpdateRecordingModelState(); OnPropertyChanged(nameof(HasRecordings));
     }
     private bool CanCreateSavedVoice() => CanManageRecording && !HasSelectedModel && VoiceService.Shared.IsVieNeuInstalled;
