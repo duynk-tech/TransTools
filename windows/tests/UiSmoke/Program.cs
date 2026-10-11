@@ -273,7 +273,8 @@ internal static class Program
                             if (hasOriginal != (mode != "Bản dịch") || hasTranslation != (mode != "Tiếng gốc")) throw new Exception("Meeting display mode did not update existing captions: " + mode);
                             var actionNames = Descendants(meetingView).OfType<Button>().Where(button => button.IsVisible && button.CommandParameter is Caption).Select(System.Windows.Automation.AutomationProperties.GetName).ToArray();
                             if (actionNames.Contains("Nghe câu gốc") != (mode != "Bản dịch") || actionNames.Contains("Nghe bản dịch") != (mode != "Tiếng gốc")) throw new Exception("Caption actions do not follow display mode");
-                            var languageBadges = visibleText.Where(text => text is "EN" or "VI").ToArray();
+                            var languageBadges = Descendants((ListBox)meetingView.FindName("CaptionList")).OfType<TextBlock>().Where(text => text.IsVisible).Select(text => text.Text).Where(text => text is "EN" or "VI").ToArray();
+                            if (((ComboBox)meetingView.FindName("MeetingTargetLanguage")).IsVisible != (mode != "Tiếng gốc") || ((Button)meetingView.FindName("MeetingSwapLanguages")).IsVisible != (mode != "Tiếng gốc")) throw new Exception("Original-only mode retains target-language controls");
                             if (languageBadges.Contains("EN") != (mode != "Bản dịch") || languageBadges.Contains("VI") != (mode != "Tiếng gốc")) throw new Exception("Caption language badges do not follow display mode");
                             if (!snapshot.SequenceEqual(meeting.Captions.Select(c => (c.Id, c.Original, c.Vietnamese)))) throw new Exception("Display mode modified stored captions");
                             if (width == 1280) Capture(window, output, "meeting-display-" + meeting.DisplayModeKey + ".png");

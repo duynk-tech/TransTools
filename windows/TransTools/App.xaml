@@ -26,6 +26,7 @@
          <ui:ProviderLabelConverter x:Key="ProviderLabel"/><ui:LanguageLabelConverter x:Key="LanguageLabel"/><ui:OptionSelectionConverter x:Key="OptionSelection"/>
          <ui:LanguageFlagConverter x:Key="LanguageFlag"/>
          <DataTemplate x:Key="LanguageItem"><StackPanel Orientation="Horizontal"><Image Source="{Binding Converter={StaticResource LanguageFlag}}" Width="20" Height="14" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"/><TextBlock Text="{Binding Converter={StaticResource LanguageLabel}}" VerticalAlignment="Center"/></StackPanel></DataTemplate>
+         <DataTemplate x:Key="CompactLanguageItem"><StackPanel Orientation="Horizontal"><Image Source="{Binding Converter={StaticResource LanguageFlag}}" Width="20" Height="14" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False"/><TextBlock FontSize="11" FontWeight="Bold" Text="{Binding Converter={StaticResource LanguageLabel},ConverterParameter=short}" VerticalAlignment="Center"/></StackPanel></DataTemplate>
          <ui:CaptionDisplayTextConverter x:Key="CaptionDisplayText"/>
          <BooleanToVisibilityConverter x:Key="BoolVisibility"/>
          <Style TargetType="Button">
@@ -95,7 +96,7 @@
                      <ToggleButton Focusable="False" IsChecked="{Binding IsDropDownOpen,Mode=TwoWay,RelativeSource={RelativeSource TemplatedParent}}" Cursor="Hand">
                          <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border Background="Transparent"/></ControlTemplate></ToggleButton.Template>
                      </ToggleButton>
-                     <ContentPresenter IsHitTestVisible="False" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" Margin="10,6,34,6" VerticalAlignment="Center"/>
+                     <ContentPresenter x:Name="SelectedLanguageContent" IsHitTestVisible="False" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" Margin="10,6,34,6" VerticalAlignment="Center"/>
                      <Border Width="24" Height="26" Background="#E0EFE9" CornerRadius="6" HorizontalAlignment="Right" Margin="0,0,5,0" IsHitTestVisible="False"><Path Data="M 0 0 L 4 4 L 8 0" Stroke="#287568" StrokeThickness="1.8" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
                      <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="None">
                          <Border Background="White" BorderBrush="#75BBAE" BorderThickness="1" CornerRadius="10" MinWidth="{Binding ActualWidth,RelativeSource={RelativeSource TemplatedParent}}" MaxHeight="{TemplateBinding MaxDropDownHeight}" Margin="0,3,0,0" Padding="4">
@@ -103,7 +104,7 @@
                          </Border>
                      </Popup>
                  </Grid>
-                 <ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chrome" Property="BorderBrush" Value="#75BBAE"/></Trigger><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Chrome" Property="BorderBrush" Value="#287568"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger></ControlTemplate.Triggers>
+                 <ControlTemplate.Triggers><Trigger Property="Tag" Value="compact-language"><Setter TargetName="SelectedLanguageContent" Property="ContentTemplate" Value="{StaticResource CompactLanguageItem}"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chrome" Property="BorderBrush" Value="#75BBAE"/></Trigger><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Chrome" Property="BorderBrush" Value="#287568"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger></ControlTemplate.Triggers>
              </ControlTemplate></Setter.Value></Setter>
          </Style>
          <Style TargetType="ComboBoxItem">
