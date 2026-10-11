@@ -16,11 +16,24 @@ public sealed class PersonalVoiceStore(string root)
             if (!Guid.TryParse(Path.GetFileName(folder),out var id)) continue;
             var file=Path.Combine(folder,"profile.json");
             if (!File.Exists(file)) continue;
+            if (new FileInfo(file).Length > 65536) throw new InvalidDataException("Hồ sơ giọng quá lớn.");
             var profile=JsonSerializer.Deserialize<PersonalVoiceProfile>(File.ReadAllText(file)) ?? throw new InvalidDataException("Hồ sơ giọng rỗng.");
             if(profile.Id!=id) throw new InvalidDataException("Hồ sơ giọng không khớp thư mục.");
+            if (string.IsNullOrWhiteSpace(profile.Name) || profile.Name.Length > 100 || profile.ReferenceText == null || profile.ReferenceText.Length > 2000 || !double.IsFinite(profile.DurationSeconds) || profile.DurationSeconds < 3 || profile.DurationSeconds > 8) throw new InvalidDataException("Thông tin hồ sơ giọng không hợp lệ.");
             profiles.Add(profile);
         }
         return profiles.OrderByDescending(profile=>profile.CreatedAt).ToArray();
+    }
+    public PersonalVoiceProfile Rename(Guid id, string name)
+    {
+        if (string.IsNullOrWhiteSpace(name) || name.Length > 100) throw new ArgumentException("Tên giọng không hợp lệ.");
+        var current = Load().SingleOrDefault(profile => profile.Id == id) ?? throw new FileNotFoundException("Không tìm thấy hồ sơ giọng.");
+        var updated = current with { Name = name.Trim() };
+        var path = Path.Combine(Folder(id), "profile.json");
+        var temp = Path.Combine(Folder(id), ".profile-" + Guid.NewGuid().ToString("N") + ".tmp");
+        try { File.WriteAllText(temp, JsonSerializer.Serialize(updated)); File.Move(temp, path, true); }
+        finally { if (File.Exists(temp)) File.Delete(temp); }
+        return updated;
     }
     public float[] LoadEmbedding(Guid id)
     {
