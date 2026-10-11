@@ -49,10 +49,12 @@ public static class LearningTests
                 wav.BaseStream.Position=24;Check(wav.ReadInt32()==16000 && wav.BaseStream.Length==96044,"personal reference WAV is bounded 16kHz mono PCM");
             }
             var legacy=Path.Combine(root,"vocabulary.json"); File.WriteAllText(legacy,JsonSerializer.Serialize(new[] {word}));
-            var store=new LearningStore(root); var state=store.Load(); Check(state.Words.Single().Word==word.Word,"old vocabulary migrates without losing Unicode");
-            store.Save(state with {Words=new() {good},DailyReviews=history,DailyGoal=10,Language="ja"});
-            var loaded=store.Load(); Check(loaded.Words.Single().Repetition==2 && loaded.DailyGoal==10 && loaded.Language=="ja" && loaded.DailyReviews.Count==3,"review schedule and progress persist together");
+            var store=new LearningStore(root); var state=store.Load(); Check(state.Words.Single().Word==word.Word,"old vocabulary migrates without losing Unicode"); Check(state.DailyMinutes==10,"legacy vocabulary receives ten-minute daily goal");
+            store.Save(state with {Words=new() {good},DailyReviews=history,DailyGoal=10,Language="ja",DailyMinutes=15});
+            var loaded=store.Load(); Check(loaded.Words.Single().Repetition==2 && loaded.DailyGoal==10 && loaded.DailyMinutes==15 && loaded.Language=="ja" && loaded.DailyReviews.Count==3,"review schedule and progress persist together");
             Check(File.ReadAllText(legacy).Contains("ありがとう") || JsonSerializer.Deserialize<List<VocabularyItem>>(File.ReadAllText(legacy))!.Single().Word==word.Word,"migration preserves legacy source");
+            var oldStateJson = JsonSerializer.SerializeToNode(loaded)!.AsObject(); oldStateJson.Remove("DailyMinutes"); File.WriteAllText(Path.Combine(root,"learning.json"), oldStateJson.ToJsonString());
+            Check(store.Load().DailyMinutes == 10 && store.Load().Words.Single().Repetition == 2, "existing learning JSON defaults minutes without losing progress");
             File.WriteAllText(Path.Combine(root,"learning.json"),"broken"); bool rejected=false; try {store.Load();} catch(JsonException) {rejected=true;} Check(rejected,"corrupt learning state is rejected instead of replaced with empty data");
         } finally {Directory.Delete(root,true);}
     }

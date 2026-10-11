@@ -2,7 +2,7 @@ using System.IO;
 using System.Text.Json;
 using TransTools.Models;
 namespace TransTools.Services.Storage;
-public sealed record LearningState(List<VocabularyItem> Words, Dictionary<string,int> DailyReviews, int DailyGoal = 20, string Language = "en", string Goal = "Cuộc họp & Công việc", string Level = "Cơ bản");
+public sealed record LearningState(List<VocabularyItem> Words, Dictionary<string,int> DailyReviews, int DailyGoal = 20, string Language = "en", string Goal = "Cuộc họp & Công việc", string Level = "Cơ bản", int DailyMinutes = 10);
 public sealed class LearningStore(string root)
 {
     private string PathName => Path.Combine(root,"learning.json");

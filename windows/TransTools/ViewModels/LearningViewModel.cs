@@ -26,6 +26,9 @@ public partial class LearningViewModel : ObservableObject
 
     private readonly LearningStore _store;
     private LearningContent? _content;
+    public int[] DailyMinuteOptions { get; } = [5, 10, 15];
+    [ObservableProperty] private int _dailyMinutes = 10;
+    partial void OnDailyMinutesChanged(int value) { if (_initialized) SaveGoal(); }
     public string[] LearningGoals { get; } = ["Cuộc họp & Công việc", "Giao tiếp đời sống", "Phỏng vấn & Nghề nghiệp"];
     public string[] LearningLevels { get; } = ["Cơ bản", "Trung cấp", "Nâng cao"];
     [ObservableProperty] private string _learningGoal = "Cuộc họp & Công việc";
@@ -125,8 +128,8 @@ public partial class LearningViewModel : ObservableObject
         DailyStreak = SrsScheduler.Streak(_reviewHistory, DateTime.Today); OnPropertyChanged(nameof(DueCount));
         foreach (var name in new[] { nameof(VocabularyCount), nameof(MasteredCount), nameof(LearningCount), nameof(DeepMemoryCount), nameof(ConsolidatingCount), nameof(NewMemoryCount), nameof(DeepMemoryPercent), nameof(ConsolidatingPercent), nameof(NewMemoryPercent) }) OnPropertyChanged(name);
     }
-    private void Persist(IEnumerable<VocabularyItem> words, Dictionary<string,int>? history = null) => _store.Save(new LearningState(words.ToList(), history ?? _reviewHistory, Math.Clamp(DailyGoal,1,100), SelectedLanguage, LearningGoal, LearningLevel));
-    [RelayCommand] private void SaveGoal() { if (!_canSaveVocabulary) return; try { DailyGoal = Math.Clamp(DailyGoal,1,100); Persist(VocabularyList); Status = "Đã lưu mục tiêu học"; } catch (Exception ex) { Status = ex.Message; } }
+    private void Persist(IEnumerable<VocabularyItem> words, Dictionary<string,int>? history = null) => _store.Save(new LearningState(words.ToList(), history ?? _reviewHistory, Math.Clamp(DailyGoal,1,100), SelectedLanguage, LearningGoal, LearningLevel, DailyMinuteOptions.Contains(DailyMinutes) ? DailyMinutes : 10));
+    [RelayCommand] private void SaveGoal() { if (!_canSaveVocabulary) return; try { DailyGoal = Math.Clamp(DailyGoal,1,100); if (!DailyMinuteOptions.Contains(DailyMinutes)) DailyMinutes = 10; Persist(VocabularyList); Status = "Đã lưu mục tiêu học"; } catch (Exception ex) { Status = ex.Message; } }
     [RelayCommand] private void StartReview() { UpdateProgress(); SelectedWord = VisibleVocabulary.Where(w => w.DueAt <= DateTime.Now).OrderBy(w => w.DueAt).FirstOrDefault(); Status = SelectedWord == null ? "Đã ôn hết từ đến hạn." : "Nhớ nghĩa trước khi lật thẻ; sau đó chọn mức ghi nhớ."; }
     [RelayCommand] private void GradeReview(string grade) {
         if (!_canSaveVocabulary || SelectedWord == null || !IsFlashcardFlipped || !Enum.TryParse<ReviewGrade>(grade,true,out var result)) return;
@@ -202,6 +205,7 @@ public partial class LearningViewModel : ObservableObject
         _reviewHistory = state.DailyReviews ?? throw new InvalidDataException("Thiếu tiến độ học.");
         if (state.Words == null) throw new InvalidDataException("Thiếu danh sách từ.");
         foreach (var word in state.Words) VocabularyList.Add(word);
+        DailyMinutes = DailyMinuteOptions.Contains(state.DailyMinutes) ? state.DailyMinutes : 10;
         DailyGoal = Math.Clamp(state.DailyGoal,1,100); LearningGoal = LearningGoals.Contains(state.Goal) ? state.Goal : LearningGoals[0]; LearningLevel = LearningLevels.Contains(state.Level) ? state.Level : LearningLevels[0];
         SelectedLanguage = new[] { "en", "ja", "zh", "ko" }.Contains(state.Language) ? state.Language : "en";
         RefreshVocabulary();
