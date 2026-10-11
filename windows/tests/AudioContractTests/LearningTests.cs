@@ -11,6 +11,10 @@ public static class LearningTests
         var expected=ReadFloats("speaker-features.f32");
         var actual=TransTools.Services.Speech.VieNeuSpeakerFeatures.Extract(ReadFloats("speaker-input.f32"));
         Check(actual.Length==expected.Length && actual.Zip(expected).Max(pair=>Math.Abs(pair.First-pair.Second))<.002f,"speaker features match independent macOS Accelerate reference");
+        foreach (var invalid in new[] { new float[192], new float[191], Enumerable.Repeat(float.NaN,192).ToArray() }) {
+            bool rejected=false; try { TransTools.Services.Speech.VieNeuSpeakerEncoder.ValidateEmbedding(invalid); } catch(InvalidDataException) { rejected=true; }
+            Check(rejected,"invalid personal voice embedding rejected");
+        }
         var content = LearningContent.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,"curated.json")));
         Check(content.Daily.Count==4 && content.Starters.Count==20 && content.Scenarios.Count==7,"curated learning catalog mirrors macOS");
         foreach (var language in new[] {"en","ja","zh","ko"}) Check(content.Daily.Any(s => s.Language==language) && content.Starters.Count(w=>w.LanguageCode==language)==5 && content.Scenarios.Where(s=>s.Language==language).All(s=>s.Dialogues.Count>=2),"complete curated examples for " + language);
