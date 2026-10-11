@@ -7,9 +7,10 @@ using TransTools.Services.Storage;
 using TransTools.Services.Speech;
 namespace TransTools.ViewModels;
 
-public sealed record VoiceRecordingCard(PersonalVoiceProfile Profile, bool HasModel)
+public sealed record VoiceRecordingCard(PersonalVoiceProfile Profile, bool HasModel, bool IsCurrent = false)
 {
     public string Details => $"{Profile.DurationSeconds:0.#} giây · {Profile.CreatedAt.ToLocalTime():dd/MM/yyyy} · Bản thu gốc";
+    public string UseLabel => IsCurrent ? "Đang dùng" : "Dùng tiếng Việt";
     public string ModelStatus => HasModel ? "Hồ sơ đã tạo" : "Chưa tạo hồ sơ";
 }
 
@@ -30,7 +31,8 @@ public partial class VoiceSettingsViewModel
         VisibleRecordings.Clear();
         RecordingCards.Clear();
         foreach (var item in Recordings.Where(item => query.Length == 0 || item.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase))) VisibleRecordings.Add(item);
-        foreach (var item in VisibleRecordings) RecordingCards.Add(new(item, _personalVoiceStore.HasModel(item.Id)));
+        var preference = VoicePreferences.Get("vi");
+        foreach (var item in VisibleRecordings) RecordingCards.Add(new(item, _personalVoiceStore.HasModel(item.Id), preference.Engine == "VieNeu v3 Turbo" && preference.PersonalVoiceId == item.Id));
         SelectedRecording = VisibleRecordings.FirstOrDefault(item => item.Id == selected) ?? VisibleRecordings.FirstOrDefault();
         OnPropertyChanged(nameof(RecordingSearchStatus));
     }

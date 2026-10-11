@@ -18,17 +18,18 @@
 <Button Content="Thư mục" Tag="folder" Click="CardAction_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/>
 <Button Content="Xóa bản thu" Tag="delete" Click="CardAction_Click" Style="{StaticResource DestructiveButton}" Margin="0,0,0,8"/>
 </WrapPanel>
+<Button Content="Dừng nghe" Command="{Binding DataContext.StopPreviewCommand,RelativeSource={RelativeSource AncestorType=UserControl}}" IsEnabled="{Binding DataContext.IsPreviewing,RelativeSource={RelativeSource AncestorType=UserControl}}" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,0,0,8"/>
 <Border Background="#DEE7E3" Height="1" Margin="0,6,0,14"/>
 <DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding ModelStatus}" FontSize="11" Foreground="#287568"/><TextBlock Text="VieNeu-TTS v3 Turbo" FontWeight="SemiBold"/></DockPanel>
 <WrapPanel Margin="0,12,0,0" IsEnabled="{Binding DataContext.CanConfigure,RelativeSource={RelativeSource AncestorType=UserControl}}">
 <Button Content="Tạo hồ sơ giọng" Tag="create" Click="CardAction_Click" IsEnabled="{Binding DataContext.IsVieNeuReady,RelativeSource={RelativeSource AncestorType=UserControl}}" Margin="0,0,8,8"><Button.Style><Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Style.Triggers><DataTrigger Binding="{Binding HasModel}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Button.Style></Button>
 <WrapPanel Visibility="{Binding HasModel,Converter={StaticResource BoolVisibility}}">
 <Button Content="Đọc thử câu mới" Tag="test" Click="CardAction_Click" IsEnabled="{Binding DataContext.IsVieNeuReady,RelativeSource={RelativeSource AncestorType=UserControl}}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/>
-<Button Content="Dùng tiếng Việt" Tag="use" Click="CardAction_Click" IsEnabled="{Binding DataContext.IsVieNeuReady,RelativeSource={RelativeSource AncestorType=UserControl}}" Margin="0,0,8,8"/>
+<Button Content="{Binding UseLabel}" Tag="use" Click="CardAction_Click" IsEnabled="{Binding DataContext.IsVieNeuReady,RelativeSource={RelativeSource AncestorType=UserControl}}" Margin="0,0,8,8"/>
 <Button Content="Gỡ hồ sơ" Tag="remove" Click="CardAction_Click" Style="{StaticResource DestructiveButton}" Margin="0,0,0,8"/>
 </WrapPanel></WrapPanel>
 </StackPanel></Border>
 </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
-<WrapPanel Margin="0,0,0,12"><Button Content="Dừng nghe" Command="{Binding StopPreviewCommand}" IsEnabled="{Binding IsPreviewing}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button Content="Hủy tạo giọng" Command="{Binding CancelRecordingVoiceCommand}" Visibility="{Binding IsBuildingVoice,Converter={StaticResource BoolVisibility}}" Style="{StaticResource SecondaryButton}"/></WrapPanel>
+<WrapPanel Margin="0,0,0,12"><Button Content="Hủy tạo giọng" Command="{Binding CancelRecordingVoiceCommand}" Visibility="{Binding IsBuildingVoice,Converter={StaticResource BoolVisibility}}" Style="{StaticResource SecondaryButton}"/></WrapPanel>
 <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Foreground="#65756F"/><TextBlock Text="Nghe bản thu để xác nhận tiếng ồn và lời đọc. Hồ sơ hiện dùng đặc trưng người nói; chưa sao chép đầy đủ phong cách và chưa có huấn luyện bổ sung." TextWrapping="Wrap" FontSize="11" Foreground="#65756F" Margin="0,14,0,0"/>
 </StackPanel></UserControl>

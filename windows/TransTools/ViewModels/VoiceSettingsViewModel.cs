@@ -33,9 +33,13 @@ public partial class VoiceSettingsViewModel : ObservableObject
         _personalVoiceStore = personalVoiceStore ?? new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot);
         Management = management; Management.PropertyChanged += (_, _) => { OnPropertyChanged(nameof(CanUseRecordingVoice)); OnPropertyChanged(nameof(IsVieNeuReady)); CreateRecordingVoiceCommand.NotifyCanExecuteChanged(); }; _audioBusy = audioBusy ?? (() => false); LoadPreference();
         VoicePreferences.Changed += code => {
-            if (code != Language || IsPreviewing) return;
+            void Refresh() {
+                if (IsPreviewing) return;
+                if (code == Language) LoadPreference();
+                else if (code == "vi") FilterRecordings();
+            }
             var dispatcher = System.Windows.Application.Current?.Dispatcher;
-            if (dispatcher == null || dispatcher.CheckAccess()) LoadPreference(); else dispatcher.InvokeAsync(() => { if (!IsPreviewing && code == Language) LoadPreference(); });
+            if (dispatcher == null || dispatcher.CheckAccess()) Refresh(); else dispatcher.InvokeAsync(Refresh);
         };
     }
     private void LoadPreference()
