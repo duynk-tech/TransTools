@@ -422,9 +422,11 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
                 string translated;
                 if (_sessionTranslationMode == "AI") {
                     var config = _sessionAi ?? throw new InvalidOperationException("Cấu hình AI không còn khả dụng.");
-                    translated = await new LLMTranslationService().TranslateWithAIAsync(caption.Original, _sessionTarget, $"{_sessionDomain}. Tự nhiên, giữ đúng thuật ngữ chuyên ngành, không thêm nội dung", config);
+                    translated = await new LLMTranslationService().TranslateWithAIAsync(caption.Original, _sessionTarget, $"{_sessionDomain}. Tự nhiên, giữ đúng thuật ngữ chuyên ngành, không thêm nội dung", config, token);
                 } else translated = await _google.TranslateAsync(caption.Original, _sessionSource, _sessionTarget, token);
+                token.ThrowIfCancellationRequested();
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
+                    token.ThrowIfCancellationRequested();
                     caption.Vietnamese = translated; OnCaptionIncoming?.Invoke(caption);
                 });
                 await _displayQueue!.Writer.WriteAsync(caption,token);
