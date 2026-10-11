@@ -679,6 +679,11 @@ internal static class Program
             Descendants(routedPopup.Child).OfType<Button>().First(b => Equals(b.Content, "Giọng & Tốc độ")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
             var routedSettings = Descendants(window).OfType<SettingsView>().First();
             if (((TabControl)routedSettings.FindName("SettingsSections")).SelectedIndex != 4 || Descendants(routedSettings).OfType<VoiceSettingsView>().First().DataContext is not VoiceSettingsViewModel routedVoice || routedVoice.Language != ((MeetingViewModel)routedMeeting.DataContext).TargetLanguage) throw new Exception("Earphone voice settings route lost the target language");
+            var personalSection = (TabItem)routedSettings.FindName("PersonalVoiceSection");
+            ((TabControl)routedSettings.FindName("SettingsSections")).SelectedItem = personalSection; Pump();
+            var personalLibrary = Descendants(routedSettings).OfType<PersonalVoiceLibraryView>().First();
+            if (!ReferenceEquals(personalLibrary.DataContext, routedVoice)) throw new Exception("Personal voice library route does not share the selected voice inventory");
+            ValidateControlLayout(window, "Personal voice settings route"); Capture(window, output, "personal-voice-settings-route.png");
             var mascotFixture = new ChipChipMascotWindow { Left = 700 };
             var mascotQuickModel = new QuickTranslateViewModel { SourceText = "Xin chào", TranslatedText = "Hello", SourceLanguage = "vi", TargetLanguage = "en" };
             mascotQuickModel.TranslateAsync(new CancellationToken(true)).GetAwaiter().GetResult();
@@ -755,9 +760,9 @@ internal static class Program
                 var busy = false;
                 var model = new VoiceSettingsViewModel(new SettingsViewModel(), () => busy, store);
                 model.Engine = "VieNeu v3 Turbo";
-                var view = new VoiceSettingsView(model);
+                var view = new PersonalVoiceLibraryView(model);
                 var fixture = new Window { Owner = window, Width = 960, Height = 820, Content = new ScrollViewer { Content = view, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
-                fixture.Show(); ((RadioButton)view.FindName("AdvancedTab")).IsChecked = true; Pump();
+                fixture.Show(); Pump();
                 model.SelectedRecording = model.Recordings.Single(item => item.Id == raw.Id); Pump();
                 if (model.HasSelectedModel || model.PersonalVoices.Any(item => item.Id == raw.Id)) throw new Exception("Unprocessed reference appears as synthesized voice");
                 ValidateControlLayout(fixture, "Saved raw recording"); Capture(fixture, output, "personal-voice-raw-management.png");
