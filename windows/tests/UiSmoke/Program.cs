@@ -763,12 +763,14 @@ internal static class Program
         autoEditor.Text = "Bản sửa mới nhất 日本語"; firstSave.SetResult(true); Await(flushingNotes);
         if (!flushingNotes.Result || savedNotes.Last() != autoEditor.Text || savedNotes.Count != 2) throw new Exception("Autosave lost edits made during pending save");
         autoNotes.Close(); Pump();
+        if (autoNotes.IsVisible) throw new Exception("Successfully flushed notes did not close");
         var allowNotesSave = false;
         var failedNotes = new MeetingNotesWindow("Ban đầu", "", saveNotes: _ => Task.FromResult(allowNotesSave)) { Owner = window };
         failedNotes.Show(); Pump(); Descendants(failedNotes).OfType<TextBox>().Single().Text = "Không được mất";
         failedNotes.Close(); Pump();
         if (!failedNotes.IsVisible || failedNotes.Notes != "Không được mất") throw new Exception("Failed notes save closed window or lost editor data");
         allowNotesSave = true; failedNotes.Close(); Pump();
+        if (failedNotes.IsVisible) throw new Exception("Notes save retry did not allow close");
         var noteRecord = notebook.Sessions.Single(s => s.Id == saved.Id);
         var noteText = "# Ghi chú hội thoại\nGiữ nguyên chữ Việt và 日本語.";
         var noteSave = notebook.SaveRecordNotesAsync(noteRecord, noteText); Await(noteSave);

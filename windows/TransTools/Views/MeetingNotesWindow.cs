@@ -79,7 +79,7 @@ public sealed class MeetingNotesWindow : Window
             e.Cancel = true;
             if (_closingSave) return;
             _closingSave = true; _request?.Cancel();
-            try { if (await FlushNotesAsync()) { _closeApproved = true; Close(); } }
+            try { if (await FlushNotesAsync()) { _closeApproved = true; Dispatcher.BeginInvoke(new Action(Close)); } }
             finally { _closingSave = false; }
         };
         Closed += (_, _) => { _closed = true; _saveTimer.Stop(); _request?.Cancel(); };
