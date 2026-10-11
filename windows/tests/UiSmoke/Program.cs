@@ -583,6 +583,8 @@ internal static class Program
             if (((TabControl)routedSettings.FindName("SettingsSections")).SelectedIndex != 4 || Descendants(routedSettings).OfType<VoiceSettingsView>().First().DataContext is not VoiceSettingsViewModel routedVoice || routedVoice.Language != ((MeetingViewModel)routedMeeting.DataContext).TargetLanguage) throw new Exception("Earphone voice settings route lost the target language");
             var mascotFixture = new ChipChipMascotWindow { Left = 700, Top = 220 };
             var mascotQuickModel = new QuickTranslateViewModel { SourceText = "Xin chào", TranslatedText = "Hello", SourceLanguage = "vi", TargetLanguage = "en" };
+            mascotQuickModel.TranslateAsync(new CancellationToken(true)).GetAwaiter().GetResult();
+            if (mascotQuickModel.IsTranslating || mascotQuickModel.TranslatedText != "Hello" || mascotQuickModel.Status != "Đã hủy dịch") throw new Exception("Canceled inline translation changed result or retained busy state");
             mascotFixture.AttachQuickTranslation(mascotQuickModel);
             mascotFixture.Show(); Pump();
             var mascotMenu = (System.Windows.Controls.Primitives.Popup)mascotFixture.FindName("MascotMenu");

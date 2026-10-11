@@ -121,6 +121,7 @@ public partial class QuickTranslateViewModel : ObservableObject
 
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var config = _credentialStore.LoadConfiguredProvider();
             var result = config != null
                 ? await _llmTranslate.TranslateWithAIAsync(source, targetLanguage, $"{domain} • {style}", config, cancellationToken)
