@@ -403,6 +403,16 @@ internal static class Program
                         search.Text = "not-a-word"; Pump();
                         if (((FrameworkElement)vocabularyView.FindName("EmptyState")).Visibility != Visibility.Visible) throw new Exception("Vocabulary missing empty-search state");
                         search.Text = ""; Pump();
+                        foreach (var seeded in model.VisibleVocabulary.ToArray()) if (!model.VocabularyList.Any(item => item.Id == seeded.Id)) model.VocabularyList.Add(seeded);
+                        var masteryWord = model.VisibleVocabulary.First(item => item.Word == "follow up");
+                        var dueBefore = masteryWord.DueAt; var repetitionsBefore = masteryWord.Repetition;
+                        model.ToggleWordMasteryCommand.Execute(masteryWord); Pump();
+                        var marked = model.VisibleVocabulary.First(item => item.Id == masteryWord.Id);
+                        if (!marked.IsMastered || marked.DueAt != dueBefore || marked.Repetition != repetitionsBefore) throw new Exception("Manual mastery changed the review schedule");
+                        var savedLearning = new LearningStore(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TransTools")).Load();
+                        if (!savedLearning.Words.Single(item => item.Id == masteryWord.Id).IsMastered) throw new Exception("Manual mastery was not persisted");
+                        model.ToggleWordMasteryCommand.Execute(marked); Pump();
+                        if (model.VisibleVocabulary.Single(item => item.Id == masteryWord.Id).IsMastered) throw new Exception("Manual mastery could not be cleared");
                         ((Button)vocabularyView.FindName("AddWordButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
                         var add = (System.Windows.Controls.Primitives.Popup)vocabularyView.FindName("AddWordPopup");
                         if (!add.IsOpen || add.Child == null) throw new Exception("Notebook add-word popup did not open");
