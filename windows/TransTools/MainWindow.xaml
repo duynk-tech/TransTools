@@ -23,7 +23,7 @@
   </Style>
  </Window.Resources>
  <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-  <ui:GardenBackground x:Name="DashboardGarden" Grid.RowSpan="2"/><Image x:Name="DashboardPhoto" Grid.RowSpan="2" Stretch="UniformToFill" IsHitTestVisible="False" Visibility="Collapsed"/><Border x:Name="PhotoVeil" Grid.RowSpan="2" Background="#65FFFFFF" IsHitTestVisible="False" Visibility="Collapsed"/><Border Background="#33FFFFFF" BorderBrush="#1A287568" BorderThickness="0,0,0,1" Padding="18,8">
+  <ui:GardenBackground x:Name="DashboardGarden" Grid.RowSpan="2"/><Image x:Name="DashboardPhoto" Grid.RowSpan="2" Stretch="UniformToFill" IsHitTestVisible="False" Visibility="Collapsed"/><Border x:Name="PhotoVeil" Grid.RowSpan="2" Background="#ADFFFFFF" IsHitTestVisible="False" Visibility="Collapsed"/><Border Background="#33FFFFFF" BorderBrush="#1A287568" BorderThickness="0,0,0,1" Padding="18,8">
    <DockPanel LastChildFill="True">
     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"><Button x:Name="BackgroundButton" Width="36" Height="36" MinHeight="36" Padding="0" ToolTip="Chọn nền" Style="{StaticResource SecondaryButton}" Click="ShowBackground_Click"><TextBlock Text="&#xEB9F;" FontFamily="Segoe MDL2 Assets"/><Button.ContextMenu><ContextMenu>
 <MenuItem Header="Tự động theo thời gian" Tag="auto" IsCheckable="True" Click="ChooseBackground_Click"/>
@@ -54,6 +54,6 @@
     </Border></ScrollViewer>
    </DockPanel>
   </Border>
-  <Border Grid.Row="1" Background="#A6F5F8F7" IsHitTestVisible="False"/><Grid x:Name="MainContentGrid" Grid.Row="1" Margin="18"/>
+  <Grid x:Name="MainContentGrid" Grid.Row="1" Margin="18"/>
  </Grid>
 </Window>

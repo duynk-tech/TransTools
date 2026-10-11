@@ -3,9 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:ui="clr-namespace:TransTools.Views" xmlns:experience="clr-namespace:TransTools.Services.Experience"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+ <Style x:Key="ChatSelectableText" TargetType="TextBox">
+  <Setter Property="IsReadOnly" Value="True"/><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="0"/><Setter Property="MinHeight" Value="0"/><Setter Property="Cursor" Value="IBeam"/><Setter Property="SelectionBrush" Value="#75BBAE"/><Setter Property="VerticalContentAlignment" Value="Top"/>
+  <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TextBox"><ScrollViewer x:Name="PART_ContentHost" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled"/></ControlTemplate></Setter.Value></Setter>
+ </Style>
  <DataTemplate x:Key="ConversationBubble">
-  <Border Tag="ChatBubble" CornerRadius="16" Padding="13" VerticalAlignment="Top">
-   <Border.Style><Style TargetType="Border"><Setter Property="Margin" Value="0,0,48,14"/><Setter Property="Background" Value="#EBEFED"/><Setter Property="HorizontalAlignment" Value="Left"/><Style.Triggers><DataTrigger Binding="{Binding IsUser}" Value="True"><Setter Property="Background" Value="#DCEEE8"/><Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="Margin" Value="48,0,0,14"/></DataTrigger></Style.Triggers></Style></Border.Style>
+  <Border Tag="ChatBubble" CornerRadius="16" Padding="13" VerticalAlignment="Top" BorderBrush="#BDD9D0" BorderThickness="1">
+   <Border.Style><Style TargetType="Border"><Setter Property="Margin" Value="0,0,48,14"/><Setter Property="Background" Value="#FAFCFB"/><Setter Property="HorizontalAlignment" Value="Left"/><Style.Triggers><DataTrigger Binding="{Binding IsUser}" Value="True"><Setter Property="Background" Value="#DCEEE8"/><Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="Margin" Value="48,0,0,14"/></DataTrigger></Style.Triggers></Style></Border.Style>
    <StackPanel>
     <DockPanel Margin="0,0,0,7" LastChildFill="True">
      <TextBlock DockPanel.Dock="Right" Text="{Binding TimeString}" Foreground="#73827C" FontSize="11" VerticalAlignment="Center" Margin="16,0,0,0"/>
@@ -17,8 +21,8 @@
       <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#287568" VerticalAlignment="Center"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Text" Value="{Binding DisplayName,Source={x:Static experience:AssistantIdentity.Shared}}"/><Style.Triggers><DataTrigger Binding="{Binding IsUser}" Value="True"><Setter Property="Text" Value="Bạn"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
      </StackPanel>
     </DockPanel>
-    <TextBlock Text="{Binding Text}" FontSize="15" Foreground="#243D35" TextWrapping="Wrap" LineHeight="22"/>
-    <StackPanel Margin="0,7,0,0"><StackPanel.Style><Style TargetType="StackPanel"><Style.Triggers><DataTrigger Binding="{Binding Translation}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger><DataTrigger Binding="{Binding DataContext.ShowVietnameseTranslation,RelativeSource={RelativeSource AncestorType=ListBox}}" Value="False"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger><DataTrigger Binding="{Binding DataContext.CanShowTranslation,RelativeSource={RelativeSource AncestorType=ListBox}}" Value="False"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></StackPanel.Style><Border Height="1" Background="#CBDCD5" Margin="0,0,0,7"/><TextBlock Text="{Binding Translation}" FontSize="14" Foreground="#65756F" TextWrapping="Wrap" LineHeight="21"/></StackPanel>
+    <TextBox Style="{StaticResource ChatSelectableText}" Text="{Binding Text,Mode=OneWay}" FontSize="15" Foreground="#243D35" AutomationProperties.Name="Nội dung trò chuyện"/>
+    <StackPanel Margin="0,7,0,0"><StackPanel.Style><Style TargetType="StackPanel"><Style.Triggers><DataTrigger Binding="{Binding Translation}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger><DataTrigger Binding="{Binding DataContext.ShowVietnameseTranslation,RelativeSource={RelativeSource AncestorType=ListBox}}" Value="False"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger><DataTrigger Binding="{Binding DataContext.CanShowTranslation,RelativeSource={RelativeSource AncestorType=ListBox}}" Value="False"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></StackPanel.Style><Border Height="1" Background="#CBDCD5" Margin="0,0,0,7"/><TextBox Style="{StaticResource ChatSelectableText}" Text="{Binding Translation,Mode=OneWay}" FontSize="14" Foreground="#65756F" AutomationProperties.Name="Bản dịch trò chuyện"/></StackPanel>
    </StackPanel>
   </Border>
  </DataTemplate>
@@ -110,6 +114,22 @@
          <Style TargetType="ComboBoxItem">
              <Setter Property="Padding" Value="10,7"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
              <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBoxItem"><Border x:Name="ItemChrome" Background="Transparent" CornerRadius="6" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsHighlighted" Value="True"><Setter TargetName="ItemChrome" Property="Background" Value="#E0EFE9"/></Trigger><Trigger Property="IsSelected" Value="True"><Setter TargetName="ItemChrome" Property="Background" Value="#D0E7DF"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+         </Style>
+         <Style TargetType="Slider">
+             <Setter Property="MinHeight" Value="28"/><Setter Property="VerticalContentAlignment" Value="Center"/>
+             <Setter Property="Foreground" Value="#287568"/><Setter Property="Background" Value="#DCE9E4"/>
+             <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Slider">
+                 <Grid x:Name="SliderChrome" Background="Transparent" MinHeight="28">
+                     <Border Height="3" VerticalAlignment="Center" Background="{TemplateBinding Background}" CornerRadius="1.5" Margin="9,0"/>
+                     <Track x:Name="PART_Track" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{TemplateBinding Value}" Orientation="{TemplateBinding Orientation}" IsDirectionReversed="{TemplateBinding IsDirectionReversed}">
+                         <Track.DecreaseRepeatButton><RepeatButton Command="Slider.DecreaseLarge" Focusable="False"><RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Height="3" Background="#287568" VerticalAlignment="Center" CornerRadius="1.5"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>
+                         <Track.Thumb><Thumb x:Name="SliderThumb" Width="18" Height="18" Cursor="Hand"><Thumb.Template><ControlTemplate TargetType="Thumb"><Border x:Name="ThumbChrome" Background="White" BorderBrush="#A8CEC3" BorderThickness="1" CornerRadius="9"/><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ThumbChrome" Property="BorderBrush" Value="#287568"/></Trigger><Trigger Property="IsDragging" Value="True"><Setter TargetName="ThumbChrome" Property="Background" Value="#EAF4F0"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
+                         <Track.IncreaseRepeatButton><RepeatButton Command="Slider.IncreaseLarge" Focusable="False"><RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Border Height="3" Background="{Binding Background,RelativeSource={RelativeSource AncestorType=Slider}}" VerticalAlignment="Center" CornerRadius="1.5"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.IncreaseRepeatButton>
+                     </Track>
+                     <Border x:Name="KeyboardRing" BorderBrush="#287568" BorderThickness="1" CornerRadius="7" Margin="0,1" IsHitTestVisible="False" Visibility="Collapsed"/>
+                 </Grid>
+                 <ControlTemplate.Triggers><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="KeyboardRing" Property="Visibility" Value="Visible"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter TargetName="SliderChrome" Property="Opacity" Value="0.45"/></Trigger></ControlTemplate.Triggers>
+             </ControlTemplate></Setter.Value></Setter>
          </Style>
          <Style TargetType="TextBox">
  <Setter Property="Background" Value="White"/><Setter Property="Foreground" Value="#292F2D"/><Setter Property="BorderBrush" Value="#BDD9D2"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="12,9"/><Setter Property="MinHeight" Value="40"/><Setter Property="VerticalContentAlignment" Value="Center"/>

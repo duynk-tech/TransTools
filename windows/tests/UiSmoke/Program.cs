@@ -397,9 +397,14 @@ internal static class Program
                             var gap = bubbles[i].Bounds.Top - bubbles[i - 1].Bounds.Bottom;
                             if (gap < -1 || gap > 20) { Capture(window, output, $"{width}-conversation-spacing-failure.png"); throw new Exception($"Conversation bubble spacing is not content driven: {gap}; bounds={string.Join(";", bubbles.Select(b => b.Bounds.ToString()))}"); }
                         }
+                        var selectable = Descendants(list).OfType<TextBox>().FirstOrDefault(t => t.IsVisible && t.Text.Length > 12 && conversation.Messages.Any(m => m.Text == t.Text));
+                        if (selectable == null || !selectable.IsReadOnly) throw new Exception("Conversation text cannot be selected without editing");
+                        var beforeSelection = selectable.RenderSize;
+                        selectable.Focus(); selectable.Select(0, 12); selectable.Copy(); Pump();
+                        if (Clipboard.GetText() != selectable.Text[..12] || selectable.RenderSize != beforeSelection) throw new Exception("Conversation selection changed layout or copied the wrong text");
                         var originalToggle = conversation.ShowVietnameseTranslation;
                         conversation.ShowVietnameseTranslation = false; Pump();
-                        if (Descendants(list).OfType<TextBlock>().Any(t => t.IsVisible && conversation.Messages.Any(m => m.Translation.Length > 0 && m.Translation == t.Text))) throw new Exception("Conversation translation toggle left translations visible");
+                        if (Descendants(list).OfType<TextBox>().Any(t => t.IsVisible && conversation.Messages.Any(m => m.Translation.Length > 0 && m.Translation == t.Text))) throw new Exception("Conversation translation toggle left translations visible");
                         conversation.ShowVietnameseTranslation = originalToggle; Pump();
                         list.UpdateLayout(); var chatScroll = Descendants(list).OfType<ScrollViewer>().First();
                         if (chatScroll.ScrollableHeight > .5 && chatScroll.VerticalOffset < chatScroll.ScrollableHeight - .5) throw new Exception("Conversation did not reveal the final line after translation height changed");

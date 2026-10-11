@@ -23,7 +23,7 @@ public partial class SettingsViewModel : ObservableObject
     public bool ShowSupertonicCard => ModelFilter == "tts" || (ModelFilter == "recommended" && _supertonicRecommended) || (ModelFilter == "installed" && SupertonicInstalled);
     public bool ShowVieNeuCard => ModelFilter == "tts" || (ModelFilter == "recommended" && _vieNeuRecommended) || (ModelFilter == "installed" && VieNeuInstalled);
     public bool ModelFilterEmpty => !ShowSupertonicCard && !ShowVieNeuCard;
-    private void RefreshModelFilter() { OnPropertyChanged(nameof(ShowSupertonicCard)); OnPropertyChanged(nameof(ShowVieNeuCard)); OnPropertyChanged(nameof(ModelFilterEmpty)); }
+    private void RefreshModelFilter() { RefreshSpeechPack(); OnPropertyChanged(nameof(ShowSupertonicCard)); OnPropertyChanged(nameof(ShowVieNeuCard)); OnPropertyChanged(nameof(ModelFilterEmpty)); }
     public string[] ModelVoiceLanguages { get; } = ["vi", "en", "ja", "ko"];
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanUseSupertonic))]
@@ -51,7 +51,7 @@ public partial class SettingsViewModel : ObservableObject
     public bool CanManageModels => !UpdatingCatalog && !IsInstallingVoice && !IsUpdating && !_meetingBusy();
     public string CatalogUpdateLabel => UpdatingCatalog ? "Đang cập nhật…" : "Cập nhật danh mục";
     public bool CanInstallVieNeu => CanManageModels && HasVieNeuProcessor;
-    public void RefreshModelAvailability() { OnPropertyChanged(nameof(CanManageModels)); OnPropertyChanged(nameof(CanInstallVieNeu)); OnPropertyChanged(nameof(CanUseSupertonic)); OnPropertyChanged(nameof(CanUseVieNeu)); }
+    public void RefreshModelAvailability() { RefreshSpeechPack(); OnPropertyChanged(nameof(CanManageModels)); OnPropertyChanged(nameof(CanInstallVieNeu)); OnPropertyChanged(nameof(CanUseSupertonic)); OnPropertyChanged(nameof(CanUseVieNeu)); }
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanManageModels))]
     [NotifyPropertyChangedFor(nameof(CanUseSupertonic))]
@@ -59,6 +59,7 @@ public partial class SettingsViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanInstallVieNeu))]
     [NotifyPropertyChangedFor(nameof(CatalogUpdateLabel))]
     private bool _updatingCatalog;
+    partial void OnUpdatingCatalogChanged(bool value) => RefreshSpeechPack();
     [ObservableProperty] private string _supertonicSummary = "Giọng đọc đa ngôn ngữ, chạy trên thiết bị.";
     [ObservableProperty] private string _vieNeuSummary = "Tiếng Việt tự nhiên, hỗ trợ hồ sơ giọng từ mẫu.";
     [RelayCommand] private async Task UpdateCatalogAsync()
@@ -127,6 +128,7 @@ public partial class SettingsViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanUseVieNeu))]
     [NotifyPropertyChangedFor(nameof(CanInstallVieNeu))]
     private bool _isUpdating;
+    partial void OnIsUpdatingChanged(bool value) => RefreshSpeechPack();
     [ObservableProperty] private bool _canInstallUpdate;
     [ObservableProperty] private double _updateProgress;
     [RelayCommand] private async Task CheckUpdateAsync() {
@@ -221,6 +223,7 @@ public partial class SettingsViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanUseVieNeu))]
     [NotifyPropertyChangedFor(nameof(CanInstallVieNeu))]
     private bool _isInstallingVoice;
+    partial void OnIsInstallingVoiceChanged(bool value) => RefreshSpeechPack();
     public bool SupertonicInstalled => VoiceService.Shared.IsInstalled;
     public bool VieNeuInstalled => VoiceService.Shared.IsVieNeuInstalled;
     public bool ShowSupertonicInstall => !SupertonicInstalled && DownloadingModel != "supertonic";
@@ -233,6 +236,32 @@ public partial class SettingsViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(DownloadingSupertonic))]
     [NotifyPropertyChangedFor(nameof(DownloadingVieNeu))]
     private string _downloadingModel = "";
+    [ObservableProperty] private bool _installingSpeechPack;
+    public bool SpeechPackInstalled => SupertonicInstalled && VieNeuInstalled;
+    public bool CanInstallSpeechPack => CanManageModels && HasVieNeuProcessor && !SpeechPackInstalled;
+    public string SpeechPackActionLabel => SpeechPackInstalled ? "Đã cài" : "Cài gói";
+    private void RefreshSpeechPack() { OnPropertyChanged(nameof(SpeechPackInstalled)); OnPropertyChanged(nameof(CanInstallSpeechPack)); OnPropertyChanged(nameof(SpeechPackActionLabel)); }
+    [RelayCommand] private async Task InstallSpeechPackAsync()
+    {
+        if (!CanInstallSpeechPack) return;
+        if (!SupertonicInstalled && new TransTools.Views.LicenseWindow("Supertonic 3", VoiceService.ResourceText("SpeechNative/Supertonic-Model-OpenRAIL.txt")).ShowDialog() != true) return;
+        if (!VieNeuInstalled && new TransTools.Views.LicenseWindow("VieNeu v3 Turbo", VoiceService.ResourceText("SpeechNative/VieNeu-LICENSE.txt")).ShowDialog() != true) return;
+        // A modal license dialog permits other dispatcher work: recheck the operation gate.
+        if (!CanInstallSpeechPack) return;
+        InstallingSpeechPack = true; IsInstallingVoice = true;
+        var cancellation = new CancellationTokenSource(); _installation = cancellation;
+        try {
+            await TransTools.Services.Models.SpeechPackInstaller.InstallAsync(async (vieNeu, token) => {
+                DownloadingModel = vieNeu ? "vieneu" : "supertonic";
+                var name = vieNeu ? "VieNeu" : "Supertonic";
+                // InstallAsync verifies each existing file and downloads only missing/mismatched files.
+                await VoiceService.Shared.InstallAsync(new Progress<string>(message => LocalVoiceStatus = name + " · " + message), token, vieNeu);
+            }, cancellation.Token);
+            cancellation.Token.ThrowIfCancellationRequested(); LocalVoiceStatus = "Đã cài gói giọng đọc tiếng Việt";
+        } catch (OperationCanceledException) { LocalVoiceStatus = "Đã dừng cài gói. Thành phần đã tải được giữ để tiếp tục sau."; }
+        catch (Exception ex) { LocalVoiceStatus = "Chưa cài xong gói · " + ex.Message; }
+        finally { _installation = null; cancellation.Dispose(); DownloadingModel = ""; InstallingSpeechPack = false; IsInstallingVoice = false; CalculateCacheSize(); RefreshSpeechPack(); }
+    }
     private CancellationTokenSource? _installation;
     [RelayCommand] private void CancelVoiceInstall() => _installation?.Cancel();
     [RelayCommand] private async Task InstallVoiceAsync()

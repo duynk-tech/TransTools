@@ -18,7 +18,7 @@ public partial class GardenBackground : UserControl
         SkyBottom.Color = (Color)ColorConverter.ConvertFromString(bottom);
         Scenery.SetHour(hour);
         Scenery.Visibility = mode == "mint" ? Visibility.Collapsed : Visibility.Visible;
-        if (mode == "mint") { SkyTop.Color = (Color)ColorConverter.ConvertFromString("#E0F5EF"); SkyBottom.Color = (Color)ColorConverter.ConvertFromString("#D0EADF"); }
+        if (mode == "mint") { SkyTop.Color = (Color)ColorConverter.ConvertFromString("#F6F8F6"); SkyBottom.Color = SkyTop.Color; }
     }
 }
 

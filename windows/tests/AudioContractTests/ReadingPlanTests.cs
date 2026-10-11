@@ -12,6 +12,20 @@ internal static class ReadingPlanTests
             var rejected = false; try { TransTools.Services.Models.RemoteModelCatalog.Parse(System.Text.Encoding.UTF8.GetBytes(invalid)); } catch (System.IO.InvalidDataException) { rejected = true; }
             Check(rejected, "Remote catalog accepted unsupported model/schema/version");
         }
+        var components = new List<bool>();
+        await TransTools.Services.Models.SpeechPackInstaller.InstallAsync((component, _) => { components.Add(component); return Task.CompletedTask; }, CancellationToken.None);
+        Check(components.SequenceEqual(new[] { false, true }), "Speech pack changed Supertonic/VieNeu installation order");
+        using (var packCancel = new CancellationTokenSource()) {
+            components.Clear(); var cancelled = false;
+            try { await TransTools.Services.Models.SpeechPackInstaller.InstallAsync((component, _) => { components.Add(component); packCancel.Cancel(); return Task.CompletedTask; }, packCancel.Token); }
+            catch (OperationCanceledException) { cancelled = true; }
+            Check(cancelled && components.SequenceEqual(new[] { false }), "Cancelled speech pack starts another component");
+        }
+        components.Clear(); var packFailed = false;
+        try { await TransTools.Services.Models.SpeechPackInstaller.InstallAsync((component, _) => { components.Add(component); throw new IOException("fixture component failure"); }, CancellationToken.None); }
+        catch (IOException) { packFailed = true; }
+        Check(packFailed && components.SequenceEqual(new[] { false }), "Failed speech pack continues to the next component");
+        Console.WriteLine("PASS: speech pack order, cancellation and failure stop between components");
         var source = "Số 3.14 đúng. “Xin chào!”\r\nĐoạn hai chưa có dấu";
         var parts = SpeechReadingPlan.Parts(source, .35, .8);
         Check(parts.Select(p => p.Text).SequenceEqual(new[] { "Số 3.14 đúng.", "“Xin chào!”", "Đoạn hai chưa có dấu" }), "Reading plan lost text, quotes or decimal punctuation");
