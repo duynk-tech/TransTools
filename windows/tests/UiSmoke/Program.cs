@@ -683,6 +683,7 @@ internal static class Program
             model.SuggestionsEnabled = true;
             var view = new ConversationView(model); container.Children.Clear(); container.Children.Add(view); Pump();
             ValidateControlLayout(view, "Conversation suggestions");
+            if (((TextBox)view.FindName("ConversationInput")).ActualWidth < 300) throw new Exception("Conversation input is squeezed by action buttons when suggestions are visible");
             var panel = (ScrollViewer)view.FindName("ConversationHelpPanel");
             if (!panel.IsVisible || Math.Abs(panel.ActualWidth - 260) > 1 || model.Suggestions.Count != 3) throw new Exception("Conversation suggestion column is missing or sized differently from Mac");
             model.IsConversationActive = true; Pump();
