@@ -14,6 +14,7 @@ public partial class LearningView : UserControl
         _viewModel = viewModel;
         InitializeComponent();
         DataContext = viewModel;
+        VocabularyLibraryHost.Content = new NotebookVocabularyView(viewModel);
         Unloaded += (_, _) => { if (_viewModel.IsGeneratingLessons) _viewModel.GenerateLessonsCancelCommand.Execute(null); };
     }
 
@@ -31,13 +32,16 @@ public partial class LearningView : UserControl
 
     private void TodayTab_Checked(object sender, RoutedEventArgs e) { ShowSection("today"); }
     private void PracticeTab_Checked(object sender, RoutedEventArgs e) => ShowSection("practice");
-    private void StartReview_Click(object sender,RoutedEventArgs e) { VocabularyTab.IsChecked = true; ShowSection("vocabulary"); _viewModel.StartReviewCommand.Execute(null); }
+    private void StartReview_Click(object sender,RoutedEventArgs e) { VocabularyTab.IsChecked = true; ShowSection("review"); _viewModel.StartReviewCommand.Execute(null); }
     private void ShowSection(string section) {
-        if (VocabTabGrid != null) VocabTabGrid.Visibility=section=="vocabulary" ? Visibility.Visible : Visibility.Collapsed;
+        if (VocabularyLibrary != null) VocabularyLibrary.Visibility=section=="vocabulary" ? Visibility.Visible : Visibility.Collapsed;
+        if (VocabTabGrid != null) VocabTabGrid.Visibility=section=="review" ? Visibility.Visible : Visibility.Collapsed;
         if (AlphabetTabBorder != null) AlphabetTabBorder.Visibility=section=="alphabet" ? Visibility.Visible : Visibility.Collapsed;
         if (TodayPanel != null) TodayPanel.Visibility=section=="today" ? Visibility.Visible : Visibility.Collapsed;
         if (PracticePanel != null) PracticePanel.Visibility=section=="practice" ? Visibility.Visible : Visibility.Collapsed;
     }
+
+    private void BackToVocabulary_Click(object sender, RoutedEventArgs e) => ShowSection("vocabulary");
 
     private void VocabTab_Checked(object sender, RoutedEventArgs e)
     {

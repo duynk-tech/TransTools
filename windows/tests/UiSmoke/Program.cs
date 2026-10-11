@@ -416,6 +416,16 @@ internal static class Program
                             ValidateControlLayout(window, "Learning: " + label);
                             Capture(window, output, $"{width}-learning-{Array.IndexOf(new[] { "Hôm nay", "Chữ & Viết", "Từ vựng của tôi", "Luyện giao tiếp" }, label)}.png");
                         }
+                        Descendants(learning).OfType<RadioButton>().First(item => Equals(item.Content, "Từ vựng của tôi")).IsChecked = true; Pump();
+                        var library = (FrameworkElement)learning.FindName("VocabularyLibrary");
+                        var review = (FrameworkElement)learning.FindName("VocabTabGrid");
+                        if (library.Visibility != Visibility.Visible || review.Visibility != Visibility.Collapsed) throw new Exception("Vocabulary should open the library before review");
+                        Descendants(library).OfType<Button>().First(item => Equals(item.Content, "Ôn Flashcard")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        if (review.Visibility != Visibility.Visible || library.Visibility != Visibility.Collapsed) throw new Exception("Flashcard action did not open review");
+                        ValidateControlLayout(window, "Learning flashcard review");
+                        Capture(window, output, $"{width}-learning-review.png");
+                        Descendants(review).OfType<Button>().First(item => Equals(item.Content, "← Kho từ vựng")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        if (library.Visibility != Visibility.Visible || review.Visibility != Visibility.Collapsed) throw new Exception("Review back action did not restore library");
                         var goal = (Button)learning.FindName("LearningGoalButton");
                         goal.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
                         var popup = (System.Windows.Controls.Primitives.Popup)learning.FindName("LearningGoalPopup");

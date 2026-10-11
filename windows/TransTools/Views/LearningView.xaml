@@ -72,6 +72,14 @@
 
         
         
+        <Grid x:Name="VocabularyLibrary" Grid.Row="1" Visibility="Collapsed">
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <DockPanel Margin="0,0,0,12">
+                <Button DockPanel.Dock="Right" Content="Ôn Flashcard" Click="StartReview_Click" Margin="16,0,0,0"/>
+                <StackPanel><TextBlock Text="Kho từ vựng của bạn" FontSize="18" FontWeight="SemiBold" Foreground="#243D35"/><TextBlock Text="Lưu từ bản dịch, cuộc họp hoặc nhập thủ công kèm câu ví dụ." Foreground="#65756F" TextWrapping="Wrap" Margin="0,6,0,0"/></StackPanel>
+            </DockPanel>
+            <Border Grid.Row="1" Background="White" BorderBrush="#BDD9D2" BorderThickness="1" CornerRadius="16"><ContentControl x:Name="VocabularyLibraryHost"/></Border>
+        </Grid>
         <Grid x:Name="VocabTabGrid" Grid.Row="1" Visibility="Collapsed">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="380" />
@@ -81,7 +89,7 @@
             
             <Border Grid.Column="0" Background="#FFFFFF" BorderBrush="#BDD9D2" BorderThickness="1" CornerRadius="16" Padding="24" Margin="0,0,16,0" Cursor="Hand" MouseLeftButtonDown="Flashcard_Click">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Text="THẺ TỪ VỰNG (NHẤP ĐỂ LẬT)" FontSize="11" FontWeight="Bold" Foreground="#73827C" HorizontalAlignment="Center" />
+                    <Button DockPanel.Dock="Top" Content="← Kho từ vựng" Click="BackToVocabulary_Click" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,0,0,16"/><TextBlock DockPanel.Dock="Top" Text="THẺ TỪ VỰNG (NHẤP ĐỂ LẬT)" FontSize="11" FontWeight="Bold" Foreground="#73827C" HorizontalAlignment="Center" />
 
                     
                     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0">
