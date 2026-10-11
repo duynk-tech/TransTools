@@ -422,7 +422,9 @@ internal static class Program
                         model.NewWord = "context fixture"; model.NewMeaning = "";
                         if (model.AddWordCommand.CanExecute(null)) throw new Exception("Add word accepts missing meaning");
                         model.NewMeaning = "Từ kiểm thử"; model.NewExampleSentence = "Một câu ngữ cảnh 日本語.";
-                        model.AddWordCommand.Execute(null); Pump();
+                        add.IsOpen = true; Pump();
+                        ((Button)vocabularyView.FindName("SaveWordButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        if (add.IsOpen) throw new Exception("Successful vocabulary save did not close popup");
                         var contextWord = model.VocabularyList.Single(item => item.Word == "context fixture");
                         if (contextWord.ExampleSentence != "Một câu ngữ cảnh 日本語." || model.NewExampleSentence != "") throw new Exception("Vocabulary context was lost or draft was not cleared");
                         if (new LearningStore(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TransTools")).Load().Words.Single(item => item.Id == contextWord.Id).ExampleSentence != contextWord.ExampleSentence) throw new Exception("Vocabulary context was not saved");

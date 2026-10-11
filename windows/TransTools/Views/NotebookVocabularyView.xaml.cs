@@ -34,6 +34,13 @@ public partial class NotebookVocabularyView : UserControl
     private void SearchChanged(object sender, TextChangedEventArgs e) { if (_words == null) return; _words.Refresh(); UpdateEmpty(); }
     private void UpdateEmpty() => EmptyState.Visibility = _words.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
     private void ShowAdd_Click(object sender, RoutedEventArgs e) => AddWordPopup.IsOpen = true;
+    private void CancelAdd_Click(object sender, RoutedEventArgs e) => AddWordPopup.IsOpen = false;
+    private void SaveAdd_Click(object sender, RoutedEventArgs e) {
+        if (!_model.AddWordCommand.CanExecute(null)) return;
+        _model.AddWordCommand.Execute(null);
+        // AddWord clears the draft only after persistence succeeds.
+        if (string.IsNullOrEmpty(_model.NewWord)) AddWordPopup.IsOpen = false;
+    }
     private async void Speak_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button { DataContext: VocabularyItem word }) { _model.SelectedWord = word; await _model.SpeakCurrentWordAsync(); }

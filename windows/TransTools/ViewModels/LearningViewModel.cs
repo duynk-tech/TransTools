@@ -169,10 +169,12 @@ public partial class LearningViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddWordCommand))]
+    [NotifyPropertyChangedFor(nameof(CanSaveNewWord))]
     private string _newWord = string.Empty;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddWordCommand))]
+    [NotifyPropertyChangedFor(nameof(CanSaveNewWord))]
     private string _newMeaning = string.Empty;
 
     [ObservableProperty]
@@ -287,6 +289,8 @@ public partial class LearningViewModel : ObservableObject
         try { await VoicePreferences.SpeakAsync(SelectedWord.Word, SelectedWord.LanguageCode); }
         catch (Exception ex) { Status = ex.Message; }
     }
+
+    public bool CanSaveNewWord => CanAddWord();
 
     private bool CanAddWord() => _canSaveVocabulary && !string.IsNullOrWhiteSpace(NewWord) && !string.IsNullOrWhiteSpace(NewMeaning);
 
