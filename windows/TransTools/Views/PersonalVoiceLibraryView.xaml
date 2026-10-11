@@ -5,9 +5,12 @@
 <TextBlock Text="Một bản thu gốc, nhiều hồ sơ theo mô hình hỗ trợ. Dữ liệu giữ trên thiết bị." TextWrapping="Wrap" Foreground="#65756F" Margin="0,10,0,0"/>
 </StackPanel></Border>
 <Border Background="#E3F2ED" CornerRadius="12" Padding="16" Margin="0,0,0,16"><StackPanel><TextBlock Text="Mô hình tương thích" FontWeight="SemiBold"/><TextBlock Text="VieNeu-TTS v3 Turbo · Tiếng Việt · Mẫu 3–8 giây" Foreground="#287568" Margin="0,8,0,0"/><TextBlock Text="Cài mô hình trong Giọng đọc &amp; Phát âm → Nâng cao. Bản thu gốc có thể dùng lại khi cần tạo hồ sơ." TextWrapping="Wrap" Foreground="#65756F" Margin="0,8,0,0"/></StackPanel></Border>
+<Border BorderBrush="#C2DDD5" BorderThickness="1" Background="White" CornerRadius="14" Padding="30" Margin="0,0,0,16"><Border.Style><Style TargetType="Border"><Style.Triggers><DataTrigger Binding="{Binding HasRecordings}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Border.Style><StackPanel><TextBlock Text="&#xE720;" FontFamily="Segoe MDL2 Assets" FontSize="30" Foreground="#287568" HorizontalAlignment="Center"/><TextBlock Text="Bắt đầu với giọng của bạn" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,12,0,8"/><TextBlock Text="Thu một đoạn ngắn, nghe lại và lưu. Tạo hồ sơ mô hình khi bạn cần sử dụng." TextWrapping="Wrap" TextAlignment="Center" Foreground="#65756F"/></StackPanel></Border>
+<StackPanel Visibility="{Binding HasRecordings,Converter={StaticResource BoolVisibility}}">
 <TextBlock Text="Tìm bản thu theo tên" FontSize="12" Foreground="#65756F" Margin="0,0,0,6"/>
 <TextBox Text="{Binding RecordingQuery,UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanConfigure}" AutomationProperties.Name="Tìm bản thu theo tên" Margin="0,0,0,8"/>
 <TextBlock Text="{Binding RecordingSearchStatus}" FontSize="11" Foreground="#65756F" Margin="0,0,0,16"/>
+</StackPanel>
 <ItemsControl ItemsSource="{Binding RecordingCards}"><ItemsControl.ItemTemplate><DataTemplate>
 <Border BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Background="White" Padding="18" Margin="0,0,0,16"><StackPanel>
 <DockPanel><TextBlock DockPanel.Dock="Right" Text="Bản thu gốc" FontSize="11" Foreground="#287568" Margin="16,0,0,0"/><StackPanel><TextBlock Text="{Binding Profile.Name}" FontSize="14" FontWeight="SemiBold"/><TextBlock Text="{Binding Details}" FontSize="11" Foreground="#65756F" Margin="0,6,0,0"/></StackPanel></DockPanel>
