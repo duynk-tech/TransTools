@@ -35,12 +35,16 @@ public static class LearningTests
         try {
             Check(!PersonalVoiceQuality.Analyze(new float[48000]).IsUsable && !PersonalVoiceQuality.Analyze(Enumerable.Repeat(1f,48000).ToArray()).IsUsable && PersonalVoiceQuality.Analyze(ReadFloats("speaker-input.f32")).IsUsable,"personal voice quality rejects silence and clipping but accepts Mac reference audio");
             var voiceStore=new PersonalVoiceStore(Path.Combine(root,"PersonalVoice"));
+            var raw = voiceStore.SaveRecording("Bản thu chưa xử lý", "Đoạn văn mẫu", ReadFloats("speaker-input.f32"));
+            Check(!voiceStore.HasModel(raw.Id), "Raw recording incorrectly has synthesized voice model");
+            Check(File.Exists(Path.Combine(root, "PersonalVoice", raw.Id.ToString("D"), "reference.wav")), "Raw reference recording was not saved");
+            Check(voiceStore.Load().Any(item => item.Id == raw.Id), "Raw recording missing from inventory");
             var profile=voiceStore.Save("Giọng của tôi","Xin chào 日本語",ReadFloats("speaker-input.f32"),Enumerable.Repeat(.1f,192).ToArray());
-            Check(voiceStore.Load().Single().ReferenceText=="Xin chào 日本語" && File.Exists(voiceStore.VoicePath(profile.Id)),"personal voice profile and embedding persist atomically");
+            Check(voiceStore.Load().Single(item => item.Id == profile.Id).ReferenceText=="Xin chào 日本語" && File.Exists(voiceStore.VoicePath(profile.Id)),"personal voice profile and embedding persist atomically");
             Check(voiceStore.LoadEmbedding(profile.Id).Length==192,"saved personal embedding validates before synthesis");
             var voiceBeforeRename=File.ReadAllBytes(voiceStore.VoicePath(profile.Id));
             voiceStore.Rename(profile.Id,"Giọng Việt 日本語");
-            var renamed=voiceStore.Load().Single();
+            var renamed=voiceStore.Load().Single(item => item.Id == profile.Id);
             Check(renamed.Name=="Giọng Việt 日本語" && renamed.Id==profile.Id && renamed.ReferenceText==profile.ReferenceText && renamed.DurationSeconds==profile.DurationSeconds && File.ReadAllBytes(voiceStore.VoicePath(profile.Id)).SequenceEqual(voiceBeforeRename),"personal voice rename preserves identity, reference text and speaker data");
             File.WriteAllText(voiceStore.VoicePath(profile.Id),"{\"speaker_emb\":[0]}");
             bool invalidVoice=false;try {voiceStore.LoadEmbedding(profile.Id);} catch(InvalidDataException) {invalidVoice=true;}

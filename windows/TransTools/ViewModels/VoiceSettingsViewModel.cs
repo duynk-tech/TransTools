@@ -41,7 +41,8 @@ public partial class VoiceSettingsViewModel : ObservableObject
         _loading = true;
         try { var p = VoicePreferences.Get(Language); Engine = Engines.Contains(p.Engine) ? p.Engine : "Giọng cơ bản"; Rate = Engine == "VieNeu v3 Turbo" ? 1 : p.Rate;
             PersonalVoices.Clear(); PersonalVoices.Add(new(null, "Giọng dựng sẵn"));
-            foreach (var profile in new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot).Load()) PersonalVoices.Add(new(profile.Id, profile.Name));
+            var store = new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot);
+            foreach (var profile in store.Load().Where(profile => store.HasModel(profile.Id))) PersonalVoices.Add(new(profile.Id, profile.Name));
             if (p.PersonalVoiceId is Guid missingId && PersonalVoices.All(voice => voice.Id != missingId)) PersonalVoices.Add(new(missingId, "Giọng đã chọn không còn dữ liệu — chọn lại giọng"));
             SelectedPersonalVoice = PersonalVoices.FirstOrDefault(voice => voice.Id == p.PersonalVoiceId) ?? PersonalVoices[0];
             OnPropertyChanged(nameof(PersonalVoiceHint)); _canSave = true; }

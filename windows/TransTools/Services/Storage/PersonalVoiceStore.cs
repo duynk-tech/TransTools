@@ -55,19 +55,28 @@ public sealed class PersonalVoiceStore(string root)
         return embedding;
     }
 
+    public bool HasModel(Guid id) => File.Exists(VoicePath(id));
+    public PersonalVoiceProfile SaveRecording(string name, string referenceText, float[] samples) => SaveCore(name, referenceText, samples, null);
     public PersonalVoiceProfile Save(string name,string referenceText,float[] samples,float[] embedding)
+    {
+        VieNeuSpeakerEncoder.ValidateEmbedding(embedding);
+        return SaveCore(name, referenceText, samples, embedding);
+    }
+    private PersonalVoiceProfile SaveCore(string name, string referenceText, float[] samples, float[]? embedding)
     {
         if(string.IsNullOrWhiteSpace(name) || name.Length>100 || referenceText.Length>2000) throw new ArgumentException("Tên hoặc đoạn đọc không hợp lệ.");
         if(samples.Length<48000 || samples.Length>128000 || samples.Any(value=>!float.IsFinite(value))) throw new ArgumentException("Bản thu cần từ 3 đến 8 giây.");
         if (!PersonalVoiceQuality.Analyze(samples).IsUsable) throw new ArgumentException("Bản thu quá nhỏ hoặc bị vỡ tiếng. Hãy thu lại.");
-        VieNeuSpeakerEncoder.ValidateEmbedding(embedding);
         Directory.CreateDirectory(root);
         var profile=new PersonalVoiceProfile(Guid.NewGuid(),name.Trim(),DateTime.UtcNow,referenceText,samples.Length/16000.0);
         var temp=Path.Combine(root,".pending-"+profile.Id); var target=Folder(profile.Id);
         try {
-            Directory.CreateDirectory(Path.Combine(temp,"Models","vieneu"));
+            Directory.CreateDirectory(temp);
             File.WriteAllText(Path.Combine(temp,"profile.json"),JsonSerializer.Serialize(profile));
-            File.WriteAllText(Path.Combine(temp,"Models","vieneu","voice.json"),JsonSerializer.Serialize(new {speaker_emb=embedding}));
+            if (embedding != null) {
+                Directory.CreateDirectory(Path.Combine(temp,"Models","vieneu"));
+                File.WriteAllText(Path.Combine(temp,"Models","vieneu","voice.json"),JsonSerializer.Serialize(new {speaker_emb=embedding}));
+            }
             using(var writer=new BinaryWriter(File.Create(Path.Combine(temp,"reference.wav")))) {
                 int bytes=samples.Length*2;
                 writer.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));writer.Write(36+bytes);writer.Write(System.Text.Encoding.ASCII.GetBytes("WAVEfmt "));

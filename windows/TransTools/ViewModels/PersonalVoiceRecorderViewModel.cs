@@ -79,6 +79,17 @@ public partial class PersonalVoiceRecorderViewModel : ObservableObject, IDisposa
         } catch (Exception ex) { _samples = null; HasUsableRecording = false; Status = ex.Message; }
         finally { IsRecording = false; _recorder?.Dispose(); _recorder = null; OnPropertyChanged(nameof(CanPreview)); }
     }
+    [RelayCommand] private async Task SaveRecordingAsync()
+    {
+        if (_disposed || !CanSave || _samples == null) return;
+        var samples = _samples.ToArray(); var name = VoiceName.Trim(); var script = ReferenceText;
+        IsProcessing = true;
+        try {
+            var profile = await Task.Run(() => new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot).SaveRecording(name, script, samples));
+            if (!_disposed) Status = "Đã lưu bản thu gốc " + profile.Name + ". Bản thu chưa có hồ sơ mô hình; chưa dùng để đọc.";
+        } catch (Exception ex) { if (!_disposed) Status = "Chưa lưu được bản thu: " + ex.Message; }
+        finally { Array.Clear(samples); if (!_disposed) IsProcessing = false; }
+    }
     [RelayCommand] private async Task SaveVoiceAsync()
     {
         if (_disposed || !CanSave || _samples == null) return;
