@@ -440,7 +440,10 @@ internal static class Program
                         Capture(window, output, $"{width}-learning-review.png");
                         Descendants(review).OfType<Button>().First(item => Equals(item.Content, "← Kho từ vựng")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
                         if (library.Visibility != Visibility.Visible || review.Visibility != Visibility.Collapsed) throw new Exception("Review back action did not restore library");
-                        Descendants(learning).OfType<Button>().First(item => Equals(item.Content, "Tiến bộ")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        ((Button)learning.FindName("LearningGoalButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        var moreMenu = ((Button)learning.FindName("LearningGoalButton")).ContextMenu;
+                        if (moreMenu?.IsOpen != true) throw new Exception("Learning More menu did not open");
+                        moreMenu.Items.OfType<MenuItem>().First(item => Equals(item.Header,"Tiến bộ")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump();
                         if (((FrameworkElement)learning.FindName("ProgressPanel")).Visibility != Visibility.Visible) throw new Exception("Learning progress did not open");
                         var learningModel = (LearningViewModel)learning.DataContext;
                         if (learningModel.VocabularyCount != learningModel.VisibleVocabulary.Count || learningModel.MasteredCount + learningModel.LearningCount != learningModel.VocabularyCount || learningModel.DeepMemoryCount + learningModel.ConsolidatingCount + learningModel.NewMemoryCount != learningModel.VocabularyCount) throw new Exception("Learning progress counts do not match vocabulary");
@@ -449,6 +452,7 @@ internal static class Program
                         if (((FrameworkElement)learning.FindName("ProgressPanel")).Visibility != Visibility.Collapsed) throw new Exception("Returning to Today left progress visible");
                         var goal = (Button)learning.FindName("LearningGoalButton");
                         goal.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+                        goal.ContextMenu.Items.OfType<MenuItem>().First(item => Equals(item.Header,"Mục tiêu")).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent)); Pump();
                         var popup = (System.Windows.Controls.Primitives.Popup)learning.FindName("LearningGoalPopup");
                         if (!popup.IsOpen || popup.Child == null) throw new Exception("Learning goal popup did not open");
                         ValidateControlLayout((FrameworkElement)popup.Child, "Learning goal");

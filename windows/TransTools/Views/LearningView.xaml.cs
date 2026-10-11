@@ -18,7 +18,14 @@ public partial class LearningView : UserControl
         Unloaded += (_, _) => { if (_viewModel.IsGeneratingLessons) _viewModel.GenerateLessonsCancelCommand.Execute(null); };
     }
 
-    private void ShowGoal_Click(object sender, RoutedEventArgs e) => LearningGoalPopup.IsOpen = true;
+    private void ShowMore_Click(object sender, RoutedEventArgs e) {
+        LearningMoreMenu.PlacementTarget = LearningGoalButton;
+        LearningMoreMenu.IsOpen = true;
+    }
+    private void ShowGoal_Click(object sender, RoutedEventArgs e) {
+        LearningMoreMenu.IsOpen = false;
+        LearningGoalPopup.IsOpen = true;
+    }
 
     private void Flashcard_Click(object sender, MouseButtonEventArgs e)
     {
@@ -32,6 +39,7 @@ public partial class LearningView : UserControl
 
     private void TodayTab_Checked(object sender, RoutedEventArgs e) { ShowSection("today"); }
     private void Progress_Click(object sender, RoutedEventArgs e) {
+        LearningMoreMenu.IsOpen = false;
         foreach (var tab in new[] { TodayTab, AlphabetTab, VocabularyTab, PracticeTab }) tab.IsChecked = false;
         ShowSection("progress");
     }
