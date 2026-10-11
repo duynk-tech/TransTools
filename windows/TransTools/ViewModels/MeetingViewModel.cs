@@ -32,6 +32,8 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     private Channel<byte[]>? _audioQueue;
     private Channel<Caption>? _translationQueue;
     private Channel<Caption>? _displayQueue;
+    private MeetingTranslationPump? _translationPump;
+    private volatile bool _translationEnabled;
     private CancellationTokenSource? _cts;
     private Task? _processing;
     private DateTime _lastVoice;
@@ -200,6 +202,8 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     }
     private void NotifyDisplayMode()
     {
+        _translationEnabled = DisplayModeKey != "original";
+        _translationPump?.NotifyWork();
         OnPropertyChanged(nameof(SelectedDisplayMode)); OnPropertyChanged(nameof(DisplayModeKey)); OnPropertyChanged(nameof(FooterSummary));
     }
     private void DisplayPreferencesChanged() => Ui(NotifyDisplayMode);
@@ -296,6 +300,8 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
             // Only the visible overlay may skip a stale backlog. The transcript retains every caption.
             _displayQueue = Channel.CreateBounded<Caption>(new BoundedChannelOptions(3) { SingleReader = true, SingleWriter = true, FullMode = BoundedChannelFullMode.DropOldest });
             lock (_lock) { _buffer.SetLength(0); _lastVoice = DateTime.UtcNow; }
+            _translationPump = new MeetingTranslationPump();
+            _translationEnabled = DisplayModeKey != "original";
             var token = _cts.Token;
             _processing = Task.WhenAll(Task.Run(() => RecognizeAsync(token)), Task.Run(() => TranslateAsync(token)), Task.Run(() => PresentAsync(token)));
             IsRecording = true; _audio.StartCapture(CaptureSystemAudio, CaptureMicrophone); if (AutomaticReading) StartAutomaticReader(); Status = "Đang dịch...";
@@ -407,34 +413,42 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
                             consumed += text.Length;
                             await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => { Captions.Add(caption); OnCaptionIncoming?.Invoke(caption); });
                             await _translationQueue!.Writer.WriteAsync(caption, token);
+                            _translationPump!.NotifyWork();
                         }
                     }
                 } catch (OperationCanceledException) { throw; }
                 catch (Exception ex) { Ui(() => Status = "Lỗi nhận diện: " + ex.Message); }
                 finally { _offset += duration; }
             }
-        } finally { _translationQueue?.Writer.TryComplete(); }
+        } finally { _translationQueue?.Writer.TryComplete(); _translationPump?.NotifyWork(); }
     }
     private async Task TranslateAsync(CancellationToken token)
     {
         try {
-        await foreach (var caption in _translationQueue!.Reader.ReadAllAsync(token)) {
-            try {
-                if (_sessionTranslationMode == "Tiếng gốc") { await _displayQueue!.Writer.WriteAsync(caption,token); continue; }
-                string translated;
-                if (_sessionTranslationMode == "AI") {
-                    var config = _sessionAi ?? throw new InvalidOperationException("Cấu hình AI không còn khả dụng.");
-                    translated = await new LLMTranslationService().TranslateWithAIAsync(caption.Original, _sessionTarget, $"{_sessionDomain}. Tự nhiên, giữ đúng thuật ngữ chuyên ngành, không thêm nội dung", config, token);
-                } else translated = await _google.TranslateAsync(caption.Original, _sessionSource, _sessionTarget, token);
-                token.ThrowIfCancellationRequested();
-                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
-                    token.ThrowIfCancellationRequested();
-                    caption.Vietnamese = translated; OnCaptionIncoming?.Invoke(caption);
-                });
-                await _displayQueue!.Writer.WriteAsync(caption,token);
-            } catch (OperationCanceledException) { throw; }
-            catch (Exception ex) { Ui(() => Status = "Lỗi dịch: " + ex.Message); await _displayQueue!.Writer.WriteAsync(caption,token); }
-        }
+            await _translationPump!.RunAsync(_translationQueue!.Reader,
+                () => _translationEnabled && _sessionTranslationMode != "Tiếng gốc",
+                async (caption, cancellation) => {
+                    try {
+                        string translated;
+                        if (_sessionTranslationMode == "AI") {
+                            var config = _sessionAi ?? throw new InvalidOperationException("Cấu hình AI không còn khả dụng.");
+                            translated = await new LLMTranslationService().TranslateWithAIAsync(caption.Original, _sessionTarget, $"{_sessionDomain}. Tự nhiên, giữ đúng thuật ngữ chuyên ngành, không thêm nội dung", config, cancellation);
+                        } else translated = await _google.TranslateAsync(caption.Original, _sessionSource, _sessionTarget, cancellation);
+                        cancellation.ThrowIfCancellationRequested();
+                        await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
+                            cancellation.ThrowIfCancellationRequested();
+                            caption.Vietnamese = translated;
+                        });
+                    } catch (OperationCanceledException) { throw; }
+                    catch (Exception ex) { Ui(() => Status = "Lỗi dịch: " + ex.Message); }
+                }, async (caption, backfill, cancellation) => {
+                    if (backfill) return;
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
+                        cancellation.ThrowIfCancellationRequested();
+                        OnCaptionIncoming?.Invoke(caption);
+                    });
+                    await _displayQueue!.Writer.WriteAsync(caption, cancellation);
+                }, token);
         } finally { _displayQueue?.Writer.TryComplete(); }
     }
     private async Task PresentAsync(CancellationToken token) {

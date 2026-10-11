@@ -21,6 +21,7 @@ foreach (var (language, prefix) in new[] { ("vi", "vi-VN"), ("Tiếng Việt", "
 
 SupertonicTests.Run();
 await ReadingPlanTests.RunAsync();
+await MeetingTranslationTests.RunAsync();
 
 var format = WaveFormat.CreateIeeeFloatWaveFormat(48000, 2);
 var input = new byte[48000 * 2 * 4];
