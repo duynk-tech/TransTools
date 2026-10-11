@@ -17,7 +17,17 @@ public class MeetingSession
     public List<Caption> Captions { get; set; } = new();
     public string? Summary { get; set; }
 
-    public string FormattedDuration => IsConversation ? "Hội thoại đã lưu" : TimeSpan.FromSeconds(DurationSeconds).ToString(@"hh\:mm\:ss");
+    public string FormattedDuration
+    {
+        get
+        {
+            if (IsConversation) return "Hội thoại đã lưu";
+            var duration = double.IsFinite(DurationSeconds) ? Math.Max(0, Math.Floor(DurationSeconds)) : 0;
+            var minutes = Math.Floor(duration / 60);
+            var seconds = duration % 60;
+            return minutes > 0 ? $"{minutes:0} phút {seconds:0} giây" : $"{seconds:0} giây";
+        }
+    }
     [System.Text.Json.Serialization.JsonIgnore]
     public string DateGroup
     {
