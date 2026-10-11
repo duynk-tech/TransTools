@@ -6,6 +6,11 @@ public static class LearningTests
 {
     private static void Check(bool value,string label) { if (!value) throw new Exception(label); Console.WriteLine("PASS: " + label); }
     public static void Run() {
+        var fixtureRoot = Path.Combine(AppContext.BaseDirectory,"Fixtures");
+        float[] ReadFloats(string name) { var bytes=File.ReadAllBytes(Path.Combine(fixtureRoot,name)); var values=new float[bytes.Length/4]; Buffer.BlockCopy(bytes,0,values,0,bytes.Length); return values; }
+        var expected=ReadFloats("speaker-features.f32");
+        var actual=TransTools.Services.Speech.VieNeuSpeakerFeatures.Extract(ReadFloats("speaker-input.f32"));
+        Check(actual.Length==expected.Length && actual.Zip(expected).Max(pair=>Math.Abs(pair.First-pair.Second))<.002f,"speaker features match independent macOS Accelerate reference");
         var content = LearningContent.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,"curated.json")));
         Check(content.Daily.Count==4 && content.Starters.Count==20 && content.Scenarios.Count==7,"curated learning catalog mirrors macOS");
         foreach (var language in new[] {"en","ja","zh","ko"}) Check(content.Daily.Any(s => s.Language==language) && content.Starters.Count(w=>w.LanguageCode==language)==5 && content.Scenarios.Where(s=>s.Language==language).All(s=>s.Dialogues.Count>=2),"complete curated examples for " + language);
