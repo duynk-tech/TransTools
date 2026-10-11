@@ -168,13 +168,17 @@ public partial class LearningViewModel : ObservableObject
     private bool _isFlashcardFlipped;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(AddWordCommand))]
     private string _newWord = string.Empty;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(AddWordCommand))]
     private string _newMeaning = string.Empty;
 
     [ObservableProperty]
     private string _newPhonetic = string.Empty;
+
+    [ObservableProperty] private string _newExampleSentence = string.Empty;
 
     public LearningViewModel()
     {
@@ -284,16 +288,19 @@ public partial class LearningViewModel : ObservableObject
         catch (Exception ex) { Status = ex.Message; }
     }
 
-    [RelayCommand]
+    private bool CanAddWord() => _canSaveVocabulary && !string.IsNullOrWhiteSpace(NewWord) && !string.IsNullOrWhiteSpace(NewMeaning);
+
+    [RelayCommand(CanExecute = nameof(CanAddWord))]
     public void AddWord()
     {
-        if (!_canSaveVocabulary || string.IsNullOrWhiteSpace(NewWord)) return;
+        if (!CanAddWord()) return;
 
         var item = new VocabularyItem
         {
             Word = NewWord.Trim(),
             Meaning = NewMeaning.Trim(),
             Phonetic = NewPhonetic.Trim(),
+            ExampleSentence = NewExampleSentence.Trim(),
             LanguageCode = SelectedLanguage
         };
 
@@ -306,5 +313,6 @@ public partial class LearningViewModel : ObservableObject
         NewWord = string.Empty;
         NewMeaning = string.Empty;
         NewPhonetic = string.Empty;
+        NewExampleSentence = string.Empty;
     }
 }
