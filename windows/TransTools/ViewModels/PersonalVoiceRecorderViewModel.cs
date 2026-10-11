@@ -5,6 +5,8 @@ using TransTools.Services.Storage;
 using NAudio.Wave;
 using System.IO;
 using System.Buffers.Binary;
+using System.Diagnostics;
+using System.Windows.Threading;
 namespace TransTools.ViewModels;
 
 public partial class PersonalVoiceRecorderViewModel : ObservableObject, IDisposable
@@ -13,6 +15,10 @@ public partial class PersonalVoiceRecorderViewModel : ObservableObject, IDisposa
     private float[]? _samples;
     private CancellationTokenSource? _creation, _preview;
     private bool _disposed;
+    private readonly Stopwatch _clock = new();
+    private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(200) };
+    [ObservableProperty] private double _recordedSeconds;
+    [ObservableProperty] private bool _guideEnabled = true;
     private readonly Func<bool> _audioBusy;
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanSave), nameof(CanEdit), nameof(CanPreview), nameof(CanToggle))] private bool _isRecording;
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanSave), nameof(CanEdit), nameof(CanPreview), nameof(CanToggle))] private bool _isProcessing;
@@ -25,7 +31,16 @@ public partial class PersonalVoiceRecorderViewModel : ObservableObject, IDisposa
     public bool CanEdit => !IsRecording && !IsProcessing && !IsPreviewing;
     public bool CanPreview => _samples != null && CanEdit;
     public bool CanSave => HasUsableRecording && CanEdit && !string.IsNullOrWhiteSpace(VoiceName) && VoiceName.Length <= 100;
-    public PersonalVoiceRecorderViewModel(Func<bool> audioBusy) => _audioBusy = audioBusy;
+    public PersonalVoiceRecorderViewModel(Func<bool> audioBusy)
+    {
+        _audioBusy = audioBusy;
+        _timer.Tick += (_, _) => { if (!_disposed && IsRecording) RecordedSeconds = Math.Min(8, _clock.Elapsed.TotalSeconds); };
+    }
+    partial void OnIsRecordingChanged(bool value)
+    {
+        if (value) { RecordedSeconds = 0; _clock.Restart(); _timer.Start(); }
+        else { _timer.Stop(); _clock.Stop(); }
+    }
     [RelayCommand] private void ToggleRecording()
     {
         if (_disposed || !CanToggle) return;
@@ -43,6 +58,7 @@ public partial class PersonalVoiceRecorderViewModel : ObservableObject, IDisposa
         try {
             _samples = _recorder!.Finish();
             var quality = PersonalVoiceQuality.Analyze(_samples);
+            RecordedSeconds = quality.DurationSeconds;
             HasUsableRecording = quality.IsUsable;
             Status = quality.IsUsable ? $"Đã thu {quality.DurationSeconds:F1} giây. Đặt tên và tạo giọng, hoặc thu lại." : "Âm lượng quá nhỏ hoặc bị vỡ tiếng. Hãy thu lại.";
         } catch (Exception ex) { _samples = null; HasUsableRecording = false; Status = ex.Message; }
@@ -89,7 +105,7 @@ public partial class PersonalVoiceRecorderViewModel : ObservableObject, IDisposa
     [RelayCommand] private void CancelCreation() => _creation?.Cancel();
     public void Dispose()
     {
-        if (_disposed) return; _disposed = true; _creation?.Cancel(); _preview?.Cancel(); _recorder?.Dispose(); _recorder = null;
+        if (_disposed) return; _disposed = true; _timer.Stop(); _clock.Stop(); _creation?.Cancel(); _preview?.Cancel(); _recorder?.Dispose(); _recorder = null;
         if (_samples != null) Array.Clear(_samples); _samples = null;
     }
 }
