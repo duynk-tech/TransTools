@@ -27,6 +27,7 @@ public partial class MainWindow : Window
     private bool _closeAllowed;
     private bool _savingForClose;
     private bool _mascotWasVisibleBeforeHud;
+    private bool _headerRevealPending;
 
     public MainWindow()
     {
@@ -49,6 +50,7 @@ public partial class MainWindow : Window
         _meetingViewModel.OtherAudioBusy = () => !_conversationViewModel.CanChangeSession || _readerViewModel.IsBusy;
         _meetingViewModel.PropertyChanged += (_, change) => {
             _settingsViewModel.RefreshModelAvailability();
+            if (change.PropertyName == nameof(MeetingViewModel.IsRecording)) ScheduleHeaderReveal();
             if (change.PropertyName is nameof(MeetingViewModel.IsRecording) or nameof(MeetingViewModel.IsPreparing) or nameof(MeetingViewModel.IsStopping))
                 _mascotWindow?.SetMeetingState(_meetingViewModel.IsRecording, !_meetingViewModel.IsPreparing && !_meetingViewModel.IsStopping);
         };
@@ -57,7 +59,10 @@ public partial class MainWindow : Window
         NavMeeting.DataContext = _meetingViewModel;
         NavNotebook.DataContext = _notebookViewModel;
         foreach (var tab in NavigationTabs.Children.OfType<System.Windows.Controls.RadioButton>())
-            tab.Checked += (_, _) => Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() => tab.BringIntoView()));
+            tab.Checked += (_, _) => ScheduleHeaderReveal();
+        HeaderTabsScroll.SizeChanged += (_, _) => ScheduleHeaderReveal();
+        _notebookViewModel.Sessions.CollectionChanged += (_, _) => ScheduleHeaderReveal();
+        _learningViewModel.PropertyChanged += (_, change) => { if (change.PropertyName == nameof(LearningViewModel.DueCount)) ScheduleHeaderReveal(); };
         ApplyBackground();
 
         _meetingViewModel.OnCaptionPresented += caption => _subtitleWindow?.UpdateCaption(caption);
@@ -112,6 +117,16 @@ public partial class MainWindow : Window
         DashboardPhoto.Visibility = PhotoVeil.Visibility = photo ? Visibility.Visible : Visibility.Collapsed;
         DashboardGarden.Visibility = photo ? Visibility.Collapsed : Visibility.Visible;
         foreach (var item in BackgroundButton.ContextMenu.Items.OfType<System.Windows.Controls.MenuItem>()) item.IsChecked = Equals(item.Tag, _appearance.Mode);
+    }
+
+    private void ScheduleHeaderReveal()
+    {
+        if (NavigationTabs == null || _headerRevealPending) return;
+        _headerRevealPending = true;
+        _ = Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() => {
+            _headerRevealPending = false;
+            if (IsLoaded) NavigationTabs.Children.OfType<System.Windows.Controls.RadioButton>().FirstOrDefault(tab => tab.IsChecked == true)?.BringIntoView();
+        }));
     }
 
     private void ShowView(string route, Func<System.Windows.Controls.UserControl> create)

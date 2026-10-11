@@ -189,6 +189,9 @@ internal static class Program
                     if (!liveBadge.IsVisible || liveBadge.ActualWidth <= 0) throw new Exception("Recording state does not show meeting LIVE badge");
                     var badgeRight = liveBadge.TranslatePoint(new Point(liveBadge.ActualWidth, 0), meetingNav).X;
                     if (badgeRight > meetingNav.ActualWidth + 1) throw new Exception("Meeting LIVE badge overflows navigation tab");
+                    var selectedDuringLive = tabs.Children.OfType<RadioButton>().Single(tab => tab.IsChecked == true);
+                    var selectedBounds = selectedDuringLive.TransformToAncestor(headerScroll).TransformBounds(new Rect(selectedDuringLive.RenderSize));
+                    if (selectedBounds.Left < -1 || selectedBounds.Right > headerScroll.ActualWidth + 1) throw new Exception("LIVE badge clipped the selected header tab");
                     Capture(window, output, $"{width}-meeting-live-header.png");
                 } finally { headerMeeting.IsRecording = false; Pump(); }
                 if (((Border)meetingNav.Template.FindName("MeetingLiveBadge", meetingNav)).IsVisible) throw new Exception("Meeting LIVE badge remains after recording stops");
