@@ -58,7 +58,7 @@
           <WrapPanel HorizontalAlignment="Left" Margin="0,12,0,0">
             <Button Content="Tiếp tục trò chuyện" Command="{Binding ResumeConversationCommand}" Visibility="{Binding IsConversationSelected,Converter={StaticResource BoolVisibility}}" Margin="0,0,8,0"/><Button Content="Ghi chú" Command="{Binding OpenNotesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" />
             <Button Visibility="{Binding IsMeetingSelected,Converter={StaticResource BoolVisibility}}" Content="Việc cần làm (AI)" Command="{Binding OpenTasksCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
-            <Button Visibility="{Binding IsMeetingSelected,Converter={StaticResource BoolVisibility}}" Content="Tóm tắt AI" Command="{Binding GenerateSummaryCommand}" Margin="0,0,8,0" Padding="12,6" Cursor="Hand" Style="{StaticResource SecondaryButton}" />
+
             <Grid>
               <Button x:Name="ExportButton" Content="Xuất ▾" Click="ShowExport_Click" Style="{StaticResource SecondaryButton}" />
               <Popup x:Name="ExportPopup" PlacementTarget="{Binding ElementName=ExportButton}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
@@ -73,25 +73,6 @@
             </Grid>
           </WrapPanel>
         <WrapPanel Margin="0,12,0,0"><Border Background="#ECFFFFFF" BorderBrush="#D9E6E1" BorderThickness="1" CornerRadius="7" Padding="8,5" Margin="0,0,8,4"><TextBlock Text="{Binding SelectedSession.FormattedDate}" FontSize="11" Foreground="#65756F" /></Border><Border Background="#ECFFFFFF" BorderBrush="#D9E6E1" BorderThickness="1" CornerRadius="7" Padding="8,5" Margin="0,0,8,4"><TextBlock Text="{Binding SelectedSession.FormattedDuration}" FontSize="11" Foreground="#65756F" /></Border><Border Background="#ECFFFFFF" BorderBrush="#D9E6E1" BorderThickness="1" CornerRadius="7" Padding="8,5" Margin="0,0,8,4"><TextBlock Text="{Binding SelectedSession.AudioSource}" FontSize="11" Foreground="#65756F" /></Border><Border Background="#ECFFFFFF" BorderBrush="#D9E6E1" BorderThickness="1" CornerRadius="7" Padding="8,5" Margin="0,0,8,4"><TextBlock Text="{Binding SelectedSession.Captions.Count,StringFormat={}{0} đoạn phụ đề}" FontSize="11" Foreground="#65756F" /></Border></WrapPanel></StackPanel>
-        <Border DockPanel.Dock="Top" Background="#E8F5F8F7" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,14" MaxHeight="160">
-          <Border.Style>
-            <Style TargetType="Border">
-              <Setter Property="Visibility" Value="Visible" />
-              <Style.Triggers>
-                <DataTrigger Binding="{Binding SelectedSession.Summary}" Value="{x:Null}">
-                  <Setter Property="Visibility" Value="Collapsed" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding SelectedSession.Summary}" Value="">
-                  <Setter Property="Visibility" Value="Collapsed" />
-                </DataTrigger>
-              </Style.Triggers>
-            </Style>
-          </Border.Style>
-          <ScrollViewer x:Name="SummaryScroll" VerticalScrollBarVisibility="Auto"><StackPanel>
-            <TextBlock Text="✨ Tóm tắt cuộc họp bằng AI" FontWeight="Bold" FontSize="13" Foreground="#10B981" Margin="0,0,0,6" />
-            <TextBlock Text="{Binding SelectedSession.Summary}" FontSize="13" Foreground="#334B43" TextWrapping="Wrap" />
-          </StackPanel></ScrollViewer>
-        </Border>
         <TextBlock DockPanel.Dock="Bottom" Text="{Binding Status}" FontSize="11" Foreground="#73827C" Margin="0,8,0,0" />
         <Border DockPanel.Dock="Top" Background="#E8FFFFFF" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="12" Padding="10">
           <Grid>

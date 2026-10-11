@@ -341,7 +341,6 @@ internal static class Program
                         var sample = new MeetingSession { Title = "Cuộc họp dự án • Nội dung dài để kiểm tra bố cục", DurationSeconds = 96, Notes = "# Ghi chú cuộc họp\n- Giữ nguyên toàn bộ nội dung đã ghi nhận.", Summary = string.Join("\n", Enumerable.Range(0, 30).Select(n => "Quyết định cần được giữ đầy đủ trong phần tóm tắt, kể cả khi nội dung dài. " + n)), Captions = Enumerable.Range(0, 12).Select(n => new Caption { Start = n * 8, End = n * 8 + 7, Original = "The recording should remain readable when the window is resized and when a longer sentence arrives.", Vietnamese = "Bản ghi phải dễ đọc khi thay đổi kích thước cửa sổ và khi xuất hiện câu dài hơn." }).ToList() };
                         notebook.Sessions.Add(sample); notebook.SelectedSession = sample; Pump();
                         if (!notebook.HasSelectedSession || !((Border)view.FindName("RecordDetailPanel")).IsVisible || ((StackPanel)view.FindName("EmptyRecordPanel")).IsVisible) throw new Exception("Selecting a notebook record did not replace its empty state");
-                        if (((ScrollViewer)view.FindName("SummaryScroll")).ScrollableHeight <= 0) throw new Exception("Long notebook summary is clipped instead of scrollable");
                         notebook.CaptionSearch = "no-matching-caption-fixture"; Pump();
                         if (notebook.FilteredCaptionCount != 0 || sample.Captions.Count != 12) throw new Exception("Transcript filtering changed stored captions or its visible count");
                         notebook.ClearCaptionSearchCommand.Execute(null); Pump();
@@ -732,7 +731,7 @@ internal static class Program
         completion.IsChecked = false; Pump();
         if (taskEditor.Text != originalTaskText || taskEditor.TextDecorations?.Count > 0) throw new Exception("Unchecking task did not restore original presentation");
         tasksWindow.Close(); Pump();
-        var notesWindow = new MeetingNotesWindow("# Ghi chú\n- Giữ chữ Việt và 日本語.", "Tóm tắt mới", "Cuộc họp dự án") { Owner = window };
+        var notesWindow = new MeetingNotesWindow("# Ghi chú\n- Giữ chữ Việt và 日本語.", string.Join("\n", Enumerable.Range(0, 40).Select(n => "Tóm tắt mới — giữ nội dung dài đầy đủ. " + n)), "Cuộc họp dự án") { Owner = window };
         notesWindow.Show(); Pump();
         if (Descendants(notesWindow).OfType<TextBox>().Any(t => t.IsVisible)) throw new Exception("Notes default view is not Markdown preview");
         ValidateControlLayout(notesWindow, "Notes preview"); Capture(notesWindow, output, "760-notes-markdown.png");
@@ -741,7 +740,10 @@ internal static class Program
         notesEditor.Text += "\nNội dung tự sửa.";
         Descendants(notesWindow).OfType<Button>().Single(b => Equals(b.Content, "Thêm bản tóm tắt")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
         if (!notesWindow.Notes.Contains("Nội dung tự sửa.") || !notesWindow.Notes.Contains("Tóm tắt mới")) throw new Exception("Appending summary replaced existing notes");
-        Capture(notesWindow, output, "760-notes-editor.png"); notesWindow.Close(); Pump();
+        Capture(notesWindow, output, "760-notes-editor.png");
+        Descendants(notesWindow).OfType<Button>().Single(b => Equals(b.Content, "Xem Markdown")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+        if (!Descendants(notesWindow).OfType<ScrollViewer>().Any(s => s.IsVisible && s.ScrollableHeight > 0)) throw new Exception("Long notes cannot scroll in Markdown preview");
+        notesWindow.Close(); Pump();
         var notesReply = new TaskCompletionSource<string>();
         var aiNotes = new MeetingNotesWindow("Ghi chú ban đầu", "", "Hội thoại", _ => notesReply.Task) { Owner = window };
         aiNotes.Show(); Pump(); var pendingNotes = aiNotes.GenerateNotesAsync(); Pump();
