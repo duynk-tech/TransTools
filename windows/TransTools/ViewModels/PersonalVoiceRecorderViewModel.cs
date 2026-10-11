@@ -14,7 +14,7 @@ public partial class PersonalVoiceRecorderViewModel : ObservableObject, IDisposa
 {
     private PersonalVoiceRecorder? _recorder;
     private float[]? _samples;
-    private CancellationTokenSource? _creation, _preview, _script;
+    private CancellationTokenSource? _creation, _preview, _script, _leadIn;
     private bool _disposed;
     private readonly Stopwatch _clock = new();
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(200) };
@@ -28,8 +28,10 @@ public partial class PersonalVoiceRecorderViewModel : ObservableObject, IDisposa
     [ObservableProperty] private string _referenceText = "Xin chào, tôi rất vui được gặp bạn. Hôm nay chúng ta cùng học điều mới.";
     [ObservableProperty] private string _status = "Đọc tự nhiên từ 3 đến 8 giây ở nơi yên tĩnh. Bản thu lưu trên máy.";
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanSave), nameof(CanEdit), nameof(CanPreview), nameof(CanToggle))] private bool _isPreviewing;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanSave), nameof(CanEdit), nameof(CanPreview))] private bool _isPreparing;
+    [ObservableProperty] private int _countdown;
     public bool CanToggle => !IsProcessing && !IsPreviewing;
-    public bool CanEdit => !IsRecording && !IsProcessing && !IsPreviewing;
+    public bool CanEdit => !IsRecording && !IsPreparing && !IsProcessing && !IsPreviewing;
     public bool CanPreview => _samples != null && CanEdit;
     public bool CanSave => HasUsableRecording && CanEdit && !string.IsNullOrWhiteSpace(VoiceName) && VoiceName.Length <= 100;
     public PersonalVoiceRecorderViewModel(Func<bool> audioBusy)
@@ -42,17 +44,29 @@ public partial class PersonalVoiceRecorderViewModel : ObservableObject, IDisposa
         if (value) { RecordedSeconds = 0; _clock.Restart(); _timer.Start(); }
         else { _timer.Stop(); _clock.Stop(); }
     }
-    [RelayCommand] private void ToggleRecording()
+    [RelayCommand(AllowConcurrentExecutions = true)] private async Task ToggleRecordingAsync()
     {
         if (_disposed || !CanToggle) return;
+        if (IsPreparing) { _leadIn?.Cancel(); return; }
         if (IsRecording) { FinishRecording(); return; }
         if (_audioBusy()) { Status = "Dừng phiên đang dùng âm thanh trước khi thu giọng."; return; }
+        using var leadIn = new CancellationTokenSource();
+        _leadIn = leadIn; IsPreparing = true;
         try {
+            for (var remaining = 3; remaining > 0; remaining--) {
+                Countdown = remaining; Status = $"Bắt đầu sau {remaining}…";
+                await Task.Delay(1000, leadIn.Token);
+            }
+            leadIn.Token.ThrowIfCancellationRequested();
+            if (_disposed) return;
+            if (_audioBusy()) { Status = "Dừng phiên đang dùng âm thanh trước khi thu giọng."; return; }
             _recorder?.Dispose(); _recorder = new PersonalVoiceRecorder();
             _recorder.LimitReached += () => System.Windows.Application.Current?.Dispatcher.InvokeAsync(() => { if (!_disposed && IsRecording) FinishRecording(); });
             _samples = null; HasUsableRecording = false;
             _recorder.Start(); IsRecording = true; Status = "Đang thu — đọc rõ, tự nhiên. Tự dừng sau 8 giây.";
-        } catch (Exception ex) { _recorder?.Dispose(); _recorder = null; IsRecording = false; Status = "Chưa thu được: " + ex.Message; }
+        } catch (OperationCanceledException) { if (!_disposed) Status = "Đã hủy đếm ngược. Bản thu trước được giữ nguyên."; }
+        catch (Exception ex) { _recorder?.Dispose(); _recorder = null; IsRecording = false; if (!_disposed) Status = "Chưa thu được: " + ex.Message; }
+        finally { _leadIn = null; if (!_disposed) { IsPreparing = false; Countdown = 0; } }
     }
     private void FinishRecording()
     {
@@ -129,7 +143,7 @@ public partial class PersonalVoiceRecorderViewModel : ObservableObject, IDisposa
     [RelayCommand] private void CancelCreation() { _creation?.Cancel(); _script?.Cancel(); }
     public void Dispose()
     {
-        if (_disposed) return; _disposed = true; _timer.Stop(); _clock.Stop(); _creation?.Cancel(); _preview?.Cancel(); _script?.Cancel(); _recorder?.Dispose(); _recorder = null;
+        if (_disposed) return; _disposed = true; _timer.Stop(); _clock.Stop(); _creation?.Cancel(); _preview?.Cancel(); _script?.Cancel(); _leadIn?.Cancel(); _recorder?.Dispose(); _recorder = null;
         if (_samples != null) Array.Clear(_samples); _samples = null;
     }
 }

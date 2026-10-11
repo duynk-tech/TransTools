@@ -721,6 +721,17 @@ internal static class Program
                 ValidateControlLayout(voiceCaptureWindow, "Personal voice recorder"); Capture(voiceCaptureWindow, output, "personal-voice-recorder.png");
                 voiceCaptureWindow.Close();
             }
+            using (var countdownModel = new PersonalVoiceRecorderViewModel(() => false)) {
+                countdownModel.ToggleRecordingCommand.Execute(null); Pump();
+                if (!countdownModel.IsPreparing || countdownModel.Countdown != 3 || countdownModel.IsRecording || countdownModel.CanEdit || countdownModel.CanPreview || countdownModel.CanSave)
+                    throw new Exception("Voice lead-in must lock edits before opening microphone");
+                countdownModel.ToggleRecordingCommand.Execute(null); Pump();
+                if (countdownModel.IsPreparing || countdownModel.IsRecording || !countdownModel.CanEdit)
+                    throw new Exception("Canceling voice lead-in did not restore idle state");
+                countdownModel.ToggleRecordingCommand.Execute(null); Pump();
+                countdownModel.Dispose(); Pump();
+                if (countdownModel.IsRecording) throw new Exception("Closing voice recorder started microphone after countdown");
+            }
             var license = new LicenseWindow("Supertonic 3", "Fixture license text for visual review.\n" + string.Join("\n", Enumerable.Repeat("Keep the original license readable and selectable.", 25))) { Owner = window }; license.Show(); Pump(); ValidateControlLayout(license, "Model license"); Capture(license, output, "model-license.png"); license.Close();
             var missingLicense = new LicenseWindow("Supertonic 3", "") { Owner = window }; missingLicense.Show(); Pump();
             if (Descendants(missingLicense).OfType<Button>().Any(b => Equals(b.Content, "Đồng ý & Tải") && b.IsEnabled)) throw new Exception("Model install remains enabled without license text"); missingLicense.Close();
