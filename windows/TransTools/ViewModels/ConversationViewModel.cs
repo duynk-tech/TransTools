@@ -134,7 +134,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [RelayCommand] private void DecreaseSendDelay() => SendDelaySeconds = Math.Max(1, SendDelaySeconds - 1);
     private int _conversationGeneration;
     private CancellationTokenSource? _replyCancellation;
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(CanEditLearnerName)), NotifyPropertyChangedFor(nameof(ConversationActionLabel)), NotifyPropertyChangedFor(nameof(ConversationStateLabel)), NotifyPropertyChangedFor(nameof(CanInterruptReply)), NotifyCanExecuteChangedFor(nameof(InterruptReplyCommand)), NotifyCanExecuteChangedFor(nameof(ToggleConversationCommand)), NotifyPropertyChangedFor(nameof(CanListenSuggestion)), NotifyCanExecuteChangedFor(nameof(ListenSuggestionCommand))] private bool _isConversationActive;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(CanEditLearnerName)), NotifyPropertyChangedFor(nameof(CanConfigureTopic)), NotifyPropertyChangedFor(nameof(ConversationActionLabel)), NotifyPropertyChangedFor(nameof(ConversationStateLabel)), NotifyPropertyChangedFor(nameof(CanInterruptReply)), NotifyCanExecuteChangedFor(nameof(InterruptReplyCommand)), NotifyCanExecuteChangedFor(nameof(ToggleConversationCommand)), NotifyPropertyChangedFor(nameof(CanListenSuggestion)), NotifyCanExecuteChangedFor(nameof(ListenSuggestionCommand))] private bool _isConversationActive;
     public string ConversationActionLabel => IsConversationActive ? "Kết thúc" : Messages.Count == 0 ? "Bắt đầu trò chuyện" : "Tiếp tục nói";
     public bool CanToggleConversation => IsConversationActive || (!IsThinking && !IsListening);
     public bool CanSaveConversation => Messages.Count > 0;
@@ -178,10 +178,11 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _recognition;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanEditLearnerName))] private bool _isListening;
     public bool CanChangeSession => !IsThinking && !IsListening;
+    public bool CanConfigureTopic => CanChangeSession && !IsConversationActive && Messages.Count == 0;
     public bool InputReadOnly => IsThinking || IsListening;
     public bool CanEditLearnerName => !IsConversationActive && CanChangeSession;
     public string MicrophoneLabel => IsListening ? "Dừng thu" : "Nói bằng micro";
-    partial void OnIsListeningChanged(bool value) { OnPropertyChanged(nameof(ConversationStateLabel)); OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(MicrophoneLabel)); OnPropertyChanged(nameof(CanSendMessage)); OnPropertyChanged(nameof(InputReadOnly)); ToggleConversationCommand.NotifyCanExecuteChanged(); OnPropertyChanged(nameof(CanListenSuggestion)); ListenSuggestionCommand.NotifyCanExecuteChanged(); }
+    partial void OnIsListeningChanged(bool value) { OnPropertyChanged(nameof(ConversationStateLabel)); OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(CanConfigureTopic)); OnPropertyChanged(nameof(MicrophoneLabel)); OnPropertyChanged(nameof(CanSendMessage)); OnPropertyChanged(nameof(InputReadOnly)); ToggleConversationCommand.NotifyCanExecuteChanged(); OnPropertyChanged(nameof(CanListenSuggestion)); ListenSuggestionCommand.NotifyCanExecuteChanged(); }
     [RelayCommand] private async Task ToggleMicrophoneAsync() {
         if (_disposed || IsThinking) return;
         if (!IsListening) {
@@ -220,14 +221,14 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     [RelayCommand] private void CancelRecognition() => _recognition?.Cancel();
     public void Dispose() { if (_disposed) return; _disposed = true; EndConversation(); }
 
-    partial void OnIsThinkingChanged(bool value) { OnPropertyChanged(nameof(ConversationStateLabel)); OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(CanSendMessage)); OnPropertyChanged(nameof(InputReadOnly)); ToggleConversationCommand.NotifyCanExecuteChanged(); OnPropertyChanged(nameof(CanListenSuggestion)); ListenSuggestionCommand.NotifyCanExecuteChanged(); }
+    partial void OnIsThinkingChanged(bool value) { OnPropertyChanged(nameof(ConversationStateLabel)); OnPropertyChanged(nameof(CanChangeSession)); OnPropertyChanged(nameof(CanConfigureTopic)); OnPropertyChanged(nameof(CanSendMessage)); OnPropertyChanged(nameof(InputReadOnly)); ToggleConversationCommand.NotifyCanExecuteChanged(); OnPropertyChanged(nameof(CanListenSuggestion)); ListenSuggestionCommand.NotifyCanExecuteChanged(); }
     public bool CanShowTranslation => !TargetLanguage.Contains("Việt", StringComparison.OrdinalIgnoreCase);
 
     public ConversationViewModel(Func<bool>? meetingBusy = null, TransTools.Services.Conversation.ConversationPreferencesStore? preferences = null, Func<Task>? beginListening = null, Func<string, string, CancellationToken, Task<string>>? generateReply = null, Func<string, string, CancellationToken, Task>? speakReply = null, Func<string, CancellationToken, Task<string>>? recognize = null, Func<string, string, CancellationToken, Task<string>>? generateHelp = null)
     {
         _meetingBusy = meetingBusy ?? (() => false);
         _beginListeningOverride = beginListening; _generateReplyOverride = generateReply; _speakReplyOverride = speakReply; _recognizeOverride = recognize; _generateHelpOverride = generateHelp;
-        Messages.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(ConversationActionLabel)); OnPropertyChanged(nameof(CanSaveConversation)); CancelHelp(true); };
+        Messages.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(CanConfigureTopic)); OnPropertyChanged(nameof(ConversationActionLabel)); OnPropertyChanged(nameof(CanSaveConversation)); CancelHelp(true); };
         _preferences = preferences ?? new(); var saved = _preferences.Load(); _sendDelaySeconds = saved.DelaySeconds; _learnerName = saved.LearnerName; _showMiniTranslation = saved.ShowMiniTranslation; _suggestionsEnabled = saved.SuggestionsEnabled;
         try { foreach (var session in _store.Load().OrderByDescending(s => s.UpdatedAt)) Sessions.Add(session); }
         catch (Exception ex) { Status = "Không đọc được hội thoại: " + ex.Message; }

@@ -340,6 +340,7 @@ internal static class Program
                         conversation.IsListening = false; conversation.IsThinking = true; Pump();
                         if (!delay.IsEnabled || !((TextBox)chatView.FindName("ConversationInput")).IsReadOnly) throw new Exception("Processing controls allow conflicting draft edits or block delay adjustment");
                         conversation.IsThinking = false; Pump();
+                        if (((ComboBox)chatView.FindName("ConversationLanguagePicker")).IsEnabled || ((ComboBox)chatView.FindName("ConversationTopicPicker")).IsEnabled) throw new Exception("Existing conversation allows changing its language or topic");
                         var optionsScroll = (ScrollViewer)chatView.FindName("ConversationOptionsScroll");
                         if (optionsScroll.ViewportHeight > 65 || optionsScroll.ViewportWidth < 300) throw new Exception("Conversation options wrapped into multiple rows or collapsed");
                         optionsScroll.ScrollToRightEnd(); Pump();
