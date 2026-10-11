@@ -2,6 +2,7 @@ using System.Text.Json;
 using TransTools.Models;
 using TransTools.Services.Learning;
 using TransTools.Services.Storage;
+using TransTools.Services.Speech;
 public static class LearningTests
 {
     private static void Check(bool value,string label) { if (!value) throw new Exception(label); Console.WriteLine("PASS: " + label); }
