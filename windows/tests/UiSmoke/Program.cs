@@ -589,6 +589,10 @@ internal static class Program
             Pump();
             if (!mascotMenu.IsOpen) throw new Exception("Mascot right click did not open action popup");
             ValidateControlLayout((FrameworkElement)mascotMenu.Child, "Mascot actions");
+            var mascotPopupBody = (FrameworkElement)mascotMenu.Child;
+            var targetCenter = mascotImage.PointToScreen(new Point(mascotImage.ActualWidth / 2, mascotImage.ActualHeight / 2));
+            var popupCenter = mascotPopupBody.PointToScreen(new Point(mascotPopupBody.ActualWidth / 2, mascotPopupBody.ActualHeight / 2));
+            if (Math.Abs(targetCenter.Y - popupCenter.Y) > 3) throw new Exception("Mascot popup is not vertically centered on character");
             CaptureElement((FrameworkElement)mascotMenu.Child, output, "mascot-action-popup.png");
             mascotFixture.SetMeetingState(true, false); Pump();
             var mascotMeetingAction = (Button)mascotFixture.FindName("MeetingActionButton");

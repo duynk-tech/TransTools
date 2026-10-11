@@ -33,7 +33,13 @@ public partial class ChipChipMascotWindow : Window
         _reminderTimer.Stop(); _reminderTimer.Start();
     }
     public ChipChipMascotWindow() {
-        InitializeComponent(); SetBinding(TitleProperty, new System.Windows.Data.Binding("DisplayName") { Source = TransTools.Services.Experience.AssistantIdentity.Shared }); Left = SystemParameters.WorkArea.Right - Width - 30; Top = SystemParameters.WorkArea.Bottom - Height - 30;
+        InitializeComponent();
+        MascotMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Custom;
+        MascotMenu.CustomPopupPlacementCallback = (popupSize, targetSize, offset) => [
+            new System.Windows.Controls.Primitives.CustomPopupPlacement(new Point(-popupSize.Width, (targetSize.Height - popupSize.Height) / 2), System.Windows.Controls.Primitives.PopupPrimaryAxis.Vertical),
+            new System.Windows.Controls.Primitives.CustomPopupPlacement(new Point(targetSize.Width + 10, (targetSize.Height - popupSize.Height) / 2), System.Windows.Controls.Primitives.PopupPrimaryAxis.Vertical)
+        ];
+        SetBinding(TitleProperty, new System.Windows.Data.Binding("DisplayName") { Source = TransTools.Services.Experience.AssistantIdentity.Shared }); Left = SystemParameters.WorkArea.Right - Width - 30; Top = SystemParameters.WorkArea.Bottom - Height - 30;
         IsVisibleChanged += (_, _) => { if (!IsVisible) { MascotMenu.IsOpen = false; ResetAnimation(); } };
         _reminderTimer.Tick += (_, _) => { _reminderTimer.Stop(); _reminding = false; ResetAnimation(); if (!_wasVisible) Hide(); };
         Closed += (_, _) => { _reminderTimer.Stop(); ResetAnimation(); };
