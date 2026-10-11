@@ -31,9 +31,15 @@ public partial class LearningView : UserControl
     }
 
     private void TodayTab_Checked(object sender, RoutedEventArgs e) { ShowSection("today"); }
+    private void Progress_Click(object sender, RoutedEventArgs e) {
+        foreach (var tab in new[] { TodayTab, AlphabetTab, VocabularyTab, PracticeTab }) tab.IsChecked = false;
+        ShowSection("progress");
+    }
+
     private void PracticeTab_Checked(object sender, RoutedEventArgs e) => ShowSection("practice");
     private void StartReview_Click(object sender,RoutedEventArgs e) { VocabularyTab.IsChecked = true; ShowSection("review"); _viewModel.StartReviewCommand.Execute(null); }
     private void ShowSection(string section) {
+        if (ProgressPanel != null) ProgressPanel.Visibility=section=="progress" ? Visibility.Visible : Visibility.Collapsed;
         if (VocabularyLibrary != null) VocabularyLibrary.Visibility=section=="vocabulary" ? Visibility.Visible : Visibility.Collapsed;
         if (VocabTabGrid != null) VocabTabGrid.Visibility=section=="review" ? Visibility.Visible : Visibility.Collapsed;
         if (AlphabetTabBorder != null) AlphabetTabBorder.Visibility=section=="alphabet" ? Visibility.Visible : Visibility.Collapsed;

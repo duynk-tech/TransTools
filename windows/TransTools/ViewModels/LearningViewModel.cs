@@ -104,6 +104,12 @@ public partial class LearningViewModel : ObservableObject
     private Dictionary<string,int> _reviewHistory = new();
     public ObservableCollection<VocabularyItem> VisibleVocabulary { get; } = new();
     public int DueCount => VisibleVocabulary.Count(w => w.DueAt <= DateTime.Now);
+    public int VocabularyCount => VisibleVocabulary.Count;
+    public int MasteredCount => VisibleVocabulary.Count(word => word.IsMastered);
+    public int LearningCount => VocabularyCount - MasteredCount;
+    public int DeepMemoryCount => VisibleVocabulary.Count(word => word.IntervalDays >= 14);
+    public int ConsolidatingCount => VisibleVocabulary.Count(word => word.IntervalDays >= 3 && word.IntervalDays < 14);
+    public int NewMemoryCount => VisibleVocabulary.Count(word => word.IntervalDays < 3);
     public bool IsJapanese => SelectedLanguage == "ja";
     partial void OnSelectedLanguageChanged(string value) { RecordingPlayer.Stop(); RefreshVocabulary(); RefreshContent(); LoadAlphabetList(); OnPropertyChanged(nameof(IsJapanese)); if (_initialized && _canSaveVocabulary) { try { Persist(VocabularyList); } catch (Exception ex) { Status = ex.Message; } } }
     partial void OnSelectedWordChanged(VocabularyItem? value) => IsFlashcardFlipped = false;
@@ -114,6 +120,7 @@ public partial class LearningViewModel : ObservableObject
     private void UpdateProgress() {
         WordsLearnedToday = _reviewHistory.GetValueOrDefault(DateTime.Today.ToString("yyyy-MM-dd"));
         DailyStreak = SrsScheduler.Streak(_reviewHistory, DateTime.Today); OnPropertyChanged(nameof(DueCount));
+        foreach (var name in new[] { nameof(VocabularyCount), nameof(MasteredCount), nameof(LearningCount), nameof(DeepMemoryCount), nameof(ConsolidatingCount), nameof(NewMemoryCount) }) OnPropertyChanged(name);
     }
     private void Persist(IEnumerable<VocabularyItem> words, Dictionary<string,int>? history = null) => _store.Save(new LearningState(words.ToList(), history ?? _reviewHistory, Math.Clamp(DailyGoal,1,100), SelectedLanguage, LearningGoal, LearningLevel));
     [RelayCommand] private void SaveGoal() { if (!_canSaveVocabulary) return; try { DailyGoal = Math.Clamp(DailyGoal,1,100); Persist(VocabularyList); Status = "Đã lưu mục tiêu học"; } catch (Exception ex) { Status = ex.Message; } }
