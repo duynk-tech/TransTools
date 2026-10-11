@@ -20,8 +20,8 @@ public partial class PersonalVoiceRecorderWindow : Window
     }
     private void RenderGuide()
     {
-        var words = _model.ReferenceText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var active = _model.IsRecording && _model.GuideEnabled ? Math.Min(words.Length - 1, (int)(_model.RecordedSeconds / 8 * words.Length)) : -1;
+        var words = _model.ReferenceText.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        var active = _model.IsRecording && _model.GuideEnabled ? Math.Min(words.Length - 1, (int)(_model.RecordedSeconds / 7.5 * words.Length)) : -1;
         if (_renderedText == _model.ReferenceText && _renderedWord == active) return;
         _renderedText = _model.ReferenceText; _renderedWord = active;
         ReadingBoard.Inlines.Clear();
