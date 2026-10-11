@@ -382,7 +382,7 @@ internal static class Program
                         var model = (LearningViewModel)vocabularyView.DataContext;
                         if (model.VisibleVocabulary.Count == 0) {
                             model.VisibleVocabulary.Add(new TransTools.Models.VocabularyItem { Word = "follow up", Phonetic = "/ˈfɒləʊ ʌp/", Meaning = "Theo dõi và tiếp tục xử lý", ExampleSentence = "I will follow up with the team after the meeting.", ExampleTranslation = "Tôi sẽ trao đổi tiếp với nhóm sau cuộc họp." });
-                            model.VisibleVocabulary.Add(new TransTools.Models.VocabularyItem { Word = "deadline", MasteryScore = 5, Meaning = "Hạn hoàn thành", ExampleSentence = "We need to agree on the deadline." });
+                            model.VisibleVocabulary.Add(new TransTools.Models.VocabularyItem { Word = "deadline", MasteryScore = 5, DueAt = DateTime.Now.AddDays(7), Meaning = "Hạn hoàn thành", ExampleSentence = "We need to agree on the deadline." });
                         }
                         Pump(); ValidateControlLayout(window, "Notebook vocabulary");
                         Capture(window, output, $"{width}-notebook-vocabulary.png");
@@ -393,7 +393,11 @@ internal static class Program
                         if (words.Items.Cast<TransTools.Models.VocabularyItem>().Any(word => word.MasteryScore < 4)) throw new Exception("Mastered filter contains learning words");
                         ((RadioButton)vocabularyView.FindName("LearningWords")).IsChecked = true; Pump();
                         if (words.Items.Cast<TransTools.Models.VocabularyItem>().Any(word => word.MasteryScore >= 4)) throw new Exception("Learning filter contains mastered words");
+                        ((RadioButton)vocabularyView.FindName("DueWords")).IsChecked = true; Pump();
+                        if (words.Items.Count == 0 || words.Items.Cast<TransTools.Models.VocabularyItem>().Any(word => word.DueAt > DateTime.Now)) throw new Exception("Due filter includes words not yet due");
                         ((RadioButton)vocabularyView.FindName("AllWords")).IsChecked = true; Pump();
+                        search.Text = "fɒləʊ"; Pump();
+                        if (words.Items.Count != 1 || model.VisibleVocabulary.Count != count) throw new Exception("Phonetic search did not preserve the review vocabulary");
                         search.Text = "follow up"; Pump();
                         if (words.Items.Count != 1 || model.VisibleVocabulary.Count != count) throw new Exception("Notebook search changed the learning vocabulary collection");
                         search.Text = "not-a-word"; Pump();

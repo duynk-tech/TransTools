@@ -16,9 +16,10 @@ public partial class NotebookVocabularyView : UserControl
         DataContext = model;
         // Independent view: searching here cannot filter the learning/review collection.
         _words = new ListCollectionView(model.VisibleVocabulary);
-        _words.Filter = item => item is VocabularyItem word && (AllWords.IsChecked == true || (MasteredWords.IsChecked == true ? word.MasteryScore >= 4 : word.MasteryScore < 4)) && (string.IsNullOrWhiteSpace(SearchBox.Text) ||
+        _words.Filter = item => item is VocabularyItem word && (AllWords.IsChecked == true || (DueWords.IsChecked == true ? word.DueAt <= DateTime.Now : MasteredWords.IsChecked == true ? word.MasteryScore >= 4 : word.MasteryScore < 4)) && (string.IsNullOrWhiteSpace(SearchBox.Text) ||
             word.Word.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase) ||
             word.Meaning.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase) ||
+            word.Phonetic.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase) ||
             word.ExampleSentence.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase));
         WordsList.ItemsSource = _words;
         model.VisibleVocabulary.CollectionChanged += (_, _) => UpdateEmpty();
