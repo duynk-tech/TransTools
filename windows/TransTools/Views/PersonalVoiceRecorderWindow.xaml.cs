@@ -7,6 +7,8 @@ namespace TransTools.Views;
 public partial class PersonalVoiceRecorderWindow : Window
 {
     private readonly PersonalVoiceRecorderViewModel _model;
+    private string? _renderedText;
+    private int _renderedWord = int.MinValue;
     public PersonalVoiceRecorderWindow(PersonalVoiceRecorderViewModel model)
     {
         InitializeComponent(); _model = model; DataContext = model; model.PropertyChanged += ModelChanged;
@@ -18,12 +20,14 @@ public partial class PersonalVoiceRecorderWindow : Window
     }
     private void RenderGuide()
     {
-        ReadingBoard.Inlines.Clear();
         var words = _model.ReferenceText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var active = _model.IsRecording && _model.GuideEnabled ? Math.Min(words.Length - 1, (int)(_model.RecordedSeconds / 8 * words.Length)) : -1;
+        if (_renderedText == _model.ReferenceText && _renderedWord == active) return;
+        _renderedText = _model.ReferenceText; _renderedWord = active;
+        ReadingBoard.Inlines.Clear();
         for (var i = 0; i < words.Length; i++) {
             var word = new Run(words[i] + (i + 1 < words.Length ? " " : ""));
-            if (i == active) { word.Background = new SolidColorBrush(Color.FromRgb(214, 237, 228)); word.Foreground = new SolidColorBrush(Color.FromRgb(40, 117, 104)); }
+            if (i == active) { word.Foreground = new SolidColorBrush(Color.FromRgb(40, 117, 104)); word.TextDecorations = TextDecorations.Underline; }
             ReadingBoard.Inlines.Add(word);
         }
     }
