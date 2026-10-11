@@ -22,6 +22,19 @@ public sealed class PersonalVoiceStore(string root)
         }
         return profiles.OrderByDescending(profile=>profile.CreatedAt).ToArray();
     }
+    public float[] LoadEmbedding(Guid id)
+    {
+        var path = VoicePath(id);
+        var file = new FileInfo(path);
+        if (!file.Exists || file.Length > 65536) throw new InvalidDataException("Không đọc được dữ liệu giọng.");
+        using var json = JsonDocument.Parse(File.ReadAllText(path), new JsonDocumentOptions { MaxDepth = 8 });
+        var values = json.RootElement.GetProperty("speaker_emb");
+        if (values.ValueKind != JsonValueKind.Array || values.GetArrayLength() != 192) throw new InvalidDataException("Dữ liệu giọng không hợp lệ.");
+        var embedding = values.EnumerateArray().Select(value => value.GetSingle()).ToArray();
+        VieNeuSpeakerEncoder.ValidateEmbedding(embedding);
+        return embedding;
+    }
+
     public PersonalVoiceProfile Save(string name,string referenceText,float[] samples,float[] embedding)
     {
         if(string.IsNullOrWhiteSpace(name) || name.Length>100 || referenceText.Length>2000) throw new ArgumentException("Tên hoặc đoạn đọc không hợp lệ.");

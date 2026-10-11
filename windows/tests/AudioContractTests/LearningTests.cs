@@ -35,6 +35,10 @@ public static class LearningTests
             var voiceStore=new PersonalVoiceStore(Path.Combine(root,"PersonalVoice"));
             var profile=voiceStore.Save("Giọng của tôi","Xin chào 日本語",ReadFloats("speaker-input.f32"),Enumerable.Repeat(.1f,192).ToArray());
             Check(voiceStore.Load().Single().ReferenceText=="Xin chào 日本語" && File.Exists(voiceStore.VoicePath(profile.Id)),"personal voice profile and embedding persist atomically");
+            Check(voiceStore.LoadEmbedding(profile.Id).Length==192,"saved personal embedding validates before synthesis");
+            File.WriteAllText(voiceStore.VoicePath(profile.Id),"{\"speaker_emb\":[0]}");
+            bool invalidVoice=false;try {voiceStore.LoadEmbedding(profile.Id);} catch(InvalidDataException) {invalidVoice=true;}
+            Check(invalidVoice,"corrupt personal embedding cannot enter synthesis");
             using(var wav=new BinaryReader(File.OpenRead(Path.Combine(root,"PersonalVoice",profile.Id.ToString("D"),"reference.wav")))) {
                 wav.BaseStream.Position=24;Check(wav.ReadInt32()==16000 && wav.BaseStream.Length==96044,"personal reference WAV is bounded 16kHz mono PCM");
             }
