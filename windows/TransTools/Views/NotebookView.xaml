@@ -3,7 +3,7 @@
 <Style x:Key="NotebookFontButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}"><Setter Property="Width" Value="30"/><Setter Property="Height" Value="32"/><Setter Property="MinHeight" Value="32"/><Setter Property="Padding" Value="0"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/></Style>
 <Style x:Key="RecordKindOption" TargetType="RadioButton" BasedOn="{StaticResource NotebookMode}"><Setter Property="Width" Value="Auto"/><Setter Property="Height" Value="36"/><Setter Property="HorizontalAlignment" Value="Stretch"/></Style>
 </UserControl.Resources>
-  <Grid Margin="-18" Background="#C7F5F8F7">
+  <Grid Margin="0" Background="#C7F5F8F7">
    <Grid.RowDefinitions><RowDefinition Height="58"/><RowDefinition Height="*"/></Grid.RowDefinitions>
    <Border Background="#EDFFFFFF" BorderBrush="#C2DDD5" BorderThickness="0,0,0,1"><UniformGrid Columns="2" Margin="18,6">
     <RadioButton x:Name="RecordsTab" GroupName="NotebookSections" Style="{StaticResource NotebookTab}" IsChecked="True" Checked="Records_Checked" FontSize="15" AutomationProperties.Name="Cuộc họp &amp; Hội thoại"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8F2;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,9,0"/><TextBlock Text="Cuộc họp &amp; Hội thoại" VerticalAlignment="Center"/><Border Background="#E0EEE8" CornerRadius="12" Padding="7,3" Margin="9,0,0,0"><TextBlock x:Name="RecordTabCount" Text="{Binding Sessions.Count}" FontSize="12" Foreground="#287568"/></Border></StackPanel></RadioButton>

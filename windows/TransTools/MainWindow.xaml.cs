@@ -135,7 +135,13 @@ public partial class MainWindow : Window
         if (MainContentGrid == null) return;
         if (!_views.TryGetValue(route, out var view)) { view = create(); _views.Add(route, view); }
         if (MainContentGrid.Children.Contains(view)) return;
-        MainContentGrid.Margin = route == "settings" ? new Thickness(0) : new Thickness(18);
+        MainContentGrid.Margin = route switch {
+            "settings" or "notebook" => new Thickness(0),
+            "translate" or "reader" => new Thickness(24),
+            "conversation" => new Thickness(20),
+            "meeting" => new Thickness(16, 10, 16, 14),
+            _ => new Thickness(18)
+        };
         MainContentGrid.Children.Clear(); MainContentGrid.Children.Add(view);
     }
 
