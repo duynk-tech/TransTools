@@ -225,6 +225,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     public string[] TranslationModes { get; } = { "Google", "AI", "Tiếng gốc" };
     public ObservableCollection<Caption> Captions { get; } = new();
     public event Action<string, string>? OnSubtitleUpdated;
+    public event Action<Caption>? OnCaptionTranslationUpdated;
     public event Action<Caption>? OnCaptionPresented;
     public event Action<Caption>? OnCaptionIncoming;
     public event Action? OnCaptionLayoutChanged;
@@ -442,7 +443,13 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
                     } catch (OperationCanceledException) { throw; }
                     catch (Exception ex) { Ui(() => Status = "Lỗi dịch: " + ex.Message); }
                 }, async (caption, backfill, cancellation) => {
-                    if (backfill) return;
+                    if (backfill) {
+                        await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
+                            cancellation.ThrowIfCancellationRequested();
+                            OnCaptionTranslationUpdated?.Invoke(caption);
+                        });
+                        return;
+                    }
                     await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
                         cancellation.ThrowIfCancellationRequested();
                         OnCaptionIncoming?.Invoke(caption);

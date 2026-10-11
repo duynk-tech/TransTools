@@ -1064,6 +1064,15 @@ internal static class Program
             if (hud.HistoryCount != 30) throw new Exception("HUD display mode modified history");
             Capture(hud, output, "subtitles-mode-" + mode + ".png");
         }
+        var oldCaption = new Caption { Original = "Previous retained source", Vietnamese = "Previous translation" };
+        var currentCaption = new Caption { Original = "Latest source" };
+        hud.UpdateCaption(oldCaption); hud.UpdateCaption(currentCaption); Pump();
+        oldCaption.Vietnamese = "Backfilled old translation"; hud.UpdateTranslation(oldCaption); Pump();
+        if (((TextBlock)hud.FindName("TranslatedText")).Text != "Latest source" || hud.HistoryCount != 30) throw new Exception("Backfill replayed an old HUD caption");
+        currentCaption.Vietnamese = "Latest translated sentence"; hud.UpdateTranslation(currentCaption); Pump();
+        if (((TextBlock)hud.FindName("TranslatedText")).Text != currentCaption.Vietnamese || hud.HistoryCount != 30) throw new Exception("Backfill failed to refresh the visible caption");
+        hud.UpdateTranslation(new Caption { Original = "Unseen old caption", Vietnamese = "Must not show" }); Pump();
+        if (((TextBlock)hud.FindName("TranslatedText")).Text != currentCaption.Vietnamese || hud.HistoryCount != 30) throw new Exception("Unseen backfill changed the HUD position or history");
         var last = ((TextBlock)hud.FindName("TranslatedText")).Text; hud.UpdateSubtitle("", ""); Pump();
         if (hud.HistoryCount != 30 || ((TextBlock)hud.FindName("TranslatedText")).Text != last) throw new Exception("HUD lost a completed caption or retained unbounded history");
         var original = (MenuItem)hud.FindName("ShowOriginal"); original.IsChecked = false; original.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));

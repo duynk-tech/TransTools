@@ -47,6 +47,17 @@ public partial class FloatingSubtitleWindow : Window
             RenderContent();
         });
     }
+    public void UpdateTranslation(Caption caption)
+    {
+        Dispatcher.Invoke(() => {
+            var index = _history.ToList().FindIndex(item => item.Id == caption.Id);
+            var snapshot = Copy(caption);
+            if (index >= 0) _history[index] = snapshot;
+            if (_current?.Id == caption.Id) _current = snapshot;
+            if (_incoming?.Id == caption.Id) _incoming = snapshot;
+            RenderContent();
+        });
+    }
     public void UpdateIncoming(Caption caption)
     {
         Dispatcher.Invoke(() => { if (_current?.Id == caption.Id || (_incoming != null && caption.Start < _incoming.Start)) return; _incoming = Copy(caption); RenderContent(); });

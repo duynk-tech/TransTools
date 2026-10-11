@@ -67,6 +67,7 @@ public partial class MainWindow : Window
 
         _meetingViewModel.OnCaptionPresented += caption => _subtitleWindow?.UpdateCaption(caption);
         _meetingViewModel.OnCaptionIncoming += caption => _subtitleWindow?.UpdateIncoming(caption);
+        _meetingViewModel.OnCaptionTranslationUpdated += caption => _subtitleWindow?.UpdateTranslation(caption);
 
         _meetingViewModel.OnSessionSaved += session => _ = _notebookViewModel.LoadSessionsAsync();
 
