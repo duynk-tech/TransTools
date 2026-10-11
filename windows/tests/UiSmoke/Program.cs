@@ -22,6 +22,19 @@ internal static class Program
         PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Error;
         try {
             if (CaptionDisplayTextConverter.Select("source", "translated", "translation", false) != "translated" || CaptionDisplayTextConverter.Select("source", "", "translation", false) != "source" || CaptionDisplayTextConverter.Select("source", "translated", "original", true) != "") throw new Exception("Caption display fallback is incorrect");
+            var credentialFixture = Path.Combine(Path.GetTempPath(), "TransTools-credentials-" + Guid.NewGuid());
+            try {
+                var store = new SecureCredentialStore(credentialFixture);
+                store.SaveActiveProvider("ollama");
+                if (store.LoadConfiguredProvider() != null) throw new Exception("Ollama is available without a selected model");
+                store.SaveModel("ollama", "llama3.2");
+                var local = store.LoadConfiguredProvider();
+                if (local?.ProviderId != "ollama" || local.SelectedModel != "llama3.2" || local.ApiKey != "") throw new Exception("Keyless Ollama configuration is rejected");
+                store.SaveActiveProvider("openai"); store.SaveModel("openai", "fixture-model");
+                if (store.LoadConfiguredProvider() != null) throw new Exception("Cloud provider is available without an API key");
+                store.SaveApiKey("openai", "fixture-key");
+                if (store.LoadConfiguredProvider()?.ApiKey != "fixture-key") throw new Exception("Encrypted cloud credentials did not round trip");
+            } finally { if (Directory.Exists(credentialFixture)) Directory.Delete(credentialFixture, true); }
             CheckMeetingSpeechQueue();
             var app = new TransTools.App(); app.InitializeComponent();
             var languageFlags = new LanguageFlagConverter();

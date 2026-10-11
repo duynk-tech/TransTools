@@ -10,10 +10,10 @@ public class SecureCredentialStore
 {
     private readonly string _storageDir;
 
-    public SecureCredentialStore()
+    public SecureCredentialStore(string? storageDirectory = null)
     {
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        _storageDir = Path.Combine(appData, "TransTools", "secure");
+        _storageDir = storageDirectory ?? Path.Combine(appData, "TransTools", "secure");
         Directory.CreateDirectory(_storageDir);
     }
 
