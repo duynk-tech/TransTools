@@ -30,6 +30,8 @@ public partial class QuickTranslateViewModel : ObservableObject
         if (!CanConfigure || !Array.Exists(QuickPhrases, item => item == phrase)) return;
         SourceText = phrase;
     }
+    public string SourceHeading => "Văn bản gốc · " + (SourceLanguage == "auto" ? "Tự động" : SourceLanguage.ToUpperInvariant());
+    public string TargetHeading => "Bản dịch · " + TargetLanguage.ToUpperInvariant();
     public string CharacterCountLabel => new StringInfo(SourceText).LengthInTextElements.ToString("N0", CultureInfo.GetCultureInfo("vi-VN")) + " ký tự";
 
     [ObservableProperty]
@@ -72,9 +74,11 @@ public partial class QuickTranslateViewModel : ObservableObject
     private string _grammarExplanation = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SourceHeading))]
     private string _sourceLanguage = "auto";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TargetHeading))]
     private string _targetLanguage = "vi";
 
     [ObservableProperty]
