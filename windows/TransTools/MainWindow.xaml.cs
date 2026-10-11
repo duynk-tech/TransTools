@@ -113,6 +113,7 @@ public partial class MainWindow : Window
         if (MainContentGrid == null) return;
         if (!_views.TryGetValue(route, out var view)) { view = create(); _views.Add(route, view); }
         if (MainContentGrid.Children.Contains(view)) return;
+        MainContentGrid.Margin = route == "settings" ? new Thickness(0) : new Thickness(18);
         MainContentGrid.Children.Clear(); MainContentGrid.Children.Add(view);
     }
 
