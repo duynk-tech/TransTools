@@ -590,6 +590,12 @@ internal static class Program
             if (!mascotMenu.IsOpen) throw new Exception("Mascot right click did not open action popup");
             ValidateControlLayout((FrameworkElement)mascotMenu.Child, "Mascot actions");
             CaptureElement((FrameworkElement)mascotMenu.Child, output, "mascot-action-popup.png");
+            mascotFixture.SetMeetingState(true, false); Pump();
+            var mascotMeetingAction = (Button)mascotFixture.FindName("MeetingActionButton");
+            if (mascotMeetingAction.IsEnabled || ((TextBlock)mascotFixture.FindName("MeetingActionLabel")).Text != "Dừng cuộc họp") throw new Exception("Mascot meeting transition has stale action state");
+            mascotFixture.SetMeetingState(true, true); Pump();
+            CaptureElement((FrameworkElement)mascotMenu.Child, output, "mascot-meeting-popup.png");
+            mascotFixture.SetMeetingState(false, true); Pump();
             var meetingRequests = 0; mascotFixture.MeetingRequested += () => meetingRequests++;
             Descendants(mascotMenu.Child).OfType<Button>().First(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Bắt đầu cuộc họp").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
             if (meetingRequests != 1 || mascotMenu.IsOpen) throw new Exception("Mascot meeting action did not close popup and dispatch once");

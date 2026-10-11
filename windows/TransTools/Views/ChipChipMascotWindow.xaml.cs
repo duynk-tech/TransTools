@@ -16,6 +16,17 @@ public partial class ChipChipMascotWindow : Window
     private void OpenApplication_Click(object sender, RoutedEventArgs e) { MascotMenu.IsOpen = false; Application.Current.MainWindow.Show(); Application.Current.MainWindow.Activate(); }
     private void ShowMenu(object sender, MouseButtonEventArgs e) { MascotMenu.IsOpen = true; e.Handled = true; }
     private void CloseMenu(object sender, RoutedEventArgs e) => MascotMenu.IsOpen = false;
+    public void SetMeetingState(bool recording, bool canToggle)
+    {
+        MeetingActionButton.IsEnabled = canToggle;
+        MeetingActionLabel.Text = recording ? "Dừng cuộc họp" : "Bắt đầu cuộc họp";
+        System.Windows.Automation.AutomationProperties.SetName(MeetingActionButton, MeetingActionLabel.Text);
+        MeetingStateLabel.Text = !canToggle ? "Đang xử lý cuộc họp…" : recording ? "Đang ghi chú cuộc họp" : "Hỗ trợ cuộc họp và học ngôn ngữ";
+        var brush = new System.Windows.Media.BrushConverter();
+        MeetingActionButton.Background = (System.Windows.Media.Brush)brush.ConvertFromString(recording ? "#FFF1F2" : "#EAF4F0")!;
+        MeetingActionButton.Foreground = (System.Windows.Media.Brush)brush.ConvertFromString(recording ? "#DC2626" : "#287568")!;
+        MeetingActionButton.BorderBrush = (System.Windows.Media.Brush)brush.ConvertFromString(recording ? "#FECDD3" : "#A8CEC3")!;
+    }
     public void ShowReminder(string text) {
         _wasVisible = IsVisible; _reminding = true; BubbleText.Text = text; Show(); SpeechBubble.Visibility = Visibility.Visible;
         _reminderTimer.Stop(); _reminderTimer.Start();
