@@ -79,7 +79,7 @@
             </Grid.ColumnDefinitions>
 
             
-            <Border Grid.Column="0" Background="#FFFFFF" CornerRadius="16" Padding="24" Margin="0,0,16,0" Cursor="Hand" MouseLeftButtonDown="Flashcard_Click">
+            <Border Grid.Column="0" Background="#FFFFFF" BorderBrush="#BDD9D2" BorderThickness="1" CornerRadius="16" Padding="24" Margin="0,0,16,0" Cursor="Hand" MouseLeftButtonDown="Flashcard_Click">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Text="THẺ TỪ VỰNG (NHẤP ĐỂ LẬT)" FontSize="11" FontWeight="Bold" Foreground="#73827C" HorizontalAlignment="Center" />
 
@@ -130,14 +130,14 @@
                                 </Style>
                             </StackPanel.Style>
                             <TextBlock Text="{Binding SelectedWord.Meaning}" FontSize="20" FontWeight="Bold" Foreground="#287568" HorizontalAlignment="Center" TextWrapping="Wrap" />
-                            <TextBlock Text="{Binding SelectedWord.ExampleSentence}" FontSize="13" Foreground="#334B43" HorizontalAlignment="Center" TextWrapping="Wrap" Margin="0,10,0,0" />
+                            <TextBlock Text="{Binding SelectedWord.ExampleSentence}" FontSize="13" Foreground="#334B43" HorizontalAlignment="Center" Margin="0,10,0,0" />
                         </StackPanel>
                     </Grid>
                 </DockPanel>
             </Border>
 
             
-            <Border Grid.Column="1" Background="#FFFFFF" CornerRadius="16" Padding="16">
+            <Border Grid.Column="1" Background="#FFFFFF" BorderBrush="#BDD9D2" BorderThickness="1" CornerRadius="16" Padding="16">
                 <DockPanel>
                     <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
                         <TextBlock Text="Danh sách từ vựng" FontSize="15" FontWeight="Bold" Foreground="#243D35" />
@@ -145,9 +145,9 @@
 
                     <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
                         <TextBlock Text="Thêm từ vựng" FontWeight="Bold" Foreground="#243D35" />
-                        <TextBox Text="{Binding NewWord, UpdateSourceTrigger=PropertyChanged}" ToolTip="Từ hoặc cụm từ" Margin="0,8,0,6" />
-                        <TextBox Text="{Binding NewPhonetic, UpdateSourceTrigger=PropertyChanged}" ToolTip="Phiên âm (không bắt buộc)" Margin="0,0,0,6" />
-                        <TextBox Text="{Binding NewMeaning, UpdateSourceTrigger=PropertyChanged}" ToolTip="Nghĩa tiếng Việt" Margin="0,0,0,8" />
+                        <TextBlock Text="Từ hoặc cụm từ" Foreground="#65756F" FontSize="12" Margin="0,10,0,0" /><TextBox Text="{Binding NewWord, UpdateSourceTrigger=PropertyChanged}" ToolTip="Từ hoặc cụm từ" Margin="0,8,0,6" />
+                        <TextBlock Text="Phiên âm · Không bắt buộc" Foreground="#65756F" FontSize="12" Margin="0,4,0,6" /><TextBox Text="{Binding NewPhonetic, UpdateSourceTrigger=PropertyChanged}" ToolTip="Phiên âm (không bắt buộc)" Margin="0,0,0,6" />
+                        <TextBlock Text="Nghĩa tiếng Việt" Foreground="#65756F" FontSize="12" Margin="0,4,0,6" /><TextBox Text="{Binding NewMeaning, UpdateSourceTrigger=PropertyChanged}" ToolTip="Nghĩa tiếng Việt" Margin="0,0,0,8" />
                         <Button Content="Thêm từ" Command="{Binding AddWordCommand}" HorizontalAlignment="Left" />
                     </StackPanel>
                     <ListBox ItemsSource="{Binding VisibleVocabulary}" SelectedItem="{Binding SelectedWord}" Background="Transparent" BorderThickness="0">
@@ -161,12 +161,12 @@
                                         </Grid.ColumnDefinitions>
 
                                         <StackPanel Grid.Column="0">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding Word}" FontSize="15" FontWeight="Bold" Foreground="#243D35" />
+                                            <WrapPanel>
+                                                <TextBlock Text="{Binding Word}" TextWrapping="Wrap" FontSize="15" FontWeight="Bold" Foreground="#243D35" />
                                                 <TextBlock Text="{Binding Phonetic}" FontSize="12" Foreground="#73827C" Margin="8,2,0,0" />
-                                            </StackPanel>
-                                            <TextBlock Text="{Binding Meaning}" FontSize="13" Foreground="#287568" Margin="0,2,0,0" />
-                                            <TextBlock Text="{Binding ExampleSentence}" FontSize="12" Foreground="#65756F" Margin="0,2,0,0" />
+                                            </WrapPanel>
+                                            <TextBlock Text="{Binding Meaning}" TextWrapping="Wrap" FontSize="13" Foreground="#287568" Margin="0,2,0,0" />
+                                            <TextBlock Text="{Binding ExampleSentence}" TextWrapping="Wrap" FontSize="12" Foreground="#65756F" Margin="0,2,0,0" />
                                         </StackPanel>
                                     </Grid>
                                 </Border>
