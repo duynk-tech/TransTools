@@ -38,5 +38,12 @@ public class MeetingSession
         }
     }
 
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string AudioSourceLabel => IsConversation ? "Luyện nói với AI" : AudioSource switch {
+        "Loa hệ thống (Loopback)" or "System audio" => "Âm thanh hệ thống",
+        "Microphone" => "Micro",
+        _ => AudioSource
+    };
+
     public string FormattedDate => CreatedAt.ToString("HH:mm • dd/MM/yyyy");
 }
