@@ -115,8 +115,14 @@ public sealed class VieNeuEngine : IDisposable
         return state;
     }
     public string Phonemes(string text) => _phonemizer.Phonemes(text);
-    public async Task SynthesizeAsync(string text, string voiceName, Func<float[], Task> emit, CancellationToken token) {
-        if (text.Length == 0 || text.Length > 500 || !_voices.TryGetValue(voiceName, out var voice)) throw new InvalidOperationException("Đoạn đọc hoặc giọng VieNeu không hợp lệ.");
+    public async Task SynthesizeAsync(string text, string voiceName, Func<float[], Task> emit, CancellationToken token, float[]? speakerEmbedding = null) {
+        token.ThrowIfCancellationRequested();
+        if (text.Length == 0 || text.Length > 500) throw new InvalidOperationException("Đoạn đọc VieNeu không hợp lệ.");
+        Voice voice;
+        if (speakerEmbedding != null) {
+            VieNeuSpeakerEncoder.ValidateEmbedding(speakerEmbedding);
+            voice = new Voice { speaker_emb = speakerEmbedding.ToArray() };
+        } else if (!_voices.TryGetValue(voiceName, out voice!)) throw new InvalidOperationException("Giọng VieNeu không hợp lệ.");
         token.ThrowIfCancellationRequested(); var phones = _phonemizer.Phonemes(text); var ids = _tokenizer.Encode(phones);
         if (ids.Length == 0 || ids.Length >= 1024) throw new InvalidOperationException("Đoạn đọc quá dài sau chuẩn hóa.");
         var anchor = Anchor(voice); var padding = Enumerable.Repeat(AudioVocab, Channels).ToArray(); var prompt = new List<float>();
