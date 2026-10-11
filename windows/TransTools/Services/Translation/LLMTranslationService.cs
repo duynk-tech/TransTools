@@ -11,8 +11,9 @@ public class LLMTranslationService
 {
     private static readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(30) };
 
-    public async Task<string> TranslateWithAIAsync(string text, string targetLanguage, string style, AIProviderConfig config)
+    public async Task<string> TranslateWithAIAsync(string text, string targetLanguage, string style, AIProviderConfig config, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrWhiteSpace(text)) return string.Empty;
         if (string.IsNullOrWhiteSpace(config.ApiKey) && config.ProviderId != "ollama")
         {
@@ -21,7 +22,7 @@ public class LLMTranslationService
 
         var systemPrompt = $"You are an expert translator. Translate the given text accurately into {targetLanguage}. Maintain natural tone with style: {style}. Return ONLY the direct translation without extra quotes or commentary.";
 
-        return await GenerateAsync(text, systemPrompt, config);
+        return await GenerateAsync(text, systemPrompt, config, cancellationToken);
     }
 
     public async Task<string> GenerateAsync(string text, string systemPrompt, AIProviderConfig config, CancellationToken cancellationToken = default)

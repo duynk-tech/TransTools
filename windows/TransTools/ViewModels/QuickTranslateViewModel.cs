@@ -108,8 +108,8 @@ public partial class QuickTranslateViewModel : ObservableObject
     [ObservableProperty]
     private string _status = "Sẵn sàng";
 
-    [RelayCommand(CanExecute = nameof(CanProcess))]
-    public async Task TranslateAsync()
+    [RelayCommand(CanExecute = nameof(CanProcess), IncludeCancelCommand = true)]
+    public async Task TranslateAsync(CancellationToken cancellationToken = default)
     {
         if (!CanProcess()) return;
         var source = SourceText; var sourceLanguage = SourceLanguage; var targetLanguage = TargetLanguage;
@@ -123,12 +123,17 @@ public partial class QuickTranslateViewModel : ObservableObject
         {
             var config = _credentialStore.LoadConfiguredProvider();
             var result = config != null
-                ? await _llmTranslate.TranslateWithAIAsync(source, targetLanguage, $"{domain} • {style}", config)
-                : await _googleTranslate.TranslateAsync(source, sourceLanguage, targetLanguage);
+                ? await _llmTranslate.TranslateWithAIAsync(source, targetLanguage, $"{domain} • {style}", config, cancellationToken)
+                : await _googleTranslate.TranslateAsync(source, sourceLanguage, targetLanguage, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             if (!Current()) { Status = "Nội dung đã thay đổi · nhấn Dịch lại."; return; }
             TranslatedText = result;
 
             Status = "Hoàn tất dịch thuật";
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            Status = "Đã hủy dịch";
         }
         catch (Exception ex)
         {
