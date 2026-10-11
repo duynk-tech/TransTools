@@ -532,6 +532,9 @@ internal static class Program
                         var sections = Descendants(window).OfType<TabControl>().First();
                         for (var i = 0; i < sections.Items.Count; i++) {
                             sections.SelectedIndex = i; Pump(); window.UpdateLayout();
+                            var heading = Descendants(window).OfType<SettingsPageHeading>().Single(item => item.IsVisible);
+                            if (heading.ActualHeight < 50 || heading.ActualWidth < 180 || string.IsNullOrWhiteSpace(heading.Description)) throw new Exception("Settings heading is clipped or missing its description");
+                            ValidateControlLayout(heading, "Settings page heading");
                             if (sections.SelectedItem is TabItem { Header: "Lưu trữ & Dữ liệu" }) {
                                 var settingsView = Descendants(window).OfType<SettingsView>().First();
                                 var storageVm = (SettingsViewModel)settingsView.DataContext;
