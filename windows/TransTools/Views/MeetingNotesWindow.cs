@@ -17,6 +17,7 @@ public sealed class MeetingNotesWindow : Window
     private bool _closeApproved;
     private readonly Func<CancellationToken, Task<string>>? _generate;
     private readonly Button _generateButton;
+    private readonly Button _saveButton;
     private readonly Button _cancelGeneration;
     private readonly TextBlock _message = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 8) };
     private CancellationTokenSource? _request;
@@ -56,7 +57,8 @@ public sealed class MeetingNotesWindow : Window
             };
             footer.Children.Add(useSummary);
         }
-        var save = new Button { Content = "Lưu ghi chú", IsDefault = _save == null, Visibility = _save == null ? Visibility.Visible : Visibility.Collapsed };
+        _saveButton = new Button { Content = "Lưu ghi chú", IsDefault = _save == null, Visibility = _save == null ? Visibility.Visible : Visibility.Collapsed };
+        var save = _saveButton;
         save.Click += async (_, _) => { if (_save != null) await FlushNotesAsync(); else DialogResult = true; }; footer.Children.Add(save);
         _editor = new TextBox { Text = notes, AcceptsReturn = true, AcceptsTab = true, TextWrapping = TextWrapping.Wrap,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto, FontSize = 14, Padding = new Thickness(14) };
@@ -96,6 +98,12 @@ public sealed class MeetingNotesWindow : Window
         layout.Children.Add(new Border { Child = reading, Background = Brushes.White, BorderBrush = new SolidColorBrush(Color.FromRgb(194, 221, 213)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(0) });
 
     }
+    private void ShowSaveRetry()
+    {
+        if (_closed) return;
+        _saveButton.Content = "Thử lưu lại";
+        _saveButton.Visibility = Visibility.Visible;
+    }
     public async Task<bool> FlushNotesAsync()
     {
         _saveTimer.Stop();
@@ -105,12 +113,12 @@ public sealed class MeetingNotesWindow : Window
             while (_savedNotes != Notes) {
                 var snapshot = Notes;
                 _message.Text = "Đang lưu…";
-                if (!await _save(snapshot)) { _message.Text = "Chưa lưu được ghi chú. Nội dung vẫn được giữ ở đây; bấm Lưu để thử lại."; return false; }
+                if (!await _save(snapshot)) { ShowSaveRetry(); _message.Text = "Chưa lưu được ghi chú. Nội dung vẫn được giữ ở đây; bấm Thử lưu lại."; return false; }
                 _savedNotes = snapshot;
             }
-            if (!_closed) _message.Text = "Đã tự lưu · Hỗ trợ Markdown";
+            if (!_closed) { _message.Text = "Đã tự lưu · Hỗ trợ Markdown"; _saveButton.Visibility = Visibility.Collapsed; }
             return true;
-        } catch (Exception ex) { if (!_closed) _message.Text = "Chưa lưu được ghi chú: " + ex.Message; return false; }
+        } catch (Exception ex) { if (!_closed) { ShowSaveRetry(); _message.Text = "Chưa lưu được ghi chú: " + ex.Message; } return false; }
         finally { _saveGate.Release(); }
     }
     public async Task GenerateNotesAsync()

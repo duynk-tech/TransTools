@@ -946,6 +946,7 @@ internal static class Program
         failedNotes.Show(); Pump(); Descendants(failedNotes).OfType<TextBox>().Single().Text = "Không được mất";
         failedNotes.Close(); Pump();
         if (!failedNotes.IsVisible || failedNotes.Notes != "Không được mất") throw new Exception("Failed notes save closed window or lost editor data");
+        if (!Descendants(failedNotes).OfType<Button>().Any(button => Equals(button.Content, "Thử lưu lại") && button.IsVisible)) throw new Exception("Failed autosave has no accessible retry action");
         allowNotesSave = true; failedNotes.Close(); Pump();
         if (failedNotes.IsVisible) throw new Exception("Notes save retry did not allow close");
         var noteRecord = notebook.Sessions.Single(s => s.Id == saved.Id);
