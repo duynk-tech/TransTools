@@ -5,6 +5,22 @@ namespace TransTools.Views;
 public partial class PersonalVoiceLibraryView : UserControl
 {
     public PersonalVoiceLibraryView(VoiceSettingsViewModel model) { InitializeComponent(); DataContext = model; Unloaded += (_, _) => model.StopPreviewCommand.Execute(null); }
+    private void CardAction_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not VoiceSettingsViewModel model || !model.CanConfigure || sender is not Button { DataContext: VoiceRecordingCard card } button) return;
+        model.SelectedRecording = model.Recordings.FirstOrDefault(item => item.Id == card.Profile.Id);
+        if (!model.CanManageRecording) return;
+        switch (button.Tag as string) {
+            case "listen": model.PreviewOriginalRecordingCommand.Execute(null); break;
+            case "folder": model.OpenRecordingFolderCommand.Execute(null); break;
+            case "rename": RenameRecording_Click(sender, e); break;
+            case "delete": DeleteRecording_Click(sender, e); break;
+            case "remove": RemoveRecordingModel_Click(sender, e); break;
+            case "test": model.TestRecordingVoiceCommand.Execute(null); break;
+            case "use": model.UseRecordingVoiceCommand.Execute(null); break;
+            case "create": if (model.CreateRecordingVoiceCommand.CanExecute(null)) model.CreateRecordingVoiceCommand.Execute(null); break;
+        }
+    }
     private void RecordVoice_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is not VoiceSettingsViewModel model || !model.CanConfigure) return;

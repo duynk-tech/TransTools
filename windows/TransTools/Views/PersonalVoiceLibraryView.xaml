@@ -5,19 +5,30 @@
 <TextBlock Text="Một bản thu gốc, nhiều hồ sơ theo mô hình hỗ trợ. Dữ liệu giữ trên thiết bị." TextWrapping="Wrap" Foreground="#65756F" Margin="0,10,0,0"/>
 </StackPanel></Border>
 <Border Background="#E3F2ED" CornerRadius="12" Padding="16" Margin="0,0,0,16"><StackPanel><TextBlock Text="Mô hình tương thích" FontWeight="SemiBold"/><TextBlock Text="VieNeu-TTS v3 Turbo · Tiếng Việt · Mẫu 3–8 giây" Foreground="#287568" Margin="0,8,0,0"/><TextBlock Text="Cài mô hình trong Giọng đọc &amp; Phát âm → Nâng cao. Bản thu gốc có thể dùng lại khi cần tạo hồ sơ." TextWrapping="Wrap" Foreground="#65756F" Margin="0,8,0,0"/></StackPanel></Border>
-<Border BorderBrush="#D8E5E1" BorderThickness="1" CornerRadius="14" Background="White" Padding="18" Margin="0,0,0,16"><StackPanel>
-     <TextBlock Text="Bản thu đã lưu" FontSize="13" FontWeight="Bold"/>
-     <TextBlock Text="Lưu âm thanh gốc trước, tạo hồ sơ VieNeu khi cần. Tạo hồ sơ giữ nguyên bản thu." FontSize="11" Foreground="#65756F" TextWrapping="Wrap" Margin="0,6,0,10"/>
-     <TextBlock Text="Tìm bản thu theo tên" FontSize="12" Foreground="#65756F" Margin="0,0,0,6"/>
-     <TextBox Text="{Binding RecordingQuery,UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanConfigure}" AutomationProperties.Name="Tìm bản thu theo tên" ToolTip="Tìm bản thu theo tên" Margin="0,0,0,8"/>
-     <TextBlock Text="{Binding RecordingSearchStatus}" FontSize="11" Foreground="#65756F" Margin="0,0,0,8"/>
-     <ComboBox ItemsSource="{Binding VisibleRecordings}" DisplayMemberPath="Name" SelectedItem="{Binding SelectedRecording}" IsEnabled="{Binding CanConfigure}" AutomationProperties.Name="Bản thu đã lưu"/>
-     <TextBlock Text="{Binding RecordingDetails}" FontSize="11" Foreground="#287568" Margin="0,8,0,0"/>
-     <WrapPanel Margin="0,10,0,0"><Button Content="Nghe bản gốc" Command="{Binding PreviewOriginalRecordingCommand}" IsEnabled="{Binding CanManageRecording}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/><Button Content="Dừng" Command="{Binding StopPreviewCommand}" IsEnabled="{Binding IsPreviewing}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/><Button Content="Đổi tên" Click="RenameRecording_Click" IsEnabled="{Binding CanManageRecording}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/><Button Content="Thư mục" Command="{Binding OpenRecordingFolderCommand}" IsEnabled="{Binding CanManageRecording}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/><Button Content="Xóa bản thu" Click="DeleteRecording_Click" IsEnabled="{Binding CanManageRecording}" Style="{StaticResource DestructiveButton}" Margin="0,0,0,8"/></WrapPanel>
-     <TextBlock Text="{Binding SelectedRecording.ReferenceText}" FontSize="12" Foreground="#65756F" TextWrapping="Wrap" Margin="0,8,0,0"/>
-     <TextBlock Text="{Binding RecordingModelStatus}" FontSize="11" Foreground="#287568" Margin="0,12,0,0"/>
-     <WrapPanel Margin="0,10,0,0" Visibility="{Binding HasSelectedModel,Converter={StaticResource BoolVisibility}}"><Button Content="Đọc thử câu mới" Command="{Binding TestRecordingVoiceCommand}" IsEnabled="{Binding CanUseRecordingVoice}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/><Button Content="Dùng tiếng Việt" Command="{Binding UseRecordingVoiceCommand}" IsEnabled="{Binding CanUseRecordingVoice}" Margin="0,0,8,8"/><Button Content="Gỡ hồ sơ" Click="RemoveRecordingModel_Click" IsEnabled="{Binding CanManageRecording}" Style="{StaticResource DestructiveButton}" Margin="0,0,0,8"/></WrapPanel>
-     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0"><Button Content="Hủy tạo giọng" Command="{Binding CancelRecordingVoiceCommand}" Visibility="{Binding IsBuildingVoice,Converter={StaticResource BoolVisibility}}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button Content="Tạo hồ sơ VieNeu" Command="{Binding CreateRecordingVoiceCommand}" ToolTip="Cần cài VieNeu trước khi tạo hồ sơ"><Button.Style><Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}"><Style.Triggers><DataTrigger Binding="{Binding HasSelectedModel}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Button.Style></Button></StackPanel>
-    </StackPanel></Border>
+<TextBlock Text="Tìm bản thu theo tên" FontSize="12" Foreground="#65756F" Margin="0,0,0,6"/>
+<TextBox Text="{Binding RecordingQuery,UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanConfigure}" AutomationProperties.Name="Tìm bản thu theo tên" Margin="0,0,0,8"/>
+<TextBlock Text="{Binding RecordingSearchStatus}" FontSize="11" Foreground="#65756F" Margin="0,0,0,16"/>
+<ItemsControl ItemsSource="{Binding RecordingCards}"><ItemsControl.ItemTemplate><DataTemplate>
+<Border BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Background="White" Padding="18" Margin="0,0,0,16"><StackPanel>
+<DockPanel><TextBlock DockPanel.Dock="Right" Text="Bản thu gốc" FontSize="11" Foreground="#287568" Margin="16,0,0,0"/><StackPanel><TextBlock Text="{Binding Profile.Name}" FontSize="14" FontWeight="SemiBold"/><TextBlock Text="{Binding Details}" FontSize="11" Foreground="#65756F" Margin="0,6,0,0"/></StackPanel></DockPanel>
+<TextBlock Text="{Binding Profile.ReferenceText}" TextWrapping="Wrap" Foreground="#65756F" Margin="0,14,0,0"/>
+<WrapPanel Margin="0,14,0,0" IsEnabled="{Binding DataContext.CanConfigure,RelativeSource={RelativeSource AncestorType=UserControl}}">
+<Button Content="Nghe bản gốc" Tag="listen" Click="CardAction_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/>
+<Button Content="Đổi tên" Tag="rename" Click="CardAction_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/>
+<Button Content="Thư mục" Tag="folder" Click="CardAction_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/>
+<Button Content="Xóa bản thu" Tag="delete" Click="CardAction_Click" Style="{StaticResource DestructiveButton}" Margin="0,0,0,8"/>
+</WrapPanel>
+<Border Background="#DEE7E3" Height="1" Margin="0,6,0,14"/>
+<DockPanel><TextBlock DockPanel.Dock="Right" Text="{Binding ModelStatus}" FontSize="11" Foreground="#287568"/><TextBlock Text="VieNeu-TTS v3 Turbo" FontWeight="SemiBold"/></DockPanel>
+<WrapPanel Margin="0,12,0,0" IsEnabled="{Binding DataContext.CanConfigure,RelativeSource={RelativeSource AncestorType=UserControl}}">
+<Button Content="Tạo hồ sơ giọng" Tag="create" Click="CardAction_Click" IsEnabled="{Binding DataContext.IsVieNeuReady,RelativeSource={RelativeSource AncestorType=UserControl}}" Margin="0,0,8,8"><Button.Style><Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Style.Triggers><DataTrigger Binding="{Binding HasModel}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Button.Style></Button>
+<WrapPanel Visibility="{Binding HasModel,Converter={StaticResource BoolVisibility}}">
+<Button Content="Đọc thử câu mới" Tag="test" Click="CardAction_Click" IsEnabled="{Binding DataContext.IsVieNeuReady,RelativeSource={RelativeSource AncestorType=UserControl}}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8"/>
+<Button Content="Dùng tiếng Việt" Tag="use" Click="CardAction_Click" IsEnabled="{Binding DataContext.IsVieNeuReady,RelativeSource={RelativeSource AncestorType=UserControl}}" Margin="0,0,8,8"/>
+<Button Content="Gỡ hồ sơ" Tag="remove" Click="CardAction_Click" Style="{StaticResource DestructiveButton}" Margin="0,0,0,8"/>
+</WrapPanel></WrapPanel>
+</StackPanel></Border>
+</DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+<WrapPanel Margin="0,0,0,12"><Button Content="Dừng nghe" Command="{Binding StopPreviewCommand}" IsEnabled="{Binding IsPreviewing}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button Content="Hủy tạo giọng" Command="{Binding CancelRecordingVoiceCommand}" Visibility="{Binding IsBuildingVoice,Converter={StaticResource BoolVisibility}}" Style="{StaticResource SecondaryButton}"/></WrapPanel>
 <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Foreground="#65756F"/><TextBlock Text="Nghe bản thu để xác nhận tiếng ồn và lời đọc. Hồ sơ hiện dùng đặc trưng người nói; chưa sao chép đầy đủ phong cách và chưa có huấn luyện bổ sung." TextWrapping="Wrap" FontSize="11" Foreground="#65756F" Margin="0,14,0,0"/>
 </StackPanel></UserControl>

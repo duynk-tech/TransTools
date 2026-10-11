@@ -7,10 +7,18 @@ using TransTools.Services.Storage;
 using TransTools.Services.Speech;
 namespace TransTools.ViewModels;
 
+public sealed record VoiceRecordingCard(PersonalVoiceProfile Profile, bool HasModel)
+{
+    public string Details => $"{Profile.DurationSeconds:0.#} giây · {Profile.CreatedAt.ToLocalTime():dd/MM/yyyy} · Bản thu gốc";
+    public string ModelStatus => HasModel ? "Hồ sơ đã tạo" : "Chưa tạo hồ sơ";
+}
+
 public partial class VoiceSettingsViewModel
 {
     public ObservableCollection<PersonalVoiceProfile> Recordings { get; } = new();
     public ObservableCollection<PersonalVoiceProfile> VisibleRecordings { get; } = new();
+    public ObservableCollection<VoiceRecordingCard> RecordingCards { get; } = new();
+    public bool IsVieNeuReady => VoiceService.Shared.IsVieNeuInstalled;
     [ObservableProperty] private string _recordingQuery = "";
     public string RecordingSearchStatus => Recordings.Count == 0 ? "Chưa có bản thu. Thu một đoạn ngắn để bắt đầu." : VisibleRecordings.Count == 0 ? "Không có bản thu phù hợp." : $"{VisibleRecordings.Count} / {Recordings.Count} bản thu · Lưu trên thiết bị";
     public string RecordingDetails => SelectedRecording is { } recording ? $"{recording.DurationSeconds:0.#} giây · {recording.CreatedAt.ToLocalTime():dd/MM/yyyy} · Bản thu gốc" : "";
@@ -20,7 +28,9 @@ public partial class VoiceSettingsViewModel
         var selected = preferred ?? SelectedRecording?.Id;
         var query = RecordingQuery.Trim();
         VisibleRecordings.Clear();
+        RecordingCards.Clear();
         foreach (var item in Recordings.Where(item => query.Length == 0 || item.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase))) VisibleRecordings.Add(item);
+        foreach (var item in VisibleRecordings) RecordingCards.Add(new(item, _personalVoiceStore.HasModel(item.Id)));
         SelectedRecording = VisibleRecordings.FirstOrDefault(item => item.Id == selected) ?? VisibleRecordings.FirstOrDefault();
         OnPropertyChanged(nameof(RecordingSearchStatus));
     }

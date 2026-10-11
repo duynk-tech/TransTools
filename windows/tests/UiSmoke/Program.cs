@@ -763,6 +763,7 @@ internal static class Program
                 var view = new PersonalVoiceLibraryView(model);
                 var fixture = new Window { Owner = window, Width = 960, Height = 820, Content = new ScrollViewer { Content = view, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
                 fixture.Show(); Pump();
+                if (model.RecordingCards.Count != 2 || model.RecordingCards.Single(item => item.Profile.Id == raw.Id).HasModel || !model.RecordingCards.Single(item => item.Profile.Id == ready.Id).HasModel) throw new Exception("Personal voice cards mix raw and ready model states");
                 model.SelectedRecording = model.Recordings.Single(item => item.Id == raw.Id); Pump();
                 if (model.HasSelectedModel || model.PersonalVoices.Any(item => item.Id == raw.Id)) throw new Exception("Unprocessed reference appears as synthesized voice");
                 ValidateControlLayout(fixture, "Saved raw recording"); Capture(fixture, output, "personal-voice-raw-management.png");
@@ -775,9 +776,9 @@ internal static class Program
                 if (store.Load().Single(item => item.Id == ready.Id).Name != ready.Name) throw new Exception("Active audio session allows recording mutation");
                 busy = false;
                 model.RecordingQuery = "không có bản thu này"; Pump();
-                if (model.VisibleRecordings.Count != 0 || model.SelectedRecording != null || model.CanManageRecording) throw new Exception("Empty recording search keeps actionable stale selection");
+                if (model.VisibleRecordings.Count != 0 || model.RecordingCards.Count != 0 || model.SelectedRecording != null || model.CanManageRecording) throw new Exception("Empty recording search keeps actionable stale selection");
                 model.RecordingQuery = ""; Pump();
-                if (model.VisibleRecordings.Count != 2 || model.SelectedRecording == null) throw new Exception("Clearing recording search does not restore inventory");
+                if (model.VisibleRecordings.Count != 2 || model.RecordingCards.Count != 2 || model.SelectedRecording == null) throw new Exception("Clearing recording search does not restore inventory");
                 fixture.Close();
                 var removeModel = ConfirmDeleteWindow.ForVoiceModel(ready.Name); removeModel.Owner = window; removeModel.Show(); Pump();
                 ValidateControlLayout(removeModel, "Remove voice model confirmation"); Capture(removeModel, output, "personal-voice-remove-model.png"); removeModel.Close();

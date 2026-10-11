@@ -31,7 +31,7 @@ public partial class VoiceSettingsViewModel : ObservableObject
     public VoiceSettingsViewModel(SettingsViewModel management, Func<bool>? audioBusy = null, PersonalVoiceStore? personalVoiceStore = null)
     {
         _personalVoiceStore = personalVoiceStore ?? new PersonalVoiceStore(PersonalVoiceStore.DefaultRoot);
-        Management = management; Management.PropertyChanged += (_, _) => { OnPropertyChanged(nameof(CanUseRecordingVoice)); CreateRecordingVoiceCommand.NotifyCanExecuteChanged(); }; _audioBusy = audioBusy ?? (() => false); LoadPreference();
+        Management = management; Management.PropertyChanged += (_, _) => { OnPropertyChanged(nameof(CanUseRecordingVoice)); OnPropertyChanged(nameof(IsVieNeuReady)); CreateRecordingVoiceCommand.NotifyCanExecuteChanged(); }; _audioBusy = audioBusy ?? (() => false); LoadPreference();
         VoicePreferences.Changed += code => {
             if (code != Language || IsPreviewing) return;
             var dispatcher = System.Windows.Application.Current?.Dispatcher;
