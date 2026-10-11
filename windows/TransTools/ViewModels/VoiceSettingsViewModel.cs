@@ -36,7 +36,7 @@ public partial class VoiceSettingsViewModel : ObservableObject
             void Refresh() {
                 if (IsPreviewing) return;
                 if (code == Language) LoadPreference();
-                else if (code == "vi") FilterRecordings();
+                else if (code == "vi") { _recordingPreference = VoicePreferences.Get("vi"); FilterRecordings(); }
             }
             var dispatcher = System.Windows.Application.Current?.Dispatcher;
             if (dispatcher == null || dispatcher.CheckAccess()) Refresh(); else dispatcher.InvokeAsync(Refresh);

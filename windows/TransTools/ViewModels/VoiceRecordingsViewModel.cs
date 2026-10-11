@@ -7,9 +7,9 @@ using TransTools.Services.Storage;
 using TransTools.Services.Speech;
 namespace TransTools.ViewModels;
 
-public sealed record VoiceRecordingCard(PersonalVoiceProfile Profile, bool HasModel, bool IsCurrent = false)
+public sealed record VoiceRecordingCard(PersonalVoiceProfile Profile, bool HasModel, bool IsCurrent = false, long Bytes = 0)
 {
-    public string Details => $"{Profile.DurationSeconds:0.#} giây · {Profile.CreatedAt.ToLocalTime():dd/MM/yyyy} · Bản thu gốc";
+    public string Details => $"{Profile.DurationSeconds:0.#} giây · {Bytes / 1024.0:0.#} KB · {Profile.CreatedAt.ToLocalTime():dd/MM/yyyy} · Bản thu gốc";
     public string UseLabel => IsCurrent ? "Đang dùng" : "Dùng tiếng Việt";
     public string ModelStatus => HasModel ? "Hồ sơ đã tạo" : "Chưa tạo hồ sơ";
 }
@@ -19,6 +19,8 @@ public partial class VoiceSettingsViewModel
     public ObservableCollection<PersonalVoiceProfile> Recordings { get; } = new();
     public ObservableCollection<PersonalVoiceProfile> VisibleRecordings { get; } = new();
     public ObservableCollection<VoiceRecordingCard> RecordingCards { get; } = new();
+    private readonly List<VoiceRecordingCard> _recordingCardCache = new();
+    private VoicePreference? _recordingPreference;
     public bool IsVieNeuReady => VoiceService.Shared.IsVieNeuInstalled;
     [ObservableProperty] private string _recordingQuery = "";
     public string RecordingSearchStatus => Recordings.Count == 0 ? "Chưa có bản thu. Thu một đoạn ngắn để bắt đầu." : VisibleRecordings.Count == 0 ? "Không có bản thu phù hợp." : $"{VisibleRecordings.Count} / {Recordings.Count} bản thu · Lưu trên thiết bị";
@@ -31,8 +33,7 @@ public partial class VoiceSettingsViewModel
         VisibleRecordings.Clear();
         RecordingCards.Clear();
         foreach (var item in Recordings.Where(item => query.Length == 0 || item.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase))) VisibleRecordings.Add(item);
-        var preference = VoicePreferences.Get("vi");
-        foreach (var item in VisibleRecordings) RecordingCards.Add(new(item, _personalVoiceStore.HasModel(item.Id), preference.Engine == "VieNeu v3 Turbo" && preference.PersonalVoiceId == item.Id));
+        foreach (var card in _recordingCardCache.Where(card => query.Length == 0 || card.Profile.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase))) RecordingCards.Add(card with { IsCurrent = _recordingPreference?.Engine == "VieNeu v3 Turbo" && _recordingPreference.PersonalVoiceId == card.Profile.Id });
         SelectedRecording = VisibleRecordings.FirstOrDefault(item => item.Id == selected) ?? VisibleRecordings.FirstOrDefault();
         OnPropertyChanged(nameof(RecordingSearchStatus));
     }
@@ -122,6 +123,9 @@ public partial class VoiceSettingsViewModel
         var selected = SelectedRecording?.Id;
         Recordings.Clear();
         foreach (var recording in store.Load()) Recordings.Add(recording);
+        _recordingPreference = VoicePreferences.Get("vi");
+        _recordingCardCache.Clear();
+        foreach (var recording in Recordings) _recordingCardCache.Add(new(recording, store.HasModel(recording.Id), Bytes: store.StoredBytes(recording.Id)));
         FilterRecordings(selected);
         UpdateRecordingModelState(); OnPropertyChanged(nameof(HasRecordings));
     }

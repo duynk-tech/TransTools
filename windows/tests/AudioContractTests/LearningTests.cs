@@ -38,6 +38,7 @@ public static class LearningTests
             Check(!PersonalVoiceQuality.Analyze(new float[48000]).IsUsable && !PersonalVoiceQuality.Analyze(Enumerable.Repeat(1f,48000).ToArray()).IsUsable && PersonalVoiceQuality.Analyze(ReadFloats("speaker-input.f32")).IsUsable,"personal voice quality rejects silence and clipping but accepts Mac reference audio");
             var voiceStore=new PersonalVoiceStore(Path.Combine(root,"PersonalVoice"));
             var raw = voiceStore.SaveRecording("Bản thu chưa xử lý", "Đoạn văn mẫu", ReadFloats("speaker-input.f32"));
+            Check(voiceStore.StoredBytes(raw.Id) == new FileInfo(voiceStore.RecordingPath(raw.Id)).Length + new FileInfo(Path.Combine(root, "PersonalVoice", raw.Id.ToString("D"), "profile.json")).Length, "raw recording storage size matches saved audio and metadata");
             Check(!voiceStore.HasModel(raw.Id), "Raw recording incorrectly has synthesized voice model");
             Check(File.Exists(Path.Combine(root, "PersonalVoice", raw.Id.ToString("D"), "reference.wav")), "Raw reference recording was not saved");
             Check(voiceStore.Load().Any(item => item.Id == raw.Id), "Raw recording missing from inventory");

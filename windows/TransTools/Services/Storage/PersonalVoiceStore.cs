@@ -8,6 +8,13 @@ public sealed class PersonalVoiceStore(string root)
 {
     public static string DefaultRoot => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TransTools", "PersonalVoice");
     private string Folder(Guid id) => Path.Combine(root,id.ToString("D"));
+    public long StoredBytes(Guid id)
+    {
+        long bytes = 0;
+        foreach (var path in new[] { Path.Combine(Folder(id), "profile.json"), RecordingPath(id), VoicePath(id) })
+            if (File.Exists(path)) bytes = checked(bytes + new FileInfo(path).Length);
+        return bytes;
+    }
     public string VoicePath(Guid id) => Path.Combine(Folder(id),"Models","vieneu","voice.json");
     public IReadOnlyList<PersonalVoiceProfile> Load()
     {
