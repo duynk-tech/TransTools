@@ -72,16 +72,19 @@ public sealed class VoiceService
         progress.Report(vieNeu ? "VieNeu v3 Turbo đã sẵn sàng" : "Supertonic 3 đã sẵn sàng");
         } finally { _installing = false; _modelOperations.Release(); }
     }
-    public async Task<byte[]> SynthesizeAsync(string text, string language, string engine, double rate, CancellationToken token)
+    public async Task<byte[]> SynthesizeAsync(string text, string language, string engine, double rate, CancellationToken token, Guid? personalVoiceId = null)
     {
+        token.ThrowIfCancellationRequested();
+        if (personalVoiceId != null && (language != "vi" || engine != "VieNeu v3 Turbo")) throw new InvalidOperationException("Giọng cá nhân hiện dùng VieNeu cho tiếng Việt.");
         if (engine == "Edge") return await new EdgeTtsService().SynthesizeAsync(text, EdgeTtsService.VoiceForLanguage(language), rate, cancellationToken: token);
         if (engine == "VieNeu v3 Turbo") {
             if (language != "vi" || !IsVieNeuInstalled) throw new InvalidOperationException("VieNeu chỉ dùng cho tiếng Việt sau khi tải mô hình.");
             await _gate.WaitAsync(token);
             try { return await Task.Run(async () => {
                 LoadEngine(engine, token); _lastUse = DateTime.UtcNow;
+                var embedding = personalVoiceId is Guid id ? new TransTools.Services.Storage.PersonalVoiceStore(TransTools.Services.Storage.PersonalVoiceStore.DefaultRoot).LoadEmbedding(id) : null;
                 using var stream = new MemoryStream(); using var writer = new WaveFileWriter(stream, new WaveFormat(48000, 16, 1));
-                await _vieNeu!.SynthesizeAsync(text, "Hải Đăng", samples => { foreach (var sample in samples) writer.WriteSample(Math.Clamp(sample, -1f, 1f)); return Task.CompletedTask; }, token);
+                await _vieNeu!.SynthesizeAsync(text, "Hải Đăng", samples => { foreach (var sample in samples) writer.WriteSample(Math.Clamp(sample, -1f, 1f)); return Task.CompletedTask; }, token, embedding);
                 writer.Flush(); return stream.ToArray();
             }, token); } finally { _lastUse = DateTime.UtcNow; _gate.Release(); }
         }

@@ -6,6 +6,7 @@ namespace TransTools.Services.Storage;
 public sealed record PersonalVoiceProfile(Guid Id, string Name, DateTime CreatedAt, string ReferenceText, double DurationSeconds);
 public sealed class PersonalVoiceStore(string root)
 {
+    public static string DefaultRoot => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TransTools", "PersonalVoice");
     private string Folder(Guid id) => Path.Combine(root,id.ToString("D"));
     public string VoicePath(Guid id) => Path.Combine(Folder(id),"Models","vieneu","voice.json");
     public IReadOnlyList<PersonalVoiceProfile> Load()
