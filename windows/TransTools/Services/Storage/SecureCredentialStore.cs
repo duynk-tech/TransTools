@@ -30,7 +30,7 @@ public class SecureCredentialStore
             var key = LoadApiKey(provider);
             var path = Path.Combine(_storageDir, provider + ".model");
             var model = File.Exists(path) ? File.ReadAllText(path).Trim() : "";
-            if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(model))
+            if ((provider == "ollama" || !string.IsNullOrWhiteSpace(key)) && !string.IsNullOrWhiteSpace(model))
                 return new AIProviderConfig { ProviderId = provider, ApiKey = key, SelectedModel = model };
         }
         return null;
