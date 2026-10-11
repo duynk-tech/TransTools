@@ -340,9 +340,15 @@ internal static class Program
                         conversation.IsListening = false; conversation.IsThinking = true; Pump();
                         if (!delay.IsEnabled || !((TextBox)chatView.FindName("ConversationInput")).IsReadOnly) throw new Exception("Processing controls allow conflicting draft edits or block delay adjustment");
                         conversation.IsThinking = false; Pump();
+                        var optionsScroll = (ScrollViewer)chatView.FindName("ConversationOptionsScroll");
+                        if (optionsScroll.ViewportHeight > 65 || optionsScroll.ViewportWidth < 300) throw new Exception("Conversation options wrapped into multiple rows or collapsed");
+                        optionsScroll.ScrollToRightEnd(); Pump();
+                        Capture(window, output, $"{width}-conversation-options-end.png");
+                        optionsScroll.ScrollToLeftEnd(); Pump();
                         var list = (ListBox)chatView.FindName("MessageList"); Pump(); list.UpdateLayout();
                         var bubbles = Descendants(list).OfType<Border>().Where(b => Equals(b.Tag, "ChatBubble") && b.IsVisible).Select(b => (Bubble: b, Bounds: new Rect(b.TransformToAncestor(list).Transform(new Point()), b.RenderSize))).Where(b => b.Bounds.IntersectsWith(new Rect(0, 0, list.ActualWidth, list.ActualHeight))).OrderBy(b => b.Bounds.Top).ToArray();
                         if (bubbles.Length < 2) { Capture(window, output, $"{width}-conversation-spacing-failure.png"); throw new Exception("Conversation fixture did not render adjacent bubbles"); }
+                        if (width == 1440 && !conversation.SuggestionsEnabled && bubbles.Max(b => b.Bounds.Width) <= 620) throw new Exception("Conversation bubbles remain constrained to the old fixed width");
                         for (var i = 1; i < bubbles.Length; i++) {
                             var gap = bubbles[i].Bounds.Top - bubbles[i - 1].Bounds.Bottom;
                             if (gap < -1 || gap > 20) { Capture(window, output, $"{width}-conversation-spacing-failure.png"); throw new Exception($"Conversation bubble spacing is not content driven: {gap}; bounds={string.Join(";", bubbles.Select(b => b.Bounds.ToString()))}"); }

@@ -4,7 +4,7 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
  <DataTemplate x:Key="ConversationBubble">
-  <Border Tag="ChatBubble" CornerRadius="16" Padding="13" MaxWidth="620" VerticalAlignment="Top">
+  <Border Tag="ChatBubble" CornerRadius="16" Padding="13" VerticalAlignment="Top">
    <Border.Style><Style TargetType="Border"><Setter Property="Margin" Value="0,0,48,14"/><Setter Property="Background" Value="#EBEFED"/><Setter Property="HorizontalAlignment" Value="Left"/><Style.Triggers><DataTrigger Binding="{Binding IsUser}" Value="True"><Setter Property="Background" Value="#DCEEE8"/><Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="Margin" Value="48,0,0,14"/></DataTrigger></Style.Triggers></Style></Border.Style>
    <StackPanel>
     <DockPanel Margin="0,0,0,7" LastChildFill="True">
