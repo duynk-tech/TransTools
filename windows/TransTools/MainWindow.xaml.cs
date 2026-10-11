@@ -185,6 +185,23 @@ public partial class MainWindow : Window
         if (_subtitleWindow?.IsVisible != true) ToggleSubtitle_Click(this, new RoutedEventArgs());
     }
 
+    private void ShowSubtitleMenu_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Button button) return;
+        SubtitleVisibilityMenuItem.Header = _subtitleWindow?.IsVisible == true ? "Ẩn phụ đề nổi" : "Hiện vị trí đã lưu";
+        button.ContextMenu.PlacementTarget = button;
+        button.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        button.ContextMenu.IsOpen = true;
+    }
+
+    private void ChooseSubtitlePosition_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.MenuItem { Tag: string position }) return;
+        if (position == "toggle") { ToggleSubtitle_Click(sender, e); return; }
+        ShowSubtitle();
+        _subtitleWindow?.PositionAt(position == "top");
+    }
+
     private void ToggleSubtitle_Click(object sender, RoutedEventArgs e)
     {
         if (_subtitleWindow == null)

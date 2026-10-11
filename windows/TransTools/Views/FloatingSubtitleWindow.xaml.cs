@@ -107,10 +107,11 @@ public partial class FloatingSubtitleWindow : Window
         SavePreferences();
     }
     private void Layout_Click(object sender, RoutedEventArgs e) { _preferences.Side = !_preferences.Side; SetBounds(); SavePreferences(); }
-    private void Position_Click(object sender, RoutedEventArgs e)
+    private void Position_Click(object sender, RoutedEventArgs e) => PositionAt(sender is MenuItem { Tag: "top" });
+    public void PositionAt(bool atTop)
     {
         var area = SystemParameters.WorkArea; Left = Math.Clamp(Left, area.Left + 16, Math.Max(area.Left + 16, area.Right - Width - 16));
-        Top = sender is MenuItem { Tag: "top" } ? area.Top + 24 : Math.Max(area.Top + 16, area.Bottom - Height - 80);
+        Top = atTop ? area.Top + 24 : Math.Max(area.Top + 16, area.Bottom - Height - 80);
     }
     private void FontSize_Click(object sender, RoutedEventArgs e)
     {

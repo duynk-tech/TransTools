@@ -33,7 +33,11 @@
 <MenuItem Header="Chọn ảnh từ máy…" Tag="photo" IsCheckable="True" Click="ChoosePhoto_Click"/>
 </ContextMenu></Button.ContextMenu></Button>
      <Button Height="40" MinHeight="40" Width="110" ToolTip="{Binding DisplayName,Source={x:Static experience:AssistantIdentity.Shared}}" Click="ToggleMascot_Click" Background="#E1EEE6" Foreground="#287568" Margin="12,0,8,0"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock Text="{Binding DisplayName,Source={x:Static experience:AssistantIdentity.Shared}}" MaxWidth="72" TextTrimming="CharacterEllipsis"/></StackPanel></Button>
-     <Button Height="40" MinHeight="40" Click="ToggleSubtitle_Click" Style="{StaticResource SecondaryButton}"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8F2;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock Text="Phụ đề"/></StackPanel></Button>
+     <Button Height="40" MinHeight="40" Click="ShowSubtitleMenu_Click" Style="{StaticResource SecondaryButton}"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8F2;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,7,0"/><TextBlock Text="Phụ đề"/></StackPanel><Button.ContextMenu><ContextMenu>
+<MenuItem Header="Hiện ở phía trên" Tag="top" Click="ChooseSubtitlePosition_Click"/>
+<MenuItem Header="Hiện ở phía dưới" Tag="bottom" Click="ChooseSubtitlePosition_Click"/>
+<Separator/><MenuItem x:Name="SubtitleVisibilityMenuItem" Header="Hiện vị trí đã lưu" Tag="toggle" Click="ChooseSubtitlePosition_Click"/>
+</ContextMenu></Button.ContextMenu></Button>
     </StackPanel>
     <Border CornerRadius="12" Background="#DFFFFFFF" BorderBrush="#BDD9D2" BorderThickness="1" Padding="4" Margin="0,0,18,0">
      <Grid x:Name="NavigationTabs"><Grid.ColumnDefinitions><ColumnDefinition Width="103*"/><ColumnDefinition Width="110*"/><ColumnDefinition Width="113*"/><ColumnDefinition Width="124*"/><ColumnDefinition Width="148*"/><ColumnDefinition Width="121*"/><ColumnDefinition Width="101*"/></Grid.ColumnDefinitions>
