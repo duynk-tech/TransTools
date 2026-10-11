@@ -9,6 +9,12 @@ namespace TransTools.Views;
 public sealed class MeetingNotesWindow : Window
 {
     private readonly TextBox _editor;
+    private readonly Func<string, Task<bool>>? _save;
+    private readonly SemaphoreSlim _saveGate = new(1);
+    private readonly System.Windows.Threading.DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromMilliseconds(400) };
+    private string _savedNotes;
+    private bool _closingSave;
+    private bool _closeApproved;
     private readonly Func<CancellationToken, Task<string>>? _generate;
     private readonly Button _generateButton;
     private readonly Button _cancelGeneration;
@@ -18,9 +24,9 @@ public sealed class MeetingNotesWindow : Window
     private FlowDocumentScrollViewer _preview = null!;
     private void RefreshPreview() { if (_preview != null) _preview.Document = Format(string.IsNullOrWhiteSpace(Notes) ? "Chưa có ghi chú. Chọn Chỉnh sửa để tự viết." : Notes); }
     public string Notes => _editor.Text;
-    public MeetingNotesWindow(string notes, string summary, string sessionTitle = "", Func<CancellationToken, Task<string>>? generate = null)
+    public MeetingNotesWindow(string notes, string summary, string sessionTitle = "", Func<CancellationToken, Task<string>>? generate = null, Func<string, Task<bool>>? saveNotes = null)
     {
-        _generate = generate;
+        _generate = generate; _save = saveNotes; _savedNotes = notes;
         Title = "Ghi chú"; Width = 760; Height = 560; MinWidth = 600; MinHeight = 400;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Background = new SolidColorBrush(Color.FromRgb(245, 248, 247));
@@ -41,11 +47,13 @@ public sealed class MeetingNotesWindow : Window
             footer.Children.Add(useSummary);
         }
         var close = new Button { Content = "Đóng", Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 8, 0) };
-        close.Click += (_, _) => { DialogResult = false; }; footer.Children.Add(close);
+        close.Click += (_, _) => { if (_save != null) Close(); else DialogResult = false; }; footer.Children.Add(close);
         var save = new Button { Content = "Lưu ghi chú", IsDefault = true };
-        save.Click += (_, _) => { DialogResult = true; }; footer.Children.Add(save);
+        save.Click += async (_, _) => { if (_save != null) await FlushNotesAsync(); else DialogResult = true; }; footer.Children.Add(save);
         _editor = new TextBox { Text = notes, AcceptsReturn = true, AcceptsTab = true, TextWrapping = TextWrapping.Wrap,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto, FontSize = 14, Padding = new Thickness(14) };
+        _saveTimer.Tick += async (_, _) => { _saveTimer.Stop(); await FlushNotesAsync(); };
+        _editor.TextChanged += (_, _) => { if (_save != null && !_closed) { _saveTimer.Stop(); _saveTimer.Start(); } };
         _editor.Visibility = Visibility.Collapsed;
         _preview = new FlowDocumentScrollViewer { IsToolBarVisible = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Background = Brushes.White };
         RefreshPreview();
@@ -66,10 +74,35 @@ public sealed class MeetingNotesWindow : Window
         var aiActions = new StackPanel { Orientation = Orientation.Horizontal }; aiActions.Children.Add(_generateButton); aiActions.Children.Add(_cancelGeneration); tools.Children.Add(aiActions);
         DockPanel.SetDock(tools, Dock.Top); layout.Children.Add(tools);
         DockPanel.SetDock(_message, Dock.Bottom); layout.Children.Add(_message);
-        Closed += (_, _) => { _closed = true; _request?.Cancel(); };
+        Closing += async (_, e) => {
+            if (_save == null || _closeApproved) return;
+            e.Cancel = true;
+            if (_closingSave) return;
+            _closingSave = true; _request?.Cancel();
+            try { if (await FlushNotesAsync()) { _closeApproved = true; Close(); } }
+            finally { _closingSave = false; }
+        };
+        Closed += (_, _) => { _closed = true; _saveTimer.Stop(); _request?.Cancel(); };
         var reading = new Grid(); reading.Children.Add(_preview); reading.Children.Add(_editor);
         layout.Children.Add(new Border { Child = reading, Background = Brushes.White, BorderBrush = new SolidColorBrush(Color.FromRgb(194, 221, 213)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(8) });
 
+    }
+    public async Task<bool> FlushNotesAsync()
+    {
+        _saveTimer.Stop();
+        if (_save == null) return true;
+        await _saveGate.WaitAsync();
+        try {
+            while (_savedNotes != Notes) {
+                var snapshot = Notes;
+                _message.Text = "Đang lưu…";
+                if (!await _save(snapshot)) { _message.Text = "Chưa lưu được ghi chú. Nội dung vẫn được giữ ở đây; bấm Lưu để thử lại."; return false; }
+                _savedNotes = snapshot;
+            }
+            if (!_closed) _message.Text = "Đã tự lưu · Hỗ trợ Markdown";
+            return true;
+        } catch (Exception ex) { if (!_closed) _message.Text = "Chưa lưu được ghi chú: " + ex.Message; return false; }
+        finally { _saveGate.Release(); }
     }
     public async Task GenerateNotesAsync()
     {
