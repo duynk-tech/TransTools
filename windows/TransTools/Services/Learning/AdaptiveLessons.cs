@@ -7,14 +7,14 @@ public sealed record AdaptiveLesson(string Id, string Language, string Original,
 {
     public static AdaptiveLesson Create(string language, string original, string meaning, string context) => new(Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(language + "|" + original))), language, original, meaning, context);
 }
-public sealed record LessonProgress(int Attempts = 0, int Successes = 0, int Difficulty = 1, DateTime Due = default, string[]? SuccessfulDays = null)
+public sealed record LessonProgress(int Attempts = 0, int Successes = 0, int Difficulty = 1, DateTime Due = default, string[]? SuccessfulDays = null, DateTime? LastAttempt = null)
 {
     public LessonProgress Record(bool correct, DateTime now)
     {
         var days = correct ? (SuccessfulDays ?? []).Append(now.ToString("yyyy-MM-dd")).Distinct().ToArray() : [];
         var success = Successes + (correct ? 1 : 0); var attempts = Attempts + 1; var difficulty = correct ? Difficulty : Math.Max(1, Difficulty - 1);
         if (correct && days.Length >= 3 && success * 5 >= attempts * 4) { difficulty = Math.Min(3, difficulty + 1); days = []; }
-        return new(attempts, success, difficulty, now.AddDays(correct ? (difficulty == 3 ? 7 : 2) : 1), days);
+        return new(attempts, success, difficulty, now.AddDays(correct ? (difficulty == 3 ? 7 : 2) : 1), days, now);
     }
 }
 public sealed class AdaptiveLessons
@@ -53,7 +53,7 @@ public sealed class AdaptiveLessons
         catch { _progress = new(); _canSave = false; }
     }
     public LessonProgress Get(string id) => _progress.GetValueOrDefault(id) ?? new();
-    public AdaptiveLesson? Next(IEnumerable<AdaptiveLesson> lessons, DateTime now) => lessons.DistinctBy(l => l.Id).Where(l => Get(l.Id).Due <= now).OrderBy(l => Get(l.Id).Due).ThenBy(l => Get(l.Id).Attempts).ThenBy(l => l.Id).FirstOrDefault();
+    public AdaptiveLesson? Next(IEnumerable<AdaptiveLesson> lessons, DateTime now) => lessons.DistinctBy(l => l.Id).Where(l => Get(l.Id).Due <= now).OrderBy(l => Get(l.Id).Attempts == 0 ? .5 : (double)Get(l.Id).Successes / Get(l.Id).Attempts).ThenBy(l => Get(l.Id).LastAttempt ?? DateTime.MinValue).ThenBy(l => l.Id).FirstOrDefault();
     public void Record(AdaptiveLesson lesson, bool correct, DateTime now)
     {
         if (!_canSave) throw new InvalidDataException("Chưa đọc được tiến độ cũ; dữ liệu được giữ nguyên.");

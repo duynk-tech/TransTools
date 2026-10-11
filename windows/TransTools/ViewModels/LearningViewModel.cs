@@ -40,6 +40,7 @@ public partial class LearningViewModel : ObservableObject
     [RelayCommand(IncludeCancelCommand = true)] private async Task GenerateLessonsAsync(CancellationToken token)
     {
         if (IsGeneratingLessons) return;
+        if (_adaptive.Lessons.Count >= 500) { LessonGenerationStatus = "Đã lưu 500 câu. Hãy luyện và ôn các câu hiện có trước."; return; }
         var language = SelectedLanguage; var goal = LearningGoal; var level = LearningLevel; IsGeneratingLessons = true;
         try {
             var config = new SecureCredentialStore().LoadConfiguredProvider() ?? throw new InvalidOperationException("Cấu hình AI trong Cài đặt trước khi tạo bài.");

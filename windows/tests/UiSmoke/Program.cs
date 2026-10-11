@@ -812,6 +812,11 @@ internal static class Program
             if (progress.Difficulty != 1) throw new Exception("Repeated same-day answers increased difficulty");
             progress = progress.Record(true,day.AddDays(1)).Record(true,day.AddDays(2));
             if (progress.Difficulty != 2 || progress.Record(false,day.AddDays(3)).Difficulty != 1) throw new Exception("Adaptive multi-day difficulty progression failed");
+            lessonStore.Record(generated[0], true, day);
+            lessonStore.Record(generated[1], false, day.AddDays(1));
+            var restoredProgress = new TransTools.Services.Learning.AdaptiveLessons(lessonRoot);
+            if (restoredProgress.Get(generated[1].Id).LastAttempt != day.AddDays(1) || restoredProgress.Next(generated, day.AddDays(10))?.Id != generated[1].Id) throw new Exception("Adaptive plan does not prioritize weaker due lessons or persist last attempt");
+            if (restoredProgress.Next(new[] { generated[1] }, day.AddHours(1)) != null) throw new Exception("Adaptive plan includes lessons before their due date");
             var exportFixture = new MeetingSession { Title = "Tiếng Việt", Captions = [new Caption { Start = 1.25, End = 3.5, Original = "Hello", Vietnamese = "Xin chào" }] };
             var exportSrt = MeetingViewModel.FormatExport(exportFixture, "srt");
             if (!exportSrt.Contains("00:00:01,250 --> 00:00:03,500") || !exportSrt.Contains("Hello\nXin chào")) throw new Exception("Meeting SRT export lost timing or bilingual text");
