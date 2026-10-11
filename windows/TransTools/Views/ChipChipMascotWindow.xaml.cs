@@ -5,6 +5,32 @@ namespace TransTools.Views;
 public partial class ChipChipMascotWindow : Window
 {
     private readonly System.Windows.Threading.DispatcherTimer _reminderTimer = new() { Interval = TimeSpan.FromSeconds(20) };
+    private bool _meetingRecording;
+    private string _activity = "auto";
+    private static readonly Dictionary<string, System.Windows.Media.Imaging.BitmapImage> ActivityImages = LoadActivityImages();
+    private static Dictionary<string, System.Windows.Media.Imaging.BitmapImage> LoadActivityImages()
+    {
+        var images = new Dictionary<string, System.Windows.Media.Imaging.BitmapImage>();
+        foreach (var name in new[] { "writing", "thinking", "sleeping", "strolling", "flowers", "coffee" }) {
+            var image = new System.Windows.Media.Imaging.BitmapImage(); image.BeginInit();
+            image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            image.DecodePixelWidth = 192;
+            image.UriSource = new Uri($"pack://application:,,,/TransTools;component/Resources/Mascot/Activities/{name}.png", UriKind.Absolute);
+            image.EndInit(); image.Freeze(); images[name] = image;
+        }
+        return images;
+    }
+    private void ActivityChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (ActivityChoice?.SelectedValue is not string choice) return;
+        _activity = choice; ApplyActivity();
+    }
+    private void ApplyActivity()
+    {
+        if (MascotImage == null) return;
+        var selected = _meetingRecording ? "writing" : _activity == "auto" ? "coffee" : _activity;
+        if (ActivityImages.TryGetValue(selected, out var image)) MascotImage.Source = image;
+    }
     private bool _reminding;
     private bool _wasVisible;
     public event Action? LearningRequested;
@@ -29,6 +55,7 @@ public partial class ChipChipMascotWindow : Window
     }
     public void SetMeetingState(bool recording, bool canToggle)
     {
+        _meetingRecording = recording; ApplyActivity();
         MeetingActionButton.IsEnabled = canToggle;
         MeetingActionIcon.Text = recording ? "\uE71A" : "\uE768";
         MeetingActionLabel.Text = recording ? "Dừng cuộc họp" : "Bắt đầu cuộc họp";
@@ -44,7 +71,7 @@ public partial class ChipChipMascotWindow : Window
         _reminderTimer.Stop(); _reminderTimer.Start();
     }
     public ChipChipMascotWindow() {
-        InitializeComponent();
+        InitializeComponent(); ApplyActivity();
         MascotMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Custom;
         MascotMenu.CustomPopupPlacementCallback = (popupSize, targetSize, offset) => [
             new System.Windows.Controls.Primitives.CustomPopupPlacement(new Point(-popupSize.Width, (targetSize.Height - popupSize.Height) / 2), System.Windows.Controls.Primitives.PopupPrimaryAxis.Vertical),
