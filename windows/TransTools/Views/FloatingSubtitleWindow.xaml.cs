@@ -27,7 +27,7 @@ public partial class FloatingSubtitleWindow : Window
         _preferences.Changed += PreferencesChanged;
         Closed += (_, _) => _preferences.Changed -= PreferencesChanged;
         SetBounds(); ApplyPreferences(); RenderContent();
-        SizeChanged += (_, _) => { ApplyMascot(); PacingLabel.Visibility = ActualWidth < 600 ? Visibility.Collapsed : Visibility.Visible; FollowLatest(); };
+        SizeChanged += (_, _) => { ApplyMascot(); UpdatePacingVisibility(); FollowLatest(); };
         IsVisibleChanged += (_, _) => ApplyMascot();
     }
     private void PreferencesChanged() => Dispatcher.Invoke(() => {
@@ -68,11 +68,14 @@ public partial class FloatingSubtitleWindow : Window
     }
     public void SetMeetingState(bool running, bool canToggle = true)
     {
-        _running = running; StopButton.Content = running ? "Tạm dừng" : "Bắt đầu"; StopButton.IsEnabled = canToggle;
+        _running = running; StopLabel.Text = running ? "Tạm dừng" : "Bắt đầu"; StopIcon.Text = running ? "\uE769" : "\uE768"; StopButton.IsEnabled = canToggle;
         RenderContent();
     }
+    private void UpdatePacingVisibility() => PacingLabel.Visibility = _running && !_reviewing && ActualWidth >= 600 ? Visibility.Visible : Visibility.Collapsed;
     private void RenderContent()
     {
+        UpdatePacingVisibility();
+        StateIcon.Text = _reviewing ? "\uE81C" : _running ? "\uE9D9" : "\uE769";
         StateLabel.Text = _reviewing ? "Xem lại" : _running ? "Theo dõi cuộc họp" : "Tạm dừng";
         CaptionScroll.Visibility = _reviewing ? Visibility.Collapsed : Visibility.Visible;
         ReviewList.Visibility = _reviewing ? Visibility.Visible : Visibility.Collapsed;
@@ -144,7 +147,7 @@ public partial class FloatingSubtitleWindow : Window
         var ink = MakeBrush(_preferences.Light ? "#292F2D" : "#FFFFFF"); var muted = MakeBrush(_preferences.Light ? "#65756F" : "#B0C3BB");
         TranslatedText.Foreground = ink; OriginalText.Foreground = IncomingText.Foreground = muted;
         var accent = MakeBrush(_preferences.Light ? "#287568" : "#A6E0CA");
-        StateLabel.Foreground = PacingLabel.Foreground = IncomingTranslation.Foreground = accent;
+        StateIcon.Foreground = StateLabel.Foreground = PacingLabel.Foreground = IncomingTranslation.Foreground = accent;
         StateBadge.Background = MakeBrush(_preferences.Light ? "#E0EFE9" : "#244A42");
         foreach (var button in ToolbarActions.Children.OfType<Button>()) { button.Background = StateBadge.Background; button.Foreground = accent; }
         Resources["HudOriginalVisibility"] = _preferences.DisplayMode == "original" || (_preferences.DisplayMode == "bilingual" && _preferences.ShowOriginal) ? Visibility.Visible : Visibility.Collapsed;

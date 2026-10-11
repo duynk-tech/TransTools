@@ -10,7 +10,7 @@ public partial class SettingsView : UserControl
         SettingsSections.SelectedIndex = 4;
         if (VoiceSettingsHost.Content is VoiceSettingsView voice && voice.DataContext is VoiceSettingsViewModel model && model.CanConfigure) model.Language = language;
     }
-    private void About_Click(object sender, System.Windows.RoutedEventArgs e) { new AboutWindow { Owner = System.Windows.Window.GetWindow(this) }.ShowDialog(); }
+    private void About_Click(object sender, System.Windows.RoutedEventArgs e) { new AboutWindow(() => { SettingsSections.SelectedIndex = 6; if (DataContext is SettingsViewModel model) model.CheckUpdateCommand.Execute(null); }) { Owner = System.Windows.Window.GetWindow(this) }.ShowDialog(); }
     public SettingsView(SettingsViewModel viewModel, System.Func<bool>? audioBusy = null)
     {
         InitializeComponent();

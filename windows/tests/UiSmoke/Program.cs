@@ -417,6 +417,7 @@ internal static class Program
                         if (notebook.FilteredCaptionCount != 0 || sample.Captions.Count != 12) throw new Exception("Transcript filtering changed stored captions or its visible count");
                         notebook.ClearCaptionSearchCommand.Execute(null); Pump();
                         if (notebook.FilteredCaptionCount != 12) throw new Exception("Clearing transcript search did not restore the visible count");
+                        if (!notebook.CaptionView!.Cast<Caption>().Select(c => c.DisplayOrdinal).SequenceEqual(Enumerable.Range(1, 12))) throw new Exception("Notebook transcript numbering did not follow the visible list");
                         for (var n = 0; n < 20; n++) notebook.IncreaseCaptionFontCommand.Execute(null);
                         if (notebook.CaptionFontSize != 22 || notebook.IncreaseCaptionFontCommand.CanExecute(null)) throw new Exception("Notebook font upper limit differs from macOS");
                         for (var n = 0; n < 20; n++) notebook.DecreaseCaptionFontCommand.Execute(null);
@@ -426,10 +427,15 @@ internal static class Program
                         sample.Captions[0].Vietnamese = "";
                         foreach (var mode in notebook.CaptionModes) {
                             notebook.CaptionMode = mode; Pump();
-                            if (!Descendants(view).OfType<TextBlock>().Any(t => t.IsVisible && t.Text == sample.Captions[0].Original)) throw new Exception("Notebook display mode erased a caption without translation: " + mode);
+                            if (!Descendants(view).OfType<TextBox>().Any(t => t.IsVisible && t.IsReadOnly && t.Text == sample.Captions[0].Original)) throw new Exception("Notebook display mode erased a selectable caption without translation: " + mode);
                         }
                         sample.Captions[0].Vietnamese = before[0].Vietnamese;
                         notebook.SelectedSession = null; notebook.SelectedSession = sample; notebook.CaptionMode = "Song ngữ"; Pump();
+                        var selectable = Descendants(view).OfType<TextBox>().First(t => t.IsVisible && t.IsReadOnly && t.Text == sample.Captions[0].Original);
+                        var textSize = (selectable.ActualWidth, selectable.ActualHeight);
+                        selectable.Focus(); selectable.Select(0, 13); selectable.Copy(); Pump();
+                        if (Clipboard.GetText() != sample.Captions[0].Original[..13]) throw new Exception("Notebook partial text copy did not preserve the selected words");
+                        if (textSize != (selectable.ActualWidth, selectable.ActualHeight)) throw new Exception("Notebook text selection changed its layout");
                         if (!before.SequenceEqual(sample.Captions.Select(c => (c.Id, c.Original, c.Vietnamese)))) throw new Exception("Notebook display controls altered stored captions");
                     }
                     Pump(); window.UpdateLayout();
@@ -710,7 +716,10 @@ internal static class Program
                 ValidateControlLayout(voiceCaptureWindow, "Personal voice recorder"); Capture(voiceCaptureWindow, output, "personal-voice-recorder.png");
                 voiceCaptureWindow.Close();
             }
-            var about = new AboutWindow { Owner = window }; about.Show(); Pump(); ValidateControlLayout(about, "About"); Capture(about, output, "about.png"); about.Close();
+            var about = new AboutWindow(() => { }) { Owner = window }; about.Show(); Pump(); ValidateControlLayout(about, "About"); Capture(about, output, "about.png"); about.Close();
+            var updateRequested = false; var routedAbout = new AboutWindow(() => updateRequested = true) { Owner = window }; routedAbout.Show(); Pump();
+            ((Button)routedAbout.FindName("CheckUpdatesButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+            if (!updateRequested || routedAbout.IsVisible) throw new Exception("About update action did not close and route to update checking");
             var rename = new RenameRecordWindow("Cuộc họp dự án"){ Owner = window }; rename.Show(); Pump(); ValidateControlLayout(rename, "Rename record"); Capture(rename, output, "rename-record.png"); rename.Close();
             var deleteConfirm = new ConfirmDeleteWindow("Cuộc họp dự án") { Owner = window }; deleteConfirm.Show(); Pump(); ValidateControlLayout(deleteConfirm, "Delete confirmation"); Capture(deleteConfirm, output, "delete-record.png"); deleteConfirm.Close();
             var clearMeeting = new ConfirmDeleteWindow("Nội dung cuộc họp hiện tại", currentMeeting: true) { Owner = window }; clearMeeting.Show(); Pump(); ValidateControlLayout(clearMeeting, "Clear current meeting"); Capture(clearMeeting, output, "clear-current-meeting.png"); clearMeeting.Close();
@@ -1042,6 +1051,7 @@ internal static class Program
         if (!paused) throw new Exception("HUD pause action did not reach the meeting");
         hud.SetMeetingState(false); ((Button)hud.FindName("StopButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         if (!started) throw new Exception("HUD start action did not reach the meeting");
+        if (((TextBlock)hud.FindName("PacingLabel")).IsVisible || ((TextBlock)hud.FindName("StopIcon")).Text != "\uE768") throw new Exception("Paused HUD retains pacing or the pause icon");
         hud.SetMeetingState(true);
         for (var i = 0; i < 33; i++) hud.UpdateCaption(new Caption { Start = i, Original = "Original sentence " + i, Vietnamese = "Câu hoàn chỉnh cần được giữ lại để người dùng có thể đọc đủ nội dung. " + i });
         hud.UpdateIncoming(new Caption { Start = 34, Original = "A new sentence is arriving and should not replace the completed translation." });

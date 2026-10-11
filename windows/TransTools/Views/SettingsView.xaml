@@ -202,12 +202,13 @@
    <TextBlock Text="Dọn dữ liệu sẽ chuyển vào Thùng rác. Sổ tay, hội thoại, từ vựng và khóa API được giữ lại khi dọn bộ nhớ đệm." Foreground="#65756F" TextWrapping="Wrap" Margin="0,0,0,20" LineHeight="21"/>
    <ItemsControl ItemsSource="{Binding StorageGroups}">
     <ItemsControl.ItemTemplate><DataTemplate>
-     <Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="16" Padding="20" Margin="0,0,0,16">
+     <Border Background="White" BorderBrush="#C2DDD5" BorderThickness="1" CornerRadius="14" Padding="18" Margin="0,0,0,16">
       <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-       <StackPanel Margin="0,0,20,0"><TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" Foreground="#243D35" TextWrapping="Wrap"/><TextBlock Text="{Binding Detail}" Foreground="#65756F" TextWrapping="Wrap" Margin="0,6,0,6"/><TextBlock Text="{Binding Size}" Foreground="#73827C" FontSize="12"/></StackPanel>
-       <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-        <Button Width="40" Padding="0" ToolTip="Mở thư mục" Style="{StaticResource SecondaryButton}" Command="{Binding DataContext.OpenStorageFolderCommand,RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Margin="0,0,8,0"><TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets"/></Button>
-        <Button Width="40" Padding="0" ToolTip="Chuyển nhóm dữ liệu vào Thùng rác" Style="{StaticResource DestructiveButton}" Command="{Binding DataContext.RemoveStorageCommand,RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Visibility="{Binding Removable,Converter={StaticResource BoolVisibility}}"><TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"/></Button>
+       <StackPanel><TextBlock Text="{Binding Title}" FontSize="13" FontWeight="Bold" Foreground="#243D35" TextWrapping="Wrap"/><TextBlock Text="{Binding Detail}" FontSize="11" Foreground="#65756F" TextWrapping="Wrap" Margin="0,6,0,6"/><TextBlock Text="{Binding Size}" Foreground="#73827C" FontSize="11"/></StackPanel>
+       <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Width="92" Margin="16,0,0,0">
+        <Button Width="42" Height="36" MinHeight="36" Padding="0" ToolTip="Mở thư mục" Style="{StaticResource SecondaryButton}" Command="{Binding DataContext.OpenStorageFolderCommand,RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Margin="0,0,8,0"><TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets"/></Button>
+        <Button Width="42" Height="36" MinHeight="36" Padding="0" ToolTip="Chuyển nhóm dữ liệu vào Thùng rác" Style="{StaticResource DestructiveButton}" Command="{Binding DataContext.RemoveStorageCommand,RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Visibility="{Binding Removable,Converter={StaticResource BoolVisibility}}"><TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"/></Button>
+        <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" Foreground="#73827C" Width="42" Height="36" TextAlignment="Center" Padding="0,10,0,0" ToolTip="Dữ liệu được bảo vệ"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding Removable}" Value="False"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
        </StackPanel>
       </Grid>
      </Border>

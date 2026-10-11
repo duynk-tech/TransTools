@@ -23,9 +23,13 @@ public partial class NotebookViewModel
     {
         if (oldValue != null) oldValue.CollectionChanged -= CaptionViewChanged;
         if (newValue != null) newValue.CollectionChanged += CaptionViewChanged;
+        CaptionViewChanged(this, new System.Collections.Specialized.NotifyCollectionChangedEventArgs(System.Collections.Specialized.NotifyCollectionChangedAction.Reset));
+    }
+    private void CaptionViewChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (CaptionView != null) { var ordinal = 0; foreach (var caption in CaptionView.Cast<Caption>()) caption.DisplayOrdinal = ++ordinal; }
         OnPropertyChanged(nameof(FilteredCaptionCount));
     }
-    private void CaptionViewChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) => OnPropertyChanged(nameof(FilteredCaptionCount));
     partial void OnSelectedSessionChanged(MeetingSession? value)
     {
         OnPropertyChanged(nameof(IsConversationSelected)); OnPropertyChanged(nameof(IsMeetingSelected)); OnPropertyChanged(nameof(HasSelectedSession));

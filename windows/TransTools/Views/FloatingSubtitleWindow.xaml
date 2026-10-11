@@ -6,7 +6,7 @@
 <Grid Grid.Column="1"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
 <Grid Margin="0,0,0,8" Height="28"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
 <StackPanel x:Name="ToolbarActions" Grid.Column="1" Orientation="Horizontal" Opacity="0" IsHitTestVisible="False">
-<Button x:Name="StopButton" Content="Bắt đầu" Style="{StaticResource HudButton}" Click="ToggleMeeting_Click" Margin="0,0,6,0"/>
+<Button x:Name="StopButton" Height="24" MinHeight="24" FontSize="10" Style="{StaticResource HudButton}" Click="ToggleMeeting_Click" Margin="0,0,6,0"><StackPanel Orientation="Horizontal"><TextBlock x:Name="StopIcon" Text="&#xE768;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock x:Name="StopLabel" Text="Bắt đầu" VerticalAlignment="Center"/></StackPanel></Button>
 <Button x:Name="ReviewButton" Style="{StaticResource HudButton}" ToolTip="Xem lại 30 câu gần nhất" Click="Review_Click" Width="28" Padding="0" Margin="0,0,6,0"><TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets"/></Button>
 <Button x:Name="SettingsButton" Style="{StaticResource HudButton}" ToolTip="Cài đặt nhịp độ, cỡ chữ và vị trí" Click="ShowSettings_Click" Width="28" Padding="0" Margin="0,0,6,0"><TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets"/><Button.ContextMenu><ContextMenu>
 <MenuItem Header="Nhịp độ hiển thị"><MenuItem Header="Thong thả" Tag="contextual" IsCheckable="True" Click="Pacing_Click"/><MenuItem Header="Cân bằng" Tag="balanced" IsCheckable="True" Click="Pacing_Click"/><MenuItem Header="Nhanh" Tag="fast" IsCheckable="True" Click="Pacing_Click"/></MenuItem>
@@ -17,7 +17,7 @@
 <Button Style="{StaticResource HudButton}" ToolTip="Mở cửa sổ chính" Click="OpenMain_Click" Width="28" Padding="0" Margin="0,0,6,0"><TextBlock Text="&#xE737;" FontFamily="Segoe MDL2 Assets"/></Button>
 <Button Style="{StaticResource HudButton}" ToolTip="Ẩn phụ đề nổi" Click="CloseButton_Click" Width="28" Padding="0"><TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets"/></Button>
 </StackPanel>
-<StackPanel Orientation="Horizontal" VerticalAlignment="Center" ClipToBounds="True" Margin="0,0,8,0"><Border x:Name="StateBadge" Background="#244A42" CornerRadius="9" Padding="7,3"><TextBlock x:Name="StateLabel" Text="Tạm dừng" Foreground="#A6E0CA" FontSize="11" FontWeight="SemiBold"/></Border><TextBlock x:Name="PacingLabel" Text="Nhịp cân bằng" FontSize="10" Foreground="#89BFA9" VerticalAlignment="Center" Margin="8,0,0,0"/></StackPanel>
+<StackPanel Orientation="Horizontal" VerticalAlignment="Center" ClipToBounds="True" Margin="0,0,8,0"><Border x:Name="StateBadge" Background="#244A42" CornerRadius="9" Padding="7,3"><StackPanel Orientation="Horizontal"><TextBlock x:Name="StateIcon" Text="&#xE769;" FontFamily="Segoe MDL2 Assets" FontSize="10" Foreground="#A6E0CA" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock x:Name="StateLabel" Text="Tạm dừng" Foreground="#A6E0CA" FontSize="10" FontWeight="SemiBold"/></StackPanel></Border><TextBlock x:Name="PacingLabel" Text="Nhịp cân bằng" FontSize="10" Foreground="#89BFA9" VerticalAlignment="Center" Margin="8,0,0,0"/></StackPanel>
 </Grid>
 <Grid Grid.Row="1"><Border BorderBrush="#407E6C" BorderThickness="0,1,0,0"/>
 <ScrollViewer x:Name="CaptionScroll" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0" ScrollChanged="CaptionScroll_Changed"><StackPanel>
