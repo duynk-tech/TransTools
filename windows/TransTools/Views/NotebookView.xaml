@@ -53,14 +53,14 @@
       <DockPanel>
         <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
           <StackPanel>
-            <DockPanel><Button DockPanel.Dock="Right" Content="✎" ToolTip="Đổi tên bản ghi" Command="{Binding RenameRecordCommand}" Style="{StaticResource SecondaryButton}" Width="40" Margin="12,0,0,0"/><TextBlock Text="{Binding SelectedSession.Title}" FontSize="20" FontWeight="Bold" Foreground="#243D35" TextWrapping="Wrap" /></DockPanel>
+            <DockPanel><Button DockPanel.Dock="Right" Content="&#xE70F;" FontFamily="Segoe MDL2 Assets" AutomationProperties.Name="Đổi tên bản ghi" ToolTip="Đổi tên bản ghi" Command="{Binding RenameRecordCommand}" Style="{StaticResource SecondaryButton}" Width="40" Margin="12,0,0,0"/><TextBlock Text="{Binding SelectedSession.Title}" FontSize="20" FontWeight="Bold" Foreground="#243D35" TextWrapping="Wrap" /></DockPanel>
             </StackPanel>
           <WrapPanel HorizontalAlignment="Left" Margin="0,12,0,0">
-            <Button Content="Tiếp tục trò chuyện" Command="{Binding ResumeConversationCommand}" Visibility="{Binding IsConversationSelected,Converter={StaticResource BoolVisibility}}" Margin="0,0,8,0"/><Button Content="Ghi chú" Command="{Binding OpenNotesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" />
-            <Button Visibility="{Binding IsMeetingSelected,Converter={StaticResource BoolVisibility}}" Content="Việc cần làm (AI)" Command="{Binding OpenTasksCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
+            <Button Command="{Binding ResumeConversationCommand}" Visibility="{Binding IsConversationSelected,Converter={StaticResource BoolVisibility}}" Margin="0,0,8,0" AutomationProperties.Name="Tiếp tục trò chuyện"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8F2;" FontFamily="Segoe MDL2 Assets" Margin="0,0,7,0" VerticalAlignment="Center"/><TextBlock Text="Tiếp tục trò chuyện" VerticalAlignment="Center"/></StackPanel></Button><Button Command="{Binding OpenNotesCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"  AutomationProperties.Name="Ghi chú"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE70B;" FontFamily="Segoe MDL2 Assets" Margin="0,0,7,0" VerticalAlignment="Center"/><TextBlock Text="Ghi chú" VerticalAlignment="Center"/></StackPanel></Button>
+            <Button Visibility="{Binding IsMeetingSelected,Converter={StaticResource BoolVisibility}}" Command="{Binding OpenTasksCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" AutomationProperties.Name="Việc cần làm (AI)"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE73A;" FontFamily="Segoe MDL2 Assets" Margin="0,0,7,0" VerticalAlignment="Center"/><TextBlock Text="Việc cần làm (AI)" VerticalAlignment="Center"/></StackPanel></Button>
 
             <Grid>
-              <Button x:Name="ExportButton" Content="Xuất ▾" Click="ShowExport_Click" Style="{StaticResource SecondaryButton}" />
+              <Button x:Name="ExportButton" Click="ShowExport_Click" Style="{StaticResource SecondaryButton}"  AutomationProperties.Name="Xuất ▾"><StackPanel Orientation="Horizontal"><TextBlock Text="&#xE72D;" FontFamily="Segoe MDL2 Assets" Margin="0,0,7,0" VerticalAlignment="Center"/><TextBlock Text="Xuất ▾" VerticalAlignment="Center"/></StackPanel></Button>
               <Popup x:Name="ExportPopup" PlacementTarget="{Binding ElementName=ExportButton}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
                 <Border Background="White" BorderBrush="#B5D2C9" BorderThickness="1" CornerRadius="10" Padding="8">
                   <StackPanel>
