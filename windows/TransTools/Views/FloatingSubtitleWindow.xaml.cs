@@ -27,7 +27,7 @@ public partial class FloatingSubtitleWindow : Window
         _preferences.Changed += PreferencesChanged;
         Closed += (_, _) => _preferences.Changed -= PreferencesChanged;
         SetBounds(); ApplyPreferences(); RenderContent();
-        SizeChanged += (_, _) => { ApplyMascot(); UpdatePacingVisibility(); FollowLatest(); };
+        SizeChanged += (_, _) => { ApplyMascot(); RenderContent(); FollowLatest(); };
         IsVisibleChanged += (_, _) => ApplyMascot();
     }
     private void PreferencesChanged() => Dispatcher.Invoke(() => {
