@@ -138,3 +138,8 @@ var boundedWalk = TransTools.Services.Experience.MascotWalkPolicy.Step(50, 1, 0,
 Check(boundedWalk.X <= 54.2, "Mascot stalled timer cannot jump across desktop");
 
 Check(TransTools.Services.Experience.MascotWalkPolicy.IdlePose(180, 23, false) == "sleeping" && TransTools.Services.Experience.MascotWalkPolicy.IdlePose(180,23,true) == "thinking", "Automatic mascot sleeps only when idle at night without active work");
+
+using (var todoPayload = System.Text.Json.JsonDocument.Parse(TransTools.Services.Notebook.MicrosoftTodoPayload.Create(" Kiểm tra 日本語 ", true, "Cuộc họp dự án", "Duy"))) {
+    Check(todoPayload.RootElement.GetProperty("title").GetString() == "Kiểm tra 日本語", "To Do payload preserves reviewed multilingual task");
+    Check(todoPayload.RootElement.GetProperty("status").GetString() == "completed" && todoPayload.RootElement.GetProperty("body").GetProperty("contentType").GetString() == "text", "To Do payload keeps completion and plain text context");
+}
