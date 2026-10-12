@@ -3,7 +3,9 @@
   "revision": "30bcd461c0d7338ad106b36314d3eedc2d4e998c",
   "sha256": {
     "onnx/encoder_model_quantized.onnx": "dfcd7a32be3fdd21cbcf5d354520d626f1768fd6e205ca62a6a11a4641d31f36",
-    "onnx/decoder_model_quantized.onnx": "cde3e02aaca72cfaf2267f6c31c4dcc1b323d769bf90c273f2a1c1d56198ddba"
+    "onnx/decoder_model_quantized.onnx": "cde3e02aaca72cfaf2267f6c31c4dcc1b323d769bf90c273f2a1c1d56198ddba",
+    "source.spm": "fdd9ab486ca8ea060967105e30db7d8928729c78a67448711d2dd7c3153b37cd",
+    "vocab.json": "bcc8bbafeb0b6b58fecf244f8da996da9aa45dbea7871164f9c8ce480507f9fe"
   },
   "samples": [
     {
