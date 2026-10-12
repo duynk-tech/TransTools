@@ -1076,6 +1076,15 @@ internal static class Program
         if (fallbackTasks.Result.Count != 1 || fallbackTasks.Result[0].Title != taskSession.Captions[0].Vietnamese) throw new Exception("Action item fallback changed transcript text");
         var emptyTasks = TransTools.Services.Notebook.MeetingTaskExtractor.ExtractAsync(new MeetingSession(), null, CancellationToken.None); Await(emptyTasks);
         if (emptyTasks.Result.Count != 0) throw new Exception("Empty meeting fabricated an action item");
+        var delayedTasks = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var delayedTaskWindow = new MeetingTasksWindow(taskSession, (_, token) => delayedTasks.Task.WaitAsync(token)) { Owner = window };
+        delayedTaskWindow.Show(); Pump();
+        var delayedInput = Descendants(delayedTaskWindow).OfType<TextBox>().Single(t => Equals(t.ToolTip, "Nội dung việc mới"));
+        if (delayedInput.IsEnabled) throw new Exception("Task analysis allows conflicting manual edits");
+        delayedTasks.SetResult("[{\"title\":\"Verify locked editing\",\"assignee\":\"\"}]");
+        for (var attempt = 0; attempt < 100 && !delayedInput.IsEnabled; attempt++) { Pump(); System.Threading.Thread.Sleep(10); }
+        if (!delayedInput.IsEnabled || !Descendants(delayedTaskWindow).OfType<TextBox>().Any(t => t.Text == "Verify locked editing" && t.IsEnabled)) throw new Exception("Finished task analysis did not restore editing");
+        delayedTaskWindow.Close(); Pump();
         var tasksWindow = new MeetingTasksWindow(taskSession, (_, _) => Task.FromResult("[{\"title\":\"Kiểm tra đầy đủ các thay đổi của dự án, chuẩn bị tài liệu và báo cáo kết quả trước cuộc họp tiếp theo để mọi người có thể xem lại.\",\"assignee\":\"Duy\"}]")) { Owner = window };
         tasksWindow.Show(); Pump();
         if (!Descendants(tasksWindow).OfType<TextBlock>().Any(t => t.IsVisible && t.Text == "Duy")) throw new Exception("Action items assignee is not visible");
