@@ -4,8 +4,8 @@
  <StackPanel>
   <DockPanel LastChildFill="True">
    <TextBlock DockPanel.Dock="Left" Text="{Binding Icon,ElementName=Heading}" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#287568" VerticalAlignment="Center" Margin="0,0,8,0"/>
-   <TextBlock Text="{Binding Title,ElementName=Heading}" FontSize="20" FontWeight="Bold" Foreground="#292F2D" TextWrapping="Wrap" VerticalAlignment="Center"/>
+   <TextBlock Text="{Binding Title,ElementName=Heading}" Style="{StaticResource PageHeading}" VerticalAlignment="Center"/>
   </DockPanel>
-  <TextBlock Text="{Binding Description,ElementName=Heading}" Foreground="#65756F" FontSize="12.5" TextWrapping="Wrap" Margin="0,4,0,0"/>
+  <TextBlock Text="{Binding Description,ElementName=Heading}" Style="{StaticResource PageDescription}" Margin="0,4,0,0"/>
  </StackPanel>
 </UserControl>

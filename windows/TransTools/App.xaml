@@ -54,6 +54,8 @@
          <Style x:Key="DestructiveButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
              <Setter Property="Background" Value="#FFF1F2"/><Setter Property="Foreground" Value="#DC2626"/><Setter Property="BorderBrush" Value="#FECDD3"/>
          </Style>
+         <Style x:Key="PageHeading" TargetType="TextBlock"><Setter Property="FontSize" Value="20"/><Setter Property="FontWeight" Value="Bold"/><Setter Property="Foreground" Value="#292F2D"/><Setter Property="TextWrapping" Value="Wrap"/></Style>
+         <Style x:Key="PageDescription" TargetType="TextBlock"><Setter Property="FontSize" Value="12.5"/><Setter Property="Foreground" Value="#65756F"/><Setter Property="TextWrapping" Value="Wrap"/></Style>
          <Style x:Key="TranscriptCard" TargetType="Border">
              <Setter Property="Background" Value="White"/><Setter Property="BorderBrush" Value="#C2DDD5"/><Setter Property="BorderThickness" Value="1"/>
              <Setter Property="CornerRadius" Value="14"/><Setter Property="Padding" Value="16"/>
