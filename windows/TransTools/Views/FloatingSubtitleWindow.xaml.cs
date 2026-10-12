@@ -76,7 +76,8 @@ public partial class FloatingSubtitleWindow : Window
     {
         UpdatePacingVisibility();
         StateIcon.Text = _reviewing ? "\uE81C" : _running ? "\uE9D9" : "\uE769";
-        StateLabel.Text = _reviewing ? "Xem lại" : _running ? "Theo dõi cuộc họp" : "Tạm dừng";
+        StateBadge.ToolTip = _reviewing ? "Xem lại" : _running ? "Theo dõi cuộc họp" : "Tạm dừng";
+        StateLabel.Text = _reviewing ? "Xem lại" : _running ? ActualWidth < 440 ? "Đang nghe" : "Theo dõi cuộc họp" : "Tạm dừng";
         CaptionScroll.Visibility = _reviewing ? Visibility.Collapsed : Visibility.Visible;
         ReviewList.Visibility = _reviewing ? Visibility.Visible : Visibility.Collapsed;
         var original = _current?.Original ?? _incoming?.Original ?? "";
