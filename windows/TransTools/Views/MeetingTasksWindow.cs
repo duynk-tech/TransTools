@@ -32,6 +32,7 @@ public sealed class MeetingTasksWindow : Window
     private readonly DockPanel _addRow = new() { Margin = new Thickness(0, 12, 0, 12) };
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 10) };
     private readonly Button _analyze;
+    private readonly Button _copy;
     private bool _running;
 
     public MeetingTasksWindow(MeetingSession session, Func<string, CancellationToken, Task<string>>? generate)
@@ -47,14 +48,15 @@ public sealed class MeetingTasksWindow : Window
         var icon = new TextBlock { Text = "\uE9D5", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 20, Foreground = new SolidColorBrush(Color.FromRgb(40, 117, 104)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
         DockPanel.SetDock(icon, Dock.Left); heading.Children.Add(icon);
         var titles = new StackPanel();
-        titles.Children.Add(new TextBlock { Text = "Việc cần làm sau cuộc họp (AI)", Style = (Style)FindResource("PageHeading") });
+        titles.Children.Add(new TextBlock { Text = "Việc cần làm sau cuộc họp (AI)", FontSize = 16, FontWeight = FontWeights.Bold });
         titles.Children.Add(new TextBlock { Text = session.Title, FontSize = 12, Foreground = new SolidColorBrush(Color.FromRgb(101, 117, 111)), TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = session.Title, Margin = new Thickness(0, 2, 0, 0) });
         heading.Children.Add(titles);
         var header = new Border { Background = Mint(), Child = heading }; DockPanel.SetDock(header, Dock.Top); layout.Children.Add(header);
         var footer = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(20, 12, 20, 12) };
         _analyze = new Button { Content = "Phân tích lại", Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 8, 0) };
         _analyze.Click += async (_, _) => await AnalyzeAsync(); footer.Children.Add(_analyze);
-        var copy = new Button { Content = "Sao chép danh sách", Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 8, 0) };
+        _copy = new Button { Content = "Sao chép danh sách", Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 8, 0) };
+        var copy = _copy;
         copy.Click += (_, _) => {
             var lines = _items.Children.OfType<Border>().Select(b => (Grid)b.Child).Select(g => ((CheckBox)g.Children[0], (TextBox)g.Children[1])).Where(p => !string.IsNullOrWhiteSpace(p.Item2.Text)).Select(p => $"- [{(p.Item1.IsChecked == true ? "x" : " ")}] {p.Item2.Text}");
             var text = string.Join(Environment.NewLine, lines);
@@ -100,7 +102,7 @@ public sealed class MeetingTasksWindow : Window
     private async Task AnalyzeAsync()
     {
         if (_running) return;
-        _running = true; _analyze.IsEnabled = false; _items.IsEnabled = _addRow.IsEnabled = false; _status.Text = "Đang phân tích bản ghi…";
+        _running = true; _analyze.IsEnabled = _copy.IsEnabled = false; _items.IsEnabled = _addRow.IsEnabled = false; _status.Text = "Đang phân tích bản ghi…";
         try {
             var tasks = await MeetingTaskExtractor.ExtractAsync(_session, _generate, _lifetime.Token);
             if (_lifetime.IsCancellationRequested) return;
@@ -109,6 +111,6 @@ public sealed class MeetingTasksWindow : Window
             _status.Text = tasks.Count == 0 ? "Chưa tìm thấy việc cần làm trong bản ghi." : "Kiểm tra và chỉnh sửa danh sách trước khi sử dụng.";
         } catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception ex) { if (!_lifetime.IsCancellationRequested) _status.Text = "Chưa phân tích được: " + ex.Message; }
-        finally { _running = false; if (!_lifetime.IsCancellationRequested) { _analyze.IsEnabled = true; _items.IsEnabled = _addRow.IsEnabled = true; } }
+        finally { _running = false; if (!_lifetime.IsCancellationRequested) { _analyze.IsEnabled = _copy.IsEnabled = true; _items.IsEnabled = _addRow.IsEnabled = true; } }
     }
 }
