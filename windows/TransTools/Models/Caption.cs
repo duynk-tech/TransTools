@@ -11,6 +11,7 @@ public class Caption : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
     public string? SourceLanguage { get; set; }
     public string? TargetLanguage { get; set; }
     public string? TranslationSource { get; set; }
+    public string? OriginalTextForLearning { get; set; }
     private string _vietnamese = string.Empty;
     public string Vietnamese { get => _vietnamese; set => SetProperty(ref _vietnamese, value); }
 

@@ -58,8 +58,9 @@ public partial class LearningViewModel : ObservableObject
         if (IsGeneratingLessons) return "Chờ tạo bài xong trước khi thêm câu từ Sổ tay.";
         try {
             var lessons = NotebookLearningPolicy.Candidates(session.Captions, SelectedLanguage).Take(20).Select(row => {
-                var id = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(SelectedLanguage + "|" + LearningGoal + "|" + row.Original)));
-                return new AdaptiveLesson(id, SelectedLanguage, row.Original, row.Vietnamese, "Câu từ Sổ tay", LearningGoal);
+                var original = row.OriginalTextForLearning ?? row.Original;
+                var id = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(SelectedLanguage + "|" + LearningGoal + "|" + original)));
+                return new AdaptiveLesson(id, SelectedLanguage, original, row.Vietnamese, "Câu từ Sổ tay", LearningGoal);
             }).ToList();
             var before = _adaptive.Lessons.Count; _adaptive.AddGenerated(lessons); NextLesson();
             LessonGenerationStatus = $"Đã thêm {_adaptive.Lessons.Count - before} câu từ Sổ tay. Không gửi dữ liệu lên AI.";

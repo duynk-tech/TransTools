@@ -1050,6 +1050,11 @@ internal static class Program
         var noteSave = notebook.SaveRecordNotesAsync(noteRecord, noteText); Await(noteSave);
         if (!noteSave.Result || saved.Notes != noteText || new TransTools.Services.Storage.ConversationStore().Load().Single(s => s.Id == saved.Id).Notes != noteText) throw new Exception("Conversation notes were not saved through shared conversation owner");
         notebook.SetConversations(conversation.Sessions);
+        var learningConversation = notebook.Sessions.Single(s => s.Id == saved.Id);
+        if (learningConversation.Captions.Any(row => row.SourceLanguage != learningConversation.SourceLanguage || row.TargetLanguage != "vi" || row.OriginalTextForLearning == null)) throw new Exception("Conversation notebook lost language or clean learning original");
+        if (learningConversation.Captions[0].OriginalTextForLearning != saved.Messages[0].Text || !learningConversation.Captions[0].Original.StartsWith("[")) throw new Exception("Learning metadata altered visible speaker labels or original message");
+        var wrongLearningLanguage = learningConversation.SourceLanguage == "en" ? "ja" : "en";
+        if (TransTools.Services.Learning.NotebookLearningPolicy.Candidates(learningConversation.Captions, wrongLearningLanguage).Any()) throw new Exception("Conversation notebook enters wrong learning language");
         if (notebook.Sessions.Single(s => s.Id == saved.Id).Notes != noteText) throw new Exception("Refreshing notebook lost conversation notes");
         var beforeRenameText = conversation.Messages[0].Text;
         Await(notebook.RenameRecordTitleAsync(notebook.Sessions.Single(s => s.Id == saved.Id), "Tên riêng của tôi"));

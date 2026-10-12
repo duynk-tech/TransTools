@@ -140,7 +140,8 @@ public partial class NotebookViewModel : ObservableObject
                 AudioSource = "Luyện nói với AI", SourceLanguage = ConversationLanguage(source.Language),
                 Captions = source.Messages.Select(m => new Caption {
                     Original = $"[{(m.IsUser ? "Bạn" : TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName)}] {m.Text}",
-                    Vietnamese = m.Translation, DisplayTimestamp = m.TimeString
+                    Vietnamese = m.Translation, DisplayTimestamp = m.TimeString,
+                    SourceLanguage = ConversationLanguage(source.Language), TargetLanguage = "vi", OriginalTextForLearning = m.Text
                 }).ToList()
             });
         }
