@@ -8,6 +8,8 @@ namespace TransTools.Views;
 public partial class LearningView : UserControl
 {
     private readonly LearningViewModel _viewModel;
+    public event Action? NotebookLearningRequested;
+    private void ImportNotebook_Click(object sender, RoutedEventArgs e) => NotebookLearningRequested?.Invoke();
 
     public LearningView(LearningViewModel viewModel)
     {

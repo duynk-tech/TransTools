@@ -39,7 +39,7 @@ public partial class NotebookView : UserControl
     private void ImportLearning_Click(object sender, System.Windows.RoutedEventArgs e)
     {
         if (_learning != null && DataContext is NotebookViewModel model && model.SelectedSession is { } session) {
-            var dialog = new NotebookLearningWindow(session, _learning) { Owner = Window.GetWindow(this) };
+            var dialog = new NotebookLearningWindow(session, _learning) { Owner = System.Windows.Window.GetWindow(this) };
             if (dialog.ShowDialog() == true) model.Status = dialog.ImportStatus;
         }
     }

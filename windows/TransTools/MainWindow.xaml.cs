@@ -184,7 +184,17 @@ public partial class MainWindow : Window
     private void NavLearning_Checked(object sender, RoutedEventArgs e)
     {
         if (MainContentGrid == null) return;
-        ShowView("learning", () => new LearningView(_learningViewModel));
+        ShowView("learning", () => {
+            var view = new LearningView(_learningViewModel);
+            view.NotebookLearningRequested += async () => {
+                try {
+                    await _notebookViewModel.LoadSessionsAsync();
+                    _notebookViewModel.SetConversations(_conversationViewModel.Sessions);
+                    new NotebookLearningWindow(_notebookViewModel.Sessions, _learningViewModel) { Owner = this }.ShowDialog();
+                } catch (Exception ex) { MessageBox.Show(this, ex.Message, "Không thể mở Sổ tay", MessageBoxButton.OK, MessageBoxImage.Warning); }
+            };
+            return view;
+        });
     }
 
     private void NavReader_Checked(object sender, RoutedEventArgs e)
