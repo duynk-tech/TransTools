@@ -6,6 +6,31 @@ public partial class ChipChipMascotWindow : Window
 {
     private readonly System.Windows.Threading.DispatcherTimer _reminderTimer = new() { Interval = TimeSpan.FromSeconds(20) };
     private bool _meetingRecording;
+    public Func<bool>? WorkBusy { get; set; }
+    private readonly System.Windows.Threading.DispatcherTimer _walkTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+    private DateTime _walkTick = DateTime.UtcNow, _walkPause;
+    private int _walkDirection = -1;
+    private bool _dragging;
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct LastInput { public uint Size; public uint Tick; }
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool GetLastInputInfo(ref LastInput value);
+    private static double IdleSeconds() { var input = new LastInput { Size = (uint)System.Runtime.InteropServices.Marshal.SizeOf<LastInput>() }; return GetLastInputInfo(ref input) ? unchecked((uint)Environment.TickCount - input.Tick) / 1000.0 : 0; }
+    private void StepWalking() {
+        var now = DateTime.UtcNow; var elapsed = (now - _walkTick).TotalSeconds; _walkTick = now;
+        var interacting = _dragging || IsMouseOver || MascotMenu.IsOpen || _reminding || Mouse.LeftButton == MouseButtonState.Pressed;
+        if (!TransTools.Services.Experience.MascotWalkPolicy.CanWalk(IsVisible, _activity == "strolling", _meetingRecording || WorkBusy?.Invoke() == true, interacting, !SystemParameters.ClientAreaAnimation, IdleSeconds()) || now < _walkPause) {
+            _walkTimer.Interval = TimeSpan.FromSeconds(1); return;
+        }
+        var area = SystemParameters.WorkArea;
+        var step = TransTools.Services.Experience.MascotWalkPolicy.Step(Left, _walkDirection, area.Left + 16, area.Right - Width - 16, elapsed);
+        Left = step.X; Top = Math.Max(area.Top, area.Bottom - Height - 2); _walkDirection = step.Direction;
+        if (step.PauseSeconds > 0) _walkPause = now.AddSeconds(step.PauseSeconds);
+        _walkTimer.Interval = TimeSpan.FromSeconds(1.0 / 24);
+    }
+    private void UpdateWalking() {
+        _walkTimer.Stop();
+        if (IsVisible && _activity == "strolling") { _walkTick = DateTime.UtcNow; _walkTimer.Interval = TimeSpan.FromSeconds(1); _walkTimer.Start(); }
+    }
     private string _activity = "auto";
     private static readonly Dictionary<string, System.Windows.Media.Imaging.BitmapImage> ActivityImages = LoadActivityImages();
     private static Dictionary<string, System.Windows.Media.Imaging.BitmapImage> LoadActivityImages()
@@ -23,7 +48,7 @@ public partial class ChipChipMascotWindow : Window
     private void ActivityChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
         if (ActivityChoice?.SelectedValue is not string choice) return;
-        _activity = choice; ApplyActivity();
+        _activity = choice; ApplyActivity(); UpdateWalking();
     }
     private void ApplyActivity()
     {
@@ -78,9 +103,10 @@ public partial class ChipChipMascotWindow : Window
             new System.Windows.Controls.Primitives.CustomPopupPlacement(new Point(targetSize.Width + 10, (targetSize.Height - popupSize.Height) / 2), System.Windows.Controls.Primitives.PopupPrimaryAxis.Vertical)
         ];
         SetBinding(TitleProperty, new System.Windows.Data.Binding("DisplayName") { Source = TransTools.Services.Experience.AssistantIdentity.Shared }); Left = SystemParameters.WorkArea.Right - Width - 30; Top = SystemParameters.WorkArea.Bottom - Height - 30;
-        IsVisibleChanged += (_, _) => { if (!IsVisible) { MascotMenu.IsOpen = false; ResetAnimation(); } };
+        _walkTimer.Tick += (_, _) => StepWalking();
+        IsVisibleChanged += (_, _) => { UpdateWalking(); if (!IsVisible) { MascotMenu.IsOpen = false; ResetAnimation(); } };
         _reminderTimer.Tick += (_, _) => { _reminderTimer.Stop(); _reminding = false; ResetAnimation(); if (!_wasVisible) Hide(); };
-        Closed += (_, _) => { _reminderTimer.Stop(); ResetAnimation(); };
+        Closed += (_, _) => { _walkTimer.Stop(); _reminderTimer.Stop(); ResetAnimation(); };
     }
     private void MascotEnter(object sender, MouseEventArgs e) {
         if (!_reminding) BubbleText.Text = "Cùng học với " + TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName + " nhé!";
@@ -92,6 +118,6 @@ public partial class ChipChipMascotWindow : Window
     private void MascotLeave(object sender, MouseEventArgs e) => ResetAnimation();
     private void MascotDown(object sender, MouseButtonEventArgs e) {
         if (e.ClickCount == 2) { LearningRequested?.Invoke(); e.Handled = true; return; }
-        if (e.LeftButton == MouseButtonState.Pressed) DragMove();
+        if (e.LeftButton == MouseButtonState.Pressed) { _dragging = true; _walkTimer.Stop(); try { DragMove(); } finally { _dragging = false; UpdateWalking(); } }
     }
 }

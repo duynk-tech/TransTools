@@ -285,7 +285,7 @@ public partial class MainWindow : Window
         if (_subtitleWindow?.IsMascotDisplayed == true) { _subtitleWindow.Activate(); return; }
         if (_mascotWindow == null)
         {
-            _mascotWindow = new ChipChipMascotWindow();
+            _mascotWindow = new ChipChipMascotWindow { WorkBusy = () => _meetingViewModel.IsBusy || _conversationViewModel.IsConversationActive || !_conversationViewModel.CanChangeSession };
             _mascotWindow.AttachQuickTranslation(_translateViewModel);
             _mascotWindow.SetMeetingState(_meetingViewModel.IsRecording, !_meetingViewModel.IsPreparing && !_meetingViewModel.IsStopping);
             _mascotWindow.LearningRequested += () => _learningViewModel.LearnWithChipChipCommand.Execute(null);
@@ -305,7 +305,7 @@ public partial class MainWindow : Window
 
     private void ShowBreakReminder() {
         if (_mascotWindow == null) {
-            _mascotWindow = new ChipChipMascotWindow();
+            _mascotWindow = new ChipChipMascotWindow { WorkBusy = () => _meetingViewModel.IsBusy || _conversationViewModel.IsConversationActive || !_conversationViewModel.CanChangeSession };
             _mascotWindow.AttachQuickTranslation(_translateViewModel);
             _mascotWindow.SetMeetingState(_meetingViewModel.IsRecording, !_meetingViewModel.IsPreparing && !_meetingViewModel.IsStopping);
             _mascotWindow.LearningRequested += () => _learningViewModel.LearnWithChipChipCommand.Execute(null);
