@@ -9,14 +9,15 @@ public partial class ReadingLibraryViewModel : ObservableObject, IDisposable
 {
     private readonly ReadingLibrary _library;
     private CancellationTokenSource? _request;
-    private bool _online;
+    [ObservableProperty] private bool _isOnline;
+    public bool CanSearch => !IsBusy && !string.IsNullOrWhiteSpace(Query);
     public ObservableCollection<ReadingStory> Stories { get; } = new(ReadingLibrary.Catalog);
     public ObservableCollection<ReadingPart> Parts { get; } = new();
     public ICollectionView StoriesView { get; }
-    [ObservableProperty] private string _query = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(CanSearch)), NotifyCanExecuteChangedFor(nameof(SearchCommand))] private string _query = "";
     [ObservableProperty] private string _languageFilter = "all";
     [ObservableProperty] private string _status = "Tải truyện cần Internet. Tên và link nguồn được giữ để bạn xem bản gốc.";
-    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanUsePart))] private bool _isBusy;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanUsePart), nameof(CanSearch)), NotifyCanExecuteChangedFor(nameof(SearchCommand))] private bool _isBusy;
     [ObservableProperty] private ReadingStory? _selectedStory;
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(PreviewText), nameof(CanUsePart))] private ReadingPart? _selectedPart;
     public string PreviewText => SelectedPart?.Text ?? "";
@@ -24,7 +25,7 @@ public partial class ReadingLibraryViewModel : ObservableObject, IDisposable
     public ReadingLibraryViewModel(ReadingLibrary? library = null)
     {
         _library = library ?? new(); StoriesView = CollectionViewSource.GetDefaultView(Stories);
-        StoriesView.Filter = item => item is ReadingStory story && (LanguageFilter == "all" || story.Language == LanguageFilter) && (_online || string.IsNullOrWhiteSpace(Query) || story.Title.Contains(Query, StringComparison.CurrentCultureIgnoreCase));
+        StoriesView.Filter = item => item is ReadingStory story && (LanguageFilter == "all" || story.Language == LanguageFilter) && (IsOnline || string.IsNullOrWhiteSpace(Query) || story.Title.Contains(Query, StringComparison.CurrentCultureIgnoreCase));
     }
     partial void OnQueryChanged(string value) => StoriesView.Refresh();
     partial void OnLanguageFilterChanged(string value)
@@ -33,16 +34,16 @@ public partial class ReadingLibraryViewModel : ObservableObject, IDisposable
     }
     [RelayCommand] private void Suggestions()
     {
-        _request?.Cancel(); _online = false; IsBusy = false; Query = "";
+        _request?.Cancel(); IsOnline = false; IsBusy = false; Query = "";
         Stories.Clear(); foreach (var item in ReadingLibrary.Catalog) Stories.Add(item); StoriesView.Refresh(); Status = "Truyện gợi ý";
     }
-    [RelayCommand] public async Task SearchAsync()
+    [RelayCommand(CanExecute = nameof(CanSearch))] public async Task SearchAsync()
     {
         if (string.IsNullOrWhiteSpace(Query)) return;
         var request = BeginRequest(); Status = "Đang tìm trên Wikisource…";
         try {
             var stories = await _library.SearchAsync(Query.Trim(), LanguageFilter, request.Token);
-            request.Token.ThrowIfCancellationRequested(); _online = true; Stories.Clear(); foreach (var item in stories) Stories.Add(item);
+            request.Token.ThrowIfCancellationRequested(); IsOnline = true; Stories.Clear(); foreach (var item in stories) Stories.Add(item);
             StoriesView.Refresh(); Status = stories.Count == 0 ? "Không tìm thấy nội dung phù hợp." : $"{stories.Count} kết quả từ Wikisource";
         } catch (OperationCanceledException) { }
         catch (Exception) { if (!request.IsCancellationRequested) Status = "Chưa tìm được truyện. Bạn có thể thử lại hoặc chọn truyện gợi ý."; }
