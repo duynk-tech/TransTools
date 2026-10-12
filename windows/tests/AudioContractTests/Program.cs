@@ -143,3 +143,5 @@ using (var todoPayload = System.Text.Json.JsonDocument.Parse(TransTools.Services
     Check(todoPayload.RootElement.GetProperty("title").GetString() == "Kiểm tra 日本語", "To Do payload preserves reviewed multilingual task");
     Check(todoPayload.RootElement.GetProperty("status").GetString() == "completed" && todoPayload.RootElement.GetProperty("body").GetProperty("contentType").GetString() == "text", "To Do payload keeps completion and plain text context");
 }
+
+await MicrosoftTodoTests.RunAsync();
