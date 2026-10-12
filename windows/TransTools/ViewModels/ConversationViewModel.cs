@@ -1,3 +1,4 @@
+using System.Text;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -34,6 +35,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     public ObservableCollection<ConversationSession> Sessions { get; } = new();
     [ObservableProperty] private ConversationSession? _selectedSession;
     [ObservableProperty] private string _customPrompt = "";
+    public string PromptForRequest => string.Concat(CustomPrompt.EnumerateRunes().Take(2000).Select(rune => rune.ToString()));
     [ObservableProperty] private bool _showVietnameseTranslation = true;
     [ObservableProperty] private bool _showMiniTranslation = true;
     partial void OnShowMiniTranslationChanged(bool value) => SavePreferences();
@@ -161,7 +163,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         try {
             Status = "Đang chuẩn bị lời chào...";
             var reply = await GenerateReplyAsync("Begin the conversation with a warm greeting and one opening question.",
-                $"Your name is {TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName}. You are my language practice partner. Speak in {TargetLanguage}. Topic: {TransTools.Services.Conversation.ConversationTopics.Instructions(CurrentTopic)}. {(GreetingName.Length == 0 ? "Use a general greeting." : $"Address me as {GreetingName} naturally if appropriate.")} Keep it to 1–2 sentences. {CustomPrompt}", replyCancellation.Token);
+                $"Your name is {TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName}. You are my language practice partner. Speak in {TargetLanguage}. Topic: {TransTools.Services.Conversation.ConversationTopics.Instructions(CurrentTopic)}. {(GreetingName.Length == 0 ? "Use a general greeting." : $"Address me as {GreetingName} naturally if appropriate.")} Keep it to 1–2 sentences. {PromptForRequest}", replyCancellation.Token);
             var translation = CanShowTranslation && ShowVietnameseTranslation ? await _googleService.TranslateAsync(reply, "auto", "vi", replyCancellation.Token) : "";
             if (generation != _conversationGeneration) return;
             Messages.Add(new ChatMessageItem { Text = reply, Translation = translation });
@@ -342,7 +344,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         {
             await SaveConversationAsync();
             replyCancellation.Token.ThrowIfCancellationRequested();
-            var prompt = $"Your name is {TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName}. We are roleplaying: {TransTools.Services.Conversation.ConversationTopics.Instructions(CurrentTopic)}. Reply naturally in {TargetLanguage} as my conversation partner. Keep reply concise (1-3 sentences) suitable for language learning practice. {CustomPrompt}";
+            var prompt = $"Your name is {TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName}. We are roleplaying: {TransTools.Services.Conversation.ConversationTopics.Instructions(CurrentTopic)}. Reply naturally in {TargetLanguage} as my conversation partner. Keep reply concise (1-3 sentences) suitable for language learning practice. {PromptForRequest}";
 
             var history = string.Join("\n", Messages.TakeLast(20).Select(m =>
                 $"{(m.IsUser ? "User" : "Assistant")}: {m.Text}"));

@@ -1,3 +1,4 @@
+using System.Text;
 using System.Diagnostics;
 using TransTools.ViewModels;
 using TransTools.Models;
@@ -854,6 +855,8 @@ internal static class Program
             var validNotebookPairs = TransTools.Services.Learning.NotebookLearningPolicy.Candidates(notebookPairs, "en").ToList();
             if (validNotebookPairs.Count != 2 || validNotebookPairs.Any(row => row.Original == "Hello again" || row.Original == "Hallo")) throw new Exception("Notebook learning accepts mismatched translation or source language");
             using (var practiceModel = new ConversationViewModel(() => false)) {
+                practiceModel.CustomPrompt = string.Concat(Enumerable.Repeat("😀",2001));
+                if (practiceModel.PromptForRequest.EnumerateRunes().Count() != 2000 || practiceModel.CustomPrompt.EnumerateRunes().Count() != 2001) throw new Exception("Conversation request prompt cap changes saved text or breaks Unicode");
                 practiceModel.Messages.Add(new ChatMessageItem { Text = "Keep this existing conversation", Translation = "Giữ hội thoại đang có" });
                 var practiceWindow = new ConversationPracticeWindow(practiceModel) { Owner = window }; practiceWindow.Show(); Pump();
                 var practiceView = Descendants(practiceWindow).OfType<ConversationView>().Single();
