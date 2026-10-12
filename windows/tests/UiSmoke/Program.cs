@@ -570,7 +570,7 @@ internal static class Program
                         ((RadioButton)learning.FindName("TodayTab")).IsChecked = true;
                         Pump();
                         var applicationButton = Descendants(learning).OfType<Button>().Single(button => Equals(button.Content, "Chọn câu từ Sổ tay"));
-                        applicationButton.BringIntoView(); Pump();
+                        ((Border)learning.FindName("LearningApplicationCard")).BringIntoView(); Pump();
                         ValidateControlLayout(window, "Learning application card"); Capture(window, output, $"{width}-learning-application.png");
                         ((ScrollViewer)learning.FindName("TodayPanel")).ScrollToHome(); Pump();
  Pump();
@@ -833,6 +833,8 @@ internal static class Program
                 var practiceView = Descendants(practiceWindow).OfType<ConversationView>().Single();
                 if (!ReferenceEquals(practiceView.DataContext, practiceModel)) throw new Exception("Learning practice replaced conversation state");
                 ValidateControlLayout(practiceWindow, "Learning conversation practice"); Capture(practiceWindow, output, "learning-conversation-practice.png");
+                practiceWindow.Width = 800; practiceWindow.Height = 650; Pump();
+                ValidateControlLayout(practiceWindow, "Learning conversation practice minimum"); Capture(practiceWindow, output, "learning-conversation-practice-minimum.png");
                 practiceModel.IsConversationActive = true; practiceWindow.Close(); Pump();
                 if (practiceModel.IsConversationActive || practiceModel.Messages.Count != 1) throw new Exception("Closing learning practice did not stop while preserving history");
             }

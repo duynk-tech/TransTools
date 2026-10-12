@@ -51,7 +51,7 @@
                   <StackPanel Visibility="{Binding HasLessonFeedback,Converter={StaticResource BoolVisibility}}"><TextBlock Text="{Binding LessonFeedback}" Foreground="#287568" FontWeight="SemiBold"/><TextBlock Text="{Binding CurrentLesson.Meaning}" TextWrapping="Wrap" Margin="0,8"/><TextBlock Text="{Binding CurrentLesson.Context}" TextWrapping="Wrap" Foreground="#65756F"/><Button Content="Câu tiếp theo" Command="{Binding NextLessonCommand}" HorizontalAlignment="Left" Margin="0,12,0,0"/></StackPanel>
                   <TextBlock Text="Đã hoàn thành các câu đến lượt ôn. Bạn có thể ôn từ vựng." TextWrapping="Wrap"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding CurrentLesson}" Value="{x:Null}"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
                 </StackPanel></Border>
-                <Border Style="{StaticResource TranscriptCard}" Padding="20" Margin="0,0,0,16"><StackPanel>
+                <Border x:Name="LearningApplicationCard" Style="{StaticResource TranscriptCard}" Padding="20" Margin="0,0,0,16"><StackPanel>
                     <TextBlock Text="Áp dụng vào tình huống thật" FontSize="18" FontWeight="SemiBold"/>
                     <TextBlock Text="Luyện hội thoại theo mục tiêu hoặc ôn câu đã lưu trong Sổ tay." Foreground="#65756F" TextWrapping="Wrap" Margin="0,10"/>
                     <WrapPanel><Button Content="Luyện hội thoại theo mục tiêu" Click="PracticeConversation_Click" Margin="0,0,12,8"/><Button Content="Chọn câu từ Sổ tay" Click="ImportNotebook_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,0,8"/></WrapPanel>
