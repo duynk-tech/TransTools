@@ -139,6 +139,11 @@ Check(boundedWalk.X <= 54.2, "Mascot stalled timer cannot jump across desktop");
 
 Check(TransTools.Services.Experience.MascotWalkPolicy.IdlePose(180, 23, false) == "sleeping" && TransTools.Services.Experience.MascotWalkPolicy.IdlePose(180,23,true) == "thinking", "Automatic mascot sleeps only when idle at night without active work");
 
+Check(TransTools.Services.Experience.MascotWalkPolicy.IdlePose(20, 11, false, "WINWORD") == "writing", "Automatic mascot recognizes writing context without reading document contents");
+Check(TransTools.Services.Experience.MascotWalkPolicy.IdlePose(94, 11, false, "Code") == "writing" && TransTools.Services.Experience.MascotWalkPolicy.IdlePose(95, 11, false, "Code") == "thinking", "Automatic mascot keeps macOS 75 second dwell");
+Check(TransTools.Services.Experience.MascotWalkPolicy.IdlePose(double.NaN, 11, false) == "thinking", "Invalid idle telemetry keeps safe pose");
+Check(TransTools.Services.Experience.MascotWalkPolicy.IdlePose(300, 11, false, "", true) == "sleeping", "Reduced motion uses calm idle pose");
+
 using (var todoPayload = System.Text.Json.JsonDocument.Parse(TransTools.Services.Notebook.MicrosoftTodoPayload.Create(" Kiểm tra 日本語 ", true, "Cuộc họp dự án", "Duy"))) {
     Check(todoPayload.RootElement.GetProperty("title").GetString() == "Kiểm tra 日本語", "To Do payload preserves reviewed multilingual task");
     Check(todoPayload.RootElement.GetProperty("status").GetString() == "completed" && todoPayload.RootElement.GetProperty("body").GetProperty("contentType").GetString() == "text", "To Do payload keeps completion and plain text context");

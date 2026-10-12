@@ -64,8 +64,20 @@ public partial class ChipChipMascotWindow : Window
     private void ApplyActivity()
     {
         if (MascotImage == null) return;
-        var selected = _meetingRecording ? "writing" : _activity == "auto" ? TransTools.Services.Experience.MascotWalkPolicy.IdlePose(IdleSeconds(), DateTime.Now.Hour, WorkBusy?.Invoke() == true) : _activity;
+        var selected = _meetingRecording ? "writing" : _activity == "auto" ? TransTools.Services.Experience.MascotWalkPolicy.IdlePose(IdleSeconds(), DateTime.Now.Hour, WorkBusy?.Invoke() == true, ForegroundProcess(), !SystemParameters.ClientAreaAnimation) : _activity;
         if (ActivityImages.TryGetValue(selected, out var image)) MascotImage.Source = image;
+    }
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
+    private static string ForegroundProcess()
+    {
+        // Process name only, never window titles, document text or keystrokes.
+        try {
+            GetWindowThreadProcessId(GetForegroundWindow(), out var id);
+            if (id == 0 || id > int.MaxValue) return "";
+            using var process = System.Diagnostics.Process.GetProcessById((int)id);
+            return process.ProcessName;
+        } catch { return ""; }
     }
     private bool _reminding;
     private bool _wasVisible;
