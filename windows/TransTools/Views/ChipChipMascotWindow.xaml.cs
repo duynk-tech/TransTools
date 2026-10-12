@@ -85,13 +85,21 @@ public partial class ChipChipMascotWindow : Window
     private System.Windows.Media.Imaging.BitmapImage[]? _spriteFrames;
     private int _spriteIndex;
     public bool IsSpriteTimerRunning => _spriteTimer.IsEnabled;
-    private void StopSprite() { _spriteTimer.Stop(); _spriteFrames = null; _spriteIndex = 0; }
-    private void StartSprite()
+    private CancellationTokenSource? _spriteLoad;
+    private void StopSprite() { _spriteLoad?.Cancel(); _spriteLoad = null; _spriteTimer.Stop(); _spriteFrames = null; _spriteIndex = 0; }
+    private async void StartSprite()
     {
         StopSprite();
         if (!IsVisible || !SystemParameters.ClientAreaAnimation || _meetingRecording || WorkBusy?.Invoke() == true) return;
-        if (MascotAnimationFrames.Decode(_displayedActivity) is not { } clip) return;
-        _spriteFrames = clip.Frames; _spriteTimer.Interval = TimeSpan.FromSeconds(1 / clip.Fps); _spriteTimer.Start();
+        var activity = _displayedActivity;
+        using var load = new CancellationTokenSource(); _spriteLoad = load;
+        try {
+            var clip = await Task.Run(() => MascotAnimationFrames.Decode(activity, load.Token), load.Token);
+            if (load.IsCancellationRequested || !ReferenceEquals(_spriteLoad, load) || clip == null || !IsVisible || _meetingRecording || WorkBusy?.Invoke() == true) return;
+            _spriteFrames = clip.Value.Frames; _spriteTimer.Interval = TimeSpan.FromSeconds(1 / clip.Value.Fps); _spriteTimer.Start();
+        } catch (OperationCanceledException) when (load.IsCancellationRequested) { }
+        catch (Exception ex) when (ex is System.IO.IOException or NotSupportedException or System.IO.FileFormatException) { ApplyActivity(); }
+        finally { if (ReferenceEquals(_spriteLoad, load)) _spriteLoad = null; }
     }
     private bool _reminding;
     private bool _wasVisible;

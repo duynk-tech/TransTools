@@ -25,10 +25,11 @@ internal static class MascotAnimationFrames
         }
         return result;
     }
-    internal static (double Fps, BitmapImage[] Frames)? Decode(string activity)
+    internal static (double Fps, BitmapImage[] Frames)? Decode(string activity, CancellationToken token)
     {
         if (!Clips.TryGetValue(activity, out var clip)) return null;
         var frames = clip.Encoded.Select(bytes => {
+            token.ThrowIfCancellationRequested();
             using var stream = new MemoryStream(bytes, false);
             var image = new BitmapImage(); image.BeginInit(); image.CacheOption = BitmapCacheOption.OnLoad;
             image.DecodePixelWidth = 192; image.StreamSource = stream; image.EndInit(); image.Freeze(); return image;

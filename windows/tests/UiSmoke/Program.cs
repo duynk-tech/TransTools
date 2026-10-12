@@ -736,6 +736,8 @@ internal static class Program
             activityChoice.SelectedValue = "writing"; Pump();
             mascotImage.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0) { RoutedEvent = System.Windows.UIElement.MouseEnterEvent });
             Pump();
+            var decodeWait = System.Diagnostics.Stopwatch.StartNew();
+            while (SystemParameters.ClientAreaAnimation && !mascotFixture.IsSpriteTimerRunning && decodeWait.Elapsed < TimeSpan.FromSeconds(5)) { Pump(); System.Threading.Thread.Sleep(10); }
             if (SystemParameters.ClientAreaAnimation && !mascotFixture.IsSpriteTimerRunning) throw new Exception("Mascot hover did not play shared macOS sprite clip");
             if (SystemParameters.ClientAreaAnimation) {
                 var staticSource = mascotImage.Source;
