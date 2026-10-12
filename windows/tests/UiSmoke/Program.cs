@@ -737,6 +737,16 @@ internal static class Program
             mascotImage.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0) { RoutedEvent = System.Windows.UIElement.MouseEnterEvent });
             Pump();
             if (SystemParameters.ClientAreaAnimation && !mascotFixture.IsSpriteTimerRunning) throw new Exception("Mascot hover did not play shared macOS sprite clip");
+            if (SystemParameters.ClientAreaAnimation) {
+                var staticSource = mascotImage.Source;
+                var spriteWatch = System.Diagnostics.Stopwatch.StartNew();
+                while (ReferenceEquals(staticSource, mascotImage.Source) && spriteWatch.Elapsed < TimeSpan.FromSeconds(2)) { Pump(); System.Threading.Thread.Sleep(10); }
+                if (ReferenceEquals(staticSource, mascotImage.Source)) throw new Exception("Sprite timer did not advance shared image frames");
+                CaptureElement(mascotImage, output, "mascot-writing-hover-frame.png");
+                while (mascotFixture.IsSpriteTimerRunning && spriteWatch.Elapsed < TimeSpan.FromSeconds(8)) { Pump(); System.Threading.Thread.Sleep(10); }
+                if (mascotFixture.IsSpriteTimerRunning) throw new Exception("Hover sprite clip keeps rendering after one cycle");
+                mascotImage.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0) { RoutedEvent = System.Windows.UIElement.MouseEnterEvent }); Pump();
+            }
             mascotFixture.SetMeetingState(true, false); Pump();
             if (mascotFixture.IsSpriteTimerRunning) throw new Exception("Meeting leaves hover sprite timer running");
             mascotFixture.SetMeetingState(false, true);
