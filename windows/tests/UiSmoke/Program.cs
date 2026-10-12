@@ -812,6 +812,12 @@ internal static class Program
             var importSession = new MeetingSession { Captions = Enumerable.Range(0, 30).Select(index => new Caption {
                 Original = "[Bạn] Example " + index, OriginalTextForLearning = "Example " + index, Vietnamese = "Ví dụ " + index, SourceLanguage = "en", TargetLanguage = "vi"
             }).ToList() };
+            var importPreview = new NotebookLearningWindow(importSession, importLearning) { Owner = window }; importPreview.Show(); Pump();
+            var importAction = Descendants(importPreview).OfType<Button>().Single(button => Equals(button.Content, "Thêm vào bài học"));
+            if (importAction.IsEnabled) throw new Exception("Notebook learning import skips explicit language confirmation");
+            Descendants(importPreview).OfType<CheckBox>().Single().IsChecked = true; Pump();
+            if (!importAction.IsEnabled) throw new Exception("Confirmed notebook learning preview cannot import valid pairs");
+            ValidateControlLayout(importPreview, "Notebook learning preview"); Capture(importPreview, output, "notebook-learning-preview.png"); importPreview.Close();
             importLearning.ImportNotebook(importSession);
             var importedLessons = new TransTools.Services.Learning.AdaptiveLessons(importRoot);
             if (importedLessons.Lessons.Count != 20 || importedLessons.Lessons.Any(lesson => lesson.Original.StartsWith("[")) || importLearning.CurrentLesson == null) throw new Exception("Notebook import does not persist capped clean lessons or refresh learning plan");
