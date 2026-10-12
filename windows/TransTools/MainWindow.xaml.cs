@@ -54,7 +54,8 @@ public partial class MainWindow : Window
             if (change.PropertyName is nameof(MeetingViewModel.IsRecording) or nameof(MeetingViewModel.IsPreparing) or nameof(MeetingViewModel.IsStopping))
                 _mascotWindow?.SetMeetingState(_meetingViewModel.IsRecording, !_meetingViewModel.IsPreparing && !_meetingViewModel.IsStopping);
         };
-        _conversationViewModel.PropertyChanged += (_, _) => _settingsViewModel.RefreshModelAvailability();
+        _conversationViewModel.PropertyChanged += (_, _) => { _settingsViewModel.RefreshModelAvailability(); _mascotWindow?.RefreshWalkingState(); };
+        _readerViewModel.PropertyChanged += (_, change) => { if (change.PropertyName == nameof(TextReaderViewModel.IsBusy)) _mascotWindow?.RefreshWalkingState(); };
         InitializeComponent();
         NavMeeting.DataContext = _meetingViewModel;
         NavNotebook.DataContext = _notebookViewModel;
@@ -285,7 +286,7 @@ public partial class MainWindow : Window
         if (_subtitleWindow?.IsMascotDisplayed == true) { _subtitleWindow.Activate(); return; }
         if (_mascotWindow == null)
         {
-            _mascotWindow = new ChipChipMascotWindow { WorkBusy = () => _meetingViewModel.IsBusy || _conversationViewModel.IsConversationActive || !_conversationViewModel.CanChangeSession };
+            _mascotWindow = new ChipChipMascotWindow { WorkBusy = () => _meetingViewModel.IsBusy || _readerViewModel.IsBusy || _conversationViewModel.IsConversationActive || !_conversationViewModel.CanChangeSession };
             _mascotWindow.AttachQuickTranslation(_translateViewModel);
             _mascotWindow.SetMeetingState(_meetingViewModel.IsRecording, !_meetingViewModel.IsPreparing && !_meetingViewModel.IsStopping);
             _mascotWindow.LearningRequested += () => _learningViewModel.LearnWithChipChipCommand.Execute(null);
@@ -305,7 +306,7 @@ public partial class MainWindow : Window
 
     private void ShowBreakReminder() {
         if (_mascotWindow == null) {
-            _mascotWindow = new ChipChipMascotWindow { WorkBusy = () => _meetingViewModel.IsBusy || _conversationViewModel.IsConversationActive || !_conversationViewModel.CanChangeSession };
+            _mascotWindow = new ChipChipMascotWindow { WorkBusy = () => _meetingViewModel.IsBusy || _readerViewModel.IsBusy || _conversationViewModel.IsConversationActive || !_conversationViewModel.CanChangeSession };
             _mascotWindow.AttachQuickTranslation(_translateViewModel);
             _mascotWindow.SetMeetingState(_meetingViewModel.IsRecording, !_meetingViewModel.IsPreparing && !_meetingViewModel.IsStopping);
             _mascotWindow.LearningRequested += () => _learningViewModel.LearnWithChipChipCommand.Execute(null);

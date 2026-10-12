@@ -724,6 +724,15 @@ internal static class Program
             if (Math.Abs(targetCenter.Y - popupCenter.Y) > 3) throw new Exception("Mascot popup is not vertically centered on character");
             CaptureElement((FrameworkElement)mascotMenu.Child, output, "mascot-action-popup.png");
             var activityChoice = (ComboBox)mascotFixture.FindName("ActivityChoice");
+            activityChoice.SelectedValue = "strolling"; Pump();
+            if (!mascotFixture.IsWalkTimerRunning) throw new Exception("Visible strolling mascot did not schedule idle checks");
+            mascotFixture.SetMeetingState(true, true); Pump();
+            if (mascotFixture.IsWalkTimerRunning) throw new Exception("Meeting recording leaves mascot walk timer running");
+            mascotFixture.SetMeetingState(false, true); Pump();
+            if (!mascotFixture.IsWalkTimerRunning) throw new Exception("Meeting stop did not resume enabled walk checks");
+            mascotFixture.WorkBusy = () => true; mascotFixture.RefreshWalkingState();
+            if (mascotFixture.IsWalkTimerRunning) throw new Exception("Busy conversation or reader leaves walk timer running");
+            mascotFixture.WorkBusy = null; mascotFixture.RefreshWalkingState();
             activityChoice.SelectedValue = "sleeping"; Pump();
             if (mascotImage.Source is not System.Windows.Media.Imaging.BitmapImage sleepingPose || !sleepingPose.UriSource.OriginalString.EndsWith("/sleeping.png")) throw new Exception("Mascot activity selector did not choose sleeping image");
             mascotFixture.SetMeetingState(true, false); Pump();

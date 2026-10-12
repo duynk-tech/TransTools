@@ -27,9 +27,11 @@ public partial class ChipChipMascotWindow : Window
         if (step.PauseSeconds > 0) _walkPause = now.AddSeconds(step.PauseSeconds);
         _walkTimer.Interval = TimeSpan.FromSeconds(1.0 / 24);
     }
+    public bool IsWalkTimerRunning => _walkTimer.IsEnabled;
+    public void RefreshWalkingState() => UpdateWalking();
     private void UpdateWalking() {
         _walkTimer.Stop();
-        if (IsVisible && _activity == "strolling") { _walkTick = DateTime.UtcNow; _walkTimer.Interval = TimeSpan.FromSeconds(1); _walkTimer.Start(); }
+        if (IsVisible && _activity == "strolling" && !_meetingRecording && WorkBusy?.Invoke() != true) { _walkTick = DateTime.UtcNow; _walkTimer.Interval = TimeSpan.FromSeconds(1); _walkTimer.Start(); }
     }
     private string _activity = "auto";
     private static readonly Dictionary<string, System.Windows.Media.Imaging.BitmapImage> ActivityImages = LoadActivityImages();
@@ -80,7 +82,7 @@ public partial class ChipChipMascotWindow : Window
     }
     public void SetMeetingState(bool recording, bool canToggle)
     {
-        _meetingRecording = recording; ApplyActivity();
+        _meetingRecording = recording; ApplyActivity(); UpdateWalking();
         MeetingActionButton.IsEnabled = canToggle;
         MeetingActionIcon.Text = recording ? "\uE71A" : "\uE768";
         MeetingActionLabel.Text = recording ? "Dừng cuộc họp" : "Bắt đầu cuộc họp";
