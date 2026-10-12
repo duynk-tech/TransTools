@@ -57,14 +57,14 @@
                     <WrapPanel><Button Content="Luyện hội thoại theo mục tiêu" Click="PracticeConversation_Click" Margin="0,0,12,8"/><Button Content="Chọn câu từ Sổ tay" Click="ImportNotebook_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,0,8"/></WrapPanel>
                     <TextBlock Text="Hội thoại đang có được giữ nguyên. Bấm Bắt đầu trong màn hình hội thoại khi bạn sẵn sàng." Foreground="#65756F" FontSize="11" TextWrapping="Wrap"/>
                 </StackPanel></Border>
-                <Border Background="White" BorderBrush="#D8E5E1" BorderThickness="1" CornerRadius="16" Padding="24"><StackPanel>
+                <Border Background="White" BorderBrush="#D8E5E1" BorderThickness="1" CornerRadius="16" Padding="24"><StackPanel><Expander Header="Câu mẫu có sẵn" IsExpanded="False"><StackPanel>
                     <TextBlock Text="Câu mẫu hôm nay" Foreground="#287568" FontWeight="Bold" />
                     <TextBlock Text="{Binding DailySentence.OriginalText}" FontSize="18" Foreground="#243D35" TextWrapping="Wrap" Margin="0,12,0,6" />
                     <TextBlock Text="{Binding DailySentence.Reading}" Foreground="#65756F" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding DailySentence.VietnameseMeaning}" Foreground="#287568" TextWrapping="Wrap" Margin="0,12" />
                     <TextBlock Text="{Binding DailySentence.ContextNote}" Foreground="#65756F" TextWrapping="Wrap" />
                     <Button Content="Nghe câu mẫu" Command="{Binding SpeakDailyCommand}" HorizontalAlignment="Left" Margin="0,16,0,0" Style="{StaticResource SecondaryButton}" />
-                </StackPanel></Border>
+                </StackPanel></Expander></StackPanel></Border>
             </StackPanel>
         </ScrollViewer>
         <ScrollViewer x:Name="PracticePanel" Grid.Row="1" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">

@@ -188,7 +188,7 @@ public partial class MainWindow : Window
             var view = new LearningView(_learningViewModel);
             view.ConversationPracticeRequested += () => {
                 if (_conversationViewModel.CanConfigureTopic) {
-                    _conversationViewModel.TargetLanguage = _learningViewModel.SelectedLanguage switch { "ja" => "Tiếng Nhật (Japanese)", "zh" => "Tiếng Trung (Chinese)", "ko" => "Tiếng Hàn (Korean)", _ => "Tiếng Anh (English)" };
+                    _conversationViewModel.TargetLanguage = _learningViewModel.SelectedLanguage switch { "ja" => "Tiếng Nhật (日本語)", "zh" => "Tiếng Trung (中文)", "ko" => "Tiếng Hàn (한국어)", _ => "Tiếng Anh (English)" };
                     _conversationViewModel.CurrentTopic = _learningViewModel.LearningGoal switch { "Phỏng vấn & Nghề nghiệp" => "Phỏng vấn xin việc (Job Interview)", "Cuộc họp & Công việc" => "Thuyết trình dự án", _ => "Giao tiếp xã giao hàng ngày" };
                     _conversationViewModel.CustomPrompt = "";
                 }
