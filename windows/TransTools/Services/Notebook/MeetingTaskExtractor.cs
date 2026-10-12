@@ -14,11 +14,14 @@ public static class MeetingTaskExtractor
         if (string.IsNullOrWhiteSpace(transcript)) return [];
         if (generate != null) {
             try {
-                var response = await generate(transcript[..Math.Min(transcript.Length, 6000)], token);
+                using var request = CancellationTokenSource.CreateLinkedTokenSource(token);
+                request.CancelAfter(TimeSpan.FromSeconds(40));
+                var response = await generate(transcript[..Math.Min(transcript.Length, 6000)], request.Token).WaitAsync(request.Token);
                 token.ThrowIfCancellationRequested();
                 var parsed = Parse(response);
                 if (parsed != null) return parsed;
             } catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+            catch (OperationCanceledException) { } // Provider deadline: retain transcript and use the existing local fallback.
             catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or JsonException or InvalidOperationException or TaskCanceledException) { }
         }
         token.ThrowIfCancellationRequested();

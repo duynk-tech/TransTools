@@ -1076,6 +1076,14 @@ internal static class Program
         if (fallbackTasks.Result.Count != 1 || fallbackTasks.Result[0].Title != taskSession.Captions[0].Vietnamese) throw new Exception("Action item fallback changed transcript text");
         var emptyTasks = TransTools.Services.Notebook.MeetingTaskExtractor.ExtractAsync(new MeetingSession(), null, CancellationToken.None); Await(emptyTasks);
         if (emptyTasks.Result.Count != 0) throw new Exception("Empty meeting fabricated an action item");
+        using (var cancelTaskRequest = new CancellationTokenSource()) {
+            var neverTasks = new TaskCompletionSource<string>();
+            var canceledExtraction = TransTools.Services.Notebook.MeetingTaskExtractor.ExtractAsync(taskSession, (_, _) => neverTasks.Task, cancelTaskRequest.Token);
+            cancelTaskRequest.Cancel();
+            try { Await(canceledExtraction); throw new Exception("Canceled task extraction continued waiting for provider"); }
+            catch (OperationCanceledException) { }
+            if (neverTasks.Task.IsCompleted) throw new Exception("Task cancellation fixture completed the provider");
+        }
         var delayedTasks = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
         var delayedTaskWindow = new MeetingTasksWindow(taskSession, (_, token) => delayedTasks.Task.WaitAsync(token)) { Owner = window };
         delayedTaskWindow.Show(); Pump();
