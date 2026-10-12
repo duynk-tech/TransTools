@@ -9,6 +9,8 @@ public partial class LearningView : UserControl
 {
     private readonly LearningViewModel _viewModel;
     public event Action? NotebookLearningRequested;
+    public event Action? ConversationPracticeRequested;
+    private void PracticeConversation_Click(object sender, RoutedEventArgs e) => ConversationPracticeRequested?.Invoke();
     private void ImportNotebook_Click(object sender, RoutedEventArgs e) => NotebookLearningRequested?.Invoke();
 
     public LearningView(LearningViewModel viewModel)

@@ -186,6 +186,14 @@ public partial class MainWindow : Window
         if (MainContentGrid == null) return;
         ShowView("learning", () => {
             var view = new LearningView(_learningViewModel);
+            view.ConversationPracticeRequested += () => {
+                if (_conversationViewModel.CanConfigureTopic) {
+                    _conversationViewModel.TargetLanguage = _learningViewModel.SelectedLanguage switch { "ja" => "Tiếng Nhật (Japanese)", "zh" => "Tiếng Trung (Chinese)", "ko" => "Tiếng Hàn (Korean)", _ => "Tiếng Anh (English)" };
+                    _conversationViewModel.CurrentTopic = _learningViewModel.LearningGoal switch { "Phỏng vấn & Nghề nghiệp" => "Phỏng vấn xin việc (Job Interview)", "Cuộc họp & Công việc" => "Thuyết trình dự án", _ => "Giao tiếp xã giao hàng ngày" };
+                    _conversationViewModel.CustomPrompt = "";
+                }
+                NavConversation.IsChecked = true;
+            };
             view.NotebookLearningRequested += async () => {
                 try {
                     await _notebookViewModel.LoadSessionsAsync();
