@@ -192,7 +192,7 @@ public partial class MainWindow : Window
                     _conversationViewModel.CurrentTopic = _learningViewModel.LearningGoal switch { "Phỏng vấn & Nghề nghiệp" => "Phỏng vấn", "Cuộc họp & Công việc" => "Công việc & Cuộc họp", _ => "Giao tiếp hằng ngày" };
                     _conversationViewModel.CustomPrompt = "";
                 }
-                NavConversation.IsChecked = true;
+                new ConversationPracticeWindow(_conversationViewModel) { Owner = this }.ShowDialog();
             };
             view.NotebookLearningRequested += async () => {
                 try {

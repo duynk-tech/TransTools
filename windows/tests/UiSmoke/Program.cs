@@ -827,6 +827,15 @@ internal static class Program
             };
             var validNotebookPairs = TransTools.Services.Learning.NotebookLearningPolicy.Candidates(notebookPairs, "en").ToList();
             if (validNotebookPairs.Count != 2 || validNotebookPairs.Any(row => row.Original == "Hello again" || row.Original == "Hallo")) throw new Exception("Notebook learning accepts mismatched translation or source language");
+            using (var practiceModel = new ConversationViewModel(() => false)) {
+                practiceModel.Messages.Add(new ChatMessageItem { Text = "Keep this existing conversation", Translation = "Giữ hội thoại đang có" });
+                var practiceWindow = new ConversationPracticeWindow(practiceModel) { Owner = window }; practiceWindow.Show(); Pump();
+                var practiceView = Descendants(practiceWindow).OfType<ConversationView>().Single();
+                if (!ReferenceEquals(practiceView.DataContext, practiceModel)) throw new Exception("Learning practice replaced conversation state");
+                ValidateControlLayout(practiceWindow, "Learning conversation practice"); Capture(practiceWindow, output, "learning-conversation-practice.png");
+                practiceModel.IsConversationActive = true; practiceWindow.Close(); Pump();
+                if (practiceModel.IsConversationActive || practiceModel.Messages.Count != 1) throw new Exception("Closing learning practice did not stop while preserving history");
+            }
             var importRoot = Path.Combine(output, "notebook-learning-fixture");
             var importLearning = new LearningViewModel(importRoot);
             var importSession = new MeetingSession { Captions = Enumerable.Range(0, 30).Select(index => new Caption {
