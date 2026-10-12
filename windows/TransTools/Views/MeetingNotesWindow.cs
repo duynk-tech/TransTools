@@ -128,7 +128,7 @@ public sealed class MeetingNotesWindow : Window
         _request = request; _generateButton.IsEnabled = false; _generateButton.Content = "Đang tạo…";
         _cancelGeneration.Visibility = Visibility.Visible; _message.Text = "";
         try {
-            var result = await _generate(request.Token);
+            var result = await _generate(request.Token).WaitAsync(request.Token);
             if (_closed || request.IsCancellationRequested || !ReferenceEquals(_request, request)) return;
             if (string.IsNullOrWhiteSpace(result)) { _message.Text = "AI chưa trả về nội dung ghi chú."; return; }
             if (result.Length > 32000) { _message.Text = "Ghi chú AI quá dài. Hãy thử lại với bản ghi ngắn hơn."; return; }

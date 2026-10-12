@@ -1127,7 +1127,9 @@ internal static class Program
         var lateReply = new TaskCompletionSource<string>();
         var canceledNotes = new MeetingNotesWindow("Giữ nguyên", "", "Hội thoại", _ => lateReply.Task) { Owner = window };
         canceledNotes.Show(); Pump(); var lateNotes = canceledNotes.GenerateNotesAsync(); Pump();
-        canceledNotes.Close(); lateReply.SetResult("Không được thêm"); Await(lateNotes);
+        canceledNotes.Close(); Await(lateNotes);
+        if (lateReply.Task.IsCompleted) throw new Exception("Cancel fixture unexpectedly completed the AI service");
+        lateReply.SetResult("Không được thêm"); Pump();
         if (canceledNotes.Notes != "Giữ nguyên") throw new Exception("Closed notes window accepted a late AI response");
         var savedNotes = new List<string>(); var firstSave = new TaskCompletionSource<bool>();
         var autoNotes = new MeetingNotesWindow("Ban đầu", "", "Hội thoại", saveNotes: text => { savedNotes.Add(text); return savedNotes.Count == 1 ? firstSave.Task : Task.FromResult(true); }) { Owner = window };
