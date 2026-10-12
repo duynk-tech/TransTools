@@ -17,12 +17,13 @@ public partial class SettingsViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(ShowSupertonicCard))]
     [NotifyPropertyChangedFor(nameof(ShowVieNeuCard))]
     [NotifyPropertyChangedFor(nameof(ModelFilterEmpty))]
+    [NotifyPropertyChangedFor(nameof(ShowTranslationCard))]
     private string _modelFilter = "recommended";
     private bool _supertonicRecommended = true;
     private bool _vieNeuRecommended = true;
     public bool ShowSupertonicCard => ModelFilter == "tts" || (ModelFilter == "recommended" && _supertonicRecommended) || (ModelFilter == "installed" && SupertonicInstalled);
     public bool ShowVieNeuCard => ModelFilter == "tts" || (ModelFilter == "recommended" && _vieNeuRecommended) || (ModelFilter == "installed" && VieNeuInstalled);
-    public bool ModelFilterEmpty => !ShowSupertonicCard && !ShowVieNeuCard;
+    public bool ModelFilterEmpty => !ShowSupertonicCard && !ShowVieNeuCard && !ShowTranslationCard;
     private void RefreshModelFilter() { RefreshSpeechPack(); OnPropertyChanged(nameof(ShowSupertonicCard)); OnPropertyChanged(nameof(ShowVieNeuCard)); OnPropertyChanged(nameof(ModelFilterEmpty)); }
     public string[] ModelVoiceLanguages { get; } = ["vi", "en", "ja", "ko"];
     [ObservableProperty]
@@ -444,7 +445,7 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
-    private async void CalculateCacheSize() { OnPropertyChanged(nameof(VieNeuInstallationStatus));
+    private async void CalculateCacheSize() { RefreshTranslationModel(); OnPropertyChanged(nameof(VieNeuInstallationStatus));
         foreach (var name in new[] { nameof(SupertonicInstalled), nameof(VieNeuInstalled), nameof(ShowSupertonicInstall), nameof(ShowVieNeuInstall) }) OnPropertyChanged(name);
         try { await RefreshStorageAsync(); } catch (Exception ex) { Status = ex.Message; } }
 }

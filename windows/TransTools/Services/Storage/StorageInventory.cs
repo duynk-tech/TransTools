@@ -9,6 +9,7 @@ public static class StorageInventory
     public static IReadOnlyList<StorageEntry> Entries(string root) => new[] {
         new StorageEntry("supertonic", "Supertonic 3", "Mô hình giọng tự nhiên · Offline", System.IO.Path.Combine(root, "models", "supertonic-3"), true),
         new StorageEntry("vieneu", "VieNeu v3 Turbo", "Giọng tiếng Việt · Offline sau khi tải", System.IO.Path.Combine(root, "models", "vieneu-v3-turbo"), true),
+        new StorageEntry("translation-en-vi", "Dịch Anh → Việt", "Bộ dịch Offline", System.IO.Path.Combine(root, "models", "opus-en-vi"), true),
         new StorageEntry("whisper", "Whisper", "Mô hình nhận diện giọng nói · Offline", System.IO.Path.Combine(root, "models", "whisper"), true),
         new StorageEntry("recordings", "Bản ghi phát âm", "Bản ghi người thật dùng cho học chữ", System.IO.Path.Combine(root, "Pronunciation"), true),
         new StorageEntry("temporary", "Cache tạm", "Có thể tạo lại khi sử dụng", System.IO.Path.Combine(root, "temp"), true),
