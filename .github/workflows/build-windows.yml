@@ -18,11 +18,17 @@ on:
         type: boolean
         default: false
 
+      release_artifact_run:
+        description: Upload validated installer artifacts from this workflow run to the Windows draft release
+        type: string
+        default: ''
+
 permissions:
   contents: read
 
 jobs:
   build-windows:
+    if: inputs.release_artifact_run == ''
     name: Validate Windows layouts
     runs-on: windows-latest
 
@@ -124,3 +130,25 @@ jobs:
             windows/build/TransTools-Windows-Portable.zip
             windows/build/SHA256SUMS.txt
           if-no-files-found: error
+  upload-validated-release:
+    if: inputs.release_artifact_run != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download validated Windows installer artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Windows-release-installers
+          run-id: ${{ inputs.release_artifact_run }}
+          github-token: ${{ github.token }}
+          path: installers
+      - name: Verify installer checksums
+        working-directory: installers
+        run: sha256sum --check SHA256SUMS.txt
+      - name: Upload verified installers to draft release
+        working-directory: installers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload v1.4.2-windows-preview.1 TransTools-Setup.exe TransTools-Windows-Portable.zip SHA256SUMS.txt --repo duynk-tech/TransTools
