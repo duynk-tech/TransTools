@@ -21,7 +21,7 @@ public partial class ChipChipMascotWindow : Window
         if (!TransTools.Services.Experience.MascotWalkPolicy.CanWalk(IsVisible, _activity == "strolling", _meetingRecording || WorkBusy?.Invoke() == true, interacting, !SystemParameters.ClientAreaAnimation, IdleSeconds()) || now < _walkPause) {
             _walkTimer.Interval = TimeSpan.FromSeconds(1); return;
         }
-        var area = SystemParameters.WorkArea;
+        var area = WindowMonitorArea.WorkArea(this);
         var step = TransTools.Services.Experience.MascotWalkPolicy.Step(Left, _walkDirection, area.Left + 16, area.Right - Width - 16, elapsed);
         Left = step.X; Top = Math.Max(area.Top, area.Bottom - Height - 2); _walkDirection = step.Direction;
         if (step.PauseSeconds > 0) _walkPause = now.AddSeconds(step.PauseSeconds);
