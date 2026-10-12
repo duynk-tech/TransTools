@@ -29,7 +29,11 @@ public partial class ChipChipMascotWindow : Window
         _walkTimer.Interval = TimeSpan.FromSeconds(1.0 / 24);
     }
     public bool IsWalkTimerRunning => _walkTimer.IsEnabled;
-    public void RefreshWalkingState() => UpdateWalking();
+    public void RefreshWalkingState() { UpdateWalking(); ApplyActivity(); UpdateIdlePoseTimer(); }
+    private void UpdateIdlePoseTimer() {
+        _idlePoseTimer.Stop();
+        if (IsVisible && _activity == "auto" && !_meetingRecording && WorkBusy?.Invoke() != true) _idlePoseTimer.Start();
+    }
     private void UpdateWalking() {
         _walkTimer.Stop();
         if (IsVisible && _activity == "strolling" && !_meetingRecording && WorkBusy?.Invoke() != true) { _walkTick = DateTime.UtcNow; _walkTimer.Interval = TimeSpan.FromSeconds(1); _walkTimer.Start(); }
@@ -53,7 +57,7 @@ public partial class ChipChipMascotWindow : Window
     private void ActivityChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
         if (ActivityChoice?.SelectedValue is not string choice) return;
-        _activity = choice; ApplyActivity(); UpdateWalking();
+        _activity = choice; ApplyActivity(); UpdateWalking(); UpdateIdlePoseTimer();
         if (!_loadingPreferences) { try { _preferences.Save(choice); } catch { BubbleText.Text = "Chưa lưu được hoạt cảnh. Bạn có thể chọn lại."; } }
     }
     private void ApplyActivity()
@@ -86,7 +90,7 @@ public partial class ChipChipMascotWindow : Window
     }
     public void SetMeetingState(bool recording, bool canToggle)
     {
-        _meetingRecording = recording; ApplyActivity(); UpdateWalking();
+        _meetingRecording = recording; ApplyActivity(); UpdateWalking(); UpdateIdlePoseTimer();
         MeetingActionButton.IsEnabled = canToggle;
         MeetingActionIcon.Text = recording ? "\uE71A" : "\uE768";
         MeetingActionLabel.Text = recording ? "Dừng cuộc họp" : "Bắt đầu cuộc họp";
@@ -119,7 +123,7 @@ public partial class ChipChipMascotWindow : Window
         };
         _idlePoseTimer.Tick += (_, _) => { if (_activity == "auto") ApplyActivity(); };
         _walkTimer.Tick += (_, _) => StepWalking();
-        IsVisibleChanged += (_, _) => { UpdateWalking(); if (IsVisible) { ApplyActivity(); _idlePoseTimer.Start(); } else _idlePoseTimer.Stop(); if (!IsVisible) { SavePosition(); MascotMenu.IsOpen = false; ResetAnimation(); } };
+        IsVisibleChanged += (_, _) => { UpdateWalking(); if (IsVisible) ApplyActivity(); UpdateIdlePoseTimer(); if (!IsVisible) { SavePosition(); MascotMenu.IsOpen = false; ResetAnimation(); } };
         _reminderTimer.Tick += (_, _) => { _reminderTimer.Stop(); _reminding = false; ResetAnimation(); if (!_wasVisible) Hide(); };
         Closed += (_, _) => { SavePosition(); _idlePoseTimer.Stop(); _walkTimer.Stop(); _reminderTimer.Stop(); ResetAnimation(); };
     }
