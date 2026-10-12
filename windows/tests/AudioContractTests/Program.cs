@@ -136,3 +136,5 @@ var walk = TransTools.Services.Experience.MascotWalkPolicy.Step(99, 1, 0, 100, 5
 Check(walk.X == 100 && walk.Direction == -1 && walk.PauseSeconds == 1.2, "Mascot walking reverses safely and rests at edge");
 var boundedWalk = TransTools.Services.Experience.MascotWalkPolicy.Step(50, 1, 0, 200, 10);
 Check(boundedWalk.X <= 54.2, "Mascot stalled timer cannot jump across desktop");
+
+Check(TransTools.Services.Experience.MascotWalkPolicy.IdlePose(180, 23, false) == "sleeping" && TransTools.Services.Experience.MascotWalkPolicy.IdlePose(180,23,true) == "thinking", "Automatic mascot sleeps only when idle at night without active work");

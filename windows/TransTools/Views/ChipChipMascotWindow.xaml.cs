@@ -4,6 +4,7 @@ using System.Windows.Media.Animation;
 namespace TransTools.Views;
 public partial class ChipChipMascotWindow : Window
 {
+    private readonly System.Windows.Threading.DispatcherTimer _idlePoseTimer = new() { Interval = TimeSpan.FromSeconds(20) };
     private readonly System.Windows.Threading.DispatcherTimer _reminderTimer = new() { Interval = TimeSpan.FromSeconds(20) };
     private bool _meetingRecording;
     public Func<bool>? WorkBusy { get; set; }
@@ -58,7 +59,7 @@ public partial class ChipChipMascotWindow : Window
     private void ApplyActivity()
     {
         if (MascotImage == null) return;
-        var selected = _meetingRecording ? "writing" : _activity == "auto" ? "coffee" : _activity;
+        var selected = _meetingRecording ? "writing" : _activity == "auto" ? TransTools.Services.Experience.MascotWalkPolicy.IdlePose(IdleSeconds(), DateTime.Now.Hour, WorkBusy?.Invoke() == true) : _activity;
         if (ActivityImages.TryGetValue(selected, out var image)) MascotImage.Source = image;
     }
     private bool _reminding;
@@ -116,10 +117,11 @@ public partial class ChipChipMascotWindow : Window
             Left = Math.Clamp(Left, area.Left, Math.Max(area.Left, area.Right - Width));
             Top = Math.Clamp(Top, area.Top, Math.Max(area.Top, area.Bottom - Height));
         };
+        _idlePoseTimer.Tick += (_, _) => { if (_activity == "auto") ApplyActivity(); };
         _walkTimer.Tick += (_, _) => StepWalking();
-        IsVisibleChanged += (_, _) => { UpdateWalking(); if (!IsVisible) { SavePosition(); MascotMenu.IsOpen = false; ResetAnimation(); } };
+        IsVisibleChanged += (_, _) => { UpdateWalking(); if (IsVisible) { ApplyActivity(); _idlePoseTimer.Start(); } else _idlePoseTimer.Stop(); if (!IsVisible) { SavePosition(); MascotMenu.IsOpen = false; ResetAnimation(); } };
         _reminderTimer.Tick += (_, _) => { _reminderTimer.Stop(); _reminding = false; ResetAnimation(); if (!_wasVisible) Hide(); };
-        Closed += (_, _) => { SavePosition(); _walkTimer.Stop(); _reminderTimer.Stop(); ResetAnimation(); };
+        Closed += (_, _) => { SavePosition(); _idlePoseTimer.Stop(); _walkTimer.Stop(); _reminderTimer.Stop(); ResetAnimation(); };
     }
     private void SavePosition() { try { _preferences.SavePosition(Left, Top); } catch { } }
     private void MascotEnter(object sender, MouseEventArgs e) {
