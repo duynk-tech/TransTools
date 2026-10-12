@@ -67,7 +67,7 @@ public partial class LearningViewModel : ObservableObject
             return LessonGenerationStatus;
         } catch (Exception ex) { return "Chưa thêm được câu từ Sổ tay: " + ex.Message; }
     }
-    private readonly AdaptiveLessons _adaptive = new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TransTools"));
+    private readonly AdaptiveLessons _adaptive;
     [ObservableProperty] private AdaptiveLesson? _currentLesson;
     [ObservableProperty] private string _lessonFeedback = "";
     [ObservableProperty] private string _lessonAnswer = "";
@@ -203,10 +203,12 @@ public partial class LearningViewModel : ObservableObject
 
     [ObservableProperty] private string _newExampleSentence = string.Empty;
 
-    public LearningViewModel()
+    public LearningViewModel() : this(null) { }
+    public LearningViewModel(string? storageRoot)
     {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        _store = new LearningStore(Path.Combine(appData, "TransTools"));
+        var root = storageRoot ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TransTools");
+        _store = new LearningStore(root);
+        _adaptive = new AdaptiveLessons(root);
 
         try { LoadInitialVocabulary(); } catch (Exception ex) { _canSaveVocabulary = false; Status = "Không đọc được từ vựng; giữ nguyên tệp để khôi phục: " + ex.Message; }
         try { _content = LearningContent.Parse(VoiceService.ResourceText("Learning/curated.json")); RefreshContent(); }

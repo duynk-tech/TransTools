@@ -807,6 +807,18 @@ internal static class Program
             };
             var validNotebookPairs = TransTools.Services.Learning.NotebookLearningPolicy.Candidates(notebookPairs, "en").ToList();
             if (validNotebookPairs.Count != 2 || validNotebookPairs.Any(row => row.Original == "Hello again" || row.Original == "Hallo")) throw new Exception("Notebook learning accepts mismatched translation or source language");
+            var importRoot = Path.Combine(output, "notebook-learning-fixture");
+            var importLearning = new LearningViewModel(importRoot);
+            var importSession = new MeetingSession { Captions = Enumerable.Range(0, 30).Select(index => new Caption {
+                Original = "[Bạn] Example " + index, OriginalTextForLearning = "Example " + index, Vietnamese = "Ví dụ " + index, SourceLanguage = "en", TargetLanguage = "vi"
+            }).ToList() };
+            importLearning.ImportNotebook(importSession);
+            var importedLessons = new TransTools.Services.Learning.AdaptiveLessons(importRoot);
+            if (importedLessons.Lessons.Count != 20 || importedLessons.Lessons.Any(lesson => lesson.Original.StartsWith("[")) || importLearning.CurrentLesson == null) throw new Exception("Notebook import does not persist capped clean lessons or refresh learning plan");
+            importLearning.ImportNotebook(importSession);
+            if (new TransTools.Services.Learning.AdaptiveLessons(importRoot).Lessons.Count != 20) throw new Exception("Repeated notebook import duplicates learning sentences");
+            importLearning.ImportNotebook(new MeetingSession { Captions = [new Caption { Original = "Hallo", Vietnamese = "Xin chào", SourceLanguage = "de", TargetLanguage = "vi" }] });
+            if (new TransTools.Services.Learning.AdaptiveLessons(importRoot).Lessons.Count != 20) throw new Exception("Notebook import adds wrong language to current goal");
             var generated = TransTools.Services.Learning.AdaptiveLessons.ParseGenerated(generatedJson, "en", "Giao tiếp đời sống");
             if (generated.Count != 3 || generated.Any(l => l.Goal != "Giao tiếp đời sống")) throw new Exception("Generated lessons lost goal context");
             var rejected = false; try { TransTools.Services.Learning.AdaptiveLessons.ParseGenerated("{\"lessons\":[]}", "en", "test"); } catch { rejected = true; }
