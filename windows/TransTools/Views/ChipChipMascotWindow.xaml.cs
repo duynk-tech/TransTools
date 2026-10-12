@@ -109,11 +109,19 @@ public partial class ChipChipMascotWindow : Window
             new System.Windows.Controls.Primitives.CustomPopupPlacement(new Point(targetSize.Width + 10, (targetSize.Height - popupSize.Height) / 2), System.Windows.Controls.Primitives.PopupPrimaryAxis.Vertical)
         ];
         SetBinding(TitleProperty, new System.Windows.Data.Binding("DisplayName") { Source = TransTools.Services.Experience.AssistantIdentity.Shared }); Left = SystemParameters.WorkArea.Right - Width - 30; Top = SystemParameters.WorkArea.Bottom - Height - 30;
+        var savedPosition = _preferences.LoadPosition();
+        if (savedPosition is { } position) { Left = position.Left; Top = position.Top; }
+        SourceInitialized += (_, _) => {
+            var area = WindowMonitorArea.WorkArea(this);
+            Left = Math.Clamp(Left, area.Left, Math.Max(area.Left, area.Right - Width));
+            Top = Math.Clamp(Top, area.Top, Math.Max(area.Top, area.Bottom - Height));
+        };
         _walkTimer.Tick += (_, _) => StepWalking();
-        IsVisibleChanged += (_, _) => { UpdateWalking(); if (!IsVisible) { MascotMenu.IsOpen = false; ResetAnimation(); } };
+        IsVisibleChanged += (_, _) => { UpdateWalking(); if (!IsVisible) { SavePosition(); MascotMenu.IsOpen = false; ResetAnimation(); } };
         _reminderTimer.Tick += (_, _) => { _reminderTimer.Stop(); _reminding = false; ResetAnimation(); if (!_wasVisible) Hide(); };
-        Closed += (_, _) => { _walkTimer.Stop(); _reminderTimer.Stop(); ResetAnimation(); };
+        Closed += (_, _) => { SavePosition(); _walkTimer.Stop(); _reminderTimer.Stop(); ResetAnimation(); };
     }
+    private void SavePosition() { try { _preferences.SavePosition(Left, Top); } catch { } }
     private void MascotEnter(object sender, MouseEventArgs e) {
         if (!_reminding) BubbleText.Text = "Cùng học với " + TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName + " nhé!";
         SpeechBubble.Visibility = Visibility.Visible;
@@ -124,6 +132,6 @@ public partial class ChipChipMascotWindow : Window
     private void MascotLeave(object sender, MouseEventArgs e) => ResetAnimation();
     private void MascotDown(object sender, MouseButtonEventArgs e) {
         if (e.ClickCount == 2) { LearningRequested?.Invoke(); e.Handled = true; return; }
-        if (e.LeftButton == MouseButtonState.Pressed) { _dragging = true; _walkTimer.Stop(); try { DragMove(); } finally { _dragging = false; UpdateWalking(); } }
+        if (e.LeftButton == MouseButtonState.Pressed) { _dragging = true; _walkTimer.Stop(); try { DragMove(); } finally { _dragging = false; SavePosition(); UpdateWalking(); } }
     }
 }
