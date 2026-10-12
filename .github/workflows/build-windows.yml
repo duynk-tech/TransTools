@@ -1,4 +1,4 @@
-name: Validate Windows UI (no installer)
+name: Validate and package Windows
 
 on:
   workflow_dispatch:
@@ -10,6 +10,11 @@ on:
 
       test_translation:
         description: Run pinned offline ONNX translation on Windows
+        type: boolean
+        default: false
+
+      package_installer:
+        description: Build Windows setup after successful validation
         type: boolean
         default: false
 
@@ -90,3 +95,32 @@ jobs:
           path: windows/test-results/**
           if-no-files-found: warn
 
+      - name: Publish Windows executable
+        if: inputs.package_installer
+        shell: pwsh
+        run: |
+          dotnet publish windows/TransTools/TransTools.csproj -c Release -r win-x64 --self-contained true -o windows/build
+          if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
+
+      - name: Build Windows installer
+        if: inputs.package_installer
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed.' }
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" windows/installer/installer.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Installer build failed.' }
+          $files = Get-ChildItem windows/build -Exclude 'TransTools-Setup.exe','TransTools-Windows-Portable.zip','*.pdb'
+          Compress-Archive -Path $files.FullName -DestinationPath windows/build/TransTools-Windows-Portable.zip
+          Get-FileHash windows/build/TransTools-Setup.exe,windows/build/TransTools-Windows-Portable.zip -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  $([IO.Path]::GetFileName($_.Path))" } | Set-Content windows/build/SHA256SUMS.txt
+
+      - name: Upload Windows installers
+        if: inputs.package_installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-release-installers
+          path: |
+            windows/build/TransTools-Setup.exe
+            windows/build/TransTools-Windows-Portable.zip
+            windows/build/SHA256SUMS.txt
+          if-no-files-found: error

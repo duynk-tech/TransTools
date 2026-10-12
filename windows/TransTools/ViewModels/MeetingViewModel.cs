@@ -46,6 +46,8 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
     private string _sessionDomain = "Thông dụng";
     private string _sessionSource = "en", _sessionTarget = "vi", _sessionTranslationMode = "Google";
     private AIProviderConfig? _sessionAi;
+    private MarianTranslationService? _sessionOffline;
+    private async Task ReleaseOfflineAsync() { var model = _sessionOffline; _sessionOffline = null; if (model != null) await model.DisposeAsync(); }
     [ObservableProperty] private bool _isPreparing;
     private CancellationTokenSource? _prepareCancellation;
     public bool CanConfigureMeeting => !IsBusy;
@@ -222,7 +224,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         (SourceLanguage, TargetLanguage) = (TargetLanguage, SourceLanguage);
     }
     public string[] Languages { get; } = { "en", "vi", "ja", "zh", "ko", "auto" };
-    public string[] TranslationModes { get; } = { "Google", "AI", "Tiếng gốc" };
+    public string[] TranslationModes { get; } = { "Google", "AI", "Offline", "Tiếng gốc" };
     public ObservableCollection<Caption> Captions { get; } = new();
     public event Action<string, string>? OnSubtitleUpdated;
     public event Action<Caption>? OnCaptionTranslationUpdated;
@@ -292,6 +294,8 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
             _sessionDomain = TransTools.Services.Experience.SubtitlePreferences.Shared.Domain;
             _sessionSource = SourceLanguage; _sessionTarget = TargetLanguage; _sessionTranslationMode = TranslationMode;
             _sessionAi = _sessionTranslationMode == "AI" ? _credentials.LoadConfiguredProvider() ?? throw new InvalidOperationException("Chọn AI và model trong Cài đặt.") : null;
+            await ReleaseOfflineAsync();
+            if (_sessionTranslationMode == "Offline") _sessionOffline = InstalledTranslation.Open(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TransTools"), _sessionSource, _sessionTarget);
             Status = "Đang chuẩn bị nhận diện...";
             await _stt.InitializeModelAsync(language: _sessionSource, cancellationToken: _prepareCancellation.Token);
             _cts?.Dispose(); _cts = new(); _sessionId = Guid.NewGuid(); _sessionSystemAudio = CaptureSystemAudio; _offset = 0; _overflow = false; _started = DateTime.Now;
@@ -309,7 +313,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         } catch (Exception ex) {
             _audio.StopCapture(); _audioQueue?.Writer.TryComplete(); _cts?.Cancel(); IsRecording = false;
             if (_processing != null) { try { await _processing; } catch { } }
-            _stt.Dispose(); Status = ex is OperationCanceledException ? "Đã hủy bắt đầu cuộc họp." : ex.Message;
+            await ReleaseOfflineAsync(); _stt.Dispose(); Status = ex is OperationCanceledException ? "Đã hủy bắt đầu cuộc họp." : ex.Message;
         }
         finally { _prepareCancellation?.Dispose(); _prepareCancellation = null; IsPreparing = false; }
     }
@@ -330,7 +334,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
             _lastStopSucceeded = true;
             Status = _overflow ? "Đã dừng vì xử lý không theo kịp. Một đoạn âm thanh chưa được xử lý." : "Đã dừng; có thể lưu Sổ tay.";
         } catch (Exception ex) { Status = "Lỗi hoàn tất: " + ex.Message; }
-        finally { if (_processing?.IsCompleted == true) _stt.Dispose(); IsStopping = false; AudioLevel = 0; }
+        finally { if (_processing?.IsCompleted == true) { _stt.Dispose(); await ReleaseOfflineAsync(); } IsStopping = false; AudioLevel = 0; }
     }
     public bool CanManageMeeting => Captions.Count > 0 && !IsStopping && !IsPreparing;
     public bool CanClearMeeting => Captions.Count > 0 && !IsBusy;
@@ -434,6 +438,9 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
                         if (_sessionTranslationMode == "AI") {
                             var config = _sessionAi ?? throw new InvalidOperationException("Cấu hình AI không còn khả dụng.");
                             translated = await new LLMTranslationService().TranslateWithAIAsync(caption.Original, _sessionTarget, $"{_sessionDomain}. Tự nhiên, giữ đúng thuật ngữ chuyên ngành, không thêm nội dung", config, cancellation);
+                        } else if (_sessionTranslationMode == "Offline") {
+                            var model = _sessionOffline ?? throw new InvalidOperationException("Bộ dịch Offline chưa sẵn sàng.");
+                            translated = await model.TranslateAsync(caption.Original, cancellation);
                         } else translated = await _google.TranslateAsync(caption.Original, _sessionSource, _sessionTarget, cancellation);
                         cancellation.ThrowIfCancellationRequested();
                         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
@@ -478,6 +485,6 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         TransTools.Services.Experience.SubtitlePreferences.Shared.Changed -= DisplayPreferencesChanged;
         StopAutomaticReader(); _prepareCancellation?.Cancel(); _cts?.Cancel(); _audio.Dispose();
         var pending = _processing ?? Task.CompletedTask;
-        _ = pending.ContinueWith(_ => { _stt.Dispose(); _cts?.Dispose(); _buffer.Dispose(); }, TaskScheduler.Default);
+        _ = pending.ContinueWith(async _ => { await ReleaseOfflineAsync(); _stt.Dispose(); _cts?.Dispose(); _buffer.Dispose(); }, TaskScheduler.Default).Unwrap();
     }
 }

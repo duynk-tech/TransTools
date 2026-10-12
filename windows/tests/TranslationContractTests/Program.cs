@@ -29,3 +29,8 @@ try { await service.TranslateAsync("Hello", canceled.Token); throw new Exception
 await service.DisposeAsync();
 try { await service.TranslateAsync("Hello"); throw new Exception("Released model remained usable."); } catch (ObjectDisposedException) { }
 Console.WriteLine("PASS: async native text translation, cancellation and released model lifecycle");
+
+var absentRoot = Path.Combine(Path.GetTempPath(), "trans-tools-absent-" + Guid.NewGuid().ToString("N"));
+try { InstalledTranslation.Open(absentRoot, "en", "vi"); throw new Exception("Missing model accepted."); } catch (InvalidOperationException) { }
+try { InstalledTranslation.Open(absentRoot, "vi", "en"); throw new Exception("Unverified language pair accepted."); } catch (NotSupportedException) { }
+Console.WriteLine("PASS: offline routing rejects missing models and unsupported language pairs");
