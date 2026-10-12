@@ -29,6 +29,7 @@ public sealed class MeetingTasksWindow : Window
     private readonly Func<string, CancellationToken, Task<string>>? _generate;
     private readonly CancellationTokenSource _lifetime = new();
     private readonly StackPanel _items = new();
+    private readonly DockPanel _addRow = new() { Margin = new Thickness(0, 12, 0, 12) };
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 10) };
     private readonly Button _analyze;
     private bool _running;
@@ -46,7 +47,7 @@ public sealed class MeetingTasksWindow : Window
         var icon = new TextBlock { Text = "\uE9D5", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 20, Foreground = new SolidColorBrush(Color.FromRgb(40, 117, 104)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
         DockPanel.SetDock(icon, Dock.Left); heading.Children.Add(icon);
         var titles = new StackPanel();
-        titles.Children.Add(new TextBlock { Text = "Việc cần làm sau cuộc họp (AI)", FontSize = 16, FontWeight = FontWeights.Bold });
+        titles.Children.Add(new TextBlock { Text = "Việc cần làm sau cuộc họp (AI)", Style = (Style)FindResource("PageHeading") });
         titles.Children.Add(new TextBlock { Text = session.Title, FontSize = 12, Foreground = new SolidColorBrush(Color.FromRgb(101, 117, 111)), TextTrimming = TextTrimming.CharacterEllipsis, ToolTip = session.Title, Margin = new Thickness(0, 2, 0, 0) });
         heading.Children.Add(titles);
         var header = new Border { Background = Mint(), Child = heading }; DockPanel.SetDock(header, Dock.Top); layout.Children.Add(header);
@@ -63,7 +64,7 @@ public sealed class MeetingTasksWindow : Window
         DockPanel.SetDock(footerSurface, Dock.Bottom); layout.Children.Add(footerSurface);
         var body = new DockPanel { Margin = new Thickness(24, 10, 24, 0) };
         DockPanel.SetDock(_status, Dock.Top); body.Children.Add(_status);
-        var addRow = new DockPanel { Margin = new Thickness(0, 12, 0, 12) };
+        var addRow = _addRow;
         var add = new Button { Content = "Thêm việc", Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(8, 0, 0, 0) };
         var input = new TextBox { ToolTip = "Nội dung việc mới", MaxLength = 600, Margin = new Thickness(0) };
         void AddManual() { var value = input.Text.Trim(); if (value.Length == 0 || _running) return; AddTask(new(value, "")); input.Clear(); input.Focus(); }
@@ -99,7 +100,7 @@ public sealed class MeetingTasksWindow : Window
     private async Task AnalyzeAsync()
     {
         if (_running) return;
-        _running = true; _analyze.IsEnabled = false; _status.Text = "Đang phân tích bản ghi…";
+        _running = true; _analyze.IsEnabled = false; _items.IsEnabled = _addRow.IsEnabled = false; _status.Text = "Đang phân tích bản ghi…";
         try {
             var tasks = await MeetingTaskExtractor.ExtractAsync(_session, _generate, _lifetime.Token);
             if (_lifetime.IsCancellationRequested) return;
@@ -108,6 +109,6 @@ public sealed class MeetingTasksWindow : Window
             _status.Text = tasks.Count == 0 ? "Chưa tìm thấy việc cần làm trong bản ghi." : "Kiểm tra và chỉnh sửa danh sách trước khi sử dụng.";
         } catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
         catch (Exception ex) { if (!_lifetime.IsCancellationRequested) _status.Text = "Chưa phân tích được: " + ex.Message; }
-        finally { _running = false; if (!_lifetime.IsCancellationRequested) _analyze.IsEnabled = true; }
+        finally { _running = false; if (!_lifetime.IsCancellationRequested) { _analyze.IsEnabled = true; _items.IsEnabled = _addRow.IsEnabled = true; } }
     }
 }
