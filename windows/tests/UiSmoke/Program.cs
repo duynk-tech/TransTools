@@ -834,6 +834,7 @@ internal static class Program
                 if (!ReferenceEquals(practiceView.DataContext, practiceModel)) throw new Exception("Learning practice replaced conversation state");
                 ValidateControlLayout(practiceWindow, "Learning conversation practice"); Capture(practiceWindow, output, "learning-conversation-practice.png");
                 practiceWindow.Width = 800; practiceWindow.Height = 650; Pump();
+                if (((ScrollViewer)practiceView.FindName("ConversationOptionsScroll")).ScrollableWidth > 1) throw new Exception("Practice options still require horizontal scrolling at minimum width");
                 ValidateControlLayout(practiceWindow, "Learning conversation practice minimum"); Capture(practiceWindow, output, "learning-conversation-practice-minimum.png");
                 practiceModel.IsConversationActive = true; practiceWindow.Close(); Pump();
                 if (practiceModel.IsConversationActive || practiceModel.Messages.Count != 1) throw new Exception("Closing learning practice did not stop while preserving history");
@@ -1151,6 +1152,7 @@ internal static class Program
         var handler = new ReadingFixtureHandler(); using var client = new System.Net.Http.HttpClient(handler);
         using var model = new ReadingLibraryViewModel(new TransTools.Services.Reading.ReadingLibrary(client));
         var library = new ReadingLibraryWindow(model) { Owner = owner }; library.Show(); Pump();
+        if (model.SearchCommand.CanExecute(null) || model.IsOnline) throw new Exception("Empty story query enables search or shows online results");
         ValidateControlLayout(library, "Story catalog"); Capture(library, output, "reading-library-catalog.png");
         var reader = new TextReaderViewModel { Text = "Keep the original text until the user confirms." };
         Await(model.LoadStoryAsync(TransTools.Services.Reading.ReadingLibrary.Catalog[0])); Pump();
@@ -1161,6 +1163,7 @@ internal static class Program
         Await(model.LoadStoryAsync(TransTools.Services.Reading.ReadingLibrary.Catalog[1]));
         if (string.Concat(model.Parts.Select(part => part.Text)) != ReadingFixtureHandler.Sample) throw new Exception("Gutenberg import retained boilerplate or lost story text");
         model.Query = "truyện cổ tích"; Await(model.SearchAsync());
+        if (!model.IsOnline || !model.SearchCommand.CanExecute(null)) throw new Exception("Completed story search has stale action state");
         if (model.Stories.Count != 2 || !model.Stories.All(story => story.Page.Scheme == "https" && story.Id.Contains("123"))) throw new Exception("Online story search did not retain source links");
         Capture(library, output, "reading-library-search.png");
         model.SuggestionsCommand.Execute(null);
@@ -1169,7 +1172,10 @@ internal static class Program
         handler.Fail = false; handler.Oversized = true; Await(model.LoadStoryAsync(TransTools.Services.Reading.ReadingLibrary.Catalog[0]));
         if (model.CanUsePart) throw new Exception("Oversized story download was accepted");
         handler.Oversized = false; handler.Pending = new(TaskCreationOptions.RunContinuationsAsynchronously); model.Query = "old search";
-        var pending = model.SearchAsync(); model.SuggestionsCommand.Execute(null); handler.Pending.SetResult(ReadingFixtureHandler.SearchResponse()); Await(pending);
+        var pending = model.SearchAsync();
+        if (!model.IsBusy || model.SearchCommand.CanExecute(null)) throw new Exception("Pending story search allows a duplicate request");
+        model.SuggestionsCommand.Execute(null); handler.Pending.SetResult(ReadingFixtureHandler.SearchResponse()); Await(pending);
+        if (model.IsOnline || model.SearchCommand.CanExecute(null)) throw new Exception("Canceled story search leaves stale result or action state");
         if (model.Stories.Count != 4 || model.IsBusy || model.Stories[0].Id != "tam-cam") throw new Exception("Canceled search overwrote the suggested catalog");
         library.Close(); Console.WriteLine("PASS: story catalog, search, preview, import, Unicode, cancellation and download limits");
     }
