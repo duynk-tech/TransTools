@@ -375,6 +375,7 @@ internal static class Program
                         conversation.IsThinking = false; Pump();
                         var topicButton = (Button)chatView.FindName("TopicButton"); topicButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
                         var topicPopup = (System.Windows.Controls.Primitives.Popup)chatView.FindName("TopicPopup");
+                        if (((TextBox)chatView.FindName("ConversationPromptInput")).IsEnabled) throw new Exception("Existing conversation allows changing its role prompt");
                         if (!topicPopup.IsOpen || topicPopup.Child == null) throw new Exception("Conversation name/options popup did not open");
                         ValidateControlLayout((FrameworkElement)topicPopup.Child, "Conversation name and options");
                         CaptureElement((FrameworkElement)topicPopup.Child, output, $"{width}-conversation-options.png");
