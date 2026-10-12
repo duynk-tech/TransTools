@@ -623,10 +623,14 @@ internal static class Program
                                 if (modelSettings.CanUseVieNeu != (modelSettings.CanManageModels && modelSettings.VieNeuInstalled)) throw new Exception("VieNeu default availability differs from installation");
                                 modelSettings.ModelFilter = "tts";
                                 if (!modelSettings.ShowSupertonicCard || !modelSettings.ShowVieNeuCard || modelSettings.ModelFilterEmpty) throw new Exception("TTS filter hides supported models");
-                                foreach (var filter in new[] { "stt", "translation", "languageModel" }) {
+                                foreach (var filter in new[] { "stt", "languageModel" }) {
                                     modelSettings.ModelFilter = filter;
                                     if (!modelSettings.ModelFilterEmpty || modelSettings.ShowSupertonicCard || modelSettings.ShowVieNeuCard) throw new Exception("Unsupported category displays TTS models");
                                 }
+                                modelSettings.ModelFilter = "translation"; Pump();
+                                if (!modelSettings.ShowTranslationCard || modelSettings.ModelFilterEmpty || modelSettings.ShowSupertonicCard || modelSettings.ShowVieNeuCard) throw new Exception("Translation category hides its native offline model or mixes TTS cards");
+                                ValidateControlLayout(window, "Offline translation model card");
+                                Capture(window, output, $"{width}-models-translation.png");
                                 modelSettings.ModelFilter = "installed";
                                 if (modelSettings.ShowSupertonicCard != modelSettings.SupertonicInstalled || modelSettings.ShowVieNeuCard != modelSettings.VieNeuInstalled) throw new Exception("Installed model filter differs from inventory");
                                 Pump(); Capture(window, output, $"{width}-models-installed.png");
