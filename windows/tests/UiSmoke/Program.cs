@@ -704,7 +704,8 @@ internal static class Program
             var personalLibrary = Descendants(routedSettings).OfType<PersonalVoiceLibraryView>().First();
             if (!ReferenceEquals(personalLibrary.DataContext, routedVoice)) throw new Exception("Personal voice library route does not share the selected voice inventory");
             ValidateControlLayout(window, "Personal voice settings route"); Capture(window, output, "personal-voice-settings-route.png");
-            var mascotFixture = new ChipChipMascotWindow { Left = 700 };
+            var mascotPreference = new TransTools.Services.Experience.MascotPreferences(Path.Combine(output, "mascot-preference.json"));
+            var mascotFixture = new ChipChipMascotWindow(mascotPreference) { Left = 700 };
             var mascotQuickModel = new QuickTranslateViewModel { SourceText = "Xin chào", TranslatedText = "Hello", SourceLanguage = "vi", TargetLanguage = "en" };
             mascotQuickModel.TranslateAsync(new CancellationToken(true)).GetAwaiter().GetResult();
             if (mascotQuickModel.IsTranslating || mascotQuickModel.TranslatedText != "Hello" || mascotQuickModel.Status != "Đã hủy dịch") throw new Exception("Canceled inline translation changed result or retained busy state");
@@ -734,6 +735,7 @@ internal static class Program
             if (mascotFixture.IsWalkTimerRunning) throw new Exception("Busy conversation or reader leaves walk timer running");
             mascotFixture.WorkBusy = null; mascotFixture.RefreshWalkingState();
             activityChoice.SelectedValue = "sleeping"; Pump();
+            if (mascotPreference.Load() != "sleeping") throw new Exception("Mascot activity selection was not persisted");
             if (mascotImage.Source is not System.Windows.Media.Imaging.BitmapImage sleepingPose || !sleepingPose.UriSource.OriginalString.EndsWith("/sleeping.png")) throw new Exception("Mascot activity selector did not choose sleeping image");
             mascotFixture.SetMeetingState(true, false); Pump();
             if (mascotImage.Source is not System.Windows.Media.Imaging.BitmapImage writingPose || !writingPose.UriSource.OriginalString.EndsWith("/writing.png")) throw new Exception("Meeting did not prioritize mascot writing pose");

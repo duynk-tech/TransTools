@@ -34,6 +34,8 @@ public partial class ChipChipMascotWindow : Window
         if (IsVisible && _activity == "strolling" && !_meetingRecording && WorkBusy?.Invoke() != true) { _walkTick = DateTime.UtcNow; _walkTimer.Interval = TimeSpan.FromSeconds(1); _walkTimer.Start(); }
     }
     private string _activity = "auto";
+    private readonly TransTools.Services.Experience.MascotPreferences _preferences;
+    private bool _loadingPreferences = true;
     private static readonly Dictionary<string, System.Windows.Media.Imaging.BitmapImage> ActivityImages = LoadActivityImages();
     private static Dictionary<string, System.Windows.Media.Imaging.BitmapImage> LoadActivityImages()
     {
@@ -51,6 +53,7 @@ public partial class ChipChipMascotWindow : Window
     {
         if (ActivityChoice?.SelectedValue is not string choice) return;
         _activity = choice; ApplyActivity(); UpdateWalking();
+        if (!_loadingPreferences) { try { _preferences.Save(choice); } catch { BubbleText.Text = "Chưa lưu được hoạt cảnh. Bạn có thể chọn lại."; } }
     }
     private void ApplyActivity()
     {
@@ -97,8 +100,9 @@ public partial class ChipChipMascotWindow : Window
         _wasVisible = IsVisible; _reminding = true; BubbleText.Text = text; Show(); SpeechBubble.Visibility = Visibility.Visible;
         _reminderTimer.Stop(); _reminderTimer.Start();
     }
-    public ChipChipMascotWindow() {
-        InitializeComponent(); ApplyActivity();
+    public ChipChipMascotWindow(TransTools.Services.Experience.MascotPreferences? preferences = null) {
+        _preferences = preferences ?? new();
+        InitializeComponent(); _activity = _preferences.Load(); ActivityChoice.SelectedValue = _activity; _loadingPreferences = false; ApplyActivity();
         MascotMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Custom;
         MascotMenu.CustomPopupPlacementCallback = (popupSize, targetSize, offset) => [
             new System.Windows.Controls.Primitives.CustomPopupPlacement(new Point(-popupSize.Width, (targetSize.Height - popupSize.Height) / 2), System.Windows.Controls.Primitives.PopupPrimaryAxis.Vertical),
