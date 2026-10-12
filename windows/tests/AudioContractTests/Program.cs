@@ -127,3 +127,12 @@ foreach (var invalidReading in new[] { new SpeechReadingPreparation.Reading(99, 
 
 Check(TransTools.Services.Conversation.ConversationTopics.Normalize("Phỏng vấn xin việc (Job Interview)") == "Phỏng vấn", "Legacy conversation topic remains selectable");
 Check(TransTools.Services.Conversation.ConversationTopics.Instructions("Công việc & Cuộc họp").Contains("clarifying tasks"), "Work learning uses meeting scenario");
+
+Check(!TransTools.Services.Experience.MascotWalkPolicy.CanWalk(true, true, false, false, false, 19.9), "Mascot walking waits for system idle");
+Check(TransTools.Services.Experience.MascotWalkPolicy.CanWalk(true, true, false, false, false, 20), "Mascot walking permits idle movement");
+foreach (var state in new[] { (false,true,false,false,false), (true,false,false,false,false), (true,true,true,false,false), (true,true,false,true,false), (true,true,false,false,true) })
+    Check(!TransTools.Services.Experience.MascotWalkPolicy.CanWalk(state.Item1,state.Item2,state.Item3,state.Item4,state.Item5,60), "Mascot motion pauses for hidden busy hover or reduced motion");
+var walk = TransTools.Services.Experience.MascotWalkPolicy.Step(99, 1, 0, 100, 5);
+Check(walk.X == 100 && walk.Direction == -1 && walk.PauseSeconds == 1.2, "Mascot walking reverses safely and rests at edge");
+var boundedWalk = TransTools.Services.Experience.MascotWalkPolicy.Step(50, 1, 0, 200, 10);
+Check(boundedWalk.X <= 54.2, "Mascot stalled timer cannot jump across desktop");
