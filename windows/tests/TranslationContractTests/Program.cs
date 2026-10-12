@@ -18,3 +18,14 @@ using var canceled = new CancellationTokenSource(); canceled.Cancel();
 try { decoder.Generate(new long[] { 0 }, canceled.Token); throw new Exception("Canceled translation ran."); } catch (OperationCanceledException) { }
 try { decoder.Generate(new long[513], CancellationToken.None); throw new Exception("Long input was silently truncated."); } catch (ArgumentException) { }
 Console.WriteLine("PASS: cancellation and input limit; native tokenizer agrees on reference sentences");
+
+decoder.Dispose();
+await using var service = new MarianTranslationService(args[0], "en", "vi");
+foreach (var sample in reference.RootElement.GetProperty("samples").EnumerateArray()) {
+    var translated = await service.TranslateAsync(sample.GetProperty("source").GetString()!);
+    if (translated != sample.GetProperty("translation").GetString()) throw new Exception("Async text translation differs from official reference.");
+}
+try { await service.TranslateAsync("Hello", canceled.Token); throw new Exception("Canceled text translation succeeded."); } catch (OperationCanceledException) { }
+await service.DisposeAsync();
+try { await service.TranslateAsync("Hello"); throw new Exception("Released model remained usable."); } catch (ObjectDisposedException) { }
+Console.WriteLine("PASS: async native text translation, cancellation and released model lifecycle");
