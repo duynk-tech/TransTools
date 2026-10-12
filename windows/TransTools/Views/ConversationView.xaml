@@ -1,5 +1,5 @@
 <UserControl x:Class="TransTools.Views.ConversationView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:TransTools.Views" xmlns:experience="clr-namespace:TransTools.Services.Experience">
-<Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+<Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions><local:ConversationScenery Grid.RowSpan="3" Topic="{Binding CurrentTopic}"/>
 <Grid Margin="0,4,0,16"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
 <StackPanel><TextBlock Text="Trò chuyện" FontSize="17" FontWeight="Bold"/><TextBlock FontSize="11" Foreground="#65756F" Margin="0,3,0,0"><Run Text="{Binding TargetLanguage}"/><Run Text=" · "/><Run Text="{Binding CurrentTopic}"/></TextBlock></StackPanel>
 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"><Button Content="＋ Tạo mới" Command="{Binding NewConversationCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/><Button x:Name="LibraryButton" Content="Hội thoại" Click="ShowLibrary_Click" Style="{StaticResource SecondaryButton}"/></StackPanel>
