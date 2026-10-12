@@ -737,9 +737,9 @@ internal static class Program
             mascotImage.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0) { RoutedEvent = System.Windows.UIElement.MouseEnterEvent });
             Pump();
             if (SystemParameters.ClientAreaAnimation && !mascotFixture.IsSpriteTimerRunning) throw new Exception("Mascot hover did not play shared macOS sprite clip");
-            mascotFixture.SetMeetingState(true, false, "Đang dịch…"); Pump();
+            mascotFixture.SetMeetingState(true, false); Pump();
             if (mascotFixture.IsSpriteTimerRunning) throw new Exception("Meeting leaves hover sprite timer running");
-            mascotFixture.SetMeetingState(false, false, "Sẵn sàng");
+            mascotFixture.SetMeetingState(false, true);
             activityChoice.SelectedValue = "auto"; Pump();
             if (!mascotFixture.IsIdlePoseTimerRunning) throw new Exception("Automatic idle mascot did not schedule pose checks");
             mascotFixture.SetMeetingState(true, true); Pump();
