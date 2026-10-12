@@ -124,3 +124,6 @@ foreach (var invalidReading in new[] { new SpeechReadingPreparation.Reading(99, 
     bool rejected = false; try { SpeechReadingPreparation.Apply(readSource, readTokens, [invalidReading]); } catch (InvalidDataException) { rejected = true; }
     Check(rejected, "AI reading rejects unknown spans and control characters");
 }
+
+Check(TransTools.Services.Conversation.ConversationTopics.Normalize("Phỏng vấn xin việc (Job Interview)") == "Phỏng vấn", "Legacy conversation topic remains selectable");
+Check(TransTools.Services.Conversation.ConversationTopics.Instructions("Công việc & Cuộc họp").Contains("clarifying tasks"), "Work learning uses meeting scenario");

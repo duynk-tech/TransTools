@@ -161,7 +161,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         try {
             Status = "Đang chuẩn bị lời chào...";
             var reply = await GenerateReplyAsync("Begin the conversation with a warm greeting and one opening question.",
-                $"Your name is {TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName}. You are my language practice partner. Speak in {TargetLanguage}. Topic: {CurrentTopic}. {(GreetingName.Length == 0 ? "Use a general greeting." : $"Address me as {GreetingName} naturally if appropriate.")} Keep it to 1–2 sentences. {CustomPrompt}", replyCancellation.Token);
+                $"Your name is {TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName}. You are my language practice partner. Speak in {TargetLanguage}. Topic: {TransTools.Services.Conversation.ConversationTopics.Instructions(CurrentTopic)}. {(GreetingName.Length == 0 ? "Use a general greeting." : $"Address me as {GreetingName} naturally if appropriate.")} Keep it to 1–2 sentences. {CustomPrompt}", replyCancellation.Token);
             var translation = CanShowTranslation && ShowVietnameseTranslation ? await _googleService.TranslateAsync(reply, "auto", "vi", replyCancellation.Token) : "";
             if (generation != _conversationGeneration) return;
             Messages.Add(new ChatMessageItem { Text = reply, Translation = translation });
@@ -239,7 +239,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     {
         if (IsThinking || IsListening || value == null) return;
         Messages.Clear(); foreach (var message in value.Messages) Messages.Add(message);
-        CurrentTopic = value.Topic; TargetLanguage = value.Language; CustomPrompt = value.Prompt;
+        CurrentTopic = TransTools.Services.Conversation.ConversationTopics.Normalize(value.Topic); TargetLanguage = value.Language; CustomPrompt = value.Prompt;
     }
     [RelayCommand] private async Task NewConversationAsync()
     {
@@ -305,7 +305,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
     }
 
     [ObservableProperty]
-    private string _currentTopic = "Phỏng vấn xin việc (Job Interview)";
+    private string _currentTopic = "Giao tiếp hằng ngày";
 
     [ObservableProperty]
     private string _targetLanguage = "Tiếng Anh (English)";
@@ -342,7 +342,7 @@ public partial class ConversationViewModel : ObservableObject, IDisposable
         {
             await SaveConversationAsync();
             replyCancellation.Token.ThrowIfCancellationRequested();
-            var prompt = $"Your name is {TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName}. We are roleplaying: {CurrentTopic}. Reply naturally in {TargetLanguage} as my conversation partner. Keep reply concise (1-3 sentences) suitable for language learning practice. {CustomPrompt}";
+            var prompt = $"Your name is {TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName}. We are roleplaying: {TransTools.Services.Conversation.ConversationTopics.Instructions(CurrentTopic)}. Reply naturally in {TargetLanguage} as my conversation partner. Keep reply concise (1-3 sentences) suitable for language learning practice. {CustomPrompt}";
 
             var history = string.Join("\n", Messages.TakeLast(20).Select(m =>
                 $"{(m.IsUser ? "User" : "Assistant")}: {m.Text}"));
