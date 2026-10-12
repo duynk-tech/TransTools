@@ -731,7 +731,14 @@ internal static class Program
             if (Math.Abs(targetCenter.Y - popupCenter.Y) > 3) throw new Exception("Mascot popup is not vertically centered on character");
             CaptureElement((FrameworkElement)mascotMenu.Child, output, "mascot-action-popup.png");
             var activityChoice = (ComboBox)mascotFixture.FindName("ActivityChoice");
+            activityChoice.SelectedValue = "auto"; Pump();
+            if (!mascotFixture.IsIdlePoseTimerRunning) throw new Exception("Automatic idle mascot did not schedule pose checks");
+            mascotFixture.SetMeetingState(true, true); Pump();
+            if (mascotFixture.IsIdlePoseTimerRunning) throw new Exception("Meeting leaves automatic pose timer running");
+            mascotFixture.SetMeetingState(false, true); Pump();
+            if (!mascotFixture.IsIdlePoseTimerRunning) throw new Exception("Meeting stop did not restore automatic pose checks");
             activityChoice.SelectedValue = "strolling"; Pump();
+            if (mascotFixture.IsIdlePoseTimerRunning) throw new Exception("Manual activity leaves automatic pose timer running");
             if (!mascotFixture.IsWalkTimerRunning) throw new Exception("Visible strolling mascot did not schedule idle checks");
             mascotFixture.SetMeetingState(true, true); Pump();
             if (mascotFixture.IsWalkTimerRunning) throw new Exception("Meeting recording leaves mascot walk timer running");
@@ -755,6 +762,7 @@ internal static class Program
             Descendants(mascotMenu.Child).OfType<Button>().First(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Bắt đầu cuộc họp").RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
             if (meetingRequests != 1 || mascotMenu.IsOpen) throw new Exception("Mascot meeting action did not close popup and dispatch once");
             mascotMenu.IsOpen = true; Pump(); mascotFixture.Hide(); Pump();
+            if (mascotFixture.IsWalkTimerRunning || mascotFixture.IsIdlePoseTimerRunning) throw new Exception("Hidden mascot retains animation polling timers");
             if (mascotMenu.IsOpen) throw new Exception("Hidden mascot retained action popup");
             mascotFixture.Close();
             Console.WriteLine("PASS: mascot popup opens, dispatches meeting once and closes on hide");

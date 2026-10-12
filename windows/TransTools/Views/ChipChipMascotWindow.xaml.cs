@@ -28,6 +28,7 @@ public partial class ChipChipMascotWindow : Window
         if (step.PauseSeconds > 0) _walkPause = now.AddSeconds(step.PauseSeconds);
         _walkTimer.Interval = TimeSpan.FromSeconds(1.0 / 24);
     }
+    public bool IsIdlePoseTimerRunning => _idlePoseTimer.IsEnabled;
     public bool IsWalkTimerRunning => _walkTimer.IsEnabled;
     public void RefreshWalkingState() { UpdateWalking(); ApplyActivity(); UpdateIdlePoseTimer(); }
     private void UpdateIdlePoseTimer() {
