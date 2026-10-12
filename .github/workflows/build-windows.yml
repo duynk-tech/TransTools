@@ -8,6 +8,11 @@ on:
         type: boolean
         default: true
 
+      test_translation:
+        description: Run pinned offline ONNX translation on Windows
+        type: boolean
+        default: false
+
 permissions:
   contents: read
 
@@ -71,6 +76,11 @@ jobs:
           dotnet run --project windows/tests/EdgeTranslationProbe -c Release -- --availability-report windows/test-results/translation-availability.json
           if ($LASTEXITCODE -ne 0) { throw 'Compatibility probe execution failed.' }
           if (!(Test-Path windows/test-results/translation-availability.json)) { throw 'Compatibility evidence missing.' }
+
+      - name: Run real offline translation inference
+        if: ${{ inputs.test_translation }}
+        shell: pwsh
+        run: ./windows/scripts/test-offline-translation.ps1
 
       - name: Upload test evidence
         if: always()

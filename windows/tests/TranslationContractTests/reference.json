@@ -1,0 +1,77 @@
+{
+  "repository": "Xenova/opus-mt-en-vi",
+  "revision": "30bcd461c0d7338ad106b36314d3eedc2d4e998c",
+  "sha256": {
+    "onnx/encoder_model_quantized.onnx": "dfcd7a32be3fdd21cbcf5d354520d626f1768fd6e205ca62a6a11a4641d31f36",
+    "onnx/decoder_model_quantized.onnx": "cde3e02aaca72cfaf2267f6c31c4dcc1b323d769bf90c273f2a1c1d56198ddba"
+  },
+  "samples": [
+    {
+      "source": "Hello, how are you?",
+      "inputIds": [
+        3,
+        1247,
+        4,
+        289,
+        78,
+        12,
+        6,
+        0
+      ],
+      "outputIds": [
+        794,
+        4,
+        37,
+        1465,
+        16,
+        6
+      ],
+      "translation": "Chào, anh khỏe không?"
+    },
+    {
+      "source": "We need to deploy the fix tomorrow and send the report to Duy.",
+      "inputIds": [
+        3,
+        130,
+        292,
+        10,
+        25024,
+        7,
+        3715,
+        1913,
+        19,
+        2040,
+        7,
+        2693,
+        10,
+        5200,
+        334,
+        2,
+        0
+      ],
+      "outputIds": [
+        134,
+        23,
+        182,
+        51,
+        1455,
+        1875,
+        116,
+        1424,
+        1693,
+        124,
+        221,
+        1398,
+        25,
+        1494,
+        554,
+        1304,
+        249,
+        5200,
+        334,
+        2
+      ],
+      "translation": "Chúng ta cần phải triển khai việc sửa chữa vào ngày mai và gửi báo cáo tới Duy."
+    }
+  ]
+}
