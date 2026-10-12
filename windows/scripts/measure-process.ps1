@@ -7,6 +7,7 @@ param(
 $ErrorActionPreference = 'Stop'
 # Observe an existing user-started app; never starts audio, changes settings or kills it.
 $target = Get-Process -Id $TargetProcessId
+$startedAt = $target.StartTime
 $previousCpu = $target.TotalProcessorTime.TotalSeconds
 $clock = [System.Diagnostics.Stopwatch]::StartNew()
 $previousTime = $clock.Elapsed.TotalSeconds
@@ -15,6 +16,7 @@ $rows = [System.Collections.Generic.List[object]]::new()
 while ($clock.Elapsed.TotalSeconds -lt $deadline) {
   Start-Sleep -Seconds $IntervalSeconds
   try { $target = Get-Process -Id $TargetProcessId -ErrorAction Stop } catch { break }
+  if ($target.StartTime -ne $startedAt) { break } # PID reuse must not mix different apps.
   $now = $clock.Elapsed.TotalSeconds
   $cpu = $target.TotalProcessorTime.TotalSeconds
   $elapsed = $now - $previousTime
