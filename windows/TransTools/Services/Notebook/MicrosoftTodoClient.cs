@@ -19,12 +19,13 @@ public sealed class MicrosoftTodoClient(HttpClient client)
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
+            if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden) throw new InvalidOperationException("Cần đăng nhập lại hoặc cấp quyền đọc danh sách Microsoft To Do.");
             response.EnsureSuccessStatusCode();
             await using var stream = await response.Content.ReadAsStreamAsync(deadline.Token);
             using var document = await JsonDocument.ParseAsync(stream, new JsonDocumentOptions { MaxDepth = 16 }, deadline.Token);
-            if (!document.RootElement.TryGetProperty("value", out var rows) || rows.ValueKind != JsonValueKind.Array) throw new InvalidDataException("Microsoft chưa trả danh sách hợp lệ.");
+            if (document.RootElement.ValueKind != JsonValueKind.Object || !document.RootElement.TryGetProperty("value", out var rows) || rows.ValueKind != JsonValueKind.Array) throw new InvalidDataException("Microsoft chưa trả danh sách hợp lệ.");
             foreach (var row in rows.EnumerateArray()) {
-                if (row.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String && row.TryGetProperty("displayName", out var name) && name.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(id.GetString()) && !lists.Any(list => list.Id == id.GetString())) lists.Add(new(id.GetString()!, name.GetString()!));
+                if (row.ValueKind == JsonValueKind.Object && row.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String && row.TryGetProperty("displayName", out var name) && name.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(id.GetString()) && !lists.Any(list => list.Id == id.GetString())) lists.Add(new(id.GetString()!, name.GetString()!));
             }
             if (!document.RootElement.TryGetProperty("@odata.nextLink", out var next)) return lists;
             if (next.ValueKind != JsonValueKind.String || !Uri.TryCreate(next.GetString(), UriKind.Absolute, out var continuation) || continuation.Scheme != "https" || continuation.Host != "graph.microsoft.com" || !continuation.IsDefaultPort || continuation.UserInfo.Length != 0 || !continuation.AbsolutePath.Equals("/v1.0/me/todo/lists", StringComparison.Ordinal)) throw new InvalidDataException("Địa chỉ trang danh sách không hợp lệ.");

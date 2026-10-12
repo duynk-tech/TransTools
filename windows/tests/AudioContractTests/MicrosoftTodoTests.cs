@@ -26,6 +26,15 @@ internal static class MicrosoftTodoTests
         handler.Response = "{\"value\":[{\"id\":\"list1\",\"displayName\":\"Công việc\"}]}";
         var lists = await client.ListAsync("test-token", CancellationToken.None);
         if (lists.Count != 1 || lists[0].Name != "Công việc") throw new Exception("To Do list selection lost labels");
+        handler.Response = "{\"value\":[null,42,{\"id\":\"list1\",\"displayName\":\"Công việc\"},{\"id\":\"list1\",\"displayName\":\"Trùng\"}]}";
+        lists = await client.ListAsync("test-token", CancellationToken.None);
+        if (lists.Count != 1 || lists[0].Name != "Công việc") throw new Exception("Malformed or repeated list rows changed selection");
+        foreach (var status in new[] { HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden }) {
+            handler.Status = status;
+            try { await client.ListAsync("test-token", CancellationToken.None); throw new Exception("Expired list authentication reported success"); }
+            catch (InvalidOperationException) { }
+        }
+        handler.Status = HttpStatusCode.OK;
         handler.Response = "{\"value\":[],\"@odata.nextLink\":\"https://example.com/steal\"}";
         var beforeInvalidPage = handler.Calls;
         try { await client.ListAsync("test-token", CancellationToken.None); throw new Exception("Untrusted list continuation accepted"); } catch (InvalidDataException) { }
