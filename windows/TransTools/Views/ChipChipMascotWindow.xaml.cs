@@ -65,6 +65,7 @@ public partial class ChipChipMascotWindow : Window
     {
         if (MascotImage == null) return;
         var selected = _meetingRecording ? "writing" : _activity == "auto" ? TransTools.Services.Experience.MascotWalkPolicy.IdlePose(IdleSeconds(), DateTime.Now.Hour, WorkBusy?.Invoke() == true, ForegroundProcess(), !SystemParameters.ClientAreaAnimation) : _activity;
+        StopSprite(); _displayedActivity = selected;
         if (ActivityImages.TryGetValue(selected, out var image)) MascotImage.Source = image;
     }
     [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
@@ -78,6 +79,19 @@ public partial class ChipChipMascotWindow : Window
             using var process = System.Diagnostics.Process.GetProcessById((int)id);
             return process.ProcessName;
         } catch { return ""; }
+    }
+    private string _displayedActivity = "thinking";
+    private readonly System.Windows.Threading.DispatcherTimer _spriteTimer = new();
+    private System.Windows.Media.Imaging.BitmapImage[]? _spriteFrames;
+    private int _spriteIndex;
+    public bool IsSpriteTimerRunning => _spriteTimer.IsEnabled;
+    private void StopSprite() { _spriteTimer.Stop(); _spriteFrames = null; _spriteIndex = 0; }
+    private void StartSprite()
+    {
+        StopSprite();
+        if (!IsVisible || !SystemParameters.ClientAreaAnimation || _meetingRecording || WorkBusy?.Invoke() == true) return;
+        if (MascotAnimationFrames.Decode(_displayedActivity) is not { } clip) return;
+        _spriteFrames = clip.Frames; _spriteTimer.Interval = TimeSpan.FromSeconds(1 / clip.Fps); _spriteTimer.Start();
     }
     private bool _reminding;
     private bool _wasVisible;
@@ -134,6 +148,11 @@ public partial class ChipChipMascotWindow : Window
             Left = Math.Clamp(Left, area.Left, Math.Max(area.Left, area.Right - Width));
             Top = Math.Clamp(Top, area.Top, Math.Max(area.Top, area.Bottom - Height));
         };
+        MascotAnimationFrames.WarmUp();
+        _spriteTimer.Tick += (_, _) => {
+            if (_spriteFrames == null || !IsVisible || _meetingRecording || WorkBusy?.Invoke() == true || !SystemParameters.ClientAreaAnimation || ++_spriteIndex >= _spriteFrames.Length) { StopSprite(); ApplyActivity(); return; }
+            MascotImage.Source = _spriteFrames[_spriteIndex];
+        };
         _idlePoseTimer.Tick += (_, _) => { if (_activity == "auto") ApplyActivity(); };
         _walkTimer.Tick += (_, _) => StepWalking();
         IsVisibleChanged += (_, _) => { UpdateWalking(); if (IsVisible) ApplyActivity(); UpdateIdlePoseTimer(); if (!IsVisible) { SavePosition(); MascotMenu.IsOpen = false; ResetAnimation(); } };
@@ -144,10 +163,11 @@ public partial class ChipChipMascotWindow : Window
     private void MascotEnter(object sender, MouseEventArgs e) {
         if (!_reminding) BubbleText.Text = "Cùng học với " + TransTools.Services.Experience.AssistantIdentity.Shared.DisplayName + " nhé!";
         SpeechBubble.Visibility = Visibility.Visible;
-        if (SystemParameters.ClientAreaAnimation) MascotRotation.BeginAnimation(System.Windows.Media.RotateTransform.AngleProperty,
+        StartSprite();
+        if (SystemParameters.ClientAreaAnimation && !_meetingRecording && WorkBusy?.Invoke() != true) MascotRotation.BeginAnimation(System.Windows.Media.RotateTransform.AngleProperty,
             new DoubleAnimation(-5, 5, TimeSpan.FromMilliseconds(250)) { AutoReverse = true, RepeatBehavior = new RepeatBehavior(2), FillBehavior = FillBehavior.Stop });
     }
-    private void ResetAnimation() { MascotRotation.BeginAnimation(System.Windows.Media.RotateTransform.AngleProperty, null); MascotRotation.Angle = 0; if (!_reminding) SpeechBubble.Visibility = Visibility.Collapsed; }
+    private void ResetAnimation() { StopSprite(); ApplyActivity(); MascotRotation.BeginAnimation(System.Windows.Media.RotateTransform.AngleProperty, null); MascotRotation.Angle = 0; if (!_reminding) SpeechBubble.Visibility = Visibility.Collapsed; }
     private void MascotLeave(object sender, MouseEventArgs e) => ResetAnimation();
     private void MascotDown(object sender, MouseButtonEventArgs e) {
         if (e.ClickCount == 2) { LearningRequested?.Invoke(); e.Handled = true; return; }

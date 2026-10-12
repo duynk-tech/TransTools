@@ -733,6 +733,13 @@ internal static class Program
             if (Math.Abs(targetCenter.Y - popupCenter.Y) > 3) throw new Exception("Mascot popup is not vertically centered on character");
             CaptureElement((FrameworkElement)mascotMenu.Child, output, "mascot-action-popup.png");
             var activityChoice = (ComboBox)mascotFixture.FindName("ActivityChoice");
+            activityChoice.SelectedValue = "writing"; Pump();
+            mascotImage.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0) { RoutedEvent = System.Windows.UIElement.MouseEnterEvent });
+            Pump();
+            if (SystemParameters.ClientAreaAnimation && !mascotFixture.IsSpriteTimerRunning) throw new Exception("Mascot hover did not play shared macOS sprite clip");
+            mascotFixture.SetMeetingState(true, false, "Đang dịch…"); Pump();
+            if (mascotFixture.IsSpriteTimerRunning) throw new Exception("Meeting leaves hover sprite timer running");
+            mascotFixture.SetMeetingState(false, false, "Sẵn sàng");
             activityChoice.SelectedValue = "auto"; Pump();
             if (!mascotFixture.IsIdlePoseTimerRunning) throw new Exception("Automatic idle mascot did not schedule pose checks");
             mascotFixture.SetMeetingState(true, true); Pump();
