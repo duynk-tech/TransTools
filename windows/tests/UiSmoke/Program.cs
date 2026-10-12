@@ -705,6 +705,12 @@ internal static class Program
             if (!ReferenceEquals(personalLibrary.DataContext, routedVoice)) throw new Exception("Personal voice library route does not share the selected voice inventory");
             ValidateControlLayout(window, "Personal voice settings route"); Capture(window, output, "personal-voice-settings-route.png");
             var mascotPreference = new TransTools.Services.Experience.MascotPreferences(Path.Combine(output, "mascot-preference.json"));
+            mascotPreference.Save("coffee"); mascotPreference.SavePosition(123, 234); mascotPreference.Save("sleeping");
+            if (mascotPreference.LoadPosition() != (123.0, 234.0) || mascotPreference.Load() != "sleeping") throw new Exception("Activity change lost mascot position");
+            mascotPreference.SavePosition(double.NaN, 0);
+            if (mascotPreference.LoadPosition() != (123.0, 234.0)) throw new Exception("Invalid mascot position replaced saved coordinates");
+            mascotPreference.Save("unknown");
+            if (mascotPreference.Load() != "auto" || mascotPreference.LoadPosition() != (123.0,234.0)) throw new Exception("Unknown activity loses position or fails safe default");
             var mascotFixture = new ChipChipMascotWindow(mascotPreference) { Left = 700 };
             var mascotQuickModel = new QuickTranslateViewModel { SourceText = "Xin chào", TranslatedText = "Hello", SourceLanguage = "vi", TargetLanguage = "en" };
             mascotQuickModel.TranslateAsync(new CancellationToken(true)).GetAwaiter().GetResult();
