@@ -11,7 +11,7 @@ public sealed class MarianTokenizer
     public MarianTokenizer(string folder, string? languageToken = null)
     {
         using var stream = File.OpenRead(Path.Combine(folder, "source.spm"));
-        _source = SentencePieceTokenizer.Create(stream, addBeginOfSentence: false, addEndOfSentence: false);
+        _source = SentencePieceTokenizer.Create(stream, false, false);
         _vocabulary = JsonSerializer.Deserialize<Dictionary<string, long>>(File.ReadAllText(Path.Combine(folder, "vocab.json"))) ?? throw new InvalidDataException("Thiếu từ vựng mô hình.");
         _pieces = _vocabulary.ToDictionary(pair => pair.Value, pair => pair.Key);
         _languageToken = languageToken;
