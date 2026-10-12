@@ -65,6 +65,13 @@ jobs:
           dotnet run --project windows/tests/UiSmoke -c Release -- windows/test-results/ui
           if ($LASTEXITCODE -ne 0) { throw 'Windows UI smoke tests failed.' }
 
+      - name: Query local translation availability (no model downloads)
+        shell: pwsh
+        run: |
+          dotnet run --project windows/tests/EdgeTranslationProbe -c Release -- --availability-report windows/test-results/translation-availability.json
+          if ($LASTEXITCODE -ne 0) { throw 'Compatibility probe execution failed.' }
+          if (!(Test-Path windows/test-results/translation-availability.json)) { throw 'Compatibility evidence missing.' }
+
       - name: Upload test evidence
         if: always()
         uses: actions/upload-artifact@v4
