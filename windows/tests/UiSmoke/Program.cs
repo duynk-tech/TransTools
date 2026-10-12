@@ -347,6 +347,20 @@ internal static class Program
                         earphonePopup.IsOpen = false;
                     }
                     var conversation = Descendants(window).OfType<ConversationView>().FirstOrDefault()?.DataContext as ConversationViewModel;
+                    if (conversation != null) {
+                        var topicView = Descendants(window).OfType<ConversationView>().First();
+                        var topicPicker = (ComboBox)topicView.FindName("ConversationTopicPicker");
+                        var oldTopic = conversation.CurrentTopic;
+                        foreach (var topic in new[] { "Giao tiếp hằng ngày", "Công việc & Cuộc họp", "Du lịch & Khám phá", "Phỏng vấn", "Công nghệ & Lập trình", "Học tập", "Chủ đề riêng" }) {
+                            conversation.CurrentTopic = topic; Pump();
+                            if (topicPicker.SelectedItem is not ComboBoxItem item || !Equals(item.Tag, topic)) throw new Exception("Conversation topic has no matching dropdown item: " + topic);
+                            var scenery = Descendants(topicView).OfType<ConversationScenery>().Single();
+                            if (scenery.Topic != topic || scenery.IsHitTestVisible) throw new Exception("Conversation scenery does not follow topic or blocks input");
+                            ValidateControlLayout(window, "Conversation topic " + topic);
+                            if (width == 1440) Capture(window, output, "conversation-topic-" + Array.IndexOf(new[] { "Giao tiếp hằng ngày", "Công việc & Cuộc họp", "Du lịch & Khám phá", "Phỏng vấn", "Công nghệ & Lập trình", "Học tập", "Chủ đề riêng" }, topic) + ".png");
+                        }
+                        conversation.CurrentTopic = oldTopic; Pump();
+                    }
                     if (conversation != null && conversation.Messages.Count == 0) {
                         for (var n = 0; n < 8; n++) conversation.Messages.Add(new ChatMessageItem { IsUser = n % 2 == 0, Text = "Let us practice a longer conversation about your work and the next project. What would you like to discuss today?", Translation = n % 2 == 0 ? "" : "Cùng luyện một cuộc trò chuyện dài về công việc và dự án sắp tới. Hôm nay bạn muốn thảo luận điều gì?" });
                     }
@@ -553,7 +567,13 @@ internal static class Program
                         var learningModel = (LearningViewModel)learning.DataContext;
                         if (learningModel.VocabularyCount != learningModel.VisibleVocabulary.Count || learningModel.MasteredCount + learningModel.LearningCount != learningModel.VocabularyCount || learningModel.DeepMemoryCount + learningModel.ConsolidatingCount + learningModel.NewMemoryCount != learningModel.VocabularyCount) throw new Exception("Learning progress counts do not match vocabulary");
                         ValidateControlLayout(window, "Learning progress"); Capture(window, output, $"{width}-learning-progress.png");
-                        ((RadioButton)learning.FindName("TodayTab")).IsChecked = true; Pump();
+                        ((RadioButton)learning.FindName("TodayTab")).IsChecked = true;
+                        Pump();
+                        var applicationButton = Descendants(learning).OfType<Button>().Single(button => Equals(button.Content, "Chọn câu từ Sổ tay"));
+                        applicationButton.BringIntoView(); Pump();
+                        ValidateControlLayout(window, "Learning application card"); Capture(window, output, $"{width}-learning-application.png");
+                        ((ScrollViewer)learning.FindName("TodayPanel")).ScrollToHome(); Pump();
+ Pump();
                         if (((FrameworkElement)learning.FindName("ProgressPanel")).Visibility != Visibility.Collapsed) throw new Exception("Returning to Today left progress visible");
                         var goal = (Button)learning.FindName("LearningGoalButton");
                         goal.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
