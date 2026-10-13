@@ -46,10 +46,22 @@ foreach (var text in prompts) {
         var expected = Regex.Matches(text.ToLowerInvariant(), "[a-z]+").Select(m => m.Value).ToHashSet();
         var actual = Regex.Matches(transcript.ToLowerInvariant(), "[a-z]+").Select(m => m.Value).ToHashSet();
         var recall = expected.Count(word => actual.Contains(word)) / (double)expected.Count;
+        var expectedWords = Regex.Matches(text.ToLowerInvariant(), "[a-z]+").Select(m => m.Value).ToArray();
+        var actualWords = Regex.Matches(transcript.ToLowerInvariant(), "[a-z]+").Select(m => m.Value).ToArray();
+        var distance = Enumerable.Range(0, actualWords.Length + 1).ToArray();
+        for (var i = 1; i <= expectedWords.Length; i++) {
+            var previous = distance[0]; distance[0] = i;
+            for (var j = 1; j <= actualWords.Length; j++) {
+                var old = distance[j];
+                distance[j] = Math.Min(Math.Min(distance[j] + 1, distance[j - 1] + 1), previous + (expectedWords[i - 1] == actualWords[j - 1] ? 0 : 1)); previous = old;
+            }
+        }
+        var wordErrorRate = distance[^1] / (double)expectedWords.Length;
+
         watch.Restart(); var translation = await translator.TranslateAsync(transcript, deadline.Token); var translationMs = watch.Elapsed.TotalMilliseconds;
-        evidence.Add(new { text, chunkSeconds, transcript, translation, recall, audioSeconds = pcm.Length / 32000.0, processingMs, translationMs, processorCount = Environment.ProcessorCount });
+        evidence.Add(new { text, chunkSeconds, transcript, translation, recall, wordErrorRate, audioSeconds = pcm.Length / 32000.0, processingMs, translationMs, processorCount = Environment.ProcessorCount });
         await File.WriteAllTextAsync(Path.Combine(args[1], "meeting-pipeline.json"), JsonSerializer.Serialize(evidence, new JsonSerializerOptions { WriteIndented = true }));
-        Console.WriteLine($"MEASURE: chunks={chunkSeconds}s recall={recall:F2} recognition={processingMs:F0}ms translation={translationMs:F0}ms | {transcript} | {translation}");
+        Console.WriteLine($"MEASURE: chunks={chunkSeconds}s recall={recall:F2} WER={wordErrorRate:F2} recognition={processingMs:F0}ms translation={translationMs:F0}ms | {transcript} | {translation}");
         if (recall < .70 || string.IsNullOrWhiteSpace(translation) || translation == transcript) throw new Exception("Recognition/translation pipeline failed the synthetic English fixture.");
     }
 }
