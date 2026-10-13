@@ -1,0 +1,11 @@
+<UserControl x:Class="TransTools.Views.SettingsPageHeading"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Name="Heading">
+ <StackPanel>
+  <DockPanel LastChildFill="True">
+   <TextBlock DockPanel.Dock="Left" Text="{Binding Icon,ElementName=Heading}" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="#287568" VerticalAlignment="Center" Margin="0,0,8,0"/>
+   <TextBlock Text="{Binding Title,ElementName=Heading}" Style="{StaticResource PageHeading}" VerticalAlignment="Center"/>
+  </DockPanel>
+  <TextBlock Text="{Binding Description,ElementName=Heading}" Style="{StaticResource PageDescription}" Margin="0,4,0,0"/>
+ </StackPanel>
+</UserControl>

@@ -1,62 +1,175 @@
-name: Build TransTools Windows (.exe)
+name: Validate and package Windows
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'windows/**'
-      - '.github/workflows/build-windows.yml'
+    inputs:
+      test_models:
+        description: Run real Supertonic and VieNeu inference on Windows
+        type: boolean
+        default: true
+
+      measurement_only:
+        description: Run recognition and translation measurements without unrelated UI checks
+        type: boolean
+        default: false
+
+      test_translation:
+        description: Run pinned offline ONNX translation on Windows
+        type: boolean
+        default: false
+
+      package_installer:
+        description: Build Windows setup after successful validation
+        type: boolean
+        default: false
+
+      release_artifact_run:
+        description: Upload validated installer artifacts from this workflow run to the Windows draft release
+        type: string
+        default: ''
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-windows:
-    name: Build & Package Windows Executable
+    if: inputs.release_artifact_run == ''
+    name: Validate Windows layouts
     runs-on: windows-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Validate XAML resource keys
+        if: ${{ !inputs.measurement_only }}
+        shell: pwsh
+        run: python windows/scripts/validate-xaml-resources.py
+
       - name: Setup .NET 9 SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
+      - name: Build native VieNeu phonemizer (no Python runtime)
+        if: ${{ !inputs.measurement_only }}
+        shell: pwsh
+        run: ./windows/scripts/build-native-phonemizer.ps1
+
       - name: Restore NuGet Packages
+        if: ${{ !inputs.measurement_only }}
         shell: pwsh
         run: |
           dotnet restore windows/TransTools/TransTools.csproj
 
-      - name: Publish Single-File Executable
+      - name: Cache verified TTS test models
+        if: github.event_name == 'workflow_dispatch' && inputs.test_models
+        uses: actions/cache@v4
+        with:
+          path: windows/test-models
+          key: windows-tts-${{ hashFiles('windows/TransTools/Resources/Models/supertonic.json', 'windows/TransTools/Resources/SpeechNative/vieneu-native-manifest.json') }}
+
+      - name: Download pinned TTS test models
+        if: github.event_name == 'workflow_dispatch' && inputs.test_models
+        shell: pwsh
+        run: ./windows/scripts/download-test-models.ps1
+
+      - name: Run contracts on native Windows
+        if: ${{ !inputs.measurement_only }}
         shell: pwsh
         run: |
-          dotnet publish windows/TransTools/TransTools.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -o windows/build
+          if ('${{ github.event_name }}' -eq 'workflow_dispatch' -and '${{ inputs.test_models }}' -eq 'true') {
+            ./windows/scripts/test-windows-contracts.ps1 -SupertonicModel windows/test-models/supertonic -VieNeuModel windows/test-models/vieneu -RequireModels
+          } else {
+            ./windows/scripts/test-windows-contracts.ps1
+          }
 
-      - name: Install Inno Setup
+      - name: Render and validate WPF screens
+        if: ${{ !inputs.measurement_only }}
         shell: pwsh
         run: |
-          choco install innosetup -y
-          echo "C:\Program Files (x86)\Inno Setup 6" >> $env:GITHUB_PATH
+          dotnet run --project windows/tests/UiSmoke -c Release -- windows/test-results/ui
+          if ($LASTEXITCODE -ne 0) { throw 'Windows UI smoke tests failed.' }
 
-      - name: Build Installer (TransTools-Setup.exe)
+      - name: Query local translation availability (no model downloads)
+        if: ${{ !inputs.measurement_only }}
         shell: pwsh
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" windows/installer/installer.iss
+          dotnet run --project windows/tests/EdgeTranslationProbe -c Release -- --availability-report windows/test-results/translation-availability.json
+          if ($LASTEXITCODE -ne 0) { throw 'Compatibility probe execution failed.' }
+          if (!(Test-Path windows/test-results/translation-availability.json)) { throw 'Compatibility evidence missing.' }
 
-      - name: Create Portable ZIP
+      - name: Run real offline translation inference
+        if: ${{ inputs.test_translation }}
         shell: pwsh
-        run: |
-          Compress-Archive -Path windows/build/TransTools.exe -DestinationPath windows/build/TransTools-Windows-Portable.zip
+        run: ./windows/scripts/test-offline-translation.ps1
 
-      - name: Upload Build Artifacts
+      - name: Upload test evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: TransTools-Windows-Release
+          name: Windows-contract-evidence
+          path: windows/test-results/**
+          if-no-files-found: warn
+
+      - name: Publish Windows executable
+        if: inputs.package_installer
+        shell: pwsh
+        run: |
+          dotnet publish windows/TransTools/TransTools.csproj -c Release -r win-x64 --self-contained true -o windows/build
+          if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
+
+      - name: Bundle verified Microsoft native runtime
+        if: inputs.package_installer
+        shell: pwsh
+        run: ./windows/scripts/prepare-windows-native-runtime.ps1 -PublishDirectory windows/build
+
+      - name: Verify published Whisper runtime and native loading
+        if: inputs.package_installer
+        shell: pwsh
+        run: ./windows/scripts/verify-whisper-package.ps1 -PublishDirectory windows/build -LoadNativeLibraries
+
+      - name: Build Windows installer
+        if: inputs.package_installer
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed.' }
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" windows/installer/installer.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Installer build failed.' }
+          $files = Get-ChildItem windows/build -Exclude 'TransTools-Setup.exe','TransTools-Windows-Portable.zip','*.pdb'
+          Compress-Archive -Path $files.FullName -DestinationPath windows/build/TransTools-Windows-Portable.zip
+          Get-FileHash windows/build/TransTools-Setup.exe,windows/build/TransTools-Windows-Portable.zip -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  $([IO.Path]::GetFileName($_.Path))" } | Set-Content windows/build/SHA256SUMS.txt
+
+      - name: Upload Windows installers
+        if: inputs.package_installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-release-installers
           path: |
-            windows/build/TransTools.exe
             windows/build/TransTools-Setup.exe
             windows/build/TransTools-Windows-Portable.zip
+            windows/build/SHA256SUMS.txt
+          if-no-files-found: error
+  upload-validated-release:
+    if: inputs.release_artifact_run != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download validated Windows installer artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Windows-release-installers
+          run-id: ${{ inputs.release_artifact_run }}
+          github-token: ${{ github.token }}
+          path: installers
+      - name: Verify installer checksums
+        working-directory: installers
+        run: sha256sum --check SHA256SUMS.txt
+      - name: Upload verified installers to draft release
+        working-directory: installers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload v1.4.2-windows-preview.1 TransTools-Setup.exe TransTools-Windows-Portable.zip SHA256SUMS.txt --repo duynk-tech/TransTools --clobber

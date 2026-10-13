@@ -1,0 +1,360 @@
+{
+  "Daily": [
+    {
+      "originalText": "Could you please clarify the action items from today's sync?",
+      "reading": "/kʊd juː pliːz ˈklær.ɪ.faɪ ðiː ˈæk.ʃən ˈaɪ.təmz frɒm təˈdeɪz sɪŋk/",
+      "vietnameseMeaning": "Bạn có thể làm rõ các việc cần làm sau buổi trao đổi hôm nay được không?",
+      "contextNote": "Dùng khi kết thúc cuộc họp để chốt người phụ trách và đầu việc cụ thể.",
+      "keyWord": "clarify",
+      "keyWordMeaning": "làm rõ, giải thích tường minh",
+      "keyWordReading": "/ˈklær.ɪ.faɪ/",
+      "Language": "en"
+    },
+    {
+      "originalText": "本日の会議の決定事項を確認させていただけますでしょうか。",
+      "reading": "ほんじつ の かいぎ の けっていじこう を かくにん させて いただけますでしょうか (Honjitsu no kaigi no kettei jikou o kakunin sasete itadakemasu deshou ka)",
+      "vietnameseMeaning": "Tôi xin phép được xác nhận lại các điểm đã thống nhất trong cuộc họp hôm nay ạ.",
+      "contextNote": "Cách diễn đạt lịch sự chuẩn công sở (Keigo) với đối tác Nhật.",
+      "keyWord": "決定事項",
+      "keyWordMeaning": "các hạng mục đã quyết định",
+      "keyWordReading": "けっていじこう",
+      "Language": "ja"
+    },
+    {
+      "originalText": "我们先确认一下今天会议讨论的关键点和接下来的排期。",
+      "reading": "Wǒmen xiān quèrèn yíxià jīntiān huìyì tǎolùn de guānjiàndiǎn hé jiēxiàlái de páiqī.",
+      "vietnameseMeaning": "Trước tiên chúng ta hãy xác nhận lại các điểm mấu chốt và lịch trình tiếp theo.",
+      "contextNote": "Thường dùng trong các buổi họp tiến độ dự án (Sprint / Sync).",
+      "keyWord": "排期",
+      "keyWordMeaning": "lịch trình, kế hoạch triển khai",
+      "keyWordReading": "páiqī",
+      "Language": "zh"
+    },
+    {
+      "originalText": "오늘 회의에서 논의된 주요 결정 사항을 다시 한번 확인해 주시겠습니까?",
+      "reading": "Oneul hoe-ui-eseo non-uidwen juyo gyeoljeong sahang-eul dasi hanbeon hwag-inhae jusigessseumnikka?",
+      "vietnameseMeaning": "Bạn có thể xác nhận lại giúp tôi những điểm quyết định chính trong buổi họp hôm nay không ạ?",
+      "contextNote": "Câu hỏi lịch sự kính ngữ (-겠습니까) phổ biến nơi công sở Hàn Quốc.",
+      "keyWord": "결정 사항",
+      "keyWordMeaning": "các vấn đề đã được quyết định",
+      "keyWordReading": "gyeoljeong sahang",
+      "Language": "ko"
+    }
+  ],
+  "Starters": [
+    {
+      "Word": "clarify",
+      "Meaning": "làm rõ, giải thích chi tiết",
+      "Phonetic": "/ˈklær.ɪ.faɪ/",
+      "ExampleSentence": "Could you clarify the requirements?",
+      "LanguageCode": "en"
+    },
+    {
+      "Word": "deadline",
+      "Meaning": "hạn chót hoàn thành",
+      "Phonetic": "/ˈded.laɪn/",
+      "ExampleSentence": "The deadline for this deliverable is Friday.",
+      "LanguageCode": "en"
+    },
+    {
+      "Word": "action item",
+      "Meaning": "nhiệm vụ cần thực hiện",
+      "Phonetic": "/ˈæk.ʃən ˈaɪ.təm/",
+      "ExampleSentence": "Let's summarize the key action items.",
+      "LanguageCode": "en"
+    },
+    {
+      "Word": "follow up",
+      "Meaning": "tiếp tục theo dõi / phản hồi lại",
+      "Phonetic": "/ˈfɒl.əʊ ʌp/",
+      "ExampleSentence": "I will follow up with the design team tomorrow.",
+      "LanguageCode": "en"
+    },
+    {
+      "Word": "schedule",
+      "Meaning": "lên lịch, sắp xếp thời gian",
+      "Phonetic": "/ˈʃedʒ.uːl/",
+      "ExampleSentence": "Can we schedule a quick call?",
+      "LanguageCode": "en"
+    },
+    {
+      "Word": "お疲れ様です",
+      "Meaning": "Cảm ơn bạn đã vất vả (chào khi làm việc)",
+      "Phonetic": "おつかれさまです (Otsukaresama desu)",
+      "ExampleSentence": "お疲れ様です。進捗のご確認です。",
+      "LanguageCode": "ja"
+    },
+    {
+      "Word": "よろしくお願いします",
+      "Meaning": "Rất mong được giúp đỡ / Xin nhờ cậy",
+      "Phonetic": "よろしくおねがいします (Yoroshiku onegaishimasu)",
+      "ExampleSentence": "今後ともよろしくお願いいたします。",
+      "LanguageCode": "ja"
+    },
+    {
+      "Word": "承知いたしました",
+      "Meaning": "Tôi đã hiểu rõ / Đã tiếp nhận thông tin",
+      "Phonetic": "しょうちいたしました (Shouchi itashimashita)",
+      "ExampleSentence": "ご指摘の件、承知いたしました。",
+      "LanguageCode": "ja"
+    },
+    {
+      "Word": "確認",
+      "Meaning": "xác nhận, kiểm tra",
+      "Phonetic": "かくにん (Kakunin)",
+      "ExampleSentence": "仕様の確認をお願いします。",
+      "LanguageCode": "ja"
+    },
+    {
+      "Word": "検討",
+      "Meaning": "xem xét, cân nhắc kỹ lưỡng",
+      "Phonetic": "けんとう (Kentou)",
+      "ExampleSentence": "社内で検討の上、ご連絡します。",
+      "LanguageCode": "ja"
+    },
+    {
+      "Word": "你好",
+      "Meaning": "xin chào",
+      "Phonetic": "Nǐ hǎo",
+      "ExampleSentence": "你好，很高兴和你合作。",
+      "LanguageCode": "zh"
+    },
+    {
+      "Word": "没问题",
+      "Meaning": "không vấn đề gì / sẵn sàng làm",
+      "Phonetic": "Méi wèntí",
+      "ExampleSentence": "这件事交给我，没问题！",
+      "LanguageCode": "zh"
+    },
+    {
+      "Word": "开会",
+      "Meaning": "họp, mở cuộc họp",
+      "Phonetic": "Kāihuì",
+      "ExampleSentence": "我们下午两点开会讨论方案。",
+      "LanguageCode": "zh"
+    },
+    {
+      "Word": "进度",
+      "Meaning": "tiến độ công việc / dự án",
+      "Phonetic": "Jìndù",
+      "ExampleSentence": "请同步一下当前的开发进度。",
+      "LanguageCode": "zh"
+    },
+    {
+      "Word": "合作",
+      "Meaning": "hợp tác, cùng làm việc",
+      "Phonetic": "Hézuò",
+      "ExampleSentence": "期待与贵团队的深入合作。",
+      "LanguageCode": "zh"
+    },
+    {
+      "Word": "안녕하세요",
+      "Meaning": "xin chào lịch sự",
+      "Phonetic": "Annyeonghaseyo",
+      "ExampleSentence": "안녕하세요, 처음 뵙겠습니다.",
+      "LanguageCode": "ko"
+    },
+    {
+      "Word": "감사합니다",
+      "Meaning": "cảm ơn chân thành",
+      "Phonetic": "Gamsahamnida",
+      "ExampleSentence": "도와주셔서 진심으로 감사합니다.",
+      "LanguageCode": "ko"
+    },
+    {
+      "Word": "알겠습니다",
+      "Meaning": "tôi đã hiểu rõ / vâng tôi biết rồi",
+      "Phonetic": "Algesseumnida",
+      "ExampleSentence": "네, 전달해주신 내용 잘 알겠습니다.",
+      "LanguageCode": "ko"
+    },
+    {
+      "Word": "회의",
+      "Meaning": "cuộc họp",
+      "Phonetic": "Hoe-ui",
+      "ExampleSentence": "다음 주 회의 일정을 조율해 봅시다.",
+      "LanguageCode": "ko"
+    },
+    {
+      "Word": "확인",
+      "Meaning": "xác nhận, kiểm tra",
+      "Phonetic": "Hwag-in",
+      "ExampleSentence": "보내드린 메일 확인 부탁드립니다.",
+      "LanguageCode": "ko"
+    }
+  ],
+  "Scenarios": [
+    {
+      "id": "en_meeting",
+      "title": "Phát biểu & Xin làm rõ trong cuộc họp",
+      "category": "Cuộc họp",
+      "icon": "waveform.badge.mic",
+      "description": "Các mẫu câu tự nhiên để ngắt lời lịch sự, xin giải thích và chốt ý kiến.",
+      "Language": "en",
+      "Dialogues": [
+        {
+          "speaker": "Bạn",
+          "original": "Sorry to jump in, but could we clarify the timeline for this feature?",
+          "reading": "/ˈsɒr.i tuː dʒʌmp ɪn/",
+          "translation": "Xin thứ lỗi đã chen ngang, nhưng chúng ta có thể làm rõ thời hạn tính năng này không?"
+        },
+        {
+          "speaker": "Đối tác",
+          "original": "Sure! We are aiming for next Tuesday's sprint release.",
+          "reading": "/ʃɔːr wiː ɑːr ˈeɪ.mɪŋ/",
+          "translation": "Chắc chắn rồi! Chúng tôi đang nhắm đến bản phát hành sprint thứ Ba tới."
+        },
+        {
+          "speaker": "Bạn",
+          "original": "Got it. I will align with QA to make sure tests are covered.",
+          "reading": "/ɡɒt ɪt/",
+          "translation": "Tôi hiểu rồi. Tôi sẽ phối hợp với bên QA để đảm bảo kiểm thử đầy đủ."
+        }
+      ]
+    },
+    {
+      "id": "en_email",
+      "title": "Viết email xin lịch hẹn & Trao đổi",
+      "category": "Email công sở",
+      "icon": "envelope.fill",
+      "description": "Mẫu câu ngắn gọn, chuẩn chuyên nghiệp để hẹn gặp hoặc hỏi tiến độ.",
+      "Language": "en",
+      "Dialogues": [
+        {
+          "speaker": "Bạn",
+          "original": "I hope this email finds you well. Would you be available for a brief sync tomorrow?",
+          "reading": "/aɪ həʊp ðɪs ˈiː.meɪl/",
+          "translation": "Hi vọng bạn vẫn khỏe. Bạn có rảnh cho một cuộc trao đổi ngắn vào ngày mai không?"
+        },
+        {
+          "speaker": "Đối tác",
+          "original": "Hi! Yes, 3:00 PM works perfectly on my end. I'll send an invite.",
+          "reading": "/jes θriː piː em/",
+          "translation": "Chào bạn! Vâng, 3 giờ chiều rất thuận tiện cho tôi. Tôi sẽ gửi thư mời."
+        }
+      ]
+    },
+    {
+      "id": "en_intro",
+      "title": "Tự giới thiệu bản thân với đồng nghiệp",
+      "category": "Giao tiếp",
+      "icon": "person.crop.circle.badge.plus",
+      "description": "Giới thiệu vai trò, kinh nghiệm và bày tỏ sự hào hứng khi hợp tác.",
+      "Language": "en",
+      "Dialogues": [
+        {
+          "speaker": "Bạn",
+          "original": "Hi everyone, I'm Duy. I've just joined as a software engineer. Excited to collaborate!",
+          "reading": "/haɪ ˈev.ri.wʌn/",
+          "translation": "Chào mọi người, mình là Duy. Mình vừa gia nhập với vai trò kỹ sư phần mềm. Rất hào hứng được cộng tác!"
+        },
+        {
+          "speaker": "Đồng nghiệp",
+          "original": "Welcome aboard Duy! Feel free to reach out if you need anything getting set up.",
+          "reading": "/ˈwel.kəm əˈbɔːd/",
+          "translation": "Chào mừng Duy đến với nhóm! Cứ thoải mái nhắn nếu bạn cần hỗ trợ gì khi cài đặt nhé."
+        }
+      ]
+    },
+    {
+      "id": "ja_meeting",
+      "title": "Trao đổi tiến độ & Xin ý kiến (報連相)",
+      "category": "Cuộc họp",
+      "icon": "briefcase.fill",
+      "description": "Báo cáo tiến độ chuẩn phong cách công sở Nhật Bản (Horenso).",
+      "Language": "ja",
+      "Dialogues": [
+        {
+          "speaker": "Bạn",
+          "original": "現在の進捗について共有させていただきます。",
+          "reading": "げんざい の しんちょく について きょうゆう させていただきます (Genzai no shinchoku ni tsuite kyouyuu sasete itadakimasu)",
+          "translation": "Tôi xin phép được chia sẻ về tiến độ công việc hiện tại ạ."
+        },
+        {
+          "speaker": "Quản lý",
+          "original": "はい、お願いします。課題などはありますか。",
+          "reading": "はい、おねがいします。かだい など は ありますか (Hai, onegaishimasu. Kadai nado wa arimasu ka)",
+          "translation": "Vâng, xin mời. Hiện có khó khăn hay vướng mắc gì không?"
+        },
+        {
+          "speaker": "Bạn",
+          "original": "スケジュール通り順調に進んでおり、問題ございません。",
+          "reading": "すけじゅーる どおり じゅんちょう に すすんで おり、もんだい ございません (Sukejuuru doori junchou ni susunde ori, mondai gozaimasen)",
+          "translation": "Mọi thứ vẫn đang tiến triển thuận lợi theo đúng lịch trình, không có vấn đề gì ạ."
+        }
+      ]
+    },
+    {
+      "id": "ja_intro",
+      "title": "Tự giới thiệu lần đầu gặp gỡ (自己紹介)",
+      "category": "Chào hỏi",
+      "icon": "person.wave.2.fill",
+      "description": "Mẫu câu chuẩn mực khi ra mắt đối tác hoặc team mới.",
+      "Language": "ja",
+      "Dialogues": [
+        {
+          "speaker": "Bạn",
+          "original": "はじめまして、ドゥイと申します。どうぞよろしくお願いいたします。",
+          "reading": "はじめまして、ドゥイ と もうします。どうぞ よろしく おねがいいたします (Hajimemashite, Dui to moushimasu. Douzo yoroshiku onegaishimasu)",
+          "translation": "Rất hân hạnh được gặp anh/chị, tôi tên là Duy. Rất mong nhận được sự giúp đỡ ạ."
+        },
+        {
+          "speaker": "Đối tác",
+          "original": "こちらこそ、どうぞよろしくお願いいたします。",
+          "reading": "こちらこそ、どうぞ よろしく おねがいいたします (Kochira koso, douzo yoroshiku onegaishimasu)",
+          "translation": "Chính tôi mới là người cần nhờ anh giúp đỡ. Rất mong được hợp tác tốt đẹp."
+        }
+      ]
+    },
+    {
+      "id": "zh_sync",
+      "title": "Đồng bộ tiến độ & Xác nhận yêu cầu",
+      "category": "Công việc",
+      "icon": "arrow.triangle.2.circlepath",
+      "description": "Các câu nói ngắn gọn, trực diện trong team công nghệ nói tiếng Trung.",
+      "Language": "zh",
+      "Dialogues": [
+        {
+          "speaker": "Bạn",
+          "original": "大家早上好，我们同步一下这个需求的设计细节。",
+          "reading": "Dàjiā zǎoshang hǎo, wǒmen tóngbù yíxià zhège xūqiú de shèjì xìjié.",
+          "translation": "Chào buổi sáng cả nhà, chúng ta cùng đồng bộ lại chi tiết thiết kế cho tính năng này nhé."
+        },
+        {
+          "speaker": "Đối tác",
+          "original": "好的，接口文档已经更新了，你先看一下。",
+          "reading": "Hǎo de, jiēkǒu wéndàng yǐjīng gēngxīn le, nǐ xiān kàn yíxià.",
+          "translation": "Được rồi, tài liệu API đã được cập nhật rồi, bạn xem qua trước nhé."
+        },
+        {
+          "speaker": "Bạn",
+          "original": "没问题，我今天下午完成联调。",
+          "reading": "Méi wèntí, wǒ jīntiān xiàwǔ wánchéng liántiáo.",
+          "translation": "Không vấn đề gì, chiều nay tôi sẽ hoàn thành ghép nối API."
+        }
+      ]
+    },
+    {
+      "id": "ko_meeting",
+      "title": "Bắt đầu cuộc họp & Báo cáo công việc",
+      "category": "Cuộc họp",
+      "icon": "person.3.fill",
+      "description": "Mẫu câu trang trọng kính ngữ chuẩn môi trường văn phòng Hàn Quốc.",
+      "Language": "ko",
+      "Dialogues": [
+        {
+          "speaker": "Bạn",
+          "original": "오늘 회의를 시작하도록 하겠습니다. 모두 접속하셨나요?",
+          "reading": "Oneul hoe-ui-reul sijaghadorog hagesseumnida. Modu jeobsoghayeonnayo?",
+          "translation": "Sau đây chúng ta sẽ bắt đầu cuộc họp hôm nay. Mọi người đã vào đủ chưa ạ?"
+        },
+        {
+          "speaker": "Đối tác",
+          "original": "네, 모두 준비되었습니다. 발표 진행해 주세요.",
+          "reading": "Ne, modu junbidwo-eosseumnida. Balpyo jinhaenghae juseyo.",
+          "translation": "Vâng, tất cả đã sẵn sàng. Xin mời bạn tiến hành trình bày ạ."
+        }
+      ]
+    }
+  ]
+}

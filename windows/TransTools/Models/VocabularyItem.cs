@@ -2,7 +2,7 @@ using System;
 
 namespace TransTools.Models;
 
-public class VocabularyItem
+public record VocabularyItem
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Word { get; set; } = string.Empty;
@@ -11,6 +11,15 @@ public class VocabularyItem
     public string ExampleSentence { get; set; } = string.Empty;
     public string ExampleTranslation { get; set; } = string.Empty;
     public string LanguageCode { get; set; } = "en"; // en, ja, zh, ko
+    // Null preserves the meaning of scores written by older Windows builds.
+    public bool? MasteredOverride { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsMastered => MasteredOverride ?? MasteryScore >= 4;
     public int MasteryScore { get; set; } = 0; // 0 - 5
+    public DateTime DueAt { get; set; } = DateTime.MinValue;
+    public DateTime? LastReviewedAt { get; set; }
+    public int IntervalDays { get; set; } = 1;
+    public int Repetition { get; set; }
+    public double EaseFactor { get; set; } = 2.5;
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 }

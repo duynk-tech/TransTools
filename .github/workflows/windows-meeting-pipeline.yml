@@ -1,0 +1,24 @@
+name: Measure Windows meeting pipeline
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  measure:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Measure actual speech recognition and Offline translation
+        shell: pwsh
+        run: ./windows/scripts/test-offline-translation.ps1
+      - name: Upload measurement evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-meeting-pipeline-evidence
+          path: windows/test-results/**
+          if-no-files-found: warn

@@ -1,32 +1,18 @@
-# Phát hành qua Vercel
+# Website và cập nhật ứng dụng
 
-Production: https://trans-tools.vercel.app
+Website: https://trans-tools.vercel.app
 
-- GET /updates/latest.json: manifest phiên bản public; 404/503 được coi là lỗi kiểm tra, không phải đang dùng bản mới nhất.
-- GET /download?format=dmg hoặc format=zip: chuyển hướng đến file public Blob.
-- /releases: ghi chú bản phát hành hiện tại và link bộ cài.
-- macOS app xác minh schema, URL HTTPS của public Blob và SHA256 ZIP trước khi cài đặt.
+Vercel chỉ phục vụ website và API thông tin phiên bản. Bộ cài Mac và Windows được lưu trên GitHub Releases; không upload bộ cài lên Vercel hoặc Vercel Blob.
 
-## GitHub Actions
+- `/updates/latest.json` lấy thông tin từ GitHub Release ổn định mới nhất.
+- `/download` chuyển hướng đến file trên GitHub Releases.
+- Các nút tải trên website trỏ trực tiếp về GitHub Releases.
+- Ứng dụng xác minh checksum trước khi cài bản cập nhật.
 
-Repo GitHub vẫn private. Đặt repository secret BLOB_READ_WRITE_TOKEN lấy từ store transtools-releases. Chỉ CI/server giữ token; app và website không chứa token. Secret Vercel đang dùng cho function đọc metadata Blob.
+## Phát hành
 
-Mỗi lần phát hành:
+1. Tăng phiên bản ứng dụng và thêm ghi chú phát hành.
+2. Push tag `vX.Y.Z`; workflow build và upload bộ cài vào GitHub Release.
+3. Deploy website lên Vercel khi nội dung website thay đổi. `.vercelignore` loại trừ bộ cài và thư mục build Windows.
 
-1. Tăng CFBundleShortVersionString trong Info.plist; tag phải trùng phiên bản này.
-2. Thêm docs/release-vX.Y.Z.md nếu muốn ghi chú riêng.
-3. Push tag vX.Y.Z. Workflow build ZIP/DMG, tạo GitHub Release private rồi upload bộ cài, checksum, manifest vào public Blob.
-
-Publisher chỉ nhận x.y.z; chặn phát hành cùng phiên bản và downgrade. ZIP/DMG có đường dẫn theo version, không overwrite. Manifest latest chỉ được cập nhật sau khi cả hai file và checksum đã upload xong. Nếu upload dở dang, cần xử lý các file của phiên bản chưa công bố trước khi chạy lại; các phiên bản đã công bố là bất biến.
-
-## Local
-
-- vercel link --project trans-tools
-- vercel env pull .env.local
-- zsh scripts/package-release.sh
-- RELEASE_VERSION=X.Y.Z RELEASE_NOTES_FILE=docs/release-vX.Y.Z.md node --env-file=.env.local scripts/publish-vercel-release.mjs
-- vercel deploy --prod
-
-.env.local, .vercel và node_modules đã được ignore; không commit credentials.
-
-Bản app cũ dùng API GitHub private cần cài thủ công DMG mới một lần. Các bản sau dùng manifest public và không cần đăng nhập GitHub.
+Không cần `BLOB_READ_WRITE_TOKEN`. Script upload Vercel cũ đã bị vô hiệu hóa để tránh tải bộ cài lên nhầm nơi.

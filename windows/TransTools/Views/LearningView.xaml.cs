@@ -8,37 +8,71 @@ namespace TransTools.Views;
 public partial class LearningView : UserControl
 {
     private readonly LearningViewModel _viewModel;
+    public event Action? NotebookLearningRequested;
+    public event Action? ConversationPracticeRequested;
+    private void PracticeConversation_Click(object sender, RoutedEventArgs e) => ConversationPracticeRequested?.Invoke();
+    private void ImportNotebook_Click(object sender, RoutedEventArgs e) => NotebookLearningRequested?.Invoke();
 
     public LearningView(LearningViewModel viewModel)
     {
-        InitializeComponent();
         _viewModel = viewModel;
+        InitializeComponent();
         DataContext = viewModel;
+        VocabularyLibraryHost.Content = new NotebookVocabularyView(viewModel, embeddedInLearning: true);
+        Unloaded += (_, _) => { if (_viewModel.IsGeneratingLessons) _viewModel.GenerateLessonsCancelCommand.Execute(null); };
+    }
+
+    private void ShowMore_Click(object sender, RoutedEventArgs e) {
+        LearningMoreMenu.PlacementTarget = LearningGoalButton;
+        LearningMoreMenu.IsOpen = true;
+    }
+    private void ShowGoal_Click(object sender, RoutedEventArgs e) {
+        LearningMoreMenu.IsOpen = false;
+        LearningGoalPopup.IsOpen = true;
     }
 
     private void Flashcard_Click(object sender, MouseButtonEventArgs e)
     {
+        var source = e.OriginalSource as System.Windows.DependencyObject;
+        while (source != null) {
+            if (source is System.Windows.Controls.Primitives.ButtonBase) return;
+            source = source is System.Windows.Media.Visual ? System.Windows.Media.VisualTreeHelper.GetParent(source) : System.Windows.LogicalTreeHelper.GetParent(source);
+        }
         _viewModel.FlipFlashcard();
     }
 
-    private void VocabTab_Checked(object sender, RoutedEventArgs e)
-    {
-        if (VocabTabGrid != null) VocabTabGrid.Visibility = Visibility.Visible;
-        if (AlphabetTabBorder != null) AlphabetTabBorder.Visibility = Visibility.Collapsed;
+    private void TodayTab_Checked(object sender, RoutedEventArgs e) { ShowSection("today"); }
+    private void Progress_Click(object sender, RoutedEventArgs e) {
+        LearningMoreMenu.IsOpen = false;
+        foreach (var tab in new[] { TodayTab, AlphabetTab, VocabularyTab, PracticeTab }) tab.IsChecked = false;
+        ShowSection("progress");
     }
 
-    private void AlphabetTab_Checked(object sender, RoutedEventArgs e)
-    {
-        if (VocabTabGrid != null) VocabTabGrid.Visibility = Visibility.Collapsed;
-        if (AlphabetTabBorder != null) AlphabetTabBorder.Visibility = Visibility.Visible;
+    private void PracticeTab_Checked(object sender, RoutedEventArgs e) => ShowSection("practice");
+    private void StartReview_Click(object sender,RoutedEventArgs e) { VocabularyTab.IsChecked = true; ShowSection("review"); _viewModel.StartReviewCommand.Execute(null); }
+    private void ShowSection(string section) {
+        if (ProgressPanel != null) ProgressPanel.Visibility=section=="progress" ? Visibility.Visible : Visibility.Collapsed;
+        if (VocabularyLibrary != null) VocabularyLibrary.Visibility=section=="vocabulary" ? Visibility.Visible : Visibility.Collapsed;
+        if (VocabTabGrid != null) VocabTabGrid.Visibility=section=="review" ? Visibility.Visible : Visibility.Collapsed;
+        if (AlphabetTabBorder != null) AlphabetTabBorder.Visibility=section=="alphabet" ? Visibility.Visible : Visibility.Collapsed;
+        if (TodayPanel != null) TodayPanel.Visibility=section=="today" ? Visibility.Visible : Visibility.Collapsed;
+        if (PracticePanel != null) PracticePanel.Visibility=section=="practice" ? Visibility.Visible : Visibility.Collapsed;
     }
+
+    private void BackToVocabulary_Click(object sender, RoutedEventArgs e) => ShowSection("vocabulary");
+
+    private void VocabTab_Checked(object sender, RoutedEventArgs e)
+    {
+        ShowSection("vocabulary");
+    }
+    private void AlphabetTab_Checked(object sender,RoutedEventArgs e) => ShowSection("alphabet");
 
     private void Language_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (sender is ComboBox cb && cb.SelectedItem is ComboBoxItem item && item.Tag is string lang)
         {
             _viewModel.SelectedLanguage = lang;
-            _viewModel.LoadAlphabetList();
+
         }
     }
 

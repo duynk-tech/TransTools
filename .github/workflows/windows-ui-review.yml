@@ -1,0 +1,71 @@
+name: Validate Windows UI (no installer)
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_models:
+        description: Run real Supertonic and VieNeu inference on Windows
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: Validate Windows layouts
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Build native VieNeu phonemizer (no Python runtime)
+        shell: pwsh
+        run: ./windows/scripts/build-native-phonemizer.ps1
+
+      - name: Restore NuGet Packages
+        shell: pwsh
+        run: |
+          dotnet restore windows/TransTools/TransTools.csproj
+
+      - name: Cache verified TTS test models
+        if: github.event_name == 'workflow_dispatch' && inputs.test_models
+        uses: actions/cache@v4
+        with:
+          path: windows/test-models
+          key: windows-tts-${{ hashFiles('windows/TransTools/Resources/Models/supertonic.json', 'windows/TransTools/Resources/SpeechNative/vieneu-native-manifest.json') }}
+
+      - name: Download pinned TTS test models
+        if: github.event_name == 'workflow_dispatch' && inputs.test_models
+        shell: pwsh
+        run: ./windows/scripts/download-test-models.ps1
+
+      - name: Run contracts on native Windows
+        shell: pwsh
+        run: |
+          if ('${{ github.event_name }}' -eq 'workflow_dispatch' -and '${{ inputs.test_models }}' -eq 'true') {
+            ./windows/scripts/test-windows-contracts.ps1 -SupertonicModel windows/test-models/supertonic -VieNeuModel windows/test-models/vieneu -RequireModels
+          } else {
+            ./windows/scripts/test-windows-contracts.ps1
+          }
+
+      - name: Render and validate WPF screens
+        shell: pwsh
+        run: |
+          dotnet run --project windows/tests/UiSmoke -c Release -- windows/test-results/ui
+          if ($LASTEXITCODE -ne 0) { throw 'Windows UI smoke tests failed.' }
+
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-contract-evidence
+          path: windows/test-results/**
+          if-no-files-found: warn
+

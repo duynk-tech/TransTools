@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'none'; object-src 'none'; base-uri 'none'">
+<title>Kiểm tra dịch local</title>
+<link rel="stylesheet" href="style.css">
+<main>
+  <h1>Kiểm tra dịch local Microsoft</h1>
+  <p>Công cụ thử nghiệm. Kiểm tra trong Edge và WebView2 riêng biệt. Không gọi dịch vụ cloud, không dùng API key.</p>
+  <p>Chỉ thử Anh ↔ Việt. Lần đầu có thể cần tải mô hình do trình duyệt quản lý. Sau đó ngắt mạng, tải lại trang và thử dịch để xác minh offline.</p>
+  <label>Chiều dịch <select id="direction"><option value="en-vi">Anh → Việt</option><option value="vi-en">Việt → Anh</option></select></label>
+  <label>Văn bản thử <textarea id="input" maxlength="4000">Please save the meeting notes before closing the application.</textarea></label>
+  <div><button id="check">Kiểm tra khả dụng</button> <button id="translate">Chuẩn bị &amp; Dịch thử</button> <button id="cancel" disabled>Hủy</button></div>
+  <p id="status" role="status">Chưa kiểm tra.</p>
+  <pre id="result"></pre>
+  <button id="save">Lưu báo cáo JSON</button>
+  <p id="save-status" role="status"></p>
+  <pre id="evidence"></pre>
+</main>
+<script src="probe.js"></script>
+</html>

@@ -6,3 +6,13 @@ Sources
 Resources
 Tests
 .env*
+
+# Installer/build artifacts are hosted only on GitHub Releases.
+windows
+**/*.dmg
+**/*.exe
+**/*.msi
+**/*.pkg
+**/*.zip
+**/*.app/**
+**/*.sha256

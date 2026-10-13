@@ -26,7 +26,7 @@ public class WindowsOcrService
 
         using var randomAccessStream = memoryStream.AsRandomAccessStream();
         var decoder = await BitmapDecoder.CreateAsync(randomAccessStream);
-        var softwareBitmap = await decoder.GetSoftwareBitmapAsync();
+        using var softwareBitmap = await decoder.GetSoftwareBitmapAsync();
 
         var result = await engine.RecognizeAsync(softwareBitmap);
         return result.Text;
@@ -35,8 +35,10 @@ public class WindowsOcrService
     public static Bitmap CaptureScreenRegion(Rectangle region)
     {
         var bmp = new Bitmap(region.Width, region.Height, PixelFormat.Format32bppArgb);
-        using var g = Graphics.FromImage(bmp);
-        g.CopyFromScreen(region.Left, region.Top, 0, 0, region.Size, CopyPixelOperation.SourceCopy);
-        return bmp;
+        try {
+            using var g = Graphics.FromImage(bmp);
+            g.CopyFromScreen(region.Left, region.Top, 0, 0, region.Size, CopyPixelOperation.SourceCopy);
+            return bmp;
+        } catch { bmp.Dispose(); throw; }
     }
 }
