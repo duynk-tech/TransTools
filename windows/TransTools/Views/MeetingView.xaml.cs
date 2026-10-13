@@ -37,6 +37,12 @@ public partial class MeetingView : UserControl
         _viewModel.PropertyChanged -= PresentationChanged;
         _viewModel.OnCaptionLayoutChanged -= ScrollLatest;
     }
+    private void ShowMeetingStatus_Click(object sender, RoutedEventArgs e) => MeetingStatusPopup.IsOpen = !MeetingStatusPopup.IsOpen;
+    private void CopyMeetingStatus_Click(object sender, RoutedEventArgs e)
+    {
+        try { Clipboard.SetText(_viewModel.Status); }
+        catch (System.Runtime.InteropServices.ExternalException) { MessageBox.Show(Window.GetWindow(this), "Chưa sao chép được. Bạn có thể chọn và sao chép dòng thông báo trong bảng này.", "Trạng thái cuộc họp"); }
+    }
     private void ShowEarphones_Click(object sender, RoutedEventArgs e) { _viewModel.RefreshPlaybackDevices(); EarphonePopup.IsOpen = !EarphonePopup.IsOpen; }
     private void ShowTranslationSettings_Click(object sender, RoutedEventArgs e) => TranslationSettingsPopup.IsOpen = !TranslationSettingsPopup.IsOpen;
     private void CaptionsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) => ScrollLatest();
