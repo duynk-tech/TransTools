@@ -224,6 +224,8 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         (SourceLanguage, TargetLanguage) = (TargetLanguage, SourceLanguage);
     }
     public string[] Languages { get; } = { "en", "vi", "ja", "zh", "ko", "auto" };
+    public string[] RecognitionModes { get; } = { "Cân bằng", "Nhanh · Tiếng Anh" };
+    [ObservableProperty] private string _recognitionMode = "Cân bằng";
     public string[] TranslationModes { get; } = { "Google", "AI", "Offline", "Tiếng gốc" };
     public ObservableCollection<Caption> Captions { get; } = new();
     public event Action<string, string>? OnSubtitleUpdated;
@@ -302,7 +304,9 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
                 await _sessionOffline.TranslateAsync("Hello.", _prepareCancellation.Token);
             }
             Status = "Đang chuẩn bị nhận diện...";
-            await _stt.InitializeModelAsync(language: _sessionSource, cancellationToken: _prepareCancellation.Token);
+            var recognitionModel = _sessionSource == "en" && RecognitionMode == "Nhanh · Tiếng Anh"
+                ? Whisper.net.Ggml.GgmlType.TinyEn : Whisper.net.Ggml.GgmlType.Base;
+            await _stt.InitializeModelAsync(modelType: recognitionModel, language: _sessionSource, cancellationToken: _prepareCancellation.Token);
             _cts?.Dispose(); _cts = new(); _sessionId = Guid.NewGuid(); _sessionSystemAudio = CaptureSystemAudio; _offset = 0; _overflow = false; _started = DateTime.Now;
             _flushPresentation = false; Captions.Clear(); CurrentLiveOriginal = ""; CurrentLiveVietnamese = "";
             _audioQueue = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(8) { SingleReader = true, FullMode = BoundedChannelFullMode.Wait });
