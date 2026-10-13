@@ -453,7 +453,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
                             caption.TranslationSource = caption.Original; caption.Vietnamese = translated;
                         });
                     } catch (OperationCanceledException) { throw; }
-                    catch (Exception ex) { Ui(() => Status = "Lỗi dịch: " + ex.GetBaseException().Message); }
+                    catch (Exception ex) { Ui(() => Status = "Lỗi dịch (" + _sessionTranslationMode + "): " + (_sessionTranslationMode == "AI" ? TransTools.Services.AI.AiConnectionErrors.Describe(ex) : ex.Message)); }
                 }, async (caption, backfill, cancellation) => {
                     if (backfill) {
                         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
