@@ -12,6 +12,9 @@ public class Caption : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
     public string? TargetLanguage { get; set; }
     public string? TranslationSource { get; set; }
     public string? OriginalTextForLearning { get; set; }
+    private string _translationError = "";
+    [System.Text.Json.Serialization.JsonIgnore] public string TranslationError { get => _translationError; set { if (SetProperty(ref _translationError, value)) OnPropertyChanged(nameof(TranslationPendingMessage)); } }
+    [System.Text.Json.Serialization.JsonIgnore] public string TranslationPendingMessage => string.IsNullOrEmpty(TranslationError) ? "Đang dịch..." : "Chưa dịch được: " + TranslationError;
     private string _vietnamese = string.Empty;
     public string Vietnamese { get => _vietnamese; set => SetProperty(ref _vietnamese, value); }
 

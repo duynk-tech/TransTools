@@ -450,10 +450,13 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
                         cancellation.ThrowIfCancellationRequested();
                         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
                             cancellation.ThrowIfCancellationRequested();
-                            caption.TranslationSource = caption.Original; caption.Vietnamese = translated;
+                            caption.TranslationError = ""; caption.TranslationSource = caption.Original; caption.Vietnamese = translated;
                         });
                     } catch (OperationCanceledException) { throw; }
-                    catch (Exception ex) { Ui(() => Status = "Lỗi dịch (" + _sessionTranslationMode + "): " + (_sessionTranslationMode == "AI" ? TransTools.Services.AI.AiConnectionErrors.Describe(ex) : ex.Message)); }
+                    catch (Exception ex) {
+                        var message = _sessionTranslationMode == "AI" ? TransTools.Services.AI.AiConnectionErrors.Describe(ex) : ex.Message;
+                        await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => { caption.TranslationError = message; Status = "Lỗi dịch (" + _sessionTranslationMode + "): " + message; });
+                    }
                 }, async (caption, backfill, cancellation) => {
                     if (backfill) {
                         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {
