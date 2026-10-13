@@ -79,7 +79,7 @@
                 <PasswordBox ui:KeyBinding.Value="{Binding DeepSeekKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" BorderBrush="#D8E5E1" Padding="8,6" Margin="0,0,0,16" />
                 <TextBlock Text="Mô hình muốn sử dụng" Foreground="#65756F" />
                 <TextBox Text="{Binding DeepSeekModel, UpdateSourceTrigger=PropertyChanged}" Background="#F5F8F7" Foreground="#243D35" Padding="8,6" Margin="0,4,0,12" />
-                </StackPanel><Button Content="Lưu cấu hình AI" Command="{Binding SaveAllKeysCommand}" Background="#287568" Foreground="White" FontWeight="Bold" Padding="16,8" HorizontalAlignment="Right" Cursor="Hand" />
+                </StackPanel><Button Content="Kiểm tra khóa &amp; mô hình" Command="{Binding TestAiConnectionCommand}" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Right" Margin="0,0,0,8"/><Button Content="Lưu cấu hình AI" Command="{Binding SaveAllKeysCommand}" Background="#287568" Foreground="White" FontWeight="Bold" Padding="16,8" HorizontalAlignment="Right" Cursor="Hand" />
               </StackPanel>
             </Border>
           </StackPanel>

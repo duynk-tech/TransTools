@@ -60,10 +60,12 @@ public class WhisperSttService : IDisposable
     public async Task ProcessAudioAsync(Stream pcm16Stream, CancellationToken cancellationToken = default)
     {
         if (_processor == null) return;
+        var started = System.Diagnostics.Stopwatch.StartNew();
         await foreach (var result in _processor.ProcessAsync(pcm16Stream, cancellationToken))
         {
             // Handled via segment event handler
         }
+        System.Diagnostics.Trace.WriteLine($"Recognition processing: {started.ElapsedMilliseconds} ms");
     }
 
     private static async Task DownloadModelAsync(GgmlType modelType, string destinationPath, IProgress<double>? progress = null, CancellationToken cancellationToken = default)

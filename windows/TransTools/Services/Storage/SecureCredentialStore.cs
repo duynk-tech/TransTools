@@ -45,7 +45,7 @@ public class SecureCredentialStore
             return;
         }
 
-        var plainBytes = Encoding.UTF8.GetBytes(apiKey);
+        var plainBytes = Encoding.UTF8.GetBytes(apiKey.Trim());
         var encryptedBytes = ProtectedData.Protect(plainBytes, null, DataProtectionScope.CurrentUser);
         File.WriteAllBytes(path, encryptedBytes);
     }

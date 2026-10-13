@@ -330,7 +330,7 @@ public partial class SettingsViewModel : ObservableObject
             if (ActiveProvider != provider) { Status = "Nhà cung cấp đã thay đổi; hãy tải lại danh sách mô hình."; return; }
             AvailableModels.Clear(); foreach (var model in models) AvailableModels.Add(model);
             Status = $"Đã tải {models.Count} mô hình; chọn mô hình hỗ trợ trò chuyện.";
-        } catch (Exception ex) { Status = "Không tải được danh sách mô hình: " + ex.Message; }
+        } catch (Exception ex) { Status = "Không tải được danh sách mô hình: " + TransTools.Services.AI.AiConnectionErrors.Describe(ex); }
         finally { IsLoadingModels = false; }
     }
     partial void OnCatalogModelChanged(string value)
@@ -398,6 +398,26 @@ public partial class SettingsViewModel : ObservableObject
         DeepSeekKey = _credentialStore.LoadApiKey("deepseek");
     }
 
+    [ObservableProperty] private bool _isTestingAi;
+    [RelayCommand] private async Task TestAiConnectionAsync()
+    {
+        if (IsTestingAi) return;
+        IsTestingAi = true;
+        try {
+            var provider = ActiveProvider;
+            var key = (provider switch { "gemini" => GeminiKey, "claude" => ClaudeKey, "deepseek" => DeepSeekKey, _ => OpenAiKey }).Trim();
+            var model = (provider switch { "gemini" => GeminiModel, "claude" => ClaudeModel, "deepseek" => DeepSeekModel, _ => OpenAiModel }).Trim();
+            if (key.Length == 0 || model.Length == 0) throw new InvalidOperationException("Nhập khóa API và chọn mô hình trước khi kiểm tra.");
+            Status = "Đang kiểm tra khóa và mô hình AI...";
+            var config = new TransTools.Models.AIProviderConfig { ProviderId = provider, ApiKey = key, SelectedModel = model };
+            var result = await new TransTools.Services.Translation.LLMTranslationService().GenerateAsync("Reply OK", "Reply with OK only.", config);
+            if (string.IsNullOrWhiteSpace(result)) throw new InvalidOperationException("Mô hình không trả về nội dung.");
+            if (ActiveProvider != provider) { Status = "Nhà cung cấp đã thay đổi; kiểm tra lại trước khi lưu."; return; }
+            Status = "AI đã trả lời thành công. Nhấn Lưu cấu hình AI để sử dụng.";
+        } catch (Exception ex) { Status = "Kiểm tra AI thất bại: " + TransTools.Services.AI.AiConnectionErrors.Describe(ex); }
+        finally { IsTestingAi = false; }
+    }
+
     [RelayCommand]
     public void SaveAllKeys()
     {
@@ -412,7 +432,7 @@ public partial class SettingsViewModel : ObservableObject
         _credentialStore.SaveModel("gemini", GeminiModel);
         _credentialStore.SaveModel("claude", ClaudeModel);
         _credentialStore.SaveModel("deepseek", DeepSeekModel);
-        Status = "Đã mã hóa và lưu tất cả API Key an toàn bằng Windows DPAPI!";
+        Status = _credentialStore.LoadConfiguredProvider() == null ? "Đã lưu, nhưng AI chưa sẵn sàng: nhập khóa và chọn mô hình cho nhà cung cấp đang dùng." : "Đã lưu cấu hình AI. Bạn có thể kiểm tra kết nối trước khi sử dụng.";
         } catch (Exception ex) { Status = "Không lưu được cấu hình AI: " + ex.Message; }
     }
 

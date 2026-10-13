@@ -8,6 +8,7 @@ public sealed class ModelCatalogService
     public async Task<List<string>> FetchAsync(string provider, string key)
     {
         if (string.IsNullOrWhiteSpace(key)) throw new InvalidOperationException("Nhập API key trước khi tải model.");
+        key = key.Trim();
         var url = provider switch {
             "gemini" => "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000",
             "claude" => "https://api.anthropic.com/v1/models?limit=1000",

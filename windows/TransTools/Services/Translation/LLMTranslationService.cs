@@ -13,6 +13,7 @@ public class LLMTranslationService
 
     public async Task<string> TranslateWithAIAsync(string text, string targetLanguage, string style, AIProviderConfig config, CancellationToken cancellationToken = default)
     {
+        config = new AIProviderConfig { ProviderId = config.ProviderId, DisplayName = config.DisplayName, ApiKey = config.ApiKey.Trim(), SelectedModel = config.SelectedModel.Trim(), CustomEndpoint = config.CustomEndpoint };
         cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrWhiteSpace(text)) return string.Empty;
         if (string.IsNullOrWhiteSpace(config.ApiKey) && config.ProviderId != "ollama")
