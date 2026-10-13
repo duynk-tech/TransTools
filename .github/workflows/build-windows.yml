@@ -8,6 +8,11 @@ on:
         type: boolean
         default: true
 
+      measurement_only:
+        description: Run recognition and translation measurements without unrelated UI checks
+        type: boolean
+        default: false
+
       test_translation:
         description: Run pinned offline ONNX translation on Windows
         type: boolean
@@ -37,6 +42,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate XAML resource keys
+        if: ${{ !inputs.measurement_only }}
         shell: pwsh
         run: python windows/scripts/validate-xaml-resources.py
 
@@ -46,10 +52,12 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Build native VieNeu phonemizer (no Python runtime)
+        if: ${{ !inputs.measurement_only }}
         shell: pwsh
         run: ./windows/scripts/build-native-phonemizer.ps1
 
       - name: Restore NuGet Packages
+        if: ${{ !inputs.measurement_only }}
         shell: pwsh
         run: |
           dotnet restore windows/TransTools/TransTools.csproj
@@ -67,6 +75,7 @@ jobs:
         run: ./windows/scripts/download-test-models.ps1
 
       - name: Run contracts on native Windows
+        if: ${{ !inputs.measurement_only }}
         shell: pwsh
         run: |
           if ('${{ github.event_name }}' -eq 'workflow_dispatch' -and '${{ inputs.test_models }}' -eq 'true') {
@@ -76,12 +85,14 @@ jobs:
           }
 
       - name: Render and validate WPF screens
+        if: ${{ !inputs.measurement_only }}
         shell: pwsh
         run: |
           dotnet run --project windows/tests/UiSmoke -c Release -- windows/test-results/ui
           if ($LASTEXITCODE -ne 0) { throw 'Windows UI smoke tests failed.' }
 
       - name: Query local translation availability (no model downloads)
+        if: ${{ !inputs.measurement_only }}
         shell: pwsh
         run: |
           dotnet run --project windows/tests/EdgeTranslationProbe -c Release -- --availability-report windows/test-results/translation-availability.json
