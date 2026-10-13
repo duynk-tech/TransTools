@@ -24,12 +24,11 @@ foreach (var text in prompts) {
     using (var speaker = new SpeechSynthesizer()) {
         var voice = speaker.GetInstalledVoices().FirstOrDefault(v => v.Enabled && v.VoiceInfo.Culture.TwoLetterISOLanguageName == "en") ?? throw new Exception("No Windows English voice for the fixture.");
         speaker.SelectVoice(voice.VoiceInfo.Name);
-        speaker.SetOutputToWaveStream(synthesized, new SpeechAudioFormatInfo(16000, AudioBitsPerSample.Sixteen, AudioChannel.Mono));
+        speaker.SetOutputToAudioStream(synthesized, new SpeechAudioFormatInfo(16000, AudioBitsPerSample.Sixteen, AudioChannel.Mono));
         speaker.Speak(text); speaker.SetOutputToNull();
     }
-    synthesized.Position = 0;
-    using var reader = new WaveFileReader(synthesized);
-    var pcm = new byte[(int)reader.Length]; var read = reader.Read(pcm, 0, pcm.Length); if (read != pcm.Length) throw new Exception("Incomplete fixture PCM.");
+    var pcm = synthesized.ToArray();
+    if (pcm.Length == 0 || pcm.Length % 2 != 0) throw new Exception("Incomplete fixture PCM.");
     foreach (var chunkSeconds in new[] { 8, 4 }) {
         var recognized = new List<string>();
         void Segment(string value, double start, double end) => recognized.Add(value);
