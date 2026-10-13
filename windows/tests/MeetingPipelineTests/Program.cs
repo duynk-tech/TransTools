@@ -20,8 +20,8 @@ var prompts = new[] {
     "Today we are reviewing the project together. Please explain the problem clearly, describe the changes we need, and send the report after the meeting. We should test everything carefully before Friday and discuss the results with the customer."
 };
 var evidence = new List<object>();
-foreach (int? threads in new int?[] { null, 2 }) {
-await speech.InitializeModelAsync(language: "en", cancellationToken: deadline.Token, processorThreads: threads);
+foreach (var model in new[] { Whisper.net.Ggml.GgmlType.Base, Whisper.net.Ggml.GgmlType.BaseEn, Whisper.net.Ggml.GgmlType.TinyEn }) {
+await speech.InitializeModelAsync(modelType: model, language: "en", cancellationToken: deadline.Token);
 foreach (var text in prompts) {
     using var synthesized = new MemoryStream();
     using (var speaker = new SpeechSynthesizer()) {
@@ -68,9 +68,9 @@ foreach (var text in prompts) {
             translatedSentences.Add(result);
         }
         var translation = string.Join(" ", translatedSentences); var translationMs = watch.Elapsed.TotalMilliseconds;
-        evidence.Add(new { threads, text, chunkSeconds, transcript, translation, recall, wordErrorRate, audioSeconds = pcm.Length / 32000.0, processingMs, translationMs, processorCount = Environment.ProcessorCount });
+        evidence.Add(new { model = model.ToString(), text, chunkSeconds, transcript, translation, recall, wordErrorRate, audioSeconds = pcm.Length / 32000.0, processingMs, translationMs, processorCount = Environment.ProcessorCount });
         await File.WriteAllTextAsync(Path.Combine(args[1], "meeting-pipeline.json"), JsonSerializer.Serialize(evidence, new JsonSerializerOptions { WriteIndented = true }));
-        Console.WriteLine($"MEASURE: threads={threads?.ToString() ?? "default"} chunks={chunkSeconds}s recall={recall:F2} WER={wordErrorRate:F2} recognition={processingMs:F0}ms translation={translationMs:F0}ms | {transcript} | {translation}");
+        Console.WriteLine($"MEASURE: model={model} chunks={chunkSeconds}s recall={recall:F2} WER={wordErrorRate:F2} recognition={processingMs:F0}ms translation={translationMs:F0}ms | {transcript} | {translation}");
         if (recall < .70 || string.IsNullOrWhiteSpace(translation) || translation == transcript) throw new Exception("Recognition/translation pipeline failed the synthetic English fixture.");
     }
 }
