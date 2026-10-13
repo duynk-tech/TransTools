@@ -10,7 +10,7 @@ if (args.Length != 2) throw new ArgumentException("Provide translator model and 
 Directory.CreateDirectory(args[1]);
 using var deadline = new CancellationTokenSource(TimeSpan.FromMinutes(8));
 using var speech = new WhisperSttService();
-await speech.InitializeModelAsync(language: "en", cancellationToken: deadline.Token);
+await speech.InitializeModelAsync(language: "en", cancellationToken: deadline.Token, processorThreads: 2);
 await using var translator = new MarianTranslationService(args[0], "en", "vi");
 var prompts = new[] {
     "Hello everyone. We need to review the project today.",

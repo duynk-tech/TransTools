@@ -26,7 +26,7 @@ public class WhisperSttService : IDisposable
         Directory.CreateDirectory(_modelsDirectory);
     }
 
-    public async Task InitializeModelAsync(GgmlType modelType = GgmlType.Base, string language = "auto", IProgress<double>? progress = null, CancellationToken cancellationToken = default, bool allowDownload = true)
+    public async Task InitializeModelAsync(GgmlType modelType = GgmlType.Base, string language = "auto", IProgress<double>? progress = null, CancellationToken cancellationToken = default, bool allowDownload = true, int? processorThreads = null)
     {
         var modelFileName = $"ggml-{modelType.ToString().ToLower()}.bin";
         _currentModelPath = Path.Combine(_modelsDirectory, modelFileName);
@@ -46,7 +46,9 @@ public class WhisperSttService : IDisposable
         _factory?.Dispose();
 
         _factory = WhisperFactory.FromPath(_currentModelPath);
-        _processor = _factory.CreateBuilder()
+        var builder = _factory.CreateBuilder();
+        if (processorThreads.HasValue) builder.WithThreads(processorThreads.Value);
+        _processor = builder
             .WithLanguage(language == "auto" ? "auto" : language)
             .WithSegmentEventHandler(segment =>
             {

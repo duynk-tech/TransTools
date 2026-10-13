@@ -273,8 +273,8 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
             double sum = 0;
             for (var i = 0; i + 1 < chunk.Length; i += 2) { var v = BitConverter.ToInt16(chunk, i) / 32768.0; sum += v * v; }
             if (Math.Sqrt(sum / Math.Max(1, chunk.Length / 2)) > .008) _lastVoice = DateTime.UtcNow;
-            // Preserve all audio across callbacks; cap chunks at 4 seconds to reduce continuous-speech latency.
-            if ((_buffer.Length >= 16000 && (DateTime.UtcNow - _lastVoice).TotalSeconds >= .8) || _buffer.Length >= 128000) {
+            // Preserve utterances across callbacks; hard cuts at 4 seconds lost words in measured Windows fixtures.
+            if ((_buffer.Length >= 16000 && (DateTime.UtcNow - _lastVoice).TotalSeconds >= .8) || _buffer.Length >= 256000) {
                 if (!_audioQueue.Writer.TryWrite(_buffer.ToArray())) {
                     _overflow = true; Ui(() => StopRecordingCommand.Execute(null));
                 }
