@@ -16,7 +16,8 @@ var prompts = new[] {
     "Hello everyone. We need to review the project today.",
     "Please send the meeting report tomorrow morning.",
     "The customer asked us to fix the problem before Friday.",
-    "We should test the application and discuss the results together."
+    "We should test the application and discuss the results together.",
+    "Today we are reviewing the project together. Please explain the problem clearly, describe the changes we need, and send the report after the meeting. We should test everything carefully before Friday and discuss the results with the customer."
 };
 var evidence = new List<object>();
 foreach (var text in prompts) {
