@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net9.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+<ItemGroup>
+<PackageReference Include="System.Speech" Version="9.0.0"/><PackageReference Include="NAudio" Version="2.2.1"/>
+<PackageReference Include="Whisper.net" Version="1.7.4"/><PackageReference Include="Whisper.net.Runtime" Version="1.7.4"/><PackageReference Include="Whisper.net.Runtime.NoAvx" Version="1.7.4"/>
+<PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.20.1"/><PackageReference Include="Microsoft.ML.Tokenizers" Version="2.0.0"/>
+<Compile Include="../../TransTools/Services/Speech/WhisperSttService.cs" Link="WhisperSttService.cs"/>
+<Compile Include="../../TransTools/Services/Translation/Marian*.cs" Link="%(Filename)%(Extension)"/>
+<Compile Include="../../TransTools/Services/Translation/GoogleTranslationService.cs" Link="GoogleTranslationService.cs"/>
+</ItemGroup></Project>

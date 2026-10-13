@@ -27,3 +27,8 @@ $lines = @(& (Join-Path $published 'TranslationContractTests.exe') $folder 2>&1)
 $exitCode = $LASTEXITCODE
 $lines | Tee-Object -FilePath (Join-Path $output 'offline-translation-packaged.txt') | Write-Host
 if ($exitCode -ne 0) { throw 'Packaged offline translation inference failed.' }
+
+$lines = @(dotnet run --project (Join-Path $repo 'windows/tests/MeetingPipelineTests') -c Release -- $folder $output 2>&1)
+$exitCode = $LASTEXITCODE
+$lines | Tee-Object -FilePath (Join-Path $output 'meeting-pipeline.txt') | Write-Host
+if ($exitCode -ne 0) { throw 'Actual meeting recognition/translation pipeline failed.' }
