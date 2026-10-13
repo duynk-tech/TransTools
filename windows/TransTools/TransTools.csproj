@@ -50,7 +50,7 @@
   <Target Name="KeepWhisperNativeFilesBesideExecutable" BeforeTargets="_ComputeFilesToBundle">
     <ItemGroup>
       <ResolvedFileToPublish Update="@(ResolvedFileToPublish)"
-        Condition="'%(ResolvedFileToPublish.Extension)' == '.dll' And ('%(ResolvedFileToPublish.Filename)' == 'whisper' Or $([System.String]::Copy('%(ResolvedFileToPublish.Filename)').StartsWith('ggml-')))">
+        Condition="'%(ResolvedFileToPublish.Extension)' == '.dll' And ('%(ResolvedFileToPublish.Filename)' == 'onnxruntime' Or '%(ResolvedFileToPublish.Filename)' == 'onnxruntime_providers_shared' Or '%(ResolvedFileToPublish.Filename)' == 'whisper' Or $([System.String]::Copy('%(ResolvedFileToPublish.Filename)').StartsWith('ggml-')))">
         <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       </ResolvedFileToPublish>
     </ItemGroup>

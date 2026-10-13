@@ -39,6 +39,7 @@ dotnet publish "$ProjectDir\TransTools.csproj" `
     -o "$OutputDir"
 
 if ($LASTEXITCODE -ne 0) { throw "Publish failed ($LASTEXITCODE)." }
+& (Join-Path $PSScriptRoot "prepare-windows-native-runtime.ps1") -PublishDirectory $OutputDir
 & (Join-Path $PSScriptRoot "verify-whisper-package.ps1") -PublishDirectory $OutputDir -LoadNativeLibraries
 
 # 4. Verification

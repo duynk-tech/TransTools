@@ -295,7 +295,12 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
             _sessionSource = SourceLanguage; _sessionTarget = TargetLanguage; _sessionTranslationMode = TranslationMode;
             _sessionAi = _sessionTranslationMode == "AI" ? _credentials.LoadConfiguredProvider() ?? throw new InvalidOperationException("Chọn AI và model trong Cài đặt.") : null;
             await ReleaseOfflineAsync();
-            if (_sessionTranslationMode == "Offline") _sessionOffline = InstalledTranslation.Open(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TransTools"), _sessionSource, _sessionTarget);
+            if (_sessionTranslationMode == "Offline") {
+                Status = "Đang kiểm tra bộ dịch Offline...";
+                _sessionOffline = InstalledTranslation.Open(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TransTools"), _sessionSource, _sessionTarget);
+                // Validate native loading and model integrity before starting audio capture.
+                await _sessionOffline.TranslateAsync("Hello.", _prepareCancellation.Token);
+            }
             Status = "Đang chuẩn bị nhận diện...";
             await _stt.InitializeModelAsync(language: _sessionSource, cancellationToken: _prepareCancellation.Token);
             _cts?.Dispose(); _cts = new(); _sessionId = Guid.NewGuid(); _sessionSystemAudio = CaptureSystemAudio; _offset = 0; _overflow = false; _started = DateTime.Now;
@@ -313,7 +318,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
         } catch (Exception ex) {
             _audio.StopCapture(); _audioQueue?.Writer.TryComplete(); _cts?.Cancel(); IsRecording = false;
             if (_processing != null) { try { await _processing; } catch { } }
-            await ReleaseOfflineAsync(); _stt.Dispose(); Status = ex is OperationCanceledException ? "Đã hủy bắt đầu cuộc họp." : ex.Message;
+            await ReleaseOfflineAsync(); _stt.Dispose(); Status = ex is OperationCanceledException ? "Đã hủy bắt đầu cuộc họp." : ex.GetBaseException().Message;
         }
         finally { _prepareCancellation?.Dispose(); _prepareCancellation = null; IsPreparing = false; }
     }
@@ -448,7 +453,7 @@ public partial class MeetingViewModel : ObservableObject, IDisposable
                             caption.TranslationSource = caption.Original; caption.Vietnamese = translated;
                         });
                     } catch (OperationCanceledException) { throw; }
-                    catch (Exception ex) { Ui(() => Status = "Lỗi dịch: " + ex.Message); }
+                    catch (Exception ex) { Ui(() => Status = "Lỗi dịch: " + ex.GetBaseException().Message); }
                 }, async (caption, backfill, cancellation) => {
                     if (backfill) {
                         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => {

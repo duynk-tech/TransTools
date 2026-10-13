@@ -5,6 +5,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path $PublishDirectory).Path
 $libraries = @('whisper.dll', 'ggml-whisper.dll', 'ggml-base-whisper.dll', 'ggml-cpu-whisper.dll')
+foreach ($name in @('onnxruntime.dll', 'msvcp140.dll', 'msvcp140_1.dll', 'vcruntime140.dll', 'vcruntime140_1.dll')) {
+    if (!(Test-Path (Join-Path $root $name))) { throw "Missing Offline runtime dependency: $name" }
+}
 $runtimeDirectories = @('runtimes/win-x64', 'runtimes/noavx/win-x64')
 foreach ($directory in $runtimeDirectories) {
     foreach ($library in $libraries) {
@@ -30,6 +33,11 @@ public static class WhisperPackageNativeProbe {
 }
 '@
     }
+    $onnx = [WhisperPackageNativeProbe]::LoadLibraryEx((Join-Path $root 'onnxruntime.dll'), [IntPtr]::Zero, 0x1100)
+    if ($onnx -eq [IntPtr]::Zero) { throw "Cannot load packaged Offline translator (Windows error $([Runtime.InteropServices.Marshal]::GetLastWin32Error()))." }
+    try {
+        if ([WhisperPackageNativeProbe]::GetProcAddress($onnx, 'OrtGetApiBase') -eq [IntPtr]::Zero) { throw 'Offline translator entry point missing.' }
+    } finally { [void][WhisperPackageNativeProbe]::FreeLibrary($onnx) }
     foreach ($directory in $runtimeDirectories) {
         $path = Join-Path $root "$directory/whisper.dll"
         # Load dependencies from the same runtime directory plus trusted Windows search locations.
