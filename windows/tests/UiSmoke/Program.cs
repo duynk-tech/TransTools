@@ -22,6 +22,16 @@ internal static class Program
         PresentationTraceSources.DataBindingSource.Listeners.Add(errors);
         PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Error;
         try {
+            var keyModel = new KeyInputProbe();
+            var keyBox = new PasswordBox();
+            TransTools.Views.KeyBinding.SetIsEnabled(keyBox, true);
+            System.Windows.Data.BindingOperations.SetBinding(keyBox, TransTools.Views.KeyBinding.ValueProperty,
+                new System.Windows.Data.Binding(nameof(KeyInputProbe.Key)) { Source = keyModel, Mode = System.Windows.Data.BindingMode.TwoWay, UpdateSourceTrigger = System.Windows.Data.UpdateSourceTrigger.PropertyChanged });
+            keyBox.Password = "test-key-not-a-real-secret";
+            if (keyModel.Key != keyBox.Password) throw new Exception("First API key input was not propagated from an initially empty PasswordBox.");
+            keyBox.Password = "";
+            if (keyModel.Key != "") throw new Exception("Cleared API key remained in settings.");
+            Console.WriteLine("PASS: first API key entry and clearing update settings without saving first");
             if (CaptionDisplayTextConverter.Select("source", "translated", "translation", false) != "translated" || CaptionDisplayTextConverter.Select("source", "", "translation", false) != "source" || CaptionDisplayTextConverter.Select("source", "translated", "original", true) != "") throw new Exception("Caption display fallback is incorrect");
             var credentialFixture = Path.Combine(Path.GetTempPath(), "TransTools-credentials-" + Guid.NewGuid());
             try {
@@ -1429,3 +1439,5 @@ internal static class Program
         public override void WriteLine(string? message) => Write(message);
     }
 }
+
+internal sealed class KeyInputProbe { public string Key { get; set; } = ""; }
