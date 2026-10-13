@@ -156,4 +156,4 @@ jobs:
         working-directory: installers
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload v1.4.2-windows-preview.1 TransTools-Setup.exe TransTools-Windows-Portable.zip SHA256SUMS.txt --repo duynk-tech/TransTools
+        run: gh release upload v1.4.2-windows-preview.1 TransTools-Setup.exe TransTools-Windows-Portable.zip SHA256SUMS.txt --repo duynk-tech/TransTools --clobber
