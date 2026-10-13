@@ -65,6 +65,10 @@ jobs:
         shell: pwsh
         run: dotnet publish windows/TransTools/TransTools.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -o windows/build
 
+      - name: Verify published Whisper runtime and native loading
+        shell: pwsh
+        run: ./windows/scripts/verify-whisper-package.ps1 -PublishDirectory windows/build -LoadNativeLibraries
+
       - name: Install Inno Setup
         shell: pwsh
         run: |

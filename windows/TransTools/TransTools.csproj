@@ -46,4 +46,13 @@
     <Content Include="Resources\SpeechNative\*.dll" Link="SpeechNative\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
+  <!-- Whisper loads DLLs from runtimes beside the EXE, not the .NET bundle extraction directory. -->
+  <Target Name="KeepWhisperNativeFilesBesideExecutable" BeforeTargets="_ComputeFilesToBundle">
+    <ItemGroup>
+      <ResolvedFileToPublish Update="@(ResolvedFileToPublish)"
+        Condition="'%(ResolvedFileToPublish.Extension)' == '.dll' And ('%(ResolvedFileToPublish.Filename)' == 'whisper' Or $([System.String]::Copy('%(ResolvedFileToPublish.Filename)').StartsWith('ggml-')))">
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
 </Project>

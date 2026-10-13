@@ -39,6 +39,7 @@ dotnet publish "$ProjectDir\TransTools.csproj" `
     -o "$OutputDir"
 
 if ($LASTEXITCODE -ne 0) { throw "Publish failed ($LASTEXITCODE)." }
+& (Join-Path $PSScriptRoot "verify-whisper-package.ps1") -PublishDirectory $OutputDir -LoadNativeLibraries
 
 # 4. Verification
 $ExePath = Join-Path $OutputDir "TransTools.exe"
