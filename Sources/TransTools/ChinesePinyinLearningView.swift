@@ -175,7 +175,7 @@ struct ChinesePinyinLearningView: View {
                                         )
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 8)
-                                                .stroke(isSel ? TransToolsTheme.accent : Color.clear, lineWidth: 1.5)
+                                                .strokeBorder(isSel ? TransToolsTheme.accent : Color.clear, lineWidth: 1.5)
                                         )
                                         .clipShape(RoundedRectangle(cornerRadius: 8))
                                     }
@@ -313,7 +313,7 @@ struct ChinesePinyinLearningView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                            .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 1)
                     )
 
                     HStack {

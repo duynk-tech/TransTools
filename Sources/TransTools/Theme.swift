@@ -43,12 +43,13 @@ struct TransToolsActionButtonStyle: ButtonStyle {
                 .padding(.horizontal, horizontalPadding)
                 .frame(height: height)
                 .foregroundStyle(prominent ? Color.white : color)
-                .background(prominent ? (configuration.role == .destructive ? Color.red : Color(red: 40 / 255, green: 117 / 255, blue: 104 / 255)) : color.opacity(hovered ? 0.12 : 0.07), in: RoundedRectangle(cornerRadius: cornerRadius))
-                .overlay(RoundedRectangle(cornerRadius: cornerRadius).stroke(color.opacity(prominent ? 0 : 0.18), lineWidth: 1))
-                .contentShape(RoundedRectangle(cornerRadius: cornerRadius))
+                .background(prominent ? (configuration.role == .destructive ? Color.red : Color(red: 40 / 255, green: 117 / 255, blue: 104 / 255)) : color.opacity(hovered ? 0.12 : 0.07), in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous).strokeBorder(color.opacity(prominent ? 0.30 : (hovered ? 0.55 : 0.22)), lineWidth: 1).allowsHitTesting(false))
+                .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
                 .opacity(enabled ? (configuration.isPressed ? 0.75 : 1) : 0.4)
                 .textSelection(.disabled)
                 .transToolsButtonCursor()
+                .animation(nil, value: hovered)
                 .onHover { hovered = $0 }
         }
     }
@@ -56,8 +57,8 @@ struct TransToolsActionButtonStyle: ButtonStyle {
 
 extension View {
     func transToolsPanel() -> some View {
-        self.background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(TransToolsTheme.accent.opacity(0.14), lineWidth: 1))
+        self.background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(TransToolsTheme.accent.opacity(0.14), lineWidth: 1))
     }
 }
 
@@ -78,5 +79,26 @@ private struct TransToolsButtonCursor: ViewModifier {
 extension View {
     func transToolsButtonCursor() -> some View {
         modifier(TransToolsButtonCursor())
+    }
+}
+
+/// Idle clips run for two seconds in each twenty-second cycle. The remaining
+/// interval retains the last frame instead of waking SwiftUI eight times a second.
+struct MascotAnimationSchedule: TimelineSchedule {
+    let interval: TimeInterval
+    func entries(from startDate: Date, mode: TimelineScheduleMode) -> AnySequence<Date> {
+        AnySequence {
+            var next = startDate
+            return AnyIterator<Date> {
+                let date = next
+                if interval > 0 {
+                    next = date.addingTimeInterval(interval)
+                } else {
+                    let phase = date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 20)
+                    next = date.addingTimeInterval(phase < 2 - 0.000001 ? min(1.0 / 12, 2 - phase) : max(0.001, 20 - phase))
+                }
+                return date
+            }
+        }
     }
 }

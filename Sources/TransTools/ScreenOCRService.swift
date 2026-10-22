@@ -147,7 +147,7 @@ final class ScreenOCRService: ObservableObject {
         let text = lastOCRText, source = sourceLanguage, target = targetLanguage
         if source == target { lastTranslatedText = text; notice = "Hai ngôn ngữ giống nhau."; return }
         if #available(macOS 15.0, *), let result = try? await AppleNativeTranslator.translate(text, from: source, to: target) {
-            lastTranslatedText = result; notice = "Đã dịch bằng Translate · Local."; return
+            lastTranslatedText = result; notice = "Đã dịch bằng Translate · Trên thiết bị."; return
         }
         if let model = MeetingModel.shared, let ai = model.configuredAI,
            let result = try? await AITranslator.translate(text, from: source, to: target, domain: model.domainSpecialty, provider: ai.provider, model: ai.model, key: ai.key) {
@@ -196,7 +196,7 @@ struct ScreenOCRReviewView: View {
                 }
                 Button { Task { await service.translateReviewedText() } } label: { Label(service.isTranslating ? "Đang dịch…" : "Dịch", systemImage: "character.bubble") }
                     .buttonStyle(TransToolsActionButtonStyle(prominent: true, height: 30))
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(TransToolsTheme.accent.opacity(0.45), lineWidth: 1).allowsHitTesting(false))
+                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(TransToolsTheme.accent.opacity(0.45), lineWidth: 1).allowsHitTesting(false))
                     .disabled(service.isTranslating || service.lastOCRText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }.padding(24).frame(width: 720)

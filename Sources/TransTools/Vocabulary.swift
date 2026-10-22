@@ -86,6 +86,7 @@ public final class VocabularyManager: ObservableObject {
     public static let shared = VocabularyManager()
 
     @Published public var items: [VocabularyItem] = []
+    @Published var lastRemovedItem: VocabularyItem?
     private let storageKey = "TransTools_SavedVocabulary_v1"
 
     private init() {
@@ -134,8 +135,18 @@ public final class VocabularyManager: ObservableObject {
     }
 
     public func remove(id: UUID) {
+        lastRemovedItem = items.first { $0.id == id }
         items.removeAll { $0.id == id }
         saveItems()
+    }
+
+    func undoRemoval() {
+        guard let item = lastRemovedItem else { return }
+        if !items.contains(where: { $0.id == item.id }) {
+            items.insert(item, at: 0)
+            saveItems()
+        }
+        lastRemovedItem = nil
     }
 
     public func toggleMastered(id: UUID) {
@@ -500,7 +511,7 @@ public final class GlobalHotkeyManager: ObservableObject {
             // Prompt user
             MeetingModel.shared?.showSpeechBubble(
                 word: "Mẹo nhỏ",
-                meaning: "Hãy bôi đen một từ hoặc đoạn văn bản bất kỳ, sau đó bấm Option + D hoặc Option + T để Chip Chip dịch nhé!",
+                meaning: "Hãy bôi đen một từ hoặc đoạn văn bản bất kỳ, sau đó bấm Option + D hoặc Option + T để \(MascotIdentity.name) dịch nhé!",
                 context: "",
                 sourceApp: appName
             )
@@ -527,7 +538,13 @@ public final class GlobalHotkeyManager: ObservableObject {
                 ? VocabularyManager.fetchPhonetic(for: cleanWord)
                 : ""
 
-            let translated = try await AITranslator.freeTranslate(cleanWord, from: sourceLang, to: targetLang)
+            guard let meetingModel = MeetingModel.shared else { return }
+            let ai = meetingModel.configuredAI
+            let translated = try await AITranslator.translate(cleanWord,
+                from: sourceLang, to: targetLang, domain: meetingModel.domainSpecialty,
+                provider: ai?.provider ?? meetingModel.provider,
+                model: ai?.model ?? meetingModel.modelName,
+                key: ai?.key ?? meetingModel.key)
 
             let phonetic = await phoneticTask
 
@@ -590,7 +607,7 @@ public final class GlobalHotkeyManager: ObservableObject {
               pasteboard.changeCount != initialChangeCount, !copiedText.isEmpty else {
             MeetingModel.shared?.showSpeechBubble(
                 word: "Sửa lỗi tiếng Anh",
-                meaning: "Hãy bôi đen câu tiếng Anh rồi bấm Option + F để Chip Chip sửa ngữ pháp.",
+                meaning: "Hãy bôi đen câu tiếng Anh rồi bấm Option + F để \(MascotIdentity.name) sửa ngữ pháp.",
                 context: "",
                 sourceApp: appName,
                 mode: "grammar"
@@ -940,13 +957,13 @@ public struct MascotBubbleView: View {
         }
         .frame(width: 360, height: model.speechBubbleHeight)
         .background {
-            MascotBoardBubbleShape(tailOnLeft: model.bubbleOnRight)
+            MascotBoardBubbleShape(tailOnLeft: model.bubbleOnRight, tailY: model.bubbleArrowY)
                 .fill(Color.white)
                 .shadow(color: Color.black.opacity(0.14), radius: 8, y: 3)
         }
         .overlay {
-            MascotBoardBubbleShape(tailOnLeft: model.bubbleOnRight)
-                .stroke(TransToolsTheme.accent.opacity(0.58), lineWidth: 2.5)
+            MascotBoardBubbleShape(tailOnLeft: model.bubbleOnRight, tailY: model.bubbleArrowY)
+                .strokeBorder(TransToolsTheme.accent.opacity(0.58), lineWidth: 2.5)
                 .allowsHitTesting(false)
         }
         .environment(\.colorScheme, .light)
@@ -957,16 +974,33 @@ public struct MascotBubbleView: View {
 }
 
 // One outline keeps the white board and its pointer joined without a border seam.
-private struct MascotBoardBubbleShape: Shape {
+struct MascotBoardBubbleShape: InsettableShape {
     var tailOnLeft: Bool
+    var tailY: CGFloat = 0.5
+    var insetAmount: CGFloat = 0
 
-    func path(in rect: CGRect) -> Path {
+    func inset(by amount: CGFloat) -> some InsettableShape { insetted(by: amount) }
+
+    func insetted(by amount: CGFloat) -> MascotBoardBubbleShape {
+        var shape = self
+        shape.insetAmount += amount
+        return shape
+    }
+
+    func tailTip(in inputRect: CGRect) -> CGPoint {
+        let rect = inputRect.insetBy(dx: insetAmount, dy: insetAmount)
+        let y = rect.minY + rect.height * min(max(tailY, 0.08), 0.92)
+        return CGPoint(x: tailOnLeft ? rect.minX + 2 : rect.maxX - 2, y: y)
+    }
+
+    func path(in inputRect: CGRect) -> Path {
+        let rect = inputRect.insetBy(dx: insetAmount, dy: insetAmount)
         let left = rect.minX + 10
         let right = rect.maxX - 10
         let top = rect.minY + 2
         let bottom = rect.maxY - 2
         let radius: CGFloat = 12
-        let middle = rect.midY
+        let middle = rect.minY + rect.height * min(max(tailY, 0.08), 0.92)
         var path = Path()
         path.move(to: CGPoint(x: left + radius, y: top))
         path.addLine(to: CGPoint(x: right - radius, y: top))
@@ -1043,7 +1077,7 @@ public struct VocabularyFlashcardModal: View {
                     Text("Chưa có từ vựng nào được lưu.")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(.secondary)
-                    Text("Bôi đen từ bất kỳ trên web hoặc tài liệu rồi bấm Option + D để Chip Chip dịch và lưu từ nhé!")
+                    Text("Bôi đen từ bất kỳ trên web hoặc tài liệu rồi bấm Option + D để \(MascotIdentity.name) dịch và lưu từ nhé!")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary.opacity(0.8))
                         .multilineTextAlignment(.center)
@@ -1061,7 +1095,7 @@ public struct VocabularyFlashcardModal: View {
                         .shadow(color: Color.black.opacity(0.08), radius: 8, y: 3)
                         .overlay(
                             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(Color.primary.opacity(0.08), lineWidth: 1.2)
+                                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1.2)
                         )
 
                     VStack(spacing: 12) {
@@ -1228,6 +1262,7 @@ public struct VocabularyNotebookSectionView: View {
     public var body: some View {
         VStack(spacing: 0) {
             // Top Toolbar: Search + Filter + Actions
+            ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 // Search field
                 HStack(spacing: 6) {
@@ -1250,7 +1285,7 @@ public struct VocabularyNotebookSectionView: View {
                 .padding(.vertical, 5)
                 .background(Color(nsColor: .textBackgroundColor).opacity(0.8))
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Color.primary.opacity(0.08), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
 
                 // Filter Picker
                 Picker("", selection: $selectedFilter) {
@@ -1276,13 +1311,9 @@ public struct VocabularyNotebookSectionView: View {
                         Text("Luyện Flashcard")
                             .font(.system(size: 11.5, weight: .semibold))
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(TransToolsTheme.accent)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(TransToolsActionButtonStyle(prominent: true))
                 .disabled(vocabManager.items.isEmpty)
                 .help("Mở chế độ lật thẻ Flashcard ôn tập")
 
@@ -1298,33 +1329,36 @@ public struct VocabularyNotebookSectionView: View {
                         Text("Xuất CSV")
                             .font(.system(size: 11))
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .background(Color.secondary.opacity(0.12))
-                    .foregroundStyle(.primary)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(TransToolsActionButtonStyle())
                 .disabled(vocabManager.items.isEmpty)
                 .help("Xuất danh sách từ vựng ra file CSV")
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
+            }
             .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
-
+            if let removed = vocabManager.lastRemovedItem {
+                HStack {
+                    Text("Đã xóa: " + removed.word).font(.caption).lineLimit(1)
+                    Spacer()
+                    Button("Hoàn tác") { vocabManager.undoRemoval() }.buttonStyle(TransToolsActionButtonStyle(height: 30))
+                }.padding(10).background(TransToolsTheme.mint)
+            }
             Divider().opacity(0.5)
 
             // Content List
             if vocabManager.items.isEmpty {
                 VStack(spacing: 12) {
                     Spacer()
-                    Image(systemName: "character.book.closed")
-                        .font(.system(size: 40))
-                        .foregroundStyle(.secondary.opacity(0.35))
+                    MiniAvatarView(size: 68, isHovered: false, time: 0)
+                        .padding(12).background(TransToolsTheme.mint, in: Circle())
+                        .accessibilityHidden(true)
                     Text("Sổ từ vựng đang trống")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(.secondary)
-                    Text("Hãy bôi đen từ bất kỳ rồi bấm Option + D.\nChip Chip sẽ dịch tức thì và bạn có thể bấm 'Lưu từ vựng' để ôn tập tại đây!")
+                    Text("Hãy bôi đen từ bất kỳ rồi bấm Option + D.\n\(MascotIdentity.name) sẽ dịch tức thì và bạn có thể bấm 'Lưu từ vựng' để ôn tập tại đây!")
                         .font(.system(size: 11.5))
                         .foregroundStyle(.secondary.opacity(0.8))
                         .multilineTextAlignment(.center)
@@ -1355,6 +1389,7 @@ public struct VocabularyNotebookSectionView: View {
                 }
             }
         }
+        .background(TransToolsTheme.background)
         .sheet(isPresented: $showDictionary) { DictionaryView() }
         .task { await vocabManager.fillMissingPhonetics() }
         .sheet(isPresented: $showFlashcards) {
@@ -1377,7 +1412,7 @@ private struct VocabularyRowCard: View {
             } label: {
                 Image(systemName: item.isMastered ? "star.fill" : "star")
                     .font(.system(size: 14))
-                    .foregroundStyle(item.isMastered ? Color.yellow : Color.secondary.opacity(0.4))
+                    .foregroundStyle(item.isMastered ? TransToolsTheme.accent : Color.secondary.opacity(0.4))
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.plain)
@@ -1433,8 +1468,9 @@ private struct VocabularyRowCard: View {
                     } label: {
                         Image(systemName: "trash")
                             .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
-                            .opacity(isHovered ? 0.8 : 0.0)
+                            .foregroundStyle(.red)
+                            .frame(width: 30, height: 30)
+                            .background(Color.red.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
                     }
                     .buttonStyle(.plain)
                     .help("Xóa từ này khỏi sổ")
@@ -1448,20 +1484,19 @@ private struct VocabularyRowCard: View {
                 // Context (if available)
                 if !item.context.isEmpty && item.context != item.word {
                     Text("\"\(item.context)\"")
-                        .font(.system(size: 11, design: .serif))
-                        .italic()
+                        .font(.system(size: 12))
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, 1)
                 }
             }
         }
         .padding(10)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .textBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(item.isMastered ? Color.green.opacity(0.25) : Color.primary.opacity(0.06), lineWidth: 1)
+                .strokeBorder(isHovered ? TransToolsTheme.accent.opacity(0.65) : TransToolsTheme.accent.opacity(item.isMastered ? 0.30 : 0.12), lineWidth: 1)
         )
         .onHover { hov in isHovered = hov }
     }
@@ -1625,7 +1660,7 @@ public struct KeyboardShortcutGuideCard: View {
                     .foregroundStyle(TransToolsTheme.accent)
                     .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
 
-                Text("Bôi đen chữ bất kỳ để Chip Chip dịch & lưu từ")
+                Text("Bôi đen chữ bất kỳ để \(MascotIdentity.name) dịch & lưu từ")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.primary)
             }
@@ -1653,7 +1688,7 @@ public struct KeyboardShortcutGuideCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
         )
     }
 }
@@ -1744,7 +1779,7 @@ public struct DeveloperPhrasesCompactList: View {
                         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                                .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
                         )
                     }
                     .buttonStyle(.plain)
@@ -1754,6 +1789,5 @@ public struct DeveloperPhrasesCompactList: View {
         .padding(.vertical, 4)
     }
 }
-
 
 

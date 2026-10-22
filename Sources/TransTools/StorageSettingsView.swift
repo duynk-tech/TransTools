@@ -57,7 +57,7 @@ struct StorageSettingsView: View {
     @State private var pending: StorageEntry?
     @State private var message = ""
     private var busy: Bool {
-        if model.running || tts.isSpeaking || router.isProcessing || cleaning || external.installing != nil { return true }
+        if ModelManager.shared.inUse || ModelManager.shared.installing || model.running || tts.isSpeaking || router.isProcessing || cleaning || external.installing != nil || PersonalVoiceManager.shared.processing || PersonalVoiceManager.shared.recording || PersonalVoiceManager.shared.checkingSpeech { return true }
         switch local.state { case .downloading, .verifying: return true; default: return false }
     }
     private func size(_ bytes: Int64) -> String { ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file) }
@@ -66,19 +66,21 @@ struct StorageSettingsView: View {
         let support = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("TransTools")
         let cache = fm.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         return [
-            StorageEntry(id: "voice", title: "Supertonic 3 · Local", detail: local.isInstalled ? "Đã cài · gồm dữ liệu Supertonic đã tải. Gỡ sẽ chuyển về giọng cơ bản." : "Chưa cài hoặc còn dữ liệu tải Supertonic. Có thể tải lại khi cần.", url: support.appendingPathComponent("Models/TTS"), removable: true, model: true),
+            StorageEntry(id: "model-downloads", title: "Cache tải mô hình", detail: "Dữ liệu tải dở để tiếp tục tải; không chứa bản thu giọng cá nhân.", url: ModelDownloadManager.cacheRoot, removable: true, model: false),
+            StorageEntry(id: "voice", title: "Supertonic 3 · Offline", detail: local.isInstalled ? "Đã cài · gồm dữ liệu Supertonic đã tải. Gỡ sẽ chuyển về giọng cơ bản." : "Chưa cài hoặc còn dữ liệu tải Supertonic. Có thể tải lại khi cần.", url: support.appendingPathComponent("Models/TTS"), removable: true, model: true),
             StorageEntry(id: "external-vieneu", title: "VieNeu-TTS v3 Turbo", detail: "Dữ liệu mô hình và từ điển phát âm. Bộ xử lý native có sẵn trong app; không cần SDK Python.", url: ExternalTTSModel.vieneu.directory, removable: true, model: true),
             StorageEntry(id: "external-qwen", title: "Qwen3-TTS 0.6B", detail: "Trọng số MLX và speech tokenizer. Gỡ sẽ dùng giọng dự phòng cho ngôn ngữ đang chọn.", url: ExternalTTSModel.qwen.directory, removable: true, model: true),
             StorageEntry(id: "qwen-runtime", title: "Bộ xử lý Qwen", detail: "Chỉ cần khi dùng Qwen. VieNeu và Supertonic dùng bộ xử lý native có sẵn trong app.", url: ExternalTTSModel.root.appendingPathComponent("Environments/qwen"), removable: true, model: true),
-            StorageEntry(id: "external-logs", title: "Nhật ký cài giọng Local", detail: "Thông tin SDK và tải mô hình; không lưu nội dung đọc.", url: ExternalTTSModel.root.appendingPathComponent("Logs"), removable: true, model: false),
+            StorageEntry(id: "external-logs", title: "Nhật ký cài giọng Offline", detail: "Thông tin SDK và tải mô hình; không lưu nội dung đọc.", url: ExternalTTSModel.root.appendingPathComponent("Logs"), removable: true, model: false),
             StorageEntry(id: "external-python", title: "Python cho Qwen", detail: "Chỉ dùng cho Qwen. VieNeu và Supertonic không cần Python. Có thể tải lại khi cài Qwen.", url: ExternalTTSModel.root.appendingPathComponent("Python"), removable: true, model: true),
+            StorageEntry(id: "personal-voices", title: "Giọng của tôi", detail: "Bản thu cá nhân, hồ sơ giọng và bộ trích xuất ONNX dùng chung. Gỡ sẽ trở về giọng dựng sẵn.", url: PersonalVoiceManager.root, removable: true, model: true),
             StorageEntry(id: "edge", title: "Cache giọng trực tuyến", detail: "Audio Edge đã tạo. Dọn cache sẽ cần tạo lại audio khi nghe tiếp.", url: cache.appendingPathComponent("TransToolsEdgeTTS"), removable: true, model: false),
             StorageEntry(id: "strokes", title: "Cache hướng dẫn nét viết", detail: "Ảnh hướng dẫn đã tải. Có thể tải lại khi mở bài học.", url: cache.appendingPathComponent("TransTools/NHKStrokes"), removable: true, model: false),
             StorageEntry(id: "english", title: "Phát âm tiếng Anh · Offline", detail: "Bản ghi đã tải. Xóa sẽ làm mất khả năng nghe offline của bộ này.", url: support.appendingPathComponent("Pronunciation/AudioLangEnglish"), removable: true, model: false),
             StorageEntry(id: "japanese", title: "Phát âm tiếng Nhật · Offline", detail: "Bản ghi đã tải. Cần tải lại để nghe bộ này sau khi xóa.", url: support.appendingPathComponent("Pronunciation/NHKJapanese"), removable: true, model: false),
             StorageEntry(id: "chinese", title: "Phát âm tiếng Trung · Offline", detail: "Bản ghi đã tải. Cần tải lại để nghe bộ này sau khi xóa.", url: support.appendingPathComponent("Pronunciation/ZIMChinese"), removable: true, model: false),
             StorageEntry(id: "notebook", title: "Sổ tay & Hội thoại", detail: "Dữ liệu cá nhân được bảo vệ. Quản lý từng buổi trong Sổ tay hoặc Trò chuyện.", url: support.appendingPathComponent("meeting_sessions.json"), removable: false, model: false),
-            StorageEntry(id: "bundled", title: "Học liệu đi kèm ứng dụng", detail: "Tài nguyên trong app, không dọn riêng. Bao gồm hình Chip Chip và bản ghi có sẵn.", url: Bundle.main.resourceURL ?? Bundle.main.bundleURL, removable: false, model: false)
+            StorageEntry(id: "bundled", title: "Học liệu đi kèm ứng dụng", detail: "Tài nguyên trong app, không dọn riêng. Bao gồm hình \(MascotIdentity.name) và bản ghi có sẵn.", url: Bundle.main.resourceURL ?? Bundle.main.bundleURL, removable: false, model: false)
         ]
     }
     var body: some View {
@@ -98,19 +100,33 @@ struct StorageSettingsView: View {
                 .font(.callout).foregroundStyle(.secondary)
             if busy { Label("Dừng phiên đang chạy, phần đọc hoặc tải mô hình trước khi dọn.", systemImage: "info.circle").font(.caption).foregroundStyle(.secondary) }
             ForEach(entries) { entry in
-                HStack(alignment: .top, spacing: 16) {
+                HStack(alignment: .center, spacing: 16) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(entry.title).font(.headline)
                         Text(entry.detail).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                         Text(entry.scanError ?? (entry.exists ? "\(size(entry.bytes)) · \(entry.files) tệp" : "Chưa có dữ liệu"))
                             .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                     }.frame(maxWidth: .infinity, alignment: .leading)
-                    Button("Xem thư mục") { NSWorkspace.shared.activateFileViewerSelecting([entry.url]) }
-                        .buttonStyle(SettingsActionButtonStyle()).disabled(!entry.exists)
-                    if entry.removable {
-                        Button(entry.model ? "Gỡ mô hình" : "Dọn", role: .destructive) { pending = entry }
-                            .buttonStyle(SettingsActionButtonStyle()).disabled(busy || scanning || !entry.exists || entry.scanError != nil)
+                    HStack(spacing: 8) {
+                    Button { NSWorkspace.shared.activateFileViewerSelecting([entry.url]) } label: {
+                        Image(systemName: "folder").frame(width: 18)
                     }
+                    .buttonStyle(SettingsActionButtonStyle(height: 36))
+                    .help("Xem thư mục").accessibilityLabel("Xem thư mục " + entry.title)
+                    .disabled(!entry.exists)
+                    if entry.removable {
+                        Button(role: .destructive) { pending = entry } label: {
+                            Image(systemName: "trash").frame(width: 18)
+                        }
+                        .buttonStyle(SettingsActionButtonStyle(height: 36))
+                        .help(entry.model ? "Gỡ mô hình" : "Dọn dữ liệu")
+                        .accessibilityLabel((entry.model ? "Gỡ " : "Dọn ") + entry.title)
+                        .disabled(busy || scanning || !entry.exists || entry.scanError != nil)
+                    } else {
+                        Image(systemName: "lock.fill").foregroundStyle(.secondary).frame(width: 42, height: 36)
+                            .help("Dữ liệu được bảo vệ")
+                    }
+                    }.frame(width: 108, alignment: .trailing)
                 }
                 .padding(18).transToolsPanel()
             }
@@ -156,6 +172,10 @@ struct StorageSettingsView: View {
                     message = "Đã chuyển \(entry.title) vào Thùng rác."
                     if entry.id == "voice" { local.checkInstallation() }
                     if entry.id.hasPrefix("external-") || entry.id == "qwen-runtime" { external.refresh() }
+                    if entry.id == "personal-voices" {
+                        if UserDefaults.standard.string(forKey: "TTS_vieneu_Voice_vi")?.hasPrefix("personal:") == true { UserDefaults.standard.removeObject(forKey: "TTS_vieneu_Voice_vi") }
+                        PersonalVoiceManager.shared.refresh()
+                    }
                     if entry.id == "strokes" { NHKStrokeGuideService.shared.clearMemoryCache() }
                     if entry.id == "edge" { await EdgeTTSService.shared.clearMemoryCache() }
                 }

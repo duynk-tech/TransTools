@@ -5,8 +5,12 @@ struct SpeechSettingsView: View {
     @ObservedObject private var localModel = LocalTTSModelManager.shared
     @ObservedObject private var externalModels = ExternalTTSModelManager.shared
     @ObservedObject private var tts = TTSService.shared
+    @ObservedObject private var personalVoices = PersonalVoiceManager.shared
+    @State private var showManager = false
+    let manageVoices: (() -> Void)?
     @State private var modelVoices: [ExternalTTSModel.Voice] = []
     @State private var routingRevision = 0
+    @State private var sampleText = ""
     @State private var language: AppLanguage = .vietnamese
 
     @State private var draftRate: Float = 0.44
@@ -22,32 +26,33 @@ struct SpeechSettingsView: View {
     private func settingsRow<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
         HStack(alignment: .center, spacing: 16) {
             Text(label).frame(width: 140, alignment: .leading).fixedSize(horizontal: false, vertical: true)
-            content().frame(maxWidth: .infinity, alignment: .leading)
+            Spacer(minLength: 16)
+            content().frame(maxWidth: 480, alignment: .trailing)
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var configuredEngine: LanguageVoiceEngine {
         let _ = routingRevision; let _ = externalModels.revision
-        return LanguageVoicePreferences.resolved(for: language.speechLocale, localDefault: localModel.isNaturalVoiceEnabled, edgeDefault: tts.useEdgeNaturalVoice)
+        return ModelManager.shared.routedEngine(for: language.speechLocale, localDefault: localModel.isNaturalVoiceEnabled, edgeDefault: tts.useEdgeNaturalVoice)
     }
-    init(language: AppLanguage = .vietnamese) { _language = State(initialValue: language) }
+    init(language: AppLanguage = .vietnamese, manageVoices: (() -> Void)? = nil) { _language = State(initialValue: language); self.manageVoices = manageVoices }
     private func refreshModelVoices() { modelVoices = configuredEngine.externalModel?.voices(for: language.speechLocale) ?? [] }
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            LocalTTSSettingSectionView()
-            ExternalTTSModelSettingsView()
-
-            Divider()
-                .padding(.vertical, 4)
-
-            Text("Tùy chỉnh & Nghe thử").font(.headline)
-            settingsRow("Ngôn ngữ nghe thử") {
-                Picker("Ngôn ngữ nghe thử", selection: $language) {
+            HStack {
+                Text("Chọn giọng").font(.headline)
+                Spacer()
+                Button("Quản lý bộ giọng") {
+                    if let manageVoices { manageVoices() } else { showManager = true }
+                }.buttonStyle(TransToolsActionButtonStyle())
+            }
+            settingsRow("Ngôn ngữ") {
+                Picker("Ngôn ngữ", selection: $language) {
                     ForEach(AppLanguage.allCases) { lang in Text(lang.displayName).tag(lang) }
                 }.labelsHidden().controlSize(.large)
             }
-            settingsRow("Công cụ ngôn ngữ") {
-                Picker("Công cụ ngôn ngữ", selection: Binding(
+            settingsRow("Bộ giọng") {
+                Picker("Bộ giọng", selection: Binding(
                     get: { let _ = routingRevision; return LanguageVoicePreferences.selection(for: language.speechLocale) },
                     set: { LanguageVoicePreferences.set($0, for: language.speechLocale); routingRevision += 1; refreshModelVoices() }
                 )) {
@@ -56,11 +61,11 @@ struct SpeechSettingsView: View {
                     }
                 }.labelsHidden().controlSize(.large)
             }
-            Text("Lựa chọn lưu riêng cho từng ngôn ngữ. Mô hình Local chỉ nạp khi đọc, tự giải phóng sau 2 phút không dùng hoặc khi thiếu bộ nhớ. Khi chưa hỗ trợ sẽ dùng giọng cơ bản.")
+            Text("Lưu lựa chọn cho từng ngôn ngữ. Nếu bộ giọng chưa có, ứng dụng dùng giọng dự phòng.")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if let model = configuredEngine.externalModel {
-                settingsRow("Giọng mô hình") {
-                    Picker("Giọng mô hình", selection: Binding(
+                settingsRow("Giọng đọc") {
+                    Picker("Giọng đọc", selection: Binding(
                         get: { model.selectedVoice(for: language.speechLocale) },
                         set: { UserDefaults.standard.set($0, forKey: "TTS_" + model.rawValue + "_Voice_" + LanguageVoicePreferences.code(language.speechLocale)); routingRevision += 1 }
                     )) {
@@ -68,13 +73,11 @@ struct SpeechSettingsView: View {
                         ForEach(modelVoices) { voice in Text(voice.displayTitle).tag(voice.id) }
                     }.labelsHidden().controlSize(.large).disabled(!model.isInstalled)
                 }
-                Text("Giọng theo mô hình đang chọn. Tốc độ được xử lý giữ cao độ; phong cách đi theo giọng gốc, không thêm từ hoặc hiệu ứng vào nội dung học.")
+                Text("Chọn giọng có sẵn hoặc giọng của bạn đã lưu.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
-            if localModel.isNaturalVoiceEnabled {
-                Text("Tốc độ và âm lượng áp dụng cho giọng tự nhiên Local; giọng cơ bản bên dưới dùng khi cần dự phòng. Phong cách chỉ điều chỉnh nhịp đọc, không mô phỏng đầy đủ cảm xúc.")
-                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            }
+            Divider().padding(.vertical, 4)
+            Text("Điều chỉnh").font(.headline)
             settingsRow(configuredEngine == .system ? "Giọng" : "Giọng dự phòng") {
                 Picker("Giọng", selection: voiceSelection) {
                     Text("Tự động chọn giọng phù hợp").tag("")
@@ -97,10 +100,15 @@ struct SpeechSettingsView: View {
             settingsRow("Âm lượng") {
                 MintSpeechSlider(value: $draftVolume, range: 0.05...1, step: 0.01, label: "Âm lượng") { tts.speechVolume = draftVolume }
             }
+            Divider().padding(.vertical, 4)
+            Text("Nghe thử").font(.headline)
+            TextField("Nhập một câu để nghe thử…", text: $sampleText)
+                .textFieldStyle(.roundedBorder)
             HStack(spacing: 12) {
                 Button {
                     let samples: [String: String] = ["vi": "Xin chào, cùng học ngôn ngữ với Trans Tools nhé.", "en": "Hello, let's learn a language together.", "en_IN": "Hello, let's learn a language together.", "ja": "こんにちは。一緒に勉強しましょう。", "zh": "你好，我们一起学习吧。", "ko": "안녕하세요. 함께 공부해요.", "fr": "Bonjour, apprenons une langue ensemble.", "de": "Hallo, lernen wir gemeinsam eine Sprache.", "it": "Ciao, impariamo una lingua insieme."]
-                    tts.preview(text: samples[language.rawValue] ?? language.displayName, language: language)
+                    let custom = sampleText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    tts.preview(text: custom.isEmpty ? samples[language.rawValue] ?? language.displayName : String(custom.prefix(600)), language: language)
                 } label: {
                     Label(tts.isSpeaking ? "Nghe lại" : "Nghe thử", systemImage: "play.fill")
                 }
@@ -113,7 +121,7 @@ struct SpeechSettingsView: View {
                 }
             }
             .buttonStyle(SpeechSettingsButtonStyle())
-            Text("Thiết lập chỉ áp dụng trong Trans Tools, không thay đổi giọng hệ thống. Tốc độ và âm lượng lưu khi thả thanh kéo. Giọng đã chọn dùng cho ngôn ngữ tương ứng; ngôn ngữ khác chọn tự động. Nút nghe chậm vẫn đọc chậm hơn tốc độ bạn chọn.")
+            Text("Tốc độ và âm lượng được lưu khi thả thanh kéo. Để trống ô nghe thử để dùng câu mẫu.")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if let voice = currentVoice, configuredEngine == .system {
                 Text("Giọng đang dùng: \(voice.name) · \(voice.language)").font(.caption).foregroundStyle(.secondary)
@@ -125,11 +133,19 @@ struct SpeechSettingsView: View {
             if voices.isEmpty {
                 Text("Chưa có giọng cho ngôn ngữ này trên máy. Bạn có thể tải thêm giọng trong Cài đặt hệ thống → Trợ năng → Nội dung được đọc.").font(.caption)
             }
-            Divider().padding(.vertical, 4)
-            SpeechPlaybackSettingsView()
-
+            DisclosureGroup("Tùy chọn thêm") {
+                SpeechPlaybackSettingsView().padding(.top, 10)
+            }
+        }
+        .tint(TransToolsTheme.accent)
+        .sheet(isPresented: $showManager) {
+            VStack(alignment: .leading) {
+                HStack { Text("Quản lý bộ giọng").font(.title2.bold()); Spacer(); Button("Xong") { showManager = false }.buttonStyle(TransToolsActionButtonStyle()) }
+                ScrollView { ModelStoreView() }
+            }.padding(24).frame(width: 760, height: 650)
         }
         .onChange(of: language) { _, _ in refreshModelVoices() }
+        .onChange(of: personalVoices.revision) { _, _ in routingRevision += 1; refreshModelVoices() }
         .onChange(of: externalModels.revision) { _, _ in refreshModelVoices() }
         .onAppear {
             refreshModelVoices()
@@ -169,7 +185,7 @@ private struct MintSpeechSlider: View {
                 Capsule().fill(TransToolsTheme.accent.opacity(0.12)).frame(height: 5).padding(.horizontal, 11)
                 Capsule().fill(TransToolsTheme.accent).frame(width: max(0, (geometry.size.width - 22) * fraction), height: 5).offset(x: 11)
                 Circle().fill(TransToolsTheme.mint)
-                    .overlay(Circle().stroke(TransToolsTheme.accent, lineWidth: 2))
+                    .overlay(Circle().strokeBorder(TransToolsTheme.accent, lineWidth: 2))
                     .shadow(color: .black.opacity(0.10), radius: 2, y: 1)
                     .frame(width: 22, height: 22).offset(x: max(0, geometry.size.width - 22) * fraction)
             }

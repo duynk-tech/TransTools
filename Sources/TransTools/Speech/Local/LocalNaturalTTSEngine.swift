@@ -32,7 +32,7 @@ public final class LocalNaturalTTSEngine: TTSEngine, @unchecked Sendable {
             throw NSError(
                 domain: "LocalNaturalTTSEngine",
                 code: -100,
-                userInfo: [NSLocalizedDescriptionKey: "Mô hình Local Natural Voice chưa được tải về hoặc cài đặt."]
+                userInfo: [NSLocalizedDescriptionKey: "Mô hình Offline Natural Voice chưa được tải về hoặc cài đặt."]
             )
         }
 

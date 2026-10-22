@@ -93,17 +93,17 @@ enum MascotFacing: String, CaseIterable {
 
     private static func load(_ name: String, directory: String) -> NSImage? {
         if let url = Bundle.main.url(forResource: name, withExtension: "png", subdirectory: directory),
-           let img = NSImage(contentsOf: url) {
+           let data = try? Data(contentsOf: url), let img = NSImage(data: data) {
             return img
         }
         if let resURL = Bundle.main.resourceURL?.appendingPathComponent("\(directory)/\(name).png"),
            FileManager.default.fileExists(atPath: resURL.path),
-           let img = NSImage(contentsOf: resURL) {
+           let data = try? Data(contentsOf: resURL), let img = NSImage(data: data) {
             return img
         }
         let fallbackPath = "Resources/\(directory)/\(name).png"
         if FileManager.default.fileExists(atPath: fallbackPath),
-           let img = NSImage(contentsOfFile: fallbackPath) {
+           let data = try? Data(contentsOf: URL(fileURLWithPath: fallbackPath)), let img = NSImage(data: data) {
             return img
         }
         return nil

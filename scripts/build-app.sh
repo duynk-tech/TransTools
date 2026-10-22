@@ -3,11 +3,15 @@ set -euo pipefail
 cd "${0:A:h:h}"
 export CLANG_MODULE_CACHE_PATH="$PWD/.build/module-cache"
 export SWIFTPM_MODULECACHE_OVERRIDE="$PWD/.build/module-cache"
-swift build -c release --disable-sandbox --cache-path .build/cache --scratch-path .build
+# Local/release bundles do not ship a dSYM. Disabling debug info also avoids
+# SwiftPM's automatic dsymutil step, which is denied by some managed macOS
+# build environments even though the executable itself compiles successfully.
+swift build -c release --disable-sandbox --cache-path .build/cache --scratch-path .build -debug-info-format none
 mkdir -p build/TransTools.app/Contents/MacOS
 mkdir -p build/TransTools.app/Contents/Resources
 cp .build/release/TransTools build/TransTools.app/Contents/MacOS/TransTools
 cp Info.plist build/TransTools.app/Contents/Info.plist
+printf 'APPL????' > build/TransTools.app/Contents/PkgInfo
 if [ -d Resources ]; then
     if [ -d Resources/SpeechRuntime ]; then
         rm -rf build/TransTools.app/Contents/Resources/SpeechRuntime
@@ -24,6 +28,7 @@ if [ -d Resources ]; then
     cp Resources/AppIcon.png build/TransTools.app/Contents/Resources/AppIcon.png 2>/dev/null || true
     cp Resources/Mini.png build/TransTools.app/Contents/Resources/Mini.png 2>/dev/null || true
     cp Resources/Mascot3D.png build/TransTools.app/Contents/Resources/Mascot3D.png 2>/dev/null || true
+    cp Resources/MascotSeedling.png build/TransTools.app/Contents/Resources/MascotSeedling.png 2>/dev/null || true
     cp Resources/MascotWriting.png build/TransTools.app/Contents/Resources/MascotWriting.png 2>/dev/null || true
     cp Resources/MascotBack.png build/TransTools.app/Contents/Resources/MascotBack.png 2>/dev/null || true
     cp Resources/MascotSleeping.png build/TransTools.app/Contents/Resources/MascotSleeping.png 2>/dev/null || true

@@ -87,7 +87,7 @@ struct ReferenceMascotModelPreview: View {
             }
             HStack(spacing: 24) {
                 VStack {
-                    if let path = Bundle.main.path(forResource: "Mascot3D", ofType: "png"), let image = NSImage(contentsOfFile: path) {
+                    if let image = MascotResourceImages.images["Mascot3D"] {
                         Image(nsImage: image).resizable().scaledToFit().frame(width: 300,height: 390)
                     }
                     Text("PNG chuẩn")

@@ -198,7 +198,15 @@ final class VieNeuModel {
     }
     func synthesize(text: String, voice name: String, check: () throws -> Void, emit: ([Float]) async throws -> Void) async throws {
         try check()
-        guard text.count <= 500, let voice = voices[name] else { throw vieNeuError("Giọng hoặc đoạn đọc không hợp lệ.") }
+        var selected = voices[name]
+        if name.hasPrefix("personal:"), let id = UUID(uuidString: String(name.dropFirst(9))) {
+            let url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("TransTools/PersonalVoices/" + id.uuidString + "/voice.json")
+            let modern = url.deletingLastPathComponent().appendingPathComponent("Models/vieneu/voice.json")
+            let artifact = FileManager.default.fileExists(atPath: modern.path) ? modern : url
+            selected = try JSONDecoder().decode(Voice.self, from: Data(contentsOf: artifact))
+        }
+        guard text.count <= 500, let voice = selected else { throw vieNeuError("Giọng hoặc đoạn đọc không hợp lệ.") }
         let phones = try phonemizer.phonemes(text)
         let ids = tokenizer.encode(phones)
         guard !ids.isEmpty, ids.count < 1024 else { throw vieNeuError("Đoạn đọc quá dài sau khi chuẩn hóa.") }

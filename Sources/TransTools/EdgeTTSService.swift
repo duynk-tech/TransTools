@@ -11,6 +11,7 @@ public actor EdgeTTSService {
     private var memoryCache = BoundedAudioCache(limit: 16 * 1024 * 1024)
     private var memoryPressure: DispatchSourceMemoryPressure?
     private let cacheDirectory: URL
+    private var initialDiskTrimDone = false
 
     // Trusted Microsoft Edge Client Token
     private let clientToken = "6A5AA1D4EAFF4E9FB37E23D68491D6F4"
@@ -60,6 +61,7 @@ public actor EdgeTTSService {
 
     /// Synthesize speech audio data (MP3 format) with automatic caching and fallback readiness
     public func synthesize(text: String, locale: String, rateModifier: Float = 1.0) async throws -> Data {
+        if !initialDiskTrimDone { try? AudioDiskCache.trim(directory: cacheDirectory); initialDiskTrimDone = true }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             throw NSError(domain: "EdgeTTS", code: -1, userInfo: [NSLocalizedDescriptionKey: "Nội dung đọc trống."])
@@ -80,7 +82,7 @@ public actor EdgeTTSService {
 
         // 2. Check disk cache
         let fileURL = cacheDirectory.appendingPathComponent("\(key).mp3")
-        if let data = try? Data(contentsOf: fileURL), !data.isEmpty {
+        if let data = AudioDiskCache.read(fileURL) {
             memoryCache.insert(data, for: key)
             return data
         }
@@ -93,6 +95,7 @@ public actor EdgeTTSService {
         memoryCache.insert(audioData, for: key)
         try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
         try? audioData.write(to: fileURL, options: .atomic)
+        try? AudioDiskCache.trim(directory: cacheDirectory)
 
         return audioData
     }
@@ -129,7 +132,7 @@ public actor EdgeTTSService {
         let configMessage = "X-Timestamp:\(timestamp)\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{\"context\":{\"synthesis\":{\"audio\":{\"metadataoptions\":{\"sentenceBoundaryEnabled\":\"false\",\"wordBoundaryEnabled\":\"false\"},\"outputFormat\":\"audio-24khz-48kbitrate-mono-mp3\"}}}}"
 
         let requestId = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
-        let ssmlMessage = "X-RequestId:\(requestId)\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:\(timestamp)Z\r\nPath:ssml\r\n\r\n\(ssml)"
+        let ssmlMessage = "X-RequestId:\(requestId)\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:\(timestamp)\r\nPath:ssml\r\n\r\n\(ssml)"
 
         // Send handshake and SSML
         try await webSocket.send(.string(configMessage))

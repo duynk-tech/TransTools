@@ -9,6 +9,8 @@ enum SettingsSection: Int, CaseIterable, Identifiable {
     case permissions = 4
     case system = 5
     case storage = 6
+    case personalVoice = 7
+    case modelStore = 8
 
     var id: Int { rawValue }
 
@@ -16,8 +18,10 @@ enum SettingsSection: Int, CaseIterable, Identifiable {
         switch self {
         case .translation: return "Dịch & Phụ đề"
         case .aiModels: return "AI & Kết nối"
-        case .chipchip: return "Chip Chip & Sức khỏe"
+        case .chipchip: return "\(MascotIdentity.name) & Sức khỏe"
         case .speech: return "Giọng đọc & Phát âm"
+        case .modelStore: return "Mô hình AI"
+        case .personalVoice: return "Giọng của tôi"
         case .permissions: return "Quyền & Phím tắt"
         case .storage: return "Lưu trữ & Dữ liệu"
         case .system: return "Hệ thống & Cập nhật"
@@ -29,7 +33,9 @@ enum SettingsSection: Int, CaseIterable, Identifiable {
         case .translation: return "Chuyên ngành, ngôn ngữ mặc định & công cụ dịch"
         case .aiModels: return "Cấu hình Google Gemini, OpenAI, Claude, DeepSeek"
         case .chipchip: return "Hoạt cảnh, đi dạo Dock & nhắc nhở giải lao Pomodoro"
-        case .speech: return "Giọng tự nhiên Local, giọng AI trực tuyến & phát âm"
+        case .speech: return "Giọng tự nhiên Offline, giọng AI trực tuyến & phát âm"
+        case .modelStore: return "Cài đặt, giọng đọc và dung lượng mô hình Offline"
+        case .personalVoice: return "Bản thu gốc & hồ sơ giọng theo mô hình"
         case .permissions: return "Trạng thái cấp quyền & danh sách phím tắt"
         case .storage: return "Mô hình đã cài, học liệu offline & cache"
         case .system: return "Tự khởi động cùng Mac & kiểm tra phiên bản mới"
@@ -42,23 +48,16 @@ enum SettingsSection: Int, CaseIterable, Identifiable {
         case .aiModels: return "sparkles"
         case .chipchip: return "face.smiling.fill"
         case .speech: return "waveform"
+        case .modelStore: return "cpu"
+        case .personalVoice: return "person.wave.2.fill"
         case .permissions: return "hand.raised.fill"
         case .storage: return "internaldrive.fill"
         case .system: return "gearshape.2.fill"
         }
     }
 
-    var iconColor: Color {
-        switch self {
-        case .translation: return .blue
-        case .aiModels: return .purple
-        case .chipchip: return .orange
-        case .speech: return .teal
-        case .permissions: return .green
-        case .storage: return .teal
-        case .system: return .indigo
-        }
-    }
+    var iconColor: Color { TransToolsTheme.accent }
+
 }
 
 // MARK: - Main Settings Dashboard View (Full Page Workspace)
@@ -90,7 +89,7 @@ struct SettingsDashboardView: View {
                 // Navigation Items
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 6) {
-                        ForEach(SettingsSection.allCases) { section in
+                        ForEach([SettingsSection.translation, .aiModels, .modelStore, .chipchip, .speech, .permissions, .system, .storage]) { section in
                             Button {
                                 withAnimation(.easeInOut(duration: 0.15)) {
                                     activeSection = section
@@ -124,7 +123,7 @@ struct SettingsDashboardView: View {
                                 .padding(.vertical, 10)
                                 .background(
                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        .fill(activeSection == section ? Color(nsColor: .selectedContentBackgroundColor).opacity(0.18) : Color.clear)
+                                        .fill(activeSection == section ? TransToolsTheme.accent.opacity(0.12) : Color.clear)
                                 )
                             }
                             .buttonStyle(.plain).textSelection(.disabled).transToolsButtonCursor()
@@ -183,6 +182,10 @@ struct SettingsDashboardView: View {
                         chipchipSettingsSection
                     case .speech:
                         speechSettingsSection
+                    case .modelStore:
+                        ModelStoreView()
+                    case .personalVoice:
+                        PersonalVoiceSettingsView()
                     case .permissions:
                         permissionsSettingsSection
                     case .storage:
@@ -191,7 +194,7 @@ struct SettingsDashboardView: View {
                         systemSettingsSection
                     }
                 }
-                .frame(maxWidth: 860, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(28)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             }
@@ -251,7 +254,7 @@ struct SettingsDashboardView: View {
                 Picker("Độ trễ bản dịch", selection: $model.liveTranslationPacing) {
                     ForEach(LiveTranslationPacing.allCases) { mode in Text(mode.title).tag(mode) }
                 }.pickerStyle(.segmented).controlSize(.large)
-                Text("Tiếng gốc hiện ngay. Bản dịch chờ khoảng ngắt: Nhanh 0,3 giây · Cân bằng 0,8 giây · Đủ ngữ cảnh 1,2 giây. Khi nói liên tục, thời gian chờ tối đa tương ứng 1 / 2 / 3 giây; chưa gồm thời gian xử lý dịch.")
+                Text("Tiếng gốc hiện ngay. Bản dịch chờ câu ngắt khoảng 0,08 / 0,12 / 0,45 giây; cụm rất ngắn chờ 0,12 / 0,18 / 0,45 giây để giữ đủ ngữ cảnh. Khi nói liên tục, app bắt đầu dịch sau tối đa 0,25 / 0,45 / 1 giây; chưa gồm thời gian Apple Translate xử lý.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
 
@@ -260,8 +263,8 @@ struct SettingsDashboardView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     // Apple Native
                     engineRow(
-                        title: "Translate · Local",
-                        subtitle: "Dịch Local. Dùng ngoại tuyến sau khi tải ngôn ngữ được hỗ trợ.",
+                        title: "Translate · Trên thiết bị",
+                        subtitle: "Dịch trên thiết bị. Dùng Offline sau khi tải cặp ngôn ngữ được hỗ trợ.",
                         icon: "apple.logo",
                         isSelected: model.provider == .apple
                     ) {
@@ -349,14 +352,16 @@ struct SettingsDashboardView: View {
                                 }
                             }
 
-                            HStack(spacing: 12) {
+                            HStack(spacing: 8) {
+                            Spacer(minLength: 0)
                             if hasKey {
-                                Button(isSelected ? "Đang chọn" : "Kích hoạt dùng AI này") {
+                                Button(isSelected ? "Đang chọn" : "Sử dụng") {
                                     model.setProvider(p)
                                 }
                                 .buttonStyle(SettingsActionButtonStyle(prominent: true))
                                 .tint(isSelected ? .green : TransToolsTheme.navy)
                                 .controlSize(.regular)
+                                .frame(minWidth: 110)
                             }
 
                             Button(editingKeyForProvider == p ? "Đóng form" : (hasKey ? "Đổi Key" : "Nhập Key")) {
@@ -426,16 +431,42 @@ struct SettingsDashboardView: View {
     // MARK: - Section 3: Chip Chip & Ergonomics
     private var chipchipSettingsSection: some View {
         VStack(alignment: .leading, spacing: 18) {
-            settingsCard(title: "Trợ lý ảo Chip Chip", icon: "sparkles.tv.fill", color: .orange) {
+            settingsCard(title: "Trợ lý ảo \(MascotIdentity.name)", icon: "sparkles.tv.fill", color: .orange) {
                 VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 16) {
+                        Text("Tên trợ lý").font(.system(size: 13, weight: .medium)).frame(width: 120, alignment: .leading)
+                        TextField("Chip Chip", text: Binding(
+                            get: { MascotIdentity.shared.customName },
+                            set: { MascotIdentity.shared.customName = $0 }
+                        ))
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 14))
+                        .padding(.horizontal, 12)
+                        .frame(maxWidth: .infinity, minHeight: 40)
+                        .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(TransToolsTheme.accent.opacity(0.30), lineWidth: 1))
+                        .layoutPriority(1)
+                        .help("Tối đa 24 ký tự. Để trống để dùng tên Chip Chip.")
+                        Button { MascotIdentity.shared.customName = "" } label: {
+                            Image(systemName: "arrow.counterclockwise").frame(width: 18)
+                        }
+                        .buttonStyle(TransToolsActionButtonStyle(height: 40))
+                        .accessibilityLabel("Đặt lại tên trợ lý")
+                        .fixedSize(horizontal: true, vertical: false)
+                        .help("Đặt lại tên trợ lý thành Chip Chip")
+                    }
+                    Text("Tên riêng hiển thị trong trợ lý, trò chuyện và bảng học. Để trống để dùng Chip Chip.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Divider()
+
                     Toggle(isOn: Binding(
                         get: { model.isFloatingMascotVisible },
                         set: { _ in model.toggleFloatingMascot() }
                     )) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Bật Trợ lý Chip Chip nổi trên màn hình")
+                            Text("Bật Trợ lý \(MascotIdentity.name) nổi trên màn hình")
                                 .font(.system(size: 13, weight: .medium))
-                            Text("Chip Chip sẽ đồng hành trên desktop, hiển thị bản dịch khi bôi đen Option + D và nhắc nhở cuộc họp.")
+                            Text("\(MascotIdentity.name) sẽ đồng hành trên desktop, hiển thị bản dịch khi bôi đen Option + D và nhắc nhở cuộc họp.")
                                 .font(.system(size: 11))
                                 .foregroundStyle(.secondary)
                         }
@@ -448,7 +479,7 @@ struct SettingsDashboardView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Đi dạo dọc Dock Bar khi rảnh rỗi")
                                 .font(.system(size: 13, weight: .medium))
-                            Text("Khi máy tính nghỉ và không họp, Chip Chip sẽ tự do dạo bước thư giãn phía trên thanh Dock.")
+                            Text("Khi máy tính nghỉ và không họp, \(MascotIdentity.name) sẽ tự do dạo bước thư giãn phía trên thanh Dock.")
                                 .font(.system(size: 11))
                                 .foregroundStyle(.secondary)
                         }
@@ -481,6 +512,7 @@ struct SettingsDashboardView: View {
                             .font(.system(size: 12.5, weight: .medium))
                             .fixedSize()
 
+                        Spacer(minLength: 16)
                         Picker("", selection: $model.healthReminderMinutes) {
                             Text("Mỗi 30 phút").tag(30)
                             Text("Mỗi 45 phút (Khuyên dùng)").tag(45)
@@ -496,7 +528,7 @@ struct SettingsDashboardView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "bell.badge.fill")
                             .foregroundStyle(.teal)
-                        Text("Khi tới giờ, Chip Chip sẽ nhẹ nhàng chuyển sang hoạt cảnh uống trà và hiển thị lời nhắc: chớp mắt, uống nước ấm và thả lỏng vai.")
+                        Text("Khi tới giờ, \(MascotIdentity.name) sẽ nhẹ nhàng chuyển sang hoạt cảnh uống trà và hiển thị lời nhắc: chớp mắt, uống nước ấm và thả lỏng vai.")
                             .font(.system(size: 11))
                             .foregroundStyle(.secondary)
                     }
@@ -511,9 +543,8 @@ struct SettingsDashboardView: View {
     // MARK: - Section 4: Speech & TTS Settings
     private var speechSettingsSection: some View {
         VStack(alignment: .leading, spacing: 18) {
-            settingsCard(title: "Cấu hình giọng đọc & Phát âm", icon: "waveform", color: .teal) {
-                SpeechSettingsView()
-            }
+            SpeechSettingsView(manageVoices: { activeSection = .modelStore })
+                .padding(20).transToolsPanel()
         }
     }
 
@@ -560,7 +591,7 @@ struct SettingsDashboardView: View {
             // Hotkeys Guide
             settingsCard(title: "Bảng phím tắt toàn cục (Sử dụng ở bất kỳ đâu)", icon: "command", color: .blue) {
                 VStack(spacing: 8) {
-                    hotkeyItem(key: "Option + D", desc: "Bôi đen từ/câu bất kỳ để dịch tức thì trên bong bóng Chip Chip")
+                    hotkeyItem(key: "Option + D", desc: "Bôi đen từ/câu bất kỳ để dịch tức thì trên bong bóng \(MascotIdentity.name)")
                     hotkeyItem(key: "Option + S", desc: "Chụp ảnh chọn vùng màn hình và nhận diện văn bản OCR để dịch")
                     hotkeyItem(key: "Option + E", desc: "Dịch nhanh tiếng Việt sang tiếng Anh theo ngữ cảnh chuyên ngành")
                     hotkeyItem(key: "Option + F", desc: "Kiểm tra lỗi ngữ pháp và làm mượt câu văn tiếng Anh")
@@ -581,7 +612,7 @@ struct SettingsDashboardView: View {
                     VStack(alignment: .leading, spacing: 5) {
                         Text("Tự động mở Trans Tools khi khởi động máy Mac")
                             .font(.system(size: 13, weight: .medium))
-                        Text("Giúp phím tắt dịch nhanh và Trợ lý Chip Chip luôn sẵn sàng phục vụ bạn.")
+                        Text("Giúp phím tắt dịch nhanh và Trợ lý \(MascotIdentity.name) luôn sẵn sàng phục vụ bạn.")
                             .font(.system(size: 11)).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -611,7 +642,7 @@ struct SettingsDashboardView: View {
             .frame(maxWidth: .infinity, minHeight: 44)
             .foregroundStyle(model.mascotStyle == value ? TransToolsTheme.accent : Color.primary)
             .background(model.mascotStyle == value ? TransToolsTheme.accent.opacity(0.12) : Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(model.mascotStyle == value ? TransToolsTheme.accent.opacity(0.45) : Color.primary.opacity(0.1)))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(model.mascotStyle == value ? TransToolsTheme.accent.opacity(0.45) : Color.primary.opacity(0.1)))
         }
         .buttonStyle(.plain).textSelection(.disabled).transToolsButtonCursor()
         .accessibilityAddTraits(model.mascotStyle == value ? .isSelected : [])
@@ -624,7 +655,7 @@ struct SettingsDashboardView: View {
             HStack(spacing: 10) {
                 Image(systemName: icon)
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(color)
+                    .foregroundStyle(TransToolsTheme.accent)
                 Text(title)
                     .font(.system(size: 13.5, weight: .bold))
                     .foregroundStyle(.primary)
@@ -686,6 +717,7 @@ struct SettingsDashboardView: View {
 
             Spacer()
 
+            Group {
             if isGranted {
                 Text("✓ Đã cấp quyền")
                     .font(.system(size: 11, weight: .bold))
@@ -700,6 +732,7 @@ struct SettingsDashboardView: View {
                     .tint(TransToolsTheme.navy)
                     .controlSize(.regular)
             }
+            }.frame(width: 130, alignment: .trailing)
         }
         .padding(10)
         .background(Color.primary.opacity(0.02))

@@ -27,8 +27,6 @@ actor NativeVieNeuInstaller {
     func install(progress: @escaping @Sendable (String) -> Void) async throws {
         let manifest = try NativeVieNeuManifest.load(), root = ExternalTTSModel.vieneu.directory, fm = FileManager.default
         try fm.createDirectory(at: root, withIntermediateDirectories: true)
-        let config = URLSessionConfiguration.ephemeral; config.timeoutIntervalForResource = 1800
-        let session = URLSession(configuration: config); defer { session.invalidateAndCancel() }
         for (index, file) in manifest.files.enumerated() {
             try Task.checkCancellation()
             progress("Đang chuẩn bị dữ liệu VieNeu · \(index+1)/\(manifest.files.count)")
@@ -36,15 +34,11 @@ actor NativeVieNeuInstaller {
             if (try? NativeVieNeuManifest.verify(file, at: root)) != nil { continue }
             let destination = root.appendingPathComponent(file.path)
             try fm.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
-            let (download, response) = try await session.download(from: file.url)
-            defer { try? fm.removeItem(at: download) }
-            guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
-            let dataFile = LocalTTSModelFile(path: file.path, size: file.size, sha256: file.sha256)
-            try LocalTTSModelStore.verify(download, file: dataFile)
-            try Task.checkCancellation()
-            // Complete file replacement is atomic; a cancelled download cannot look installed.
-            if fm.fileExists(atPath: destination.path) { _ = try fm.replaceItemAt(destination, withItemAt: download) }
-            else { try fm.moveItem(at: download, to: destination) }
+            try await ModelDownloadManager.shared.fetch(
+                ModelArtifact(path: file.path, source: .direct(file.url), bytes: file.size, sha256: file.sha256),
+                destination: destination) { fraction in
+                    progress("Đang tải VieNeu · \(index+1)/\(manifest.files.count) · \(Int(fraction * 100))%")
+                }
         }
         progress("Đang kiểm thử âm thanh VieNeu native…")
         let capture = NativeAudioCapture()

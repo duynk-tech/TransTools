@@ -177,7 +177,7 @@ struct DictionaryView: View {
                         Button("Tra từ", action: lookup).buttonStyle(SettingsActionButtonStyle(prominent: true))
                             .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }.padding(12).background(Color(nsColor: .textBackgroundColor)).clipShape(RoundedRectangle(cornerRadius: 13))
-                        .overlay(RoundedRectangle(cornerRadius: 13).stroke(TransToolsTheme.accent.opacity(0.2)))
+                        .overlay(RoundedRectangle(cornerRadius: 13).strokeBorder(TransToolsTheme.accent.opacity(0.2)))
                     ScrollView {
                         VStack(alignment: .leading, spacing: 18) {
                             if hasResult {

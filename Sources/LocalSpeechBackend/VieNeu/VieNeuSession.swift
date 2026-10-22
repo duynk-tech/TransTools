@@ -29,7 +29,7 @@ public actor VieNeuSession {
         if active != nil { await withCheckedContinuation { releaseWaiters.append($0) } }
         model = nil; directory = nil
     }
-    public func synthesize(text: String, voice: String, directory: URL, resources: URL,
+    public func synthesize(text: String, voice: String, directory: URL, resources: URL, maximumRetries: Int = 2,
                            emit: @escaping @Sendable ([Float]) async throws -> Void) async throws {
         guard active == nil else { throw vieNeuError("VieNeu đang xử lý một đoạn đọc khác.") }
         let epoch = cancellation.snapshot()
@@ -54,14 +54,14 @@ public actor VieNeuSession {
                 model = try VieNeuModel(directory: directory, resources: resources); self.directory = directory
             }
             guard let loaded = model else { throw CancellationError() }
-            for attempt in 0...2 {
+            for attempt in 0...min(2, max(0, maximumRetries)) {
                 do {
                     try await loaded.synthesize(text: text, voice: voice, check: { try request.check(); try self.cancellation.check(epoch) }, emit: emit)
                     break
                 } catch {
                     // Only retry a capped short phrase: those samples are held
                     // until EOS, so a retry never repeats already-played audio.
-                    guard (error as NSError).domain == "VieNeuNative", (error as NSError).code == 2, attempt < 2 else { throw error }
+                    guard (error as NSError).domain == "VieNeuNative", (error as NSError).code == 2, attempt < maximumRetries else { throw error }
                 }
             }
         }, onCancel: { request.cancel() })

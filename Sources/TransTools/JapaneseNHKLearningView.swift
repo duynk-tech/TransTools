@@ -142,7 +142,7 @@ struct JapaneseNHKLearningView: View {
                                                 )
                                                 .overlay(
                                                     RoundedRectangle(cornerRadius: 8)
-                                                        .stroke(isSel ? TransToolsTheme.accent : Color.clear, lineWidth: 1.5)
+                                                        .strokeBorder(isSel ? TransToolsTheme.accent : Color.clear, lineWidth: 1.5)
                                                 )
                                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                                             }
@@ -319,7 +319,7 @@ struct JapaneseNHKLearningView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                                    .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 1)
                             )
 
                             // Thanh công cụ hoàn tác / viết lại
@@ -397,7 +397,7 @@ struct JapaneseNHKLearningView: View {
                     .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
+                            .strokeBorder(Color.secondary.opacity(0.15), lineWidth: 1)
                     )
             } else {
                 VStack(spacing: 8) {

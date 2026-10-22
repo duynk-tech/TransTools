@@ -118,7 +118,7 @@ final class ExternalTTSSession: @unchecked Sendable {
         activeModel = model; input = stdin.fileHandleForWriting; output = stdout.fileHandleForReading
         let timeout = timeoutFor(p, seconds: 120); defer { timeout.cancel() }
         let ready = try readObject()
-        guard ready["ready"] as? Bool == true else { throw failure("Không nạp được mô hình Local.") }
+        guard ready["ready"] as? Bool == true else { throw failure("Không nạp được mô hình Offline.") }
     }
     private func request(model: ExternalTTSModel, id: UUID, text: String, language: String, options: TTSOptions, voice: String?, onChunk: (@Sendable (TTSAudioResult) async throws -> Void)?) throws -> TTSAudioResult {
         lock.lock(); idle?.cancel(); let p = process; let token = generation; lock.unlock()
@@ -174,7 +174,7 @@ final class ExternalTTSSession: @unchecked Sendable {
                 return object
             }
             let block = output.availableData
-            guard !block.isEmpty else { throw failure("Bộ xử lý Local đã dừng hoặc không đủ bộ nhớ.") }
+            guard !block.isEmpty else { throw failure("Bộ xử lý trên thiết bị đã dừng hoặc không đủ bộ nhớ.") }
             pending.append(block)
             guard pending.count <= 20 * 1024 * 1024 else { throw failure("Audio vượt giới hạn bộ nhớ.") }
         }

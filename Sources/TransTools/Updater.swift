@@ -38,8 +38,8 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
 
     static let repoOwner = "duynk-tech"
     static let repoName = "TransTools"
-    static let releasesAPIURL = URL(string: "https://trans-tools.vercel.app/updates/latest.json")!
-    static let releasesURLString = "https://trans-tools.vercel.app/releases"
+    static let releasesAPIURL = URL(string: "https://api.github.com/repos/duynk-tech/TransTools/releases/latest")!
+    static let releasesURLString = "https://github.com/duynk-tech/TransTools/releases"
 
     @Published var didCheckSuccessfully = false
     private var expectedZipSHA256 = ""
@@ -137,7 +137,7 @@ final class AppUpdater: NSObject, ObservableObject, URLSessionDownloadDelegate {
                     throw NSError(domain: "AppUpdater", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Máy chủ trả về mã lỗi HTTP \(httpResponse.statusCode)."])
                 }
 
-                let release = try JSONDecoder().decode(UpdateManifest.self, from: data)
+                let release = try await UpdateManifest.fromGitHub(data)
                 try release.validate()
                 let tagClean = release.version
                 self.lastCheckedDate = Date()
@@ -502,9 +502,7 @@ struct UpdateSheetView: View {
                             Button("Hủy") {
                                 closeSheet()
                             }
-                            .buttonStyle(.plain)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.red)
+                            .buttonStyle(TransToolsActionButtonStyle(tint: .red, height: 30))
                         }
                     }
                     .padding(.top, 4)

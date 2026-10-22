@@ -13,10 +13,10 @@ public enum LanguageVoiceEngine: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .automatic: return "Theo cấu hình mặc định"
-        case .local: return "Supertonic 3 · Local"
-        case .vieneu: return "VieNeu-TTS v3 Turbo · Local"
-        case .qwen: return "Qwen3-TTS 0.6B · Local"
-        case .system: return "Giọng cơ bản · Local"
+        case .local: return "Supertonic 3 · Offline"
+        case .vieneu: return "VieNeu-TTS v3 Turbo · Offline"
+        case .qwen: return "Qwen3-TTS 0.6B · Offline"
+        case .system: return "Giọng cơ bản · Offline"
         case .edge: return "Giọng AI trực tuyến · Edge"
         }
     }
@@ -34,6 +34,14 @@ enum LanguageVoicePreferences {
     }
     static func resolve(_ selection: LanguageVoiceEngine, localDefault: Bool, edgeDefault: Bool) -> LanguageVoiceEngine {
         selection == .automatic ? (localDefault ? .local : edgeDefault ? .edge : .system) : selection
+    }
+    /// Offline fallback is deterministic and never starts an installation or a network request.
+    static func route(requested: LanguageVoiceEngine, available: Set<LanguageVoiceEngine>) -> LanguageVoiceEngine {
+        guard requested == .local || requested == .vieneu else { return requested }
+        if available.contains(requested) { return requested }
+        if available.contains(.vieneu) { return .vieneu }
+        if available.contains(.local) { return .local }
+        return .system
     }
     static func resolved(for locale: String, localDefault: Bool, edgeDefault: Bool) -> LanguageVoiceEngine {
         resolve(selection(for: locale), localDefault: localDefault, edgeDefault: edgeDefault)

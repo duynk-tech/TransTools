@@ -130,7 +130,7 @@ final class LocalTTSTests: XCTestCase {
         await fulfillment(of: [replacement, cancelled], timeout: 0.5)
         XCTAssertFalse(player.isPlaying)
     }
-    @MainActor func testPlayerQueueAndInterrupt() async throws {
+    @MainActor func testPlayerQueueAndInterrupt() throws {
         let format = AVAudioFormat(standardFormatWithSampleRate: 24000, channels: 1)!
         let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 24000)!
         buffer.frameLength = 24000

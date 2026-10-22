@@ -49,7 +49,7 @@ struct LearningStudioView<Content: View>: View {
                 Spacer(minLength: 12)
                 HStack(spacing: 4) {
                     modeButton("Tự học", icon: "square.grid.2x2", active: !guided) { LearningCoachWindow.shared.close(); guided = false }
-                    modeButton("Cùng Chip Chip", icon: "graduationcap", active: guided) {
+                    modeButton("Cùng \(MascotIdentity.name)", icon: "graduationcap", active: guided) {
                         guided = true
                         LearningCoachWindow.shared.show(model: model, onClose: { guided = false })
                     }
@@ -133,7 +133,7 @@ final class LearningCoachWindow: NSObject, NSWindowDelegate {
         model.beginChipChipLearning()
         let window = LearningBoardPanel(contentRect: NSRect(x: 0, y: 0, width: 660, height: 540),
             styleMask: [.borderless], backing: .buffered, defer: false)
-        window.title = "Cùng Chip Chip"
+        window.title = "Cùng \(MascotIdentity.name)"
         window.isOpaque = false
         window.backgroundColor = .clear
         window.hasShadow = true
@@ -192,7 +192,7 @@ struct ChipChipWhiteboard: View {
     var body: some View {
         VStack(spacing: 14) {
             HStack {
-                Label("Cùng Chip Chip", systemImage: "graduationcap.fill")
+                Label("Cùng \(MascotIdentity.name)", systemImage: "graduationcap.fill")
                     .font(.headline).foregroundStyle(TransToolsTheme.accent)
                 Spacer()
                 Text("\(coach.position) / \(coach.total)")
@@ -263,7 +263,7 @@ struct ChipChipWhiteboard: View {
         }
         .overlay {
             RoundedRectangle(cornerRadius: 14).inset(by: 8)
-                .stroke(Color.black.opacity(0.12), lineWidth: 1).allowsHitTesting(false)
+                .strokeBorder(Color.black.opacity(0.12), lineWidth: 1).allowsHitTesting(false)
         }
     }
 }

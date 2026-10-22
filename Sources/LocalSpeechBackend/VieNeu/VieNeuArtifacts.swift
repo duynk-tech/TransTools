@@ -115,8 +115,14 @@ final class VieNeuPhonemizer {
     }
     deinit { close(handle); dlclose(library) }
     func phonemes(_ text: String) throws -> String {
-        guard let result = text.withCString({ convert(handle, $0, 1) }) else { throw vieNeuError("Không chuyển được văn bản sang âm vị.") }
+        let normalized = text.precomposedStringWithCanonicalMapping
+        guard !normalized.utf8.contains(0) else { throw vieNeuError("Văn bản chứa ký tự ngắt không hợp lệ.") }
+        guard let result = normalized.withCString({ convert(handle, $0, 1) }) else { throw vieNeuError("Không chuyển được văn bản sang âm vị.") }
         defer { free(result) }
-        return String(cString: result)
+        let phones = String(cString: result)
+        guard !normalized.contains(where: { $0.isLetter || $0.isNumber }) || phones.contains(where: { $0.isLetter || $0.isNumber }) else {
+            throw vieNeuError("Bộ chuyển âm không trả về âm vị cho nội dung cần đọc.")
+        }
+        return phones
     }
 }

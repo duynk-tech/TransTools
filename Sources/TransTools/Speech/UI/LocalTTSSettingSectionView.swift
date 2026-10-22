@@ -38,7 +38,7 @@ public struct LocalTTSSettingSectionView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Giọng cơ bản")
                     .font(.subheadline).bold()
-                Text("Local • Nhanh • Không cần tải")
+                Text("Offline • Nhanh • Không cần tải")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -51,7 +51,7 @@ public struct LocalTTSSettingSectionView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke((!modelManager.isNaturalVoiceEnabled && !tts.useEdgeNaturalVoice) ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08), lineWidth: 1)
+                .strokeBorder((!modelManager.isNaturalVoiceEnabled && !tts.useEdgeNaturalVoice) ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08), lineWidth: 1)
         )
         .contentShape(Rectangle())
         .onTapGesture {
@@ -90,7 +90,7 @@ public struct LocalTTSSettingSectionView: View {
                         Text("Giọng tự nhiên")
                             .font(.subheadline).bold()
 
-                        Text("Local")
+                        Text("Offline sau khi tải")
                             .font(.system(size: 10, weight: .semibold))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
@@ -127,7 +127,7 @@ public struct LocalTTSSettingSectionView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(modelManager.isNaturalVoiceEnabled ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08), lineWidth: 1)
+                .strokeBorder(modelManager.isNaturalVoiceEnabled ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08), lineWidth: 1)
         )
     }
 
@@ -172,7 +172,7 @@ public struct LocalTTSSettingSectionView: View {
                         .padding(18)
                 }
                 .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.10)))
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.10)))
             }
             .padding(24)
             Divider()
@@ -401,7 +401,7 @@ struct SpeechPlaybackSettingsView: View {
                         }
                         .padding(14).frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
                         .background(player.policy == policy ? Color.accentColor.opacity(0.08) : Color.primary.opacity(0.03), in: RoundedRectangle(cornerRadius: 12))
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(player.policy == policy ? Color.accentColor.opacity(0.4) : Color.primary.opacity(0.08)))
+                        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(player.policy == policy ? Color.accentColor.opacity(0.4) : Color.primary.opacity(0.08)))
                     }.buttonStyle(.plain).textSelection(.disabled).transToolsButtonCursor()
                 }
             }

@@ -8,10 +8,10 @@
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>CFBundleVersion</key><string>1</string>
-<key>CFBundleShortVersionString</key><string>1.4.1</string>
+<key>CFBundleShortVersionString</key><string>1.4.6</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
-<key>NSSpeechRecognitionUsageDescription</key><string>Chuyển âm thanh Teams thành phụ đề tiếng Anh trực tiếp.</string>
-<key>NSMicrophoneUsageDescription</key><string>Cho phép kiểm tra phụ đề bằng microphone khi bạn chọn nguồn Microphone.</string>
+<key>NSSpeechRecognitionUsageDescription</key><string>Nhận diện lời nói cho phụ đề, hội thoại và kiểm tra bản thu giọng cá nhân.</string>
+<key>NSMicrophoneUsageDescription</key><string>Thu âm từ microphone để nhận diện hội thoại và tạo giọng đọc cá nhân khi bạn chọn thu.</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>NSAudioCaptureUsageDescription</key><string>Thu âm thanh hệ thống (Teams và các ứng dụng khác) để hiển thị phụ đề và dịch tiếng Việt.</string>
 <key>NSScreenCaptureUsageDescription</key><string>Trans Tools cần quyền ghi màn hình và âm thanh hệ thống để thu âm thanh cuộc họp và hiển thị phụ đề.</string>

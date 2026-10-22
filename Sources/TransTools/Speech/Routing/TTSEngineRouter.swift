@@ -39,7 +39,7 @@ public final class TTSEngineRouter: ObservableObject {
         try Task.checkCancellation()
         guard generation == token else { throw CancellationError() }
         let limit = engine.externalModel == nil ? 200 : 140
-        let chunks = LocalNaturalTTSEngine.segmentIntoChunks(text).flatMap { chunkTextForPlayback($0, limit: code == "zh" || code == "ja" || code == "ko" ? 90 : limit) }
+        let chunks = LocalNaturalTTSEngine.segmentIntoChunks(text).flatMap { engine.externalModel == .vieneu && options.verifyBeforePlayback ? VieNeuReadingPolicy.chunks($0) : chunkTextForPlayback($0, limit: code == "zh" || code == "ja" || code == "ko" ? 90 : limit) }
         guard !chunks.isEmpty else { throw CancellationError() }
         audioPlayer.stop()
         var last: TTSAudioResult?

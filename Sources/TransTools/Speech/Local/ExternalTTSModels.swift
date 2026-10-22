@@ -36,7 +36,13 @@ public enum ExternalTTSModel: String, CaseIterable, Identifiable, Sendable {
         if self == .vieneu {
             guard let data = try? Data(contentsOf: NativeVieNeu.resources.appendingPathComponent("voices_v3_turbo.json")),
                   let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let presets = object["presets"] as? [String: [String: Any]] else { return [] }
-            return presets.keys.sorted().map { Voice(id: $0, title: $0 + " — " + (presets[$0]?["description"] as? String ?? "")) }
+            let personalRoot = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("TransTools/PersonalVoices")
+            let personal = ((try? FileManager.default.contentsOfDirectory(at: personalRoot, includingPropertiesForKeys: nil)) ?? []).compactMap { url -> Voice? in
+                guard let data = try? Data(contentsOf: url.appendingPathComponent("profile.json")), let profile = try? JSONDecoder().decode(PersonalVoiceProfile.self, from: data) else { return nil }
+                guard PersonalVoiceModel.vieneu.existingFile(profile, root: personalRoot) != nil else { return nil }
+                return Voice(id: profile.voiceID, title: profile.name + " · Cá nhân")
+            }
+            return personal + presets.keys.sorted().map { Voice(id: $0, title: $0 + " — " + (presets[$0]?["description"] as? String ?? "")) }
         }
         guard let data = try? Data(contentsOf: directory.appendingPathComponent("installed.json")),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -102,12 +108,14 @@ final class ExternalTTSModelManager: ObservableObject {
     @Published private(set) var installing: ExternalTTSModel?
     @Published private(set) var status = ""
     @Published private(set) var revision = 0
+    @Published private(set) var lastError: String?
     private var task: Task<Void, Never>?
     private var operation: TTSInstallOperation?
     private init() {}
     nonisolated static var resources: URL? { Bundle.main.resourceURL?.appendingPathComponent("SpeechRuntime") }
     func install(_ model: ExternalTTSModel) {
         guard installing == nil, !TTSEngineRouter.shared.isProcessing, !TTSService.shared.isSpeaking, model.availableOnDevice else { return }
+        lastError = nil
         installing = model; status = model == .vieneu ? "Đang chuẩn bị VieNeu native…" : "Đang chuẩn bị môi trường riêng…"
         let operation = TTSInstallOperation(); self.operation = operation
         task = Task {
@@ -136,11 +144,19 @@ final class ExternalTTSModelManager: ObservableObject {
                 status = "Đã cài và kiểm thử " + model.title
                 revision += 1
             } catch is CancellationError { status = "Đã hủy. Dữ liệu tải dở có thể tiếp tục tải hoặc dọn trong Lưu trữ." }
-            catch { status = error.localizedDescription }
+            catch {
+                if Task.isCancelled || (error as NSError).code == NSURLErrorCancelled { status = "Đã dừng tải. Có thể tiếp tục khi cần." }
+                else { lastError = error.localizedDescription; status = error.localizedDescription }
+            }
             installing = nil; self.operation = nil; task = nil
         }
     }
     func cancel() { task?.cancel(); operation?.cancel() }
+    func cancelAndWait() async {
+        let pending = task
+        cancel()
+        await pending?.value
+    }
     func refresh() { revision += 1 }
     private func ensurePython(_ operation: TTSInstallOperation, log: URL) async throws -> URL {
         let base = ExternalTTSModel.root.appendingPathComponent("Python")

@@ -17,12 +17,38 @@ final class NativeVieNeu {
     func synthesize(text: String, voice: String, options: TTSOptions,
                     onChunk: (@Sendable (TTSAudioResult) async throws -> Void)?) async throws -> TTSAudioResult {
         let capture = NativeAudioCapture()
+        if options.verifyBeforePlayback {
+            var accepted: [Float]?
+            for attempt in 0...1 {
+                try Task.checkCancellation()
+                let candidate = NativeAudioCapture()
+                do {
+                    try await VieNeuSession.shared.synthesize(text: text, voice: voice, directory: ExternalTTSModel.vieneu.directory, resources: Self.resources, maximumRetries: 0) { part in
+                        guard part.allSatisfy({ $0.isFinite }) else { throw URLError(.cannotDecodeContentData) }
+                        try candidate.append(part, packet: Self.result(part), collect: true)
+                    }
+                    let samples = candidate.snapshot().samples
+                    if !VieNeuReadingPolicy.suspicious(samples: samples, text: text) { accepted = samples; break }
+                    if attempt == 1 { throw URLError(.cannotDecodeContentData) }
+                } catch {
+                    try Task.checkCancellation()
+                    if error is CancellationError || attempt == 1 { throw error }
+                }
+            }
+            guard let accepted else { throw URLError(.cannotDecodeContentData) }
+            try Task.checkCancellation()
+            let adjusted = accepted.map { min(1, max(-1, $0 * options.volume)) }
+            let packet = Self.result(adjusted)
+            try capture.append(adjusted, packet: packet, collect: onChunk == nil)
+            if let onChunk { try await onChunk(packet) }
+        } else {
         try await VieNeuSession.shared.synthesize(text: text, voice: voice, directory: ExternalTTSModel.vieneu.directory, resources: Self.resources) { part in
             guard part.allSatisfy({ $0.isFinite }) else { throw URLError(.cannotDecodeContentData) }
             let p = part.map { min(1, max(-1, $0*options.volume)) }
             let packet = Self.result(p)
             try capture.append(p, packet: packet, collect: onChunk == nil)
             if let onChunk { try await onChunk(packet) }
+        }
         }
         let output = capture.snapshot()
         var samples = output.samples

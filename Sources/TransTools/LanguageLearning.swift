@@ -446,6 +446,7 @@ struct LanguageLearningDashboardView: View {
                     VStack(spacing: 20) {
                         if selectedSubTab == 0 {
                             TodayRoutineView(
+                                model: model,
                                 manager: manager,
                                 vocabManager: vocabManager,
                                 onStartSRS: { showSRSModal = true },
@@ -477,7 +478,7 @@ struct LanguageLearningDashboardView: View {
                         }
                     }
                     .padding(24)
-                    .frame(maxWidth: 1160)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -523,7 +524,7 @@ struct LanguageLearningDashboardView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
             .background(TransToolsTheme.accent.opacity(0.06), in: RoundedRectangle(cornerRadius: 11))
-            .overlay(RoundedRectangle(cornerRadius: 11).stroke(TransToolsTheme.accent.opacity(0.3), lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(TransToolsTheme.accent.opacity(0.3), lineWidth: 1))
             .accessibilityLabel("Chọn ngôn ngữ: \(manager.selectedLanguage.displayName)")
 
             // Sub-tabs segment
@@ -599,6 +600,7 @@ struct LanguageLearningDashboardView: View {
 // MARK: - 1. Hôm Nay (Today Routine View)
 
 struct TodayRoutineView: View {
+    @ObservedObject var model: MeetingModel
     @ObservedObject var manager: LanguageLearningManager
     @ObservedObject var vocabManager: VocabularyManager
     var onStartSRS: () -> Void
@@ -653,15 +655,18 @@ struct TodayRoutineView: View {
                     .fill(TransToolsTheme.mint.opacity(0.25))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(TransToolsTheme.accent.opacity(0.2), lineWidth: 1)
+                            .strokeBorder(TransToolsTheme.accent.opacity(0.2), lineWidth: 1)
                     )
             )
 
             // Section 1: Spaced Repetition SRS Card
             srsCard
 
-            // Section 2: Listening Sentence of the Day
-            listeningCard
+            AdaptiveLearningCard(manager: manager)
+            LearningApplicationCard(model: model, manager: manager)
+
+            // A curated reference remains available alongside adaptive practice.
+            DisclosureGroup("Câu mẫu có sẵn") { listeningCard }
 
             // Section 3: Quick Scenario Challenge
             quickScenarioCard
@@ -768,7 +773,7 @@ struct TodayRoutineView: View {
                 .fill(Color(nsColor: .controlBackgroundColor))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
                 )
         )
     }
@@ -892,7 +897,7 @@ struct TodayRoutineView: View {
                 .fill(Color(nsColor: .controlBackgroundColor))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
                 )
         )
     }
@@ -976,7 +981,7 @@ struct TodayRoutineView: View {
                 .fill(Color(nsColor: .controlBackgroundColor))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
                 )
         )
     }
@@ -1087,7 +1092,7 @@ struct MyVocabularyLearningView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
                 )
 
                 // Filter Picker
@@ -1235,7 +1240,7 @@ struct VocabularyCardRow: View {
                 .fill(Color(nsColor: .controlBackgroundColor))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                        .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
                 )
         )
     }
@@ -1425,7 +1430,7 @@ struct CommunicationPracticeView: View {
                         .fill(Color(nsColor: .controlBackgroundColor))
                         .overlay(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
                         )
                 )
             }
@@ -1479,7 +1484,7 @@ struct LearningProgressView: View {
                     .fill(Color(nsColor: .controlBackgroundColor))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
                     )
             )
 
@@ -1524,7 +1529,7 @@ struct LearningProgressView: View {
                 .fill(Color(nsColor: .controlBackgroundColor))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
                 )
         )
     }
@@ -1600,7 +1605,7 @@ struct GoalAndOnboardingView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .stroke(manager.selectedLanguage == lang ? TransToolsTheme.accent : Color.primary.opacity(0.08), lineWidth: manager.selectedLanguage == lang ? 2 : 1)
+                                    .strokeBorder(manager.selectedLanguage == lang ? TransToolsTheme.accent : Color.primary.opacity(0.08), lineWidth: manager.selectedLanguage == lang ? 2 : 1)
                             )
                         }
                         .buttonStyle(.plain)
@@ -1636,7 +1641,7 @@ struct GoalAndOnboardingView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .stroke(manager.selectedLevel == lvl ? TransToolsTheme.accent : Color.primary.opacity(0.08), lineWidth: 1)
+                                    .strokeBorder(manager.selectedLevel == lvl ? TransToolsTheme.accent : Color.primary.opacity(0.08), lineWidth: 1)
                             )
                         }
                         .buttonStyle(.plain)
@@ -1673,7 +1678,7 @@ struct GoalAndOnboardingView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .stroke(manager.selectedGoal == goal ? TransToolsTheme.accent : Color.primary.opacity(0.08), lineWidth: manager.selectedGoal == goal ? 2 : 1)
+                                    .strokeBorder(manager.selectedGoal == goal ? TransToolsTheme.accent : Color.primary.opacity(0.08), lineWidth: manager.selectedGoal == goal ? 2 : 1)
                             )
                         }
                         .buttonStyle(.plain)
@@ -1737,7 +1742,7 @@ struct GoalAndOnboardingView: View {
             .background(manager.dailyMinutes == mins ? TransToolsTheme.accent.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
             .clipShape(Capsule())
             .overlay(
-                Capsule().stroke(manager.dailyMinutes == mins ? TransToolsTheme.accent : Color.primary.opacity(0.1), lineWidth: 1)
+                Capsule().strokeBorder(manager.dailyMinutes == mins ? TransToolsTheme.accent : Color.primary.opacity(0.1), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -1843,7 +1848,7 @@ struct SRSFlashcardModalView: View {
                         .shadow(color: Color.black.opacity(0.08), radius: 10, y: 3)
                         .overlay(
                             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(Color.primary.opacity(0.08), lineWidth: 1.2)
+                                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1.2)
                         )
 
                     VStack(spacing: 14) {
@@ -2041,7 +2046,7 @@ struct SRSFlashcardModalView: View {
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(color.opacity(0.3), lineWidth: 1)
+                    .strokeBorder(color.opacity(0.3), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)

@@ -16,22 +16,11 @@
   "files": {
     "EyeLeft.png": "0ac5f9cbc507424c4e18d41fed8eea4402b05acd8a1de8684df69e0857ead29d",
     "EyeRight.png": "1385c7788cbf2092f00d7e346c0a6c0cbcd4b140ddf27ae269150d1bf5f6514e",
-    "coffee.png": "2b30c92a1bf03341f6b8d71f7010a7da2d8bd2c78a5fb4f49733e63906c4abdc",
-    "flowers.png": "ceaf9adce7203fbd8e2ae295b7ca0910d96be95fe74526333e7e86412663848b",
-    "sleeping.png": "70f974c02312791b8c437de7b0fbc29753501d7f0b775769382975b508418a81",
-    "strolling.png": "6ccf79973185ba0ae61bbdaf8aa3a7e8440a28f57fe97105f8b2f0a941e4e724",
-    "thinking.png": "f99b4c813cc0e1fd916fbf2fed8bc8857a2ea382075d8a1a81ece24ff7118468",
-    "writing.png": "9b0f2321235c4b6165dd6689e67be43daca4e4f54527fe67bbc47cef3833e679"
-  },
-  "smile": "Small AI-derived closed smile composited onto visible front/three-quarter faces; original alpha preserved",
-  "poseCanvases": {
-    "writing": [
-      621,
-      783
-    ],
-    "sleeping": [
-      900,
-      650
-    ]
+    "coffee.png": "9817615350441e4eb1599a5f4b22ae8b9b998144887179ccc72ca71339a1aa03",
+    "flowers.png": "dd9a7bc5078e7973d6dbf2f63415c5fd23ae7a77df2c57a6b86206eea632a8ee",
+    "sleeping.png": "9ea2ae9a69a122509b9c61f5e09c7f0f579b994e96685e1f715c30026cb897a7",
+    "strolling.png": "7c643ddad2e49d50204a05874e315e03d3618212e5bcff4dac9733c088bfd529",
+    "thinking.png": "357daaabc39efddcbc506fffb8f8c48874e4978d346fd6228105b2654af43128",
+    "writing.png": "483179811b91eca597a35b65915b327395164e01620c09ed555c15f522e196c7"
   }
 }

@@ -78,37 +78,28 @@ actor LocalTTSModelStore {
         guard capacity >= manifest.totalSizeBytes * 2 else {
             throw NSError(domain: "LocalTTS", code: 13, userInfo: [NSLocalizedDescriptionKey: "Cần khoảng \(ByteCountFormatter.string(fromByteCount: manifest.totalSizeBytes * 2, countStyle: .file)) trống để cài đặt an toàn."])
         }
-        let staging = base.appendingPathComponent("staging-" + UUID().uuidString)
+        let staging = base.appendingPathComponent("staging-" + manifest.revision)
         try fm.createDirectory(at: staging, withIntermediateDirectories: true)
-        defer { try? fm.removeItem(at: staging) }
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.timeoutIntervalForRequest = 60
-        configuration.timeoutIntervalForResource = 1800
-        let session = URLSession(configuration: configuration)
-        defer { session.invalidateAndCancel() }
         var completed: Int64 = 0
         for file in manifest.files {
             try Task.checkCancellation()
             let destination = staging.appendingPathComponent(file.path)
             try fm.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
             let offset = completed
-            let delegate = TTSDownloadProgress { count in progress(offset + min(count, file.size), manifest.totalSizeBytes, false) }
-            let temporary: URL
             if let sourceDirectory {
-                temporary = staging.appendingPathComponent(UUID().uuidString)
-                try fm.copyItem(at: sourceDirectory.appendingPathComponent(file.path), to: temporary)
+                let source = sourceDirectory.appendingPathComponent(file.path)
+                try Self.verify(source, file: file)
+                if fm.fileExists(atPath: destination.path) { try fm.removeItem(at: destination) }
+                try fm.copyItem(at: source, to: destination)
             } else {
-                let (downloaded, response) = try await session.download(from: manifest.downloadURL.appendingPathComponent(file.path), delegate: delegate)
-                guard let http = response as? HTTPURLResponse, http.statusCode == 200, response.url?.scheme == "https" else { throw URLError(.badServerResponse) }
-                temporary = downloaded
+                try await ModelDownloadManager.shared.fetch(
+                    ModelArtifact(path: file.path, source: .direct(manifest.downloadURL.appendingPathComponent(file.path)), bytes: file.size, sha256: file.sha256),
+                    destination: destination) { fraction in
+                        progress(offset + Int64(Double(file.size) * fraction), manifest.totalSizeBytes, false)
+                    }
             }
-            defer { try? fm.removeItem(at: temporary) }
-            // Keep the download view stable while each file is verified.
-            // Switching to an indeterminate view for every file causes layout jumps.
-            progress(completed + file.size, manifest.totalSizeBytes, false)
-            try Self.verify(temporary, file: file)
+            try Self.verify(destination, file: file)
             try Task.checkCancellation()
-            try fm.moveItem(at: temporary, to: destination)
             completed += file.size
             progress(completed, manifest.totalSizeBytes, false)
         }
@@ -209,6 +200,11 @@ public final class LocalTTSModelManager: ObservableObject {
     }
     public func cancelDownload() {
         generation = UUID(); task?.cancel(); task = nil; checkInstallation()
+    }
+    public func cancelAndWait() async {
+        let pending = task
+        cancelDownload()
+        await pending?.value
     }
     public func removeModel() {
         cancelDownload(); isNaturalVoiceEnabled = false

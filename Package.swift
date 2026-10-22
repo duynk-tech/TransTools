@@ -27,7 +27,7 @@ let package = Package(
             name: "LocalTTSTests",
             dependencies: ["TransTools", "LocalSpeechBackend"],
             path: "Tests/LocalTTSTests",
-            exclude: ["vieneu-sdk-golden.json"]
+            exclude: ["vieneu-sdk-golden.json", "personal-voice-fbank.bin"]
         )
     ]
 )

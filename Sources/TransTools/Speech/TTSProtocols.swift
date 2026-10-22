@@ -7,6 +7,7 @@ public struct TTSOptions: Equatable, Sendable {
     public var volume: Float
     public var voiceID: String?
     public var prosody: ProsodyResult?
+    public var verifyBeforePlayback: Bool = false
     public var punctuationBreathing: Bool
 
     public init(
@@ -80,7 +81,7 @@ public enum TTSEnginePreference: String, CaseIterable, Identifiable, Codable {
         case .system:
             return "System Voice"
         case .localNatural:
-            return "Natural Local Voice"
+            return "Natural Offline Voice"
         }
     }
 

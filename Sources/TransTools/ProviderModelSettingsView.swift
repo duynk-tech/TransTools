@@ -30,9 +30,10 @@ struct ProviderModelSettingsView: View {
                     .labelsHidden().controlSize(.large).frame(maxWidth: .infinity)
                 }
                 Button { Task { await reload() } } label: {
-                    Label(loading ? "Đang tải…" : "Tải model", systemImage: "arrow.clockwise")
+                    Image(systemName: "arrow.clockwise").frame(width: 18)
                 }
-                .buttonStyle(SettingsActionButtonStyle()).disabled(loading)
+                .buttonStyle(SettingsActionButtonStyle(height: 36)).disabled(loading)
+                .help("Tải lại danh sách mô hình").accessibilityLabel("Tải lại danh sách mô hình")
             }
             if !message.isEmpty {
                 Text(message).font(.caption).foregroundStyle(.secondary)

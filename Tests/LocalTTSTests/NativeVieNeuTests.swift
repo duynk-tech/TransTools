@@ -17,10 +17,22 @@ final class NativeVieNeuTests: XCTestCase {
             XCTAssertEqual(tokenizer.encode(item.phonemes), item.tokens, item.text)
         }
     }
-    func testNativeInstallStreamingExportAndCancellation() async throws {
-        guard ProcessInfo.processInfo.environment["TRANSTOOLS_TEST_INSTALLED_TTS"] == "1" else { throw XCTSkip("Opt-in real installed model test") }
-        try await NativeVieNeuInstaller.shared.install { _ in }
-        XCTAssertTrue(ExternalTTSModel.vieneu.isInstalled)
+    func testVerifiedPlaybackBuffersWholePhrase() async throws {
+        guard ProcessInfo.processInfo.environment["TRANSTOOLS_TEST_INSTALLED_TTS"] == "1", ExternalTTSModel.vieneu.isInstalled else { throw XCTSkip("Requires an installed VieNeu model") }
+        var options = TTSOptions(rate: 0.44)
+        options.verifyBeforePlayback = true
+        let sink = NativeSink()
+        let result = try await NativeVieNeu.shared.synthesize(text: "Hôm nay chúng ta cùng luyện phát âm tiếng Việt thật rõ ràng.", voice: "Hải Đăng", options: options, onChunk: { try await sink.add($0) })
+        let count = await sink.packetCount()
+        XCTAssertEqual(count, 1, "Only publish after complete phrase validation")
+        XCTAssertGreaterThan(result.duration, 1)
+        try result.audioData.write(to: URL(fileURLWithPath: "/tmp/trans-tools-vieneu-verified.wav"))
+        await VieNeuSession.shared.release()
+    }
+    func testInstalledNativeStreamingExportAndCancellation() async throws {
+        guard ProcessInfo.processInfo.environment["TRANSTOOLS_TEST_INSTALLED_TTS"] == "1", ExternalTTSModel.vieneu.isInstalled else {
+            throw XCTSkip("Requires an installed VieNeu model; this test never installs or downloads models")
+        }
         let sink = NativeSink()
         let streamed = try await NativeVieNeu.shared.synthesize(text: "Xin chào, chúng ta cùng luyện phát âm tiếng Việt mỗi ngày nhé.", voice: "Hải Đăng", options: TTSOptions(rate: 0.44), onChunk: { try await sink.add($0) })
         XCTAssertEqual(streamed.engineType, "VieNeuNative")
